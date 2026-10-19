@@ -112,7 +112,8 @@ internal/             dependencies point down only; only rpc/, provider/, agent/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
-  tools/ memory/ handbook/ meter/ provider/ native/ secret/ skill/
+  provider/           accounts, the key store seam, tier to model, login for the app (exists)
+  tools/ memory/ handbook/ meter/ native/ secret/ skill/
   org/                domain types, grant resolution, budget math
   store/              SQLite, migrations, repositories
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen
@@ -143,7 +144,9 @@ from `Hearth`.
 - **Every tool call is checked against the calling bot's grants in the core**
   before dispatch, and act-tier tools go through the approval gate.
 - **Credentials never enter model context.** Tool results are scrubbed before
-  they are appended; the core never writes credentials to disk.
+  they are appended; the core never writes credentials anywhere but its
+  owner-only credential files, and never into the database, a log or model
+  context, until the Keychain store replaces the files.
 - **`agent` never imports `store`, `tools` or `rpc`**; `store` alone imports
   the SQLite driver; `rpc` handlers hold no domain logic.
 - **Nothing in `docs/research/` is cited from code.**
