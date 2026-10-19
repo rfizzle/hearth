@@ -3,11 +3,14 @@
 // a LiveClient for it, and relaunches the helper one second after it exits
 // unless the app is quitting.
 //
-// The helper's stdin is the lifeline: the app holds the write end and never
-// writes to it, so when the app quits or crashes the kernel closes it and the
-// helper exits. HTTP connections are per request and cannot play that part.
-// The token is new on every launch because it is the only thing that keeps
-// another local process off the helper's port.
+// The helper's stdin carries the token and is the lifeline: the app writes the
+// token and a newline right after launch, then holds the write end open and
+// writes nothing more, so when the app quits or crashes the kernel closes it
+// and the helper exits. HTTP connections are per request and cannot play that
+// part. The token goes over the pipe rather than argv because any local
+// process can read another's argv with `ps`. It is new on every launch
+// because it is the only thing that keeps another local process off the
+// helper's port.
 // See docs/architecture.md#5-security-model
 
 import Foundation
@@ -44,7 +47,7 @@ final class HelperSupervisor {
         }
         let process = Process()
         process.executableURL = Self.helperURL()
-        process.arguments = ["serve", "--listen", "127.0.0.1:0", "--token", token]
+        process.arguments = ["serve", "--listen", "127.0.0.1:0"]
         let stdin = Pipe()
         let stdout = Pipe()
         process.standardInput = stdin
@@ -62,6 +65,13 @@ final class HelperSupervisor {
         }
         self.process = process
         self.lifeline = stdin.fileHandleForWriting
+        do {
+            try stdin.fileHandleForWriting.write(contentsOf: Data((token + "\n").utf8))
+        } catch {
+            status = "Could not send the launch token: \(error.localizedDescription)"
+            process.terminate()
+            return
+        }
         log.notice("helper launched, pid \(process.processIdentifier)")
         Task { await self.connect(reading: stdout.fileHandleForReading, token: token) }
     }

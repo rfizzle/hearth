@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,19 +25,44 @@ func runServe(args []string) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	listen := fs.String("listen", "127.0.0.1:0", "TCP address to listen on")
 	socket := fs.String("socket", "", "Unix socket path to listen on instead of --listen")
-	token := fs.String("token", "", "launch token every request must carry (required)")
+	token := fs.String("token", "", "launch token for hand-runs from a terminal; the app sends it on stdin, and stdin wins")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	listenSet := false
 	fs.Visit(func(f *flag.Flag) { listenSet = listenSet || f.Name == "listen" })
-	if *token == "" || (*socket != "" && listenSet) {
-		fmt.Fprintln(os.Stderr, "usage: hearthd serve --token <t> [--listen host:port | --socket <path>]")
+	logger := log.New(os.Stderr, "hearthd: ", log.LstdFlags)
+	usage := func() int {
+		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>]")
+		fmt.Fprintln(os.Stderr, "  The launch token is the first line of stdin; the rest of stdin is the lifeline.")
+		fmt.Fprintln(os.Stderr, "  By hand from a terminal: hearthd serve --token <t>")
 		fs.PrintDefaults()
 		return 2
 	}
+	if *socket != "" && listenSet {
+		return usage()
+	}
 
-	logger := log.New(os.Stderr, "hearthd: ", log.LstdFlags)
+	// The token stays off argv so `ps` never shows it. A hand-run may still
+	// pass --token, which every local user can see; a token on stdin wins.
+	stdin := bufio.NewReader(os.Stdin)
+	tok := *token
+	if fi, err := os.Stdin.Stat(); *token == "" || (err == nil && fi.Mode()&os.ModeCharDevice == 0) {
+		line, err := readToken(stdin)
+		switch {
+		case line != "" && *token != "":
+			logger.Print("ignoring --token: the token on stdin wins")
+			tok = line
+		case line != "":
+			tok = line
+		case err != nil && *token == "":
+			return usage()
+		}
+	}
+	if tok == "" {
+		return usage()
+	}
+
 	l, addr, err := bind(*listen, *socket)
 	if err != nil {
 		logger.Print(err)
@@ -46,10 +73,10 @@ func runServe(args []string) int {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ctx = lifeline(ctx, os.Stdin)
+	ctx = lifeline(ctx, stdin)
 
 	srv := &http.Server{
-		Handler:           rpc.NewHandler(rpc.Options{Version: version, Token: *token}),
+		Handler:           rpc.NewHandler(rpc.Options{Version: version, Token: tok}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ErrorLog:          logger,
 	}
@@ -89,6 +116,15 @@ func bind(listen, socket string) (net.Listener, string, error) {
 		return nil, "", err
 	}
 	return l, socket, nil
+}
+
+// readToken reads the launch token: the first line of r, without its line end.
+func readToken(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	if errors.Is(err, io.EOF) && line != "" {
+		err = nil
+	}
+	return strings.TrimRight(line, "\r\n"), err
 }
 
 // lifeline returns a context cancelled when r reaches EOF or fails. The app
