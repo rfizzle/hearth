@@ -114,6 +114,7 @@ internal/             dependencies point down only; only rpc/, provider/, agent/
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
   tools/              the tool registry, and the check every call passes against the bot's grants (exists)
+    files/            files.read and files.write inside a granted folder (exists)
   memory/ handbook/ meter/ native/ secret/ skill/
   org/                domain types, grant resolution, budget math (exists)
   workspace/          the Hearth folder's layout and path containment (exists)
