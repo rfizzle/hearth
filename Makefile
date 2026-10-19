@@ -31,11 +31,18 @@ PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not
 # The gate only reads, and what it reads is what a commit would carry.
 TRACKED_GOFILES=$(shell git ls-files '*.go' ':!:internal/rpc/gen/**')
 PROJECT_PACKAGES=$(shell go list ./...)
+SWIFT=swift
+SWIFTLINT=swiftlint
+APP_DIR=App
+SWIFT_TEST_PACKAGES=$(APP_DIR)/Packages/HearthKit $(APP_DIR)/Packages/HearthDesign $(APP_DIR)/Packages/HearthUI $(APP_DIR)/Packages/HearthFeatures $(APP_DIR)/Packages/HearthNative
+# Generated Swift is left as buf writes it, as generated Go is.
+SWIFT_SOURCES=$(shell find $(APP_DIR) -name '*.swift' -not -path '*/.build/*' -not -path '*/Gen/*')
+TOKENS_FILE=$(APP_DIR)/Packages/HearthDesign/Sources/HearthDesign/Resources/tokens.json
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-format-check swift-lint swift-test tokens-check gallery-build cache-dir
+.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift cache-dir
 
 all: help
 
@@ -118,24 +125,42 @@ test-integration: cache-dir ## Run the tests behind the integration tag (may nee
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v $(PROJECT_PACKAGES)
 
 ## Swift:
-swift-format-check: ## Placeholder, not yet: lands with the Xcode project
-	@echo "not yet: lands with the Xcode project"
+# Each Swift target refuses to run without its tool, as fmt-check does: a gate
+# that skips itself reports the same green as one that passed.
+swift-fmt: ## Rewrite every Swift file with Apple's swift format
+	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
+	@$(SWIFT) format format -i --configuration $(APP_DIR)/.swift-format $(SWIFT_SOURCES)
 
-swift-lint: ## Placeholder, not yet: lands with the Xcode project
-	@echo "not yet: lands with the Xcode project"
+swift-format-check: ## Fail if any Swift file is not as Apple's swift format leaves it
+	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
+	@$(SWIFT) format lint --strict --configuration $(APP_DIR)/.swift-format $(SWIFT_SOURCES)
 
-swift-test: ## Placeholder, not yet: lands with the Xcode project
-	@echo "not yet: lands with the Xcode project"
+swift-lint: ## Run SwiftLint: the size rules and the raw style literal rule
+	@command -v $(SWIFTLINT) >/dev/null 2>&1 || { echo "swiftlint not found (install: brew install swiftlint)"; exit 1; }
+	@cd $(APP_DIR) && $(SWIFTLINT) lint --strict --quiet --config .swiftlint.yml
 
-tokens-check: ## Placeholder, not yet: lands with the Xcode project
-	@echo "not yet: lands with the Xcode project"
+# The root package has no tests of its own (an app target), so it is built;
+# every local package runs its tests in its own .build.
+swift-test: ## Build the app targets and run every Swift package's tests
+	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
+	@$(SWIFT) build --package-path $(APP_DIR)
+	@for p in $(SWIFT_TEST_PACKAGES); do \
+		echo "swift test $$p"; \
+		$(SWIFT) test --package-path $$p || exit 1; \
+	done
 
-gallery-build: ## Placeholder, not yet: lands with the Xcode project
-	@echo "not yet: lands with the Xcode project"
+tokens-check: cache-dir ## Fail if a token pairing is below WCAG 2.2 AA contrast in light or dark
+	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/tokenscheck $(TOKENS_FILE)
+
+gallery-build: ## Build the gallery app: every component in every state
+	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
+	@$(SWIFT) build --package-path $(APP_DIR) --product HearthGallery
+
+ci-swift: swift-format-check swift-lint swift-test gallery-build ## Run every Swift check CI runs (macOS only)
 
 ## CI:
 # Order matters: the cheap checks fail first.
-ci: fmt-check vet lint test docs-check skills-check proto-check astimate ## Run every check CI runs
+ci: fmt-check vet lint test docs-check skills-check proto-check tokens-check astimate ## Run every check CI runs
 
 prepush: ## Run the ci targets before a push
 	@$(MAKE) --no-print-directory ci

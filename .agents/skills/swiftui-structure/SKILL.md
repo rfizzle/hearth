@@ -5,9 +5,8 @@ description: Use this skill for any change under App/ (the Hearth app, HearthGal
 
 # SwiftUI structure
 
-Nothing under `App/` exists yet. The Xcode project, the packages and the gallery
-are created by the first Swift story; until then this skill is the target shape,
-and the first change that creates a package follows it. The reasons live in
+The packages, the app target and the gallery exist, each package with one
+unit and one test, and the Swift gates are real. The reasons live in
 `docs/architecture.md`, section "Swift app"; this is the working form.
 
 ## The thin-client rule (reviewable)
@@ -120,5 +119,4 @@ paste) and, if needed, the transcript (`NSTableView`-backed list). Any other
 - Any `NSViewRepresentable` is on the allowed list or justified.
 - Accessibility checklist walked in the gallery, including the large text size.
 - Goldens changed only where intended, with the reason in the commit.
-- `make swift-format-check swift-lint swift-test tokens-check gallery-build`
-  (placeholders until the Swift project exists) and `make ci`.
+- `make ci-swift` and `make ci`.

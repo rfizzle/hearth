@@ -1,7 +1,7 @@
 # AGENTS.md
 
 `hearth` is a native Mac app where you run a small organisation of AI
-employees. It is a SwiftUI app in `App/` (planned) over a bundled pure-Go
+employees. It is a SwiftUI app in `App/` over a bundled pure-Go
 core, `hearthd`, in `cmd/` and `internal/`, that the app launches and talks to
 over loopback with Connect-RPC and a per-launch token. The core owns the org,
 the agent loop and the tools; the app is a thin client. Providers come from `github.com/rfizzle/llm`.
@@ -55,7 +55,8 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Quality ceiling | `make astimate` |
 | Known vulnerabilities | `make vulncheck` |
 | Install the opt-in pre-push hook | `make hooks` |
-| Swift gates (placeholders until the Swift project exists) | `make swift-format-check swift-lint swift-test tokens-check gallery-build` |
+| Swift gates | `make ci-swift` |
+| Format Swift | `make swift-fmt` |
 | List every target | `make help` |
 
 Agents run `make ci`; the orchestrator runs `make prepush`, the same checks, at
@@ -109,7 +110,7 @@ proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```
 
 ```
-App/                  (planned) Xcode project
+App/                  Package.swift root: the app and gallery targets
   Hearth/             app target: scenes, windows, helper lifecycle, DI
   HearthGallery/      every component and composition in every state
   Packages/
@@ -155,6 +156,11 @@ from `Hearth`.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
+- **`make swift-test` builds each package in its own `.build`**; the first run
+  compiles swift-protobuf more than once (minutes), later runs are cached.
+- **A package resource (`Bundle.module`) is a `.bundle` beside the
+  executable.** The app bundle has to carry it in `Contents/Resources`, or
+  the app aborts at launch.
 - **`make skills-check` fails on a vendored skill edited here.** Skills live
   in `.agents/skills`; `.agents/skills/README.md` says how they are organised
   and which are shared.

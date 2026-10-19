@@ -10,7 +10,8 @@
 /dist
 /THIRD_PARTY_LICENSES
 
-# Xcode
+# Xcode and SwiftPM
+.build/
 xcuserdata/
 DerivedData/
 *.xcuserstate
