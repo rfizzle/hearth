@@ -91,12 +91,12 @@ Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a 
 
 ### 6. Build, sign, ship
 
-- Repo: single repo. Go module at the root (`cmd/hearthd`, `internal/...`, `proto/`), Xcode project under `App/`. The Makefile builds the Go helper for arm64 (and amd64 if Intel is supported, then `lipo`), and an Xcode build phase copies it into `Contents/Helpers`. (D4, decided 2026-10-19)
+- Repo: single repo. Go module at the root (`cmd/hearthd`, `internal/...`, `proto/`), SwiftPM package under `App/`. The Makefile builds the Go helper for arm64 (and amd64 if Intel is supported, then `lipo`), and `make app-build` assembles the bundle and copies it into `Contents/Helpers`. (D4, decided 2026-10-19)
 - Signing inside-out: helper with hardened runtime and timestamp, then the app; `notarytool` + `stapler`. Pure Go needs no JIT entitlements. Check `LC_BUILD_VERSION` with `vtool` in CI.
 - **Developer ID, notarised, Sparkle 2 updates** first. A Mac App Store build is a possible later SKU that would lose Shortcuts execution, Mail automation and wide file access, and would need the helper signed with `app-sandbox` + `inherit`. (D5, decided 2026-10-19)
 - Licence MIT or Apache-2.0 to keep the App Store option open and to satisfy OpenAI's open-source sign-in programme. (D6, decided 2026-10-19)
 - Minimum macOS 26 (Foundation Models, Liquid Glass, current App Intents). Apple Silicon only unless there is a reason to pay for Intel. (D7, decided 2026-10-19)
-- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, skills-check, astimate ceilings), `xcodebuild test` for Swift, a notarised build on tags.
+- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, skills-check, astimate ceilings), `make ci-swift` for Swift, a notarised build on tags.
 
 ### 7. What is lifted from shhh and how
 
@@ -280,7 +280,7 @@ make swift-format-check     # swift-format (Apple's), config committed
 make swift-lint             # SwiftLint: the size and complexity rules as the Swift ceiling
                             #   (cyclomatic_complexity, function_body_length, type_body_length,
                             #   file_length, nesting) plus the custom token rule
-make swift-test             # xcodebuild test: package unit tests + snapshot comparison
+make swift-test             # swift test per package: unit tests + snapshot comparison
 make tokens-check           # contrast for every light/dark pairing against WCAG 2.2 AA (a Go test)
 make gallery-build          # the gallery target compiles: every unit has a PreviewState
 ```
