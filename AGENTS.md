@@ -56,6 +56,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Quality ceiling | `make astimate` |
 | Known vulnerabilities | `make vulncheck` |
 | Install the opt-in pre-push hook | `make hooks` |
+| Sign in with ChatGPT, then try it (live, by hand) | `hearthd login chatgpt`, `hearthd say "hello"` |
 | Swift gates | `make ci-swift` |
 | Build Hearth.app | `make app-build` |
 | Sign the bundle | `make app-sign` |
@@ -104,7 +105,7 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/ exists so far
+internal/             dependencies point down only; only rpc/ and provider/ exist so far
   rpc/                Connect handlers and the token check; generated code under gen/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
   agent/              one bot's turn: loop, tool rounds, retry, compaction
