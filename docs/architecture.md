@@ -40,7 +40,7 @@ Hearth.app
 | Agent loop | core | Lifted from shhh `internal/agent` (passive state machine with StreamFunc / ToolExecutor / ApprovalGate seams), stripped of the coding-specific classifier, modes and tools. |
 | Orchestration (assign, waits, budgets, schedules) | core | New; `model.md#orchestration` is its spec. |
 | Tool registry | core | shhh's `Definition{Tool, Execute, Receipt}` shape. Two tiers only: read and act; act tools consult the approval gate. |
-| Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search, assign, ask_owner, remember. |
+| Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search (offered only while a search key is stored), assign, ask_owner, remember. |
 | Native tools | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
 | Credentials | app (Keychain) → core (memory) | The app reads keys from Keychain and pushes them to the core on connect and on change. The core never writes credentials to disk itself. Until the Keychain-backed store exists, the core keeps API keys beside the ChatGPT tokens in its Application Support folder, owner-only files, behind the same store seam. |
 | ChatGPT plan tokens | core via a Store callback | llm's `chatgpt.Open` needs a `Store`; today only a file store exists. hearth needs a Store implemented by callback to the app, which keeps the refresh token in Keychain. This is a small change in llm (make Store an interface). The file store is the current stopgap for both tokens and keys. |
@@ -118,7 +118,7 @@ cmd/hearthd                      assembly only: flags, wiring, signal handling
 internal/rpc                     Connect handlers; translate proto <-> domain; no logic
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/native
+internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/integration  internal/native
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/workspace               the Hearth folder's layout and path containment; imports org only
 internal/store                   SQLite, migrations, repositories; knows org types, nothing above
@@ -148,6 +148,7 @@ Rules:
 | `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
+| `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
 | `internal/meter` | Usage ledger, pricing, budgets | lifted from shhh |
 | `internal/memory` | Bot notes: bounded recall, consolidation, pins | new (D13; shhh's memory package stays in shhh) |
 | `internal/handbook` | Pages, scoping, context meter | new |

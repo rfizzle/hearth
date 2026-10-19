@@ -107,12 +107,13 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, provider/, agent/, framing/, tools/, org/, workspace/ and store/ exist so far
+internal/             dependencies point down only; only rpc/, provider/, integration/, agent/, framing/, tools/, org/, workspace/ and store/ exist so far
   rpc/                Connect handlers and the token check; generated code under gen/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
+  integration/        the web-search key over the key store, and the searcher a run gets (exists)
   tools/              the tool registry, and the check every call passes against the bot's grants (exists)
     files/            files.read and files.write inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)

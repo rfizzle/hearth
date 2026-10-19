@@ -112,7 +112,7 @@ The app watches the folder; files the owner adds are visible to bots with the fo
 | `files.write(<folder>)` | Create/replace files | own team's Workspace subfolder; an org-level bot's own folder |
 | `files.delete(<folder>)` | Delete files | ask me |
 | `web.fetch` | Fetch a URL (read-only, no cookies) | allowed |
-| `web.search` | Web search via the provider's or a configured search tool | allowed |
+| `web.search` | Web search through a search service whose key the owner has pasted (Brave Search first); with no key the tool does not exist | allowed |
 | `calendar.read` / `calendar.write` | EventKit | read: ask me; write: ask me |
 | `reminders.read` / `reminders.write` | EventKit | ask me |
 | `contacts.read` | Contacts | ask me |

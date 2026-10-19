@@ -17,7 +17,7 @@ cmd/hearthd            assembly only: flags, wiring, signal handling
 internal/rpc           Connect handlers: translate proto <-> domain, nothing else
 internal/orchestrate   tasks, runs, scheduler, budgets, waits
 internal/agent         one bot's turn: loop, tool rounds, retry, compaction
-internal/tools  memory  handbook  meter  provider  native  (and secret, skill, framing)
+internal/tools  memory  handbook  meter  provider  integration  native  (and secret, skill, framing)
 internal/org           domain types and pure functions
 internal/workspace     the Hearth folder's layout and path containment
 internal/store         SQLite, migrations, repositories
@@ -34,6 +34,9 @@ internal/store         SQLite, migrations, repositories
 - `orchestrate` alone creates runs, moves task state and decides who runs next.
   It owns the event bus `rpc` streams to the app.
 - `provider` wraps `llm`. Nothing but `agent` and `provider` imports `llm`.
+- `integration` holds the search key in the key store `provider` shares and builds
+  the searcher a run gets; it never imports `org`, and `orchestrate` takes the
+  searcher as a function rather than importing it.
 - `native` proxies calendar, contacts, shortcuts and on-device-model calls to
   the app; to `tools` they look like any other tool.
 - `rpc` handlers contain no domain logic. A handler with an `if` about the
@@ -55,7 +58,7 @@ Lifted from shhh through the shared module (`agentcore`, working name; hearth
 consumes its tag): `agent` (loop, retry, compaction), `meter`, `secret`, `skill`. Shapes copied, not code: `store`
 migrations and the messages table, `tools` registry, `tools/describe`, the
 approval principles. New in hearth: `org`, `orchestrate`, `native`, `provider`,
-`handbook`, `framing`, `rpc` (Connect over loopback with a launch token, not shhh's JSON-RPC).
+`integration`, `handbook`, `framing`, `rpc` (Connect over loopback with a launch token, not shhh's JSON-RPC).
 A fix to a lifted package is made in the shared module, not in a hearth copy.
 
 ## Gates
