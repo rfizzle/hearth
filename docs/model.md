@@ -207,7 +207,7 @@ Rules:
 
 A task always reaches a terminal state because:
 
-- every run has a step cap (default 25 tool calls) and a wall-time cap (default 10 minutes of active run time),
+- every run has a step cap (default 25 tool rounds; a round is one model reply's tool calls) and a wall-time cap (default 10 minutes of active run time),
 - every task has a cost cap derived from the parent and budgets,
 - depth is bounded by construction,
 - retries are capped,
