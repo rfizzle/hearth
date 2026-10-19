@@ -7,7 +7,8 @@
 //   - a citation of docs/research/, which is a dated snapshot;
 //   - a path in backticks in AGENTS.md or README.md that does not exist and
 //     is not marked "(planned)";
-//   - a `make <target>` in a document that the Makefile lacks;
+//   - a `make <target>` in a document that the Makefile lacks (skills vendored
+//     through .agents/skills/shared.sum are exempt: their targets are examples);
 //   - a required-Go-version claim in a root file that disagrees with go.mod;
 //   - a work-item identifier (story, epic, ticket) in a document or in code
 //     (skills are exempt: their examples may show one on purpose);
@@ -78,6 +79,7 @@ type checker struct {
 	cited    map[string]bool           // "file#slug"
 	targets  map[string]bool
 	skip     map[string]bool
+	shared   []string // paths vendored from the skills repository
 }
 
 func main() {
@@ -89,6 +91,7 @@ func main() {
 		}
 	}
 	c.loadMakefile()
+	c.loadShared()
 	docs := c.markdownFiles()
 	goFiles := c.goFiles()
 	for _, d := range docs {
@@ -173,6 +176,33 @@ func (c *checker) loadMakefile() {
 			c.targets[m[1]] = true
 		}
 	}
+}
+
+// loadShared reads the paths vendored from the skills repository. A shared
+// skill is generic by construction, so a make target it names is an example,
+// not a claim about this Makefile; those checks skip it.
+func (c *checker) loadShared() {
+	f, err := os.Open(".agents/skills/shared.sum")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		fields := strings.Fields(sc.Text())
+		if len(fields) == 3 && !strings.HasPrefix(fields[0], "#") {
+			c.shared = append(c.shared, fields[0]+"/")
+		}
+	}
+}
+
+func (c *checker) isShared(path string) bool {
+	for _, p := range c.shared {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // slugify applies GitHub's anchor rule: lowercase, drop everything but
@@ -264,7 +294,7 @@ func (c *checker) checkMarkdown(path string) {
 				c.fail(path, n, "work-item id %q; describe the work, don't cite the tracker", m)
 			}
 		}
-		if len(c.targets) > 0 {
+		if len(c.targets) > 0 && !c.isShared(path) {
 			var found [][]string
 			if inFence {
 				found = makeLineRe.FindAllStringSubmatch(line, -1)
