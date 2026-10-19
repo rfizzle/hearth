@@ -29,7 +29,9 @@ SKILLS_SOURCE ?= ../skills
 # proto-check holds it to the generator instead.
 PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./.*" -not -path "./internal/rpc/gen/*")
 # The gate only reads, and what it reads is what a commit would carry.
-TRACKED_GOFILES=$(shell git ls-files '*.go' ':!:internal/rpc/gen/**')
+# Tracked plus new untracked files, so a file passes the gate before it is
+# committed as well as after.
+TRACKED_GOFILES=$(shell git ls-files --cached --others --exclude-standard '*.go' ':!:internal/rpc/gen/**')
 PROJECT_PACKAGES=$(shell go list ./...)
 SWIFT=swift
 SWIFTLINT=swiftlint
