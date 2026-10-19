@@ -6,6 +6,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -25,7 +26,14 @@ func TestPingOverRealListeners(t *testing.T) {
 		address func(t *testing.T) string
 	}{
 		{name: "loopback tcp", network: "tcp", address: func(*testing.T) string { return "127.0.0.1:0" }},
-		{name: "unix socket", network: "unix", address: func(t *testing.T) string { return filepath.Join(t.TempDir(), "h.sock") }},
+		{name: "unix socket", network: "unix", address: func(t *testing.T) string {
+			d, err := os.MkdirTemp("/tmp", "hd")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.RemoveAll(d) })
+			return filepath.Join(d, "h.sock")
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

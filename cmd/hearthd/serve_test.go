@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -81,5 +84,39 @@ func TestReadToken(t *testing.T) {
 				t.Errorf("readToken = %q, %v; want %q, err %v", got, err, tt.want, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestBindUnixSocket(t *testing.T) {
+	// Unix socket paths are limited to about 100 bytes, which the test's
+	// temp directory under the worktree can exceed, so use a short one.
+	dir, err := os.MkdirTemp("/tmp", "hd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	path := filepath.Join(dir, "h.sock")
+	// A crashed helper leaves its socket file behind; binding again must work.
+	stale, err := net.Listen("unix", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stale.(*net.UnixListener).SetUnlinkOnClose(false)
+	_ = stale.Close()
+
+	l, addr, err := bind("", path)
+	if err != nil {
+		t.Fatalf("bind over a stale socket: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+	if addr != path {
+		t.Errorf("addr = %q, want %q", addr, path)
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := fi.Mode().Perm(); perm&0o077 != 0 {
+		t.Errorf("socket mode = %o, want no group or world bits", perm)
 	}
 }

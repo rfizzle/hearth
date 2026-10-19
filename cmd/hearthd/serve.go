@@ -107,12 +107,19 @@ func bind(listen, socket string) (net.Listener, string, error) {
 		}
 		return l, l.Addr().String(), nil
 	}
-	l, err := net.Listen("unix", socket)
-	if err != nil {
-		return nil, "", err
+	// A crashed helper leaves its socket file behind and the next bind would
+	// fail with "address in use". Remove only a socket, never another file.
+	if fi, err := os.Lstat(socket); err == nil && fi.Mode()&os.ModeSocket != 0 {
+		if err := os.Remove(socket); err != nil {
+			return nil, "", err
+		}
 	}
-	if err := os.Chmod(socket, 0o600); err != nil {
-		_ = l.Close()
+	// Bind under a umask that leaves only the owner's bits, so the socket is
+	// never group- or world-accessible, not even briefly after creation.
+	old := syscall.Umask(0o177)
+	l, err := net.Listen("unix", socket)
+	syscall.Umask(old)
+	if err != nil {
 		return nil, "", err
 	}
 	return l, socket, nil
