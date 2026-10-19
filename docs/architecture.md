@@ -105,7 +105,7 @@ Lifecycle: the app launches `hearthd` with a random socket path under the app's 
 | `internal/agent` core (messages, rounds, tool-round split, steering queue, repeat detection, round caps) | generic | Extract into the shared module (D8, decided 2026-10-19). |
 | `internal/agent/retry.go` | generic | Lift with it. |
 | `internal/meter` | cleanly generic | Lift as is; attribute Origin = (bot, task, run). |
-| `internal/memory` | generic with a seam | Lift the entry model and bounded recall; scope becomes per-bot. |
+| `internal/memory` | shhh's model | Stays in shhh (D13). hearth's Notes package is new, against `model.md`'s per-bot notes. |
 | `internal/skill` | generic | Lift; role templates can be skills in disguise (SKILL.md with frontmatter) which also gives a path to sharing. |
 | `internal/storage` migrations + `chat_messages` | pattern | Copy the pattern, not the schema. |
 | `internal/approval` principles (standing rules first, two doors, fail closed) | principles | Re-implement for grants; no shell rules. |
@@ -157,7 +157,7 @@ Rules:
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
 | `internal/meter` | Usage ledger, pricing, budgets | lifted from shhh |
-| `internal/memory` | Bot notes: bounded recall, consolidation | lifted from shhh with a scope seam |
+| `internal/memory` | Bot notes: bounded recall, consolidation, pins | new (D13; shhh's memory package stays in shhh) |
 | `internal/handbook` | Pages, scoping, context meter | new |
 | `internal/secret` | Scrub tool results | lifted from shhh |
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
