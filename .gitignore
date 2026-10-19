@@ -1,5 +1,6 @@
 .plan
-.claude
+.claude/*
+!.claude/skills
 .idea
 .cache
 
