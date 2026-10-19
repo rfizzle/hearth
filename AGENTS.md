@@ -107,9 +107,9 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, provider/, integration/, agent/, framing/, tools/, org/, workspace/ and store/ exist so far
+internal/             dependencies point down only; only rpc/, orchestrate/, provider/, integration/, agent/, framing/, tools/, org/, workspace/ and store/ exist so far
   rpc/                Connect handlers and the token check; generated code under gen/
-  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
+  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs and the bus)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
