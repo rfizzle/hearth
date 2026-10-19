@@ -1,0 +1,179 @@
+// Store tests for hiring and the bot list, against PreviewClient and a
+// scripted stream of core events.
+
+import Foundation
+import HearthKit
+import Testing
+
+@testable import HearthFeatures
+
+/// A client with nobody hired yet; everything else is PreviewClient's.
+private struct EmptyOrgClient: HearthClient {
+    let base = PreviewClient()
+
+    func ping() async throws -> String { try await base.ping() }
+    func streamHello(count: Int32) -> AsyncThrowingStream<String, Error> {
+        base.streamHello(count: count)
+    }
+    func getOrg() async throws -> Hearth_V1_Org? { try await base.getOrg() }
+    func updateOrg(name: String, workspacePath: String) async throws -> Hearth_V1_Org {
+        try await base.updateOrg(name: name, workspacePath: workspacePath)
+    }
+    func listTemplates() async throws -> [Hearth_V1_RoleTemplate] { try await base.listTemplates() }
+    func createBot(_ request: Hearth_V1_CreateBotRequest) async throws -> Hearth_V1_Bot {
+        try await base.createBot(request)
+    }
+    func listBots() async throws -> [Hearth_V1_Bot] { [] }
+    func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {
+        try await base.listConversations(botID: botID)
+    }
+    func listMessages(
+        conversationID: String, beforeSeq: Int64, limit: Int32
+    ) async throws -> Hearth_V1_ListMessagesResponse {
+        try await base.listMessages(
+            conversationID: conversationID, beforeSeq: beforeSeq, limit: limit)
+    }
+    func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
+        try await base.send(conversationID: conversationID, text: text)
+    }
+    func cancel(runID: String) async throws { try await base.cancel(runID: runID) }
+    func listAccounts() async throws -> [Hearth_V1_ProviderAccount] {
+        try await base.listAccounts()
+    }
+    func setAPIKey(
+        provider: Hearth_V1_Provider, key: String
+    ) async throws -> Hearth_V1_ProviderAccount {
+        try await base.setAPIKey(provider: provider, key: key)
+    }
+    func clearCredential(provider: Hearth_V1_Provider) async throws {
+        try await base.clearCredential(provider: provider)
+    }
+    func startChatGPTLogin() async throws -> URL { try await base.startChatGPTLogin() }
+    func listIntegrations() async throws -> [Hearth_V1_IntegrationAccount] {
+        try await base.listIntegrations()
+    }
+    func setIntegrationKey(
+        _ integration: Hearth_V1_Integration, key: String
+    ) async throws -> Hearth_V1_IntegrationAccount {
+        try await base.setIntegrationKey(integration, key: key)
+    }
+    func clearIntegration(_ integration: Hearth_V1_Integration) async throws {
+        try await base.clearIntegration(integration)
+    }
+    func subscribe(after sequence: UInt64) -> AsyncThrowingStream<
+        Hearth_V1_SubscribeResponse, Error
+    > {
+        base.subscribe(after: sequence)
+    }
+}
+
+@MainActor
+private func botList(
+    client: any HearthClient = PreviewClient(), events: [Hearth_V1_SubscribeResponse] = []
+) -> BotListStore {
+    let stream = AsyncStream<Hearth_V1_SubscribeResponse> { continuation in
+        for event in events { continuation.yield(event) }
+        continuation.finish()
+    }
+    return BotListStore(client: client, events: stream)
+}
+
+private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
+    .with { $0.event = .botChanged(.with { $0.bot = bot }) }
+}
+
+@MainActor
+@Test func pickingATemplatePrefillsTheFieldsButNotTheName() async {
+    let store = HireStore(client: PreviewClient())
+    await store.load()
+    #expect(store.templates.count == Fixtures.templates.count)
+    store.name = "Sam"
+    let writer = Fixtures.templates[1]
+    store.pick(writer)
+    #expect(store.start == .template(writer.id))
+    #expect(store.role == writer.role)
+    #expect(store.jobDescription == writer.jobDescription)
+    #expect(store.tier == .best)
+    #expect(store.name == "Sam")
+}
+
+@MainActor
+@Test func describingTheJobStartsBlankAtBalanced() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[1])
+    store.describe()
+    #expect(store.start == .describe)
+    #expect(store.role.isEmpty)
+    #expect(store.jobDescription.isEmpty)
+    #expect(store.tier == .balanced)
+}
+
+@MainActor
+@Test func createIsOffWhileTheNameOrDescriptionIsBlank() async {
+    let store = HireStore(client: PreviewClient())
+    #expect(!store.canCreate)
+    store.name = "  "
+    store.jobDescription = "Water the plants."
+    #expect(!store.canCreate)
+    store.name = "Sam"
+    store.jobDescription = " "
+    #expect(!store.canCreate)
+    store.jobDescription = "Water the plants."
+    #expect(store.canCreate)
+    store.name = ""
+    await store.create()
+    #expect(store.createdBot == nil)
+}
+
+@MainActor
+@Test func createSendsWhatWasTyped() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[0])
+    store.name = "Sam"
+    store.role = "Plant Lead"
+    store.jobDescription = "You water the plants."
+    store.tier = .fast
+    store.avatar = "🌱"
+    await store.create()
+    #expect(store.createdBot?.name == "Sam")
+    #expect(store.createdBot?.role == "Plant Lead")
+    #expect(store.createdBot?.jobDescription == "You water the plants.")
+    #expect(store.createdBot?.tier == .fast)
+    #expect(store.createdBot?.avatar == "🌱")
+    #expect(store.error == nil)
+}
+
+@MainActor
+@Test func aNewBotAppearsAfterABotChangedEvent() async {
+    var sam = Fixtures.bot
+    sam.id = "bot-sam"
+    sam.name = "Sam"
+    let store = botList(events: [botEvent(sam)])
+    await store.load()
+    #expect(store.bots.map(\.name) == ["Dana"])
+    await store.run()
+    #expect(store.bots.map(\.name) == ["Dana", "Sam"])
+}
+
+@MainActor
+@Test func aChangedBotReplacesItsRowAndKeepsTheSelection() async {
+    var renamed = Fixtures.bot
+    renamed.status = .working
+    let store = botList(events: [botEvent(renamed)])
+    await store.load()
+    store.selection = Fixtures.bot.id
+    await store.run()
+    #expect(store.bots.count == 1)
+    #expect(store.selectedBot?.status == .working)
+}
+
+@MainActor
+@Test func anEmptyListShowsTheHireAffordanceOnceLoaded() async {
+    let store = botList(client: EmptyOrgClient())
+    #expect(!store.showsHireAffordance)
+    await store.load()
+    #expect(store.showsHireAffordance)
+    let full = botList()
+    await full.load()
+    #expect(!full.showsHireAffordance)
+}
