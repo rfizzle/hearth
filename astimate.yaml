@@ -1,39 +1,8 @@
-# This repository's own astimate configuration: the embedded default
-# (internal/config/default.yaml) verbatim, plus the exemptions section at
-# the end. TestRootConfigMatchesDefault fails when the two drift apart;
-# regenerate this file from default.yaml and re-append the exemptions.
+# Astimate configuration: rebuild parameters and gate thresholds in one file,
+# in the shape `astimate config init` writes. The calibration behind every
+# value is documented in the astimate repository; config_version names the
+# fit the values came from.
 #
-# Astimate configuration: rebuild parameters and gate thresholds in one file.
-#
-# The gate thresholds are calibrated (SPEC.md sections 8.2 and 11.1): fitted
-# on 2026-09-28 (thresholds-2026-09-28) by calibration/fit from the reference
-# corpus in calibration/corpus.md, with the evidence in
-# calibration/reports/thresholds-2026-09-28.md. The rebuild parameters are
-# calibrated (SPEC.md sections 7 and 11.2): fitted on 2026-09-28 by
-# calibration/rebuild/fit from 85 Claude Code (Opus) rebuilds of 31
-# packages, three runs each, with the evidence in
-# calibration/reports/rebuild-2026-09-28-claude-code-opus.md. The context
-# budget is 37,500 tokens, which the data preferred to 25,000 beyond noise.
-# The export and hidden-state costs measured as negative and are clamped to
-# 0; an untested export costs 300 tokens (fitted 304 +/- 100). The exponent
-# is 1 because past the knee the measured cost grows no faster than the
-# estimate, in the package runs and in the 14 whole-tree runs alike. One
-# estimate token corresponds to about 7.6 tokens of session footprint, so a
-# "pass" is a unit of the estimate, not literally one context window.
-# TypeScript packages are judged by the typescript override at the end of
-# this file, fitted from a TypeScript corpus (SPEC.md section 13).
-# On 2026-10-14 the gate was retuned on hand-labelled agent commits
-# (thresholds-2026-10-14, calibration/reports/thresholds-2026-10-14.md):
-# duplicate blocks start at 60 tokens, four rules that failed commits no
-# other rule failed without catching a regression only they caught warn
-# instead of failing, and three over-ceiling allowances were widened.
-# thresholds-2026-10-14b raises min_tokens_cross from 80 to 120, measured on
-# the same commits (calibration/notes/cross-floor-2026-10-14.md).
-
-# Identifies the calibration the values came from: the 2026-10-14 gate
-# retune with its 120-token cross-package floor, on top of the
-# thresholds-2026-09-28 fit and the rebuild-2026-09-28-claude-code-opus
-# rebuild parameters.
 config_version: thresholds-2026-10-14b
 
 # Bytes of source per estimated token; tokens_est = bytes / chars_per_token.
@@ -42,20 +11,12 @@ chars_per_token: 3.2
 # Duplicate-block detection. This section is optional: any key left out, or
 # the whole section, takes the value shown here.
 duplication:
-  # Minimum normalized token run that counts as a duplicate block. 60 has
-  # the best J of 40, 60, 80 and 120 on the hand labels with dup_blocks
-  # inside the 10% false-failure budget; at 40 short option setters and
-  # error chains counted (calibration/notes/min-tokens-2026-10-14.md).
+  # Minimum normalized token run that counts as a duplicate block.
   min_tokens: 60
   # Shortest cross-package block, in normalized tokens, that
   # dup_blocks_cross_pkg fails a change for adding; shorter repeats of a
-  # preamble across packages are reported but not gated. 120, at the top of
-  # the range where golangci-lint's dupl starts reporting copies: on the
-  # 2026-10-14 hand labels it lowered the gate's false failures from 10.2%
-  # to 5.8% with its recall kept at 86.7%; the copies it stops counting
-  # (functional-options scaffolds, a split block, an import alias) were
-  # allow, and every block commit it stops failing another rule fails
-  # (calibration/notes/cross-floor-2026-10-14.md).
+  # preamble across packages are reported but not gated. 120 sits at the top of
+  # the range where golangci-lint's dupl starts reporting copies.
   min_tokens_cross: 120
   # Drop a duplicate block made only of literals and the punctuation of a
   # literal table, so repeated runs of data tables are not duplication.
@@ -87,7 +48,7 @@ churn:
 # exclude:
 #   - "internal/gen/**"
 
-# Rebuild estimate parameters (SPEC.md sections 7.2 to 7.4).
+# Rebuild estimate parameters.
 rebuild:
   # Tokens one agent can hold in context for a rebuild; past it work is split.
   context_budget: 37500
@@ -108,13 +69,11 @@ rebuild:
   # Working days per person-month when converting the human estimate
   # (COCOMO's convention, not fitted).
   days_per_month: 19
-  # The human estimate's model and rebuild profile (SPEC.md 7.3), rated by
-  # name with COCOMO II.2000's ratings: very_low, low, nominal, high,
-  # very_high, extra_high. calibration/notes/cocomo-ii-rebuild-2026-10.md
-  # gives each rating's table row and reason. RELY and CPLX are not keys:
-  # RELY is nominal, because the tests are the specification, not a
-  # reliability requirement, and each package's cognitive complexity rates
-  # CPLX.
+  # The human estimate's model and rebuild profile, rated by name with COCOMO
+  # II.2000's ratings: very_low, low, nominal, high, very_high, extra_high.
+  # RELY and CPLX are not keys: RELY is nominal, because the tests are the
+  # specification, not a reliability requirement, and each package's cognitive
+  # complexity rates CPLX.
   cocomo:
     # cocomo-ii (the post-architecture form under this profile) or
     # basic-81 (cocomo_a and cocomo_b above).
@@ -164,33 +123,29 @@ rebuild:
     # At or below this a package is FEW_PASSES; above it, PARTITION.
     few_passes_max: 3.0
 
-# Gate thresholds (SPEC.md section 8.2). Density rules ratchet on the change
-# via max_delta and may add a max; for a package new at head only their max
-# applies, plus max_delta against zero where ratchet_from_zero is true.
-# Capacity rules carry an absolute max with a warn_at band (default 0.75)
-# and an optional over_max_delta (default 0): the most a package already at
-# or over max may grow in one change, with a warning to split, before the
-# growth fails. Crossing max, or a new package over it, always fails.
-# changed_func_cognitive_max takes an over_max_delta too, per function.
-# A density rule may set a floor below its max: a value at or below the
-# floor never fails, however much it rose, since the package is nowhere
-# near what the rule guards.
-# Requirement rules demand a boolean, optionally guarded by
-# when: "<metric> > <number>". Any rule may set severity: fail (the
-# default) or warn; a warn rule is evaluated the same way, but what would
-# be a violation is reported as a warning and never fails the gate.
-# Any rule may set roles: the package roles it judges (SPEC.md 6.5), out of
-# main (a composition root: a Go package main, or a TypeScript package a
-# bin entry names or that exports nothing), library, test-support and
-# generated-only; a rule without roles judges every package. A row with no
-# role, as in a baseline or replay written before roles existed, is a
-# library.
+# Gate thresholds. Density rules ratchet on the change via max_delta and may
+# add a max; for a package new at head only their max applies, plus max_delta
+# against zero where ratchet_from_zero is true. Capacity rules carry an
+# absolute max with a warn_at band (default 0.75) and an optional
+# over_max_delta (default 0): the most a package already at or over max may
+# grow in one change, with a warning to split, before the growth fails.
+# Crossing max, or a new package over it, always fails.
+# changed_func_cognitive_max takes an over_max_delta too, per function. A
+# density rule may set a floor below its max: a value at or below the floor
+# never fails, however much it rose, since the package is nowhere near what
+# the rule guards. Requirement rules demand a boolean, optionally guarded by
+# when: "<metric> > <number>". Any rule may set severity: fail (the default)
+# or warn; a warn rule is evaluated the same way, but what would be a
+# violation is reported as a warning and never fails the gate. Any rule may
+# set roles: the package roles it judges, out of main (a composition root: a
+# Go package main, or a TypeScript package a bin entry names or that exports
+# nothing), library, test-support and generated-only; a rule without roles
+# judges every package. A row with no role, as in a baseline or replay written
+# before roles existed, is a library.
 thresholds:
-  # No new duplicate blocks; copy-paste is the primary target. Blocks of
-  # every kind count: declarative, idiom, self-overlap and code (SPEC.md
-  # 6.3). A rule on dup_blocks_code would judge code blocks only; on the
-  # 2026-10-14 hand labels it lowered the rule's J and the gate's, and
-  # the gate's recall to 80% (calibration/notes/dup-blocks-code-2026-10-14.md).
+  # No new duplicate blocks; copy-paste is the primary target. Blocks of every
+  # kind count: declarative, idiom, self-overlap and code. A rule on
+  # dup_blocks_code would judge code blocks only;
   - metric: dup_blocks
     kind: density
     max_delta: 0
@@ -206,9 +161,7 @@ thresholds:
     # A package at or under 10% duplicated is not failed for a rise.
     floor: 10
   # New exported behavior needs a test; legacy gaps are reported, not failed.
-  # A warning, not a failure: on the 2026-10-14 hand labels it failed 12.3%
-  # of allow commits, 10 that no other rule failed, and no block commit
-  # that another rule did not fail as well.
+  # A warning, not a failure.
   - metric: untested_exports
     kind: density
     severity: warn
@@ -224,9 +177,7 @@ thresholds:
     # tested. It runs the tests. Without --coverage the rule reads
     # untested_exports as before.
     # source: coverage
-  # No new package-level state. A warning, not a failure: on the
-  # 2026-10-14 hand labels it failed 5 allow commits and 1 block commit,
-  # which another rule failed as well.
+  # No new package-level state. A warning, not a failure.
   - metric: globals
     kind: density
     severity: warn
@@ -246,11 +197,10 @@ thresholds:
     max: 5
     # Nesting 4 or less is not failed for a rise.
     floor: 4
-  # Small drift allowed since p90 moves with function count. Judged only
-  # when a function changed since the baseline is more complex than the
-  # baseline's p90, so a p90 that rises because code was deleted passes.
-  # A warning, not a failure: on the 2026-10-14 hand labels it failed 4
-  # allow commits and no block commit.
+  # Small drift allowed since p90 moves with function count. Judged only when
+  # a function changed since the baseline is more complex than the baseline's
+  # p90, so a p90 that rises because code was deleted passes. A warning, not a
+  # failure.
   - metric: cognitive_p90
     kind: density
     severity: warn
@@ -285,37 +235,25 @@ thresholds:
     kind: capacity
     max: 16000
     warn_at: 0.75
-    # The most a package already over max may grow and only warn, about
-    # 150 SLOC. Refitted on the 2026-10-14 hand labels: the best J inside
-    # the budget (calibration/reports/thresholds-2026-10-14.md); 1000 was
-    # the 2026-09-29 fit.
+    # The most a package already over max may grow and only warn, about 150
+    # SLOC.
     over_max_delta: 2000
   # Files past this rarely fit an edit in one view.
   - metric: largest_file_sloc
     kind: capacity
     max: 600
     warn_at: 0.75
-    # Refitted on the 2026-10-14 hand labels: 20, 25 and 50 tie on the best
-    # J inside the budget, and the largest is taken. The 2026-10-13 field
-    # adjudication had bug fixes of +6 to +24 lines failing in files over
-    # 600 at the hand-set 5.
     over_max_delta: 50
   # Surface past this is a package boundary problem.
   - metric: exported_symbols
     kind: capacity
     max: 60
     warn_at: 0.75
-    # Hand-set from the 2026-10-13 field adjudication, not the sweep's 0:
-    # crush's config package (150+ exports) failed on +1, +3 and +5 exports
-    # for ordinary options. The 2026-10-14 hand labels favour 3 only by
-    # tightening, which no rule takes while the gate is over its
-    # false-failure target.
     over_max_delta: 5
     # Not main: nothing imports a composition root, so its surface is no
     # package boundary.
     roles: [library, test-support, generated-only]
-  # Fan-out ceiling on internal imports. A warning, not a failure: on the
-  # 2026-10-14 hand labels it failed 1 allow commit and no block commit.
+  # Fan-out ceiling on internal imports. A warning, not a failure.
   - metric: internal_imports
     kind: capacity
     severity: warn
@@ -332,8 +270,6 @@ thresholds:
     kind: capacity
     max: 1000
     warn_at: 0.75
-    # Refitted on the 2026-10-14 hand labels: the best J inside the budget;
-    # 100 was the 2026-09-29 fit.
     over_max_delta: 150
   # Packages of meaningful size must have tests.
   - metric: has_tests
@@ -367,16 +303,11 @@ thresholds:
 #     - metric: init_funcs
 #       disabled: true
 #
-# The typescript override below is fitted by calibration/fit --language
-# typescript from the corpus in calibration/corpus-typescript.yaml, with the
-# evidence in calibration/reports/thresholds-2026-09-28-typescript.md. Each
-# rule replaces the top-level rule on its metric for TypeScript; the rules
-# it does not name (the zero-tolerance ratchets, has_tests, and
-# dup_blocks_cross_pkg, which TypeScript leaves null) apply as they stand.
-# Its density rules repeat the top-level floors, since a rule replaces the
-# top-level rule whole.
-# It sets no rebuild parameter, so TypeScript packages use the top-level
-# rebuild parameters, which were fitted on Go packages only.
+# Each rule replaces the top-level rule on its metric for TypeScript; the
+# rules it does not name (the zero-tolerance ratchets, has_tests, and
+# dup_blocks_cross_pkg, which TypeScript leaves null) apply as they stand. Its
+# density rules repeat the top-level floors, since a rule replaces the top-
+# level rule whole.
 languages:
   typescript:
     thresholds:
