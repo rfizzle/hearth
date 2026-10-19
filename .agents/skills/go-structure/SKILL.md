@@ -5,8 +5,8 @@ description: Use this skill for any change under internal/ or cmd/ (the hearthd 
 
 # Go core structure
 
-Today only `cmd/hearthd` and `scripts/docscheck` exist; the packages below are
-the target map. The reasons live in `docs/architecture.md`, section "Go core".
+Today only `cmd/hearthd` and `scripts/` exist; the packages below are the
+target map. The reasons live in `docs/architecture.md`, section "Go core".
 
 ## Layers
 
@@ -59,8 +59,9 @@ A fix to a lifted package is made in the shared module, not in a hearth copy.
 
 ## Gates
 
-`make ci` runs, in order: `fmt-check vet lint test docs-check astimate`. The
-cheap checks fail first. Later, `proto-check` joins it.
+`make ci` runs, in order:
+`fmt-check vet lint test docs-check skills-check astimate`. The cheap checks
+fail first. Later, `proto-check` joins it.
 
 astimate is the ceiling: capacity limits are absolute, and `orchestrate` and
 `store` are split by responsibility early (`orchestrate/schedule`,

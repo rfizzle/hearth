@@ -1,120 +1,23 @@
 ---
 name: documentation
-description: How hearth writes documentation and code comments — where a fact belongs, how code cites docs/, and the test a comment has to pass to earn its place. Use when writing or editing anything in docs/ or AGENTS.md, when writing a comment that explains a decision, when reviewing whether a comment earns its length, or when tempted to reference a story, a spec section, or when something was built.
+description: hearth's delta on project-docs — docs/model.md as the document code cites, the citation example, and where the model reads a rule (a definition's schema or description, a toolbox line, a framing paragraph). Use alongside project-docs when writing a comment that cites docs/, or when a change moves what the model is told. The general rules (where a fact belongs, the citation convention, what a comment has to earn, work-item ids) are project-docs, not this skill.
 ---
 
-# Documentation and comments
+# Documentation: hearth's delta
 
-Two rules carry most of this. **Each document answers exactly one question.**
-**Code cites documents; documents never cite code.**
+`project-docs` is the standard for the document set and for comments; read it
+first. This skill holds only what hearth adds to it.
 
-## Where a fact belongs
+## What code cites
 
-| Where | Question it answers |
-|---|---|
-| `README.md` | How do I use hearth? |
-| `docs/product.md` | What is it, for whom, and what will it never do? |
-| `docs/model.md` | What are the things, and how does work flow between them? Code cites its headings. |
-| `docs/architecture.md` | What are the big shapes, and why those? |
-| `docs/decisions.md` | What was decided, when and why; what is still open? |
-| `docs/research/` | Dated snapshots. Never cited from code, never edited. |
-| `AGENTS.md` | Where is the code, what are the traps? |
-| a code comment | Why is *this* line like this? |
-
-A fact filed under the wrong question rots there. A behaviour rule in a
-delivery log is invisible; a roadmap in a design document is stale in a sprint.
-
-The document set: `docs/README.md`. Repo-specific rules: `AGENTS.md`.
-
-## The citation convention
-
-A document names no Go symbol — it would drift silently the moment the symbol
-is renamed. The map from intent to code is `AGENTS.md`; the map from code to
-intent is the citation in the comment:
+`docs/model.md` answers "what are the things, and how does work flow between
+them?", and it is the document hearth's code cites most:
 
 ```go
 // Act-tier tools always go through the approval gate: hearth cannot know
 // whether a tool changed something outside the workspace, so it assumes it did.
 // See docs/model.md#3-assignment-delegation.
 ```
-
-- **The reason goes in the comment as prose.** The citation is a pointer to the
-  long form, never a substitute — a reader who does not open the document must
-  still understand why the line is the way it is.
-- **Cite only for product and design decisions.** Local mechanics do not get
-  one: `SetMaxOpenConns(1)` is explained by the sentence beside it.
-- **Headings are anchors — treat one like an exported symbol.** Renaming one
-  breaks every citation to it.
-- **A section nothing cites is either wrong or unnecessary.**
-
-`make docs-check` verifies every citation resolves and lists uncited documents.
-
-## What a comment has to earn
-
-A comment earns its place by saying something the code cannot. Before writing
-one, decide which of these it is — if it is none, delete it.
-
-- **Why this and not the obvious alternative.** The reader is about to
-  "simplify" it back.
-- **What breaks if you change it, and how that failure looks.** Lead with the
-  symptom, because the symptom is what the next person actually sees. "Don't
-  put the call id in that field; it addresses every result to a function the
-  model never called, and the model just calls again" beats any restatement of
-  the rule.
-- **A constraint from outside this file.** A protocol quirk, an OS limit, a
-  vendor's dialect.
-- **A non-obvious invariant** — especially one the type system does not hold.
-
-Length is not the test; density is. A long comment that names a real failure
-is worth more than three lines restating the signature — the most valuable
-comments are among the longest, and the least valuable are one-line
-cross-references.
-
-**Measure before assuming a codebase is over-commented.** Volume is not the
-problem; a comment that says nothing is, at any length. How to run that comparison — and when the
-stdlib is the wrong yardstick — is the `sound-patterns` skill.
-
-## When a comment is missing
-
-The opposite failure, and the easier one to miss because nothing on screen
-looks wrong. Write one when:
-
-- **An exported identifier's name does not say what it returns, costs or
-  mutates.** `Resolve()` and `Append()` need a line; `DeleteSnippet()` does not.
-- **A branch is deliberately empty or a value deliberately ignored.** Without a
-  line saying so it reads as an unfinished edit.
-- **A number was chosen rather than derived.** A threshold, a cap, a timeout:
-  say what it was measured against.
-- **A caller has to maintain an invariant** the signature cannot express.
-- **The code works around something outside it** — a terminal, a vendor's
-  dialect, an OS limit.
-
-## What never earns its place
-
-These four were removed wholesale from a sibling codebase before hearth began.
-Worked before/after examples: `references/examples.md`.
-
-- **Story, sprint or backlog identifiers** (a story or epic id), or anything
-  under `.plan/`. Planning is not in this repository, so the reference points
-  at something the reader cannot open — and it answers "when was this built",
-  which is not a question the code should ask. Planning cites `docs/`; `docs/` never cites planning. `make docs-check` fails on one.
-- **Cross-references the sentence already contains.**
-  `Detail bodies indent, they do not re-grid (§6a)` says it twice — once
-  usably, once as a lookup. Delete the pointer; keep the words.
-- **History as explanation.** "Story X added the fifth option" describes a
-  calendar, not the software. Say what it does. History earns its place only
-  when it stops a regression, and then it names *what broke*, not when:
-  "this was a TrimSpace once, and it worked by accident."
-- **A restatement of the code.** If the comment and the signature say the same
-  thing, the comment is a second place to update and a second place to be
-  wrong.
-
-## Never put a reference in data
-
-A doc or spec reference belongs in a comment. In a string literal it becomes
-test output or an error message; in a fixture's label it becomes committed
-expected output, which couples editing a heading to regenerating fixtures.
-`make docs-check` fails on it.
 
 ## Where the model reads it
 
@@ -139,9 +42,6 @@ judge when to pass:
 
 ## Before you finish
 
-- `make docs-check` — citations resolve, nothing uncited, no story or spec
-  references in code or strings.
-- Comments wrap at ~78 columns, like the code around them.
 - Does the change move what the model reads — a definition's schema or
   description, a toolbox line, a framing paragraph? Then say which, and cite
   the section that holds the reason; if it moves none, say that.

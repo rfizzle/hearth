@@ -24,7 +24,7 @@ whose frontmatter has a `name` (matching the directory) and a `description`.
 | `project-docs` | yes | The document set, comments, where a fact belongs |
 | `sound-patterns` | yes | Settling style questions against the Go stdlib |
 | `go-conformance-suite` | yes | One test suite over several implementations of an interface |
-| `documentation` | | hearth's delta on `project-docs`: citations, where the model reads it |
+| `documentation` | | hearth's delta on `project-docs`: what code cites, where the model reads it |
 | `testing` | | Go test tiers and fixtures |
 | `go-structure` | | Any change under `internal/` or `cmd/` |
 | `swiftui-structure` | | Any change under `App/` (planned) |
