@@ -20,7 +20,7 @@ func runLogin(args []string) int {
 		if err != nil {
 			return err
 		}
-		return provider.Login(ctx, acct, chatgpt.LoginOptions{Browser: provider.OpenBrowser, Say: os.Stdout})
+		return acct.Login(ctx, chatgpt.LoginOptions{Browser: provider.OpenBrowser, Say: os.Stdout})
 	})
 }
 
@@ -31,7 +31,7 @@ func runLogout(args []string) int {
 		if err != nil {
 			return err
 		}
-		revoked, err := provider.Logout(ctx, acct)
+		revoked, err := acct.Logout(ctx)
 		if err != nil {
 			return err
 		}
@@ -55,11 +55,11 @@ func runSay(args []string) int {
 		if err != nil {
 			return err
 		}
-		p, err := provider.Resolve(acct)
+		m, err := acct.Resolve(provider.Balanced)
 		if err != nil {
 			return err
 		}
-		return provider.Say(ctx, p, strings.Join(args, " "), os.Stdout)
+		return provider.Say(ctx, m.Provider, strings.Join(args, " "), os.Stdout)
 	})
 }
 

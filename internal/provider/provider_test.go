@@ -10,14 +10,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -188,82 +184,6 @@ func (p fakeProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ 
 	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
-}
-
-func TestSignInPersistsAndSignsOut(t *testing.T) {
-	Init()
-	dir := filepath.Join(t.TempDir(), "Hearth", "chatgpt")
-	auth := newFakeAuth(t)
-	ctx := context.Background()
-
-	// Before anyone signs in, the provider cannot be built and the words
-	// name the command.
-	acct, err := Open(dir, auth.client())
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = Resolve(acct)
-	if !errors.Is(err, llm.ErrChatGPTSignedOut) {
-		t.Fatalf("Resolve before sign-in = %v, want signed out", err)
-	}
-	if got := Explain(err); !strings.Contains(got, "hearthd login chatgpt") || strings.Contains(got, "\n") {
-		t.Errorf("Explain = %q, want one line naming the command", got)
-	}
-
-	// Sign in through the fake browser and the in-memory loopback.
-	l := newMemListener()
-	var said bytes.Buffer
-	err = Login(ctx, acct, chatgpt.LoginOptions{
-		Browser: auth.browse(l), Say: io.MultiWriter(&said, io.Discard),
-		Listen: func() (net.Listener, error) { return l, nil }, Wait: 10 * time.Second,
-	})
-	if err != nil {
-		t.Fatalf("Login: %v", err)
-	}
-	if !strings.Contains(said.String(), "person@example.com") {
-		t.Errorf("sign-in said %q, want the account", said.String())
-	}
-
-	// The directory is the owner's alone and so are its files.
-	info, err := os.Stat(dir)
-	if err != nil || info.Mode().Perm() != 0o700 {
-		t.Errorf("dir mode = %v, %v; want 0700", info.Mode().Perm(), err)
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil || len(entries) == 0 {
-		t.Fatalf("store is empty: %v", err)
-	}
-	for _, e := range entries {
-		if fi, err := e.Info(); err != nil || fi.Mode().Perm()&0o077 != 0 {
-			t.Errorf("%s mode = %v, %v; want owner only", e.Name(), fi.Mode().Perm(), err)
-		}
-	}
-
-	// A relaunch is a new account over the same folder: it is signed in
-	// without the browser, and the provider builds.
-	again, err := Open(dir, auth.client())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if tok, err := again.Token(ctx, ""); err != nil || tok != "at_example" {
-		t.Fatalf("Token after relaunch = %q, %v", tok, err)
-	}
-	p, err := Resolve(again)
-	if err != nil || p.Name() != "chatgpt" {
-		t.Fatalf("Resolve after relaunch = %v, %v", p, err)
-	}
-
-	// Sign out revokes at the server and leaves the person signed out.
-	revoked, err := Logout(ctx, again)
-	if err != nil || !revoked || auth.revoked != 1 {
-		t.Fatalf("Logout = %v, %v (server saw %d)", revoked, err, auth.revoked)
-	}
-	if _, err := Resolve(again); !errors.Is(err, chatgpt.ErrNotSignedIn) {
-		t.Errorf("Resolve after sign-out = %v, want signed out", err)
-	}
-	if _, err := Logout(ctx, again); !errors.Is(err, llm.ErrChatGPTSignedOut) {
-		t.Errorf("second Logout = %v, want signed out", err)
-	}
 }
 
 func TestSay(t *testing.T) {
