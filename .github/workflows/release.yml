@@ -1,0 +1,52 @@
+# This is where the notarised build comes from: nothing signs on a developer
+# Mac (docs/decisions.md, D18). The five secrets are the Developer ID .p12
+# and its password, and the App Store Connect API key's issuer id, key id and
+# .p8 contents. Without the first pair the app is ad-hoc signed and
+# notarisation fails, naming the missing variables.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: make app-build
+        run: make app-build
+
+      - name: make app-sign
+        run: make app-sign
+        env:
+          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+
+      - name: make notarize
+        run: make notarize
+        env:
+          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+
+      - name: make app-verify
+        run: make app-verify
+
+      - name: Zip the stapled app
+        run: ditto -c -k --keepParent dist/Hearth.app dist/Hearth.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hearth
+          path: dist/Hearth.zip

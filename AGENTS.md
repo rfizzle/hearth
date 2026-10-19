@@ -57,6 +57,9 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Install the opt-in pre-push hook | `make hooks` |
 | Swift gates | `make ci-swift` |
 | Build Hearth.app | `make app-build` |
+| Sign the bundle | `make app-sign` |
+| Notarise and staple | `make notarize` |
+| Check signatures | `make app-verify` |
 | Format Swift | `make swift-fmt` |
 | List every target | `make help` |
 
@@ -164,6 +167,9 @@ from `Hearth`.
   the app aborts at launch.
 - **`HEARTH_HELPER=./hearthd`** lets `swift run --package-path App Hearth`
   find the helper outside a bundle.
+- **There is no signing identity on a developer Mac, by design.** `make
+  app-sign` ad-hoc signs and says so; the Release workflow is the only place
+  a Developer ID build comes from (D18 in `docs/decisions.md`).
 - **`make skills-check` fails on a vendored skill edited here.** Skills live
   in `.agents/skills`; `.agents/skills/README.md` says how they are organised
   and which are shared.

@@ -43,7 +43,7 @@ DIST_DIR=$(CURDIR)/dist
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build cache-dir
+.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build app-sign notarize app-verify cache-dir
 
 all: help
 
@@ -168,6 +168,16 @@ app-build: cache-dir ## Build dist/Hearth.app with the helper inside (VERSION se
 	@$(HERMETIC_ENV) GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/hearthd ./cmd/hearthd
 	@$(SWIFT) build -c release --package-path $(APP_DIR) --product Hearth
 	@scripts/app/bundle.sh $(APP_DIR)/.build/release $(DIST_DIR)/hearthd $(VERSION) $(DIST_DIR)
+
+## Release:
+app-sign: ## Sign helper then app (MACOS_SIGN_P12, MACOS_SIGN_PASSWORD; ad-hoc when unset)
+	@CACHE_DIR=$(CACHE_DIR) scripts/app/sign.sh $(DIST_DIR)/Hearth.app
+
+notarize: ## Notarise and staple (MACOS_NOTARY_ISSUER_ID, MACOS_NOTARY_KEY_ID, MACOS_NOTARY_KEY)
+	@CACHE_DIR=$(CACHE_DIR) scripts/app/notarize.sh $(DIST_DIR)/Hearth.app
+
+app-verify: ## Check both signatures carry the hardened runtime, LC_BUILD_VERSION, and the staple
+	@scripts/app/verify.sh $(DIST_DIR)/Hearth.app
 
 ## CI:
 # Order matters: the cheap checks fail first.
