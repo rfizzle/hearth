@@ -96,7 +96,8 @@ Hearth/
   Handbook/            (exported copy of handbook pages, read-only mirror)
   Inbox/               (files the owner drops in without a home)
   <Team name>/         (deliverables, one subfolder per task when more than one file)
-  Chief of Staff/      (org-level deliverables)
+  <Bot name>/          (an org-level bot's deliverables; the Chief of Staff's folder is one of these)
+  Chief of Staff/      (for example: the Chief of Staff's org-level deliverables)
 ```
 
 The app watches the folder; files the owner adds are visible to bots with the folder grant.

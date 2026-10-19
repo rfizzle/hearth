@@ -120,6 +120,7 @@ internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.m
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
 internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/native
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
+internal/workspace               the Hearth folder's layout and path containment; imports org only
 internal/store                   SQLite, migrations, repositories; knows org types, nothing above
 proto/hearth/v1                  the contract; generated Go under internal/rpc/gen, Swift under App/Packages/HearthKit
 ```
@@ -139,6 +140,7 @@ Rules:
 | Package | Responsibility | Origin |
 |---|---|---|
 | `internal/org` | Domain types, grant resolution, hierarchy rules, budget math | new |
+| `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
 | `internal/agent` | Turn loop, tool rounds, steering queue, repeat detection, retry, compaction | lifted from shhh `internal/agent` core + `retry.go` + `compact.go` |
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |

@@ -107,7 +107,7 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, provider/, agent/, framing/ and org/ exist so far
+internal/             dependencies point down only; only rpc/, provider/, agent/, framing/, org/ and workspace/ exist so far
   rpc/                Connect handlers and the token check; generated code under gen/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
@@ -115,6 +115,7 @@ internal/             dependencies point down only; only rpc/, provider/, agent/
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
   tools/ memory/ handbook/ meter/ native/ secret/ skill/
   org/                domain types, grant resolution, budget math (exists)
+  workspace/          the Hearth folder's layout and path containment (exists)
   store/              SQLite, migrations, repositories
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```

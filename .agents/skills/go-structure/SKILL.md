@@ -19,6 +19,7 @@ internal/orchestrate   tasks, runs, scheduler, budgets, waits
 internal/agent         one bot's turn: loop, tool rounds, retry, compaction
 internal/tools  memory  handbook  meter  provider  native  (and secret, skill, framing)
 internal/org           domain types and pure functions
+internal/workspace     the Hearth folder's layout and path containment
 internal/store         SQLite, migrations, repositories
 ```
 
