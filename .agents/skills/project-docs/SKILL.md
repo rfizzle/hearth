@@ -313,9 +313,11 @@ to the one person who does; git history keeps the old text.
 ## make docs-check
 
 The mechanical half. One stdlib-only Go program under `scripts/docscheck`,
-run by `make docs-check`, which `make ci` includes. A reference
-implementation is in this skill's `scripts/docscheck/main.go`; copy it in,
-adjust the flags, and never add a dependency to it. It fails on:
+run by `make docs-check`, which `make ci` includes. The program is this
+skill's `scripts/docscheck/`; vendoring the skill vendors it too, hashed in
+the lock file like the skill, so it is never edited in a project. Per-repo
+differences are flags on the `make` target (`-workitem`, `-agents-max`,
+`-skip`). It fails on:
 
 - a Markdown link whose file or heading does not exist;
 - a `// See docs/<file>.md#<heading>` citation in Go that does not resolve;
