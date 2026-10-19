@@ -1,0 +1,111 @@
+{
+  "type": "search",
+  "query": {
+    "original": "solar incentives 2026",
+    "show_strict_warning": false,
+    "is_navigational": false,
+    "is_news_breaking": false,
+    "spellcheck_off": true,
+    "country": "us",
+    "bad_results": false,
+    "should_fallback": false,
+    "postal_code": "",
+    "city": "",
+    "header_country": "",
+    "more_results_available": true,
+    "state": ""
+  },
+  "mixed": {
+    "type": "mixed",
+    "main": [
+      {"type": "web", "index": 0, "all": false},
+      {"type": "web", "index": 1, "all": false},
+      {"type": "web", "index": 2, "all": false}
+    ],
+    "top": [],
+    "side": []
+  },
+  "web": {
+    "type": "search",
+    "results": [
+      {
+        "title": "Residential Clean Energy Credit | Internal Revenue Service",
+        "url": "https://www.irs.gov/credits-deductions/residential-clean-energy-credit",
+        "is_source_local": false,
+        "is_source_both": false,
+        "description": "The <strong>residential clean energy credit</strong> equals 30% of the costs of new, qualified <strong>clean energy</strong> property for your home installed anytime from 2022 through 2032.",
+        "page_age": "2025-12-04T00:00:00",
+        "profile": {
+          "name": "Internal Revenue Service",
+          "url": "https://www.irs.gov/credits-deductions/residential-clean-energy-credit",
+          "long_name": "irs.gov",
+          "img": "https://imgs.search.brave.com/example/favicon.ico"
+        },
+        "language": "en",
+        "family_friendly": true,
+        "type": "search_result",
+        "subtype": "generic",
+        "is_live": false,
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "irs.gov",
+          "hostname": "www.irs.gov",
+          "favicon": "https://imgs.search.brave.com/example/favicon.ico",
+          "path": "› credits-deductions › residential-clean-energy-credit"
+        },
+        "age": "December 4, 2025"
+      },
+      {
+        "title": "Homeowner&#x27;s Guide to the Federal Tax Credit for Solar Photovoltaics",
+        "url": "https://www.energy.gov/eere/solar/homeowners-guide-federal-tax-credit-solar-photovoltaics",
+        "is_source_local": false,
+        "is_source_both": false,
+        "description": "This guide provides an overview of the federal investment tax credit for residential <strong>solar</strong> photovoltaics (PV).",
+        "profile": {
+          "name": "Energy.gov",
+          "url": "https://www.energy.gov/eere/solar/homeowners-guide-federal-tax-credit-solar-photovoltaics",
+          "long_name": "energy.gov",
+          "img": "https://imgs.search.brave.com/example/favicon.ico"
+        },
+        "language": "en",
+        "family_friendly": true,
+        "type": "search_result",
+        "subtype": "generic",
+        "is_live": false,
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "energy.gov",
+          "hostname": "www.energy.gov",
+          "favicon": "https://imgs.search.brave.com/example/favicon.ico",
+          "path": "› eere › solar › homeowners-guide-federal-tax-credit-solar-photovoltaics"
+        }
+      },
+      {
+        "title": "Database of State Incentives for Renewables &amp; Efficiency",
+        "url": "https://www.dsireusa.org/",
+        "is_source_local": false,
+        "is_source_both": false,
+        "description": "DSIRE is the most comprehensive source of information on <strong>incentives</strong> and policies that support renewables and energy efficiency in the United States.",
+        "profile": {
+          "name": "Dsireusa",
+          "url": "https://www.dsireusa.org/",
+          "long_name": "dsireusa.org",
+          "img": "https://imgs.search.brave.com/example/favicon.ico"
+        },
+        "language": "en",
+        "family_friendly": true,
+        "type": "search_result",
+        "subtype": "generic",
+        "is_live": false,
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "dsireusa.org",
+          "hostname": "www.dsireusa.org",
+          "favicon": "https://imgs.search.brave.com/example/favicon.ico",
+          "path": ""
+        }
+      }
+    ],
+    "family_friendly": true
+  }
+}

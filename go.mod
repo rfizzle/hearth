@@ -6,6 +6,7 @@ require (
 	connectrpc.com/connect v1.21.1
 	github.com/rfizzle/agentcore v0.1.0
 	github.com/rfizzle/llm v0.7.0
+	golang.org/x/net v0.61.0
 	google.golang.org/protobuf v1.36.12
 	modernc.org/sqlite v1.50.0
 )
