@@ -16,6 +16,26 @@ struct GalleryApp: App {
                         }
                     }
                 }
+                // Onboarding: SignInPanel and IntegrationsPanel, light and dark.
+                ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
+                    Section("SignInPanel, \(scheme == .light ? "light" : "dark")") {
+                        ForEach(SignInPanel.PreviewState.allCases, id: \.self) { state in
+                            LabeledContent(state.rawValue) {
+                                SignInPanel(previewState: state)
+                            }
+                        }
+                    }
+                    .environment(\.colorScheme, scheme)
+                    Section("IntegrationsPanel, \(scheme == .light ? "light" : "dark")") {
+                        ForEach(IntegrationsPanel.PreviewState.allCases, id: \.self) { state in
+                            LabeledContent(state.rawValue) {
+                                IntegrationsPanel(previewState: state)
+                            }
+                        }
+                    }
+                    .environment(\.colorScheme, scheme)
+                }
+                // End onboarding.
             }
         }
     }
