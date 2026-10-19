@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same ref supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # Install only, never run: `make ci` runs golangci-lint itself, so the
+      # gate here is the one a developer runs locally.
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # `make fmt-check` refuses to run without goimports rather than skipping.
+      - name: Install goimports
+        run: |
+          go install golang.org/x/tools/cmd/goimports@v0.52.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # ASTIMATE=true makes the astimate step a no-op here: the orchestrator
+      # runs astimate locally until the binary is published.
+      - name: make ci
+        run: make ci ASTIMATE=true
