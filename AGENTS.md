@@ -1,9 +1,9 @@
 # AGENTS.md
 
 `hearth` is a native Mac app where you run a small organisation of AI
-employees. It is a SwiftUI app (`App/`) over a bundled pure-Go core
-(`hearthd`, `cmd/` and `internal/`) that the app launches and talks to over a
-Unix socket with Connect-RPC. The core owns the org, the agent loop and the
+employees. It is a SwiftUI app in `App/` (planned) over a bundled pure-Go
+core, `hearthd`, in `cmd/` and `internal/` (planned), that the app launches and
+talks to over a Unix socket with Connect-RPC. The core owns the org, the agent loop and the
 tools; the app is a thin client. Providers come from `github.com/rfizzle/llm`.
 The design is in `docs/`; start at `docs/README.md`.
 
@@ -56,6 +56,10 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Swift gates (placeholders until the Swift project exists) | `make swift-format-check swift-lint swift-test tokens-check gallery-build` |
 | List every target | `make help` |
 
+Agents run `make ci`; the orchestrator runs `make prepush`, the same checks, at
+every checkpoint and before a push. The hook `make hooks` installs runs it; it
+is opt-in and `git push --no-verify` skips it.
+
 ## Testing
 
 - `make test` is hermetic: no listener, daemon or network. Tests that cross a
@@ -66,13 +70,6 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 - **Never `os.Chdir` or `t.Chdir` in a test**: it makes the package
   uncacheable. Don't add `-count=1` to `make test`.
 - Stdlib `testing` only, table-driven, beside the source.
-
-## Before a push
-
-Agents run `make ci`. The orchestrator runs `make prepush` at every checkpoint
-and before a push; it is the same set of checks. `make hooks` installs a
-pre-push hook that runs it; the hook is opt-in and `git push --no-verify`
-skips it.
 
 ## Version control
 
@@ -91,13 +88,14 @@ These yield to an explicit instruction to do otherwise.
 ## Architecture
 
 Package doc comments (`doc.go`) and the comments at each trap are the detailed
-map. Only `cmd/hearthd` and `scripts/docscheck` exist today; the rest is the
-target from `docs/architecture.md`. Skills for each side: `go-structure` and
+map. Only `cmd/hearthd` and `scripts/` exist today; the rest is the target
+from `docs/architecture.md`. Skills for each side: `go-structure` and
 `swiftui-structure`.
 
 ```
 cmd/hearthd           assembly, and the --repl harness (exists)
-scripts/docscheck     citation and work-item check behind make docs-check (exists)
+scripts/docscheck     the checks behind make docs-check, vendored (exists)
+scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
 internal/             (planned) dependencies point down only
   rpc/                Connect handlers; translation only, no domain logic
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
@@ -151,8 +149,6 @@ from `Hearth`.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
-- **Skills live in `.agents/skills`**; `.claude/skills` is a symlink. Never
-  copy a skill into a client directory.
-- **Shared skills are vendored.** `.agents/skills/shared.sum` lists them;
-  `make skills-check` fails on one edited here. Edit it in `../skills`,
-  commit there, then `make skills-sync`.
+- **`make skills-check` fails on a vendored skill edited here.** Skills live
+  in `.agents/skills`; `.agents/skills/README.md` says how they are organised
+  and which are shared.
