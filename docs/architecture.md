@@ -58,16 +58,17 @@ One `hearth.v1` proto package. Services, not exhaustive:
 OrgService        GetOrg, UpdateOrg, ExportOrg, ImportOrg
 BotService        List, Create, Update, Delete, ListTemplates, SetGrants, ListNotes, EditNote
 TeamService       List, Create, Update, Delete
-ConversationService  List, Get, Messages(stream, paged), Send(returns run id), Cancel
+ConversationService  List, ListMessages (paged), Send(returns run), Cancel
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
 InboxService      List, Decide(approval), Answer(question), Acknowledge
 UsageService      Summary(by bot/team/month), SetBudgets
-ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin, Tiers, SetTiers
+ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), Tiers, SetTiers
+IntegrationService  List, SetKey, Clear (web search backends)
 EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, usage ticks
 NativeToolService (served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
-Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple.
+Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple. A heartbeat keeps a quiet subscription under the client's idle timeout, and the app reconnects from the last sequence it saw.
 
 Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a loopback port and reports it, and exits when the pipe the app holds closes. The app restarts it on crash and shows a quiet banner. Version handshake on connect; mismatch is a bug, not a user-facing state, because they ship together.
 
