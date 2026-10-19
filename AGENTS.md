@@ -45,6 +45,8 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Format | `make fmt` |
 | Static checks | `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
+| Regenerate the contract | `make proto` |
+| Contract lint, breaking, drift | `make proto-check` |
 | Shared skills match their source | `make skills-check` |
 | Refresh shared skills from `../skills` | `make skills-sync` |
 | Contract / integration tests | `make test-contract` / `make test-integration` |
@@ -103,7 +105,7 @@ internal/             (planned) dependencies point down only
   tools/ memory/ handbook/ meter/ provider/ native/ secret/ skill/ framing/
   org/                domain types, grant resolution, budget math
   store/              SQLite, migrations, repositories
-proto/hearth/v1       (planned) the contract; generated Go under internal/rpc/gen
+proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```
 
 ```
@@ -146,6 +148,10 @@ from `Hearth`.
   `ASTIMATE=true` to `make ci` and says so; the orchestrator runs the real one.
 - **`goimports` must be on the `PATH`** for `make fmt-check`; it refuses to run
   without it. Install: `go install golang.org/x/tools/cmd/goimports@latest`.
+- **`buf` must be on the `PATH`** for `make proto` and `make proto-check`;
+  the check refuses to run without it. Install: `go install
+  github.com/bufbuild/buf/cmd/buf@v1.73.0`. Its generators are remote
+  plugins, so `make proto-check` (and with it `make ci`) needs the network.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.

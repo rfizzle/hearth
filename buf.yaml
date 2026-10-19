@@ -1,0 +1,16 @@
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+  ignore_only:
+    # The spike RPCs keep the message names they were specified with
+    # (HelloRequest, HelloChunk); this exception leaves with them.
+    RPC_REQUEST_STANDARD_NAME:
+      - proto/hearth/v1/hearth.proto
+    RPC_RESPONSE_STANDARD_NAME:
+      - proto/hearth/v1/hearth.proto
+breaking:
+  use:
+    - FILE

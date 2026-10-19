@@ -16,21 +16,26 @@ GOFMT ?= $(shell command -v gofmt 2>/dev/null || echo "$$(go env GOROOT)/bin/gof
 GOIMPORTS=goimports
 GOLANGCI_LINT=golangci-lint
 GOVULNCHECK=govulncheck
+BUF=buf
+# What `buf generate` writes; proto-check fails when it drifts from the commit.
+PROTO_GEN_DIRS=internal/rpc/gen App/Packages/HearthKit/Sources/HearthKit/Gen
 # astimate is run locally until the binary is published; CI overrides ASTIMATE.
 ASTIMATE ?= astimate
 ASTIMATE_BASE ?= master
 SKILLS_SOURCE ?= ../skills
 # `make fmt` rewrites files, so it finds them on disk; dotted directories are
 # skipped because they can hold somebody else's working tree.
-PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./.*")
+# Generated code is left as buf writes it (goimports would regroup it), and
+# proto-check holds it to the generator instead.
+PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./.*" -not -path "./internal/rpc/gen/*")
 # The gate only reads, and what it reads is what a commit would carry.
-TRACKED_GOFILES=$(shell git ls-files '*.go')
+TRACKED_GOFILES=$(shell git ls-files '*.go' ':!:internal/rpc/gen/**')
 PROJECT_PACKAGES=$(shell go list ./...)
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-format-check swift-lint swift-test tokens-check gallery-build cache-dir
+.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-format-check swift-lint swift-test tokens-check gallery-build cache-dir
 
 all: help
 
@@ -40,6 +45,9 @@ cache-dir:
 ## Build:
 build: cache-dir ## Build the hearthd binary for this platform
 	@$(HERMETIC_ENV) CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(APP_NAME) ./cmd/hearthd
+
+proto: cache-dir ## Regenerate the Go and Swift code from proto/ (needs buf and the network)
+	@$(HERMETIC_ENV) $(BUF) generate
 
 ## Check:
 fmt: ## Rewrite every Go file with gofmt and goimports
@@ -81,6 +89,23 @@ skills-sync: ## Refresh the shared skills from $(SKILLS_SOURCE); add new ones wi
 skills-check: cache-dir ## Fail if a vendored shared skill differs from the copy recorded in .agents/skills/shared.sum
 	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/skillscheck
 
+# The generators are remote buf plugins, so this needs the network, as
+# vulncheck does. The breaking check compares against master and is skipped,
+# saying so, only while master carries no proto.
+proto-check: cache-dir ## Lint the contract, check it against master for breaking changes, fail on generated drift
+	@command -v $(BUF) >/dev/null 2>&1 || { echo "buf not found (install: go install github.com/bufbuild/buf/cmd/buf@v1.73.0)"; exit 1; }
+	@$(HERMETIC_ENV) $(BUF) lint
+	@# buf drops the empty fsmonitor value when it runs git; false means the same.
+	@if git cat-file -e master:buf.yaml 2>/dev/null; then \
+		$(HERMETIC_ENV) GIT_CONFIG_VALUE_0=false $(BUF) breaking --against '.git#branch=master'; \
+	else \
+		echo "no proto on master yet, breaking check skipped"; \
+	fi
+	@$(HERMETIC_ENV) $(BUF) generate
+	@git diff --exit-code -- $(PROTO_GEN_DIRS) || { echo "Generated code drifted from proto/. Run make proto and commit."; exit 1; }
+	@untracked="$$(git ls-files --others --exclude-standard -- $(PROTO_GEN_DIRS))"; \
+	if [ -n "$$untracked" ]; then echo "Generated files not tracked. Run make proto and add them:"; echo "$$untracked"; exit 1; fi
+
 ## Test:
 # Cacheable on purpose: nothing here adds -count=1.
 test: cache-dir ## Run the hermetic tier: no listener, daemon or network
@@ -110,7 +135,7 @@ gallery-build: ## Placeholder, not yet: lands with the Xcode project
 
 ## CI:
 # Order matters: the cheap checks fail first.
-ci: fmt-check vet lint test docs-check skills-check astimate ## Run every check CI runs
+ci: fmt-check vet lint test docs-check skills-check proto-check astimate ## Run every check CI runs
 
 prepush: ## Run the ci targets before a push
 	@$(MAKE) --no-print-directory ci

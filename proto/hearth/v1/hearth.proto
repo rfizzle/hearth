@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// HearthService is the first contract: a liveness check and a server stream that
+// proves token streaming end to end. Both leave when the real services arrive.
+service HearthService {
+  rpc Ping(PingRequest) returns (PingResponse) {}
+  rpc StreamHello(HelloRequest) returns (stream HelloChunk) {}
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string version = 1;
+}
+
+message HelloRequest {
+  // Words to stream; 0 means the default.
+  int32 count = 1;
+}
+
+message HelloChunk {
+  int32 index = 1;
+  string word = 2;
+}

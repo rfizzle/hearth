@@ -60,8 +60,8 @@ A fix to a lifted package is made in the shared module, not in a hearth copy.
 ## Gates
 
 `make ci` runs, in order:
-`fmt-check vet lint test docs-check skills-check astimate`. The cheap checks
-fail first. Later, `proto-check` joins it.
+`fmt-check vet lint test docs-check skills-check proto-check astimate`. The
+cheap checks fail first.
 
 astimate is the ceiling: capacity limits are absolute, and `orchestrate` and
 `store` are split by responsibility early (`orchestrate/schedule`,
