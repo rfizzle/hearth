@@ -69,6 +69,9 @@ type Accounts struct {
 
 	mu      sync.Mutex
 	attempt *attempt
+	// bg counts the background sign-ins so a test can wait for them before
+	// its temporary directory is removed.
+	bg      sync.WaitGroup
 	failure map[Provider]string
 }
 
@@ -247,7 +250,11 @@ func (a *Accounts) StartLogin(ctx context.Context) (authorizeURL string, err err
 		o.StopWords = "Close the sign-in window to stop"
 		// The call's context ends with the request, and the sign-in must
 		// outlive it; the wait bound ends it instead.
-		go func() { _, _ = a.signIn(context.WithoutCancel(ctx), at, o) }()
+		a.bg.Add(1)
+		go func() {
+			defer a.bg.Done()
+			_, _ = a.signIn(context.WithoutCancel(ctx), at, o)
+		}()
 	}
 	select {
 	case <-at.ready:

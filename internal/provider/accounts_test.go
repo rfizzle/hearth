@@ -67,6 +67,8 @@ func newRig(t *testing.T) *rig {
 	}
 	rec := newRecorder()
 	accts.OnChange = rec.record
+	// A sign-in that outlives its test must finish before the temp dir goes.
+	t.Cleanup(func() { l.Close(); accts.bg.Wait() })
 	return &rig{accts: accts, auth: auth, l: l, rec: rec}
 }
 
@@ -114,6 +116,9 @@ func TestStartLoginSignsIn(t *testing.T) {
 
 func TestStartLoginReturnsBeforeTheBrowserComesBack(t *testing.T) {
 	r := newRig(t)
+	// The browser never comes back here; a short bound ends the sign-in
+	// before the rig's cleanup waits on it.
+	r.accts.login.Wait = 100 * time.Millisecond
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -179,6 +184,9 @@ func TestStartLoginHonoursTheCallersContext(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 		return r.l, nil
 	}
+	// The sign-in keeps waiting for the browser after the caller gives up;
+	// a short bound ends it before the rig's cleanup waits on it.
+	r.accts.login.Wait = 100 * time.Millisecond
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := r.accts.StartLogin(ctx); !errors.Is(err, context.Canceled) {
