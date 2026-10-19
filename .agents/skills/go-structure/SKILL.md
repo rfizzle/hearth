@@ -51,8 +51,7 @@ is specified in `docs/model.md` and cited from code with
 ## Lifted and new
 
 Lifted from shhh through the shared module (`agentcore`, working name; hearth
-consumes its tag): `agent` (loop, retry, compaction), `meter`, `memory` (with a
-per-bot scope seam), `secret`, `skill`. Shapes copied, not code: `store`
+consumes its tag): `agent` (loop, retry, compaction), `meter`, `secret`, `skill`. Shapes copied, not code: `store`
 migrations and the messages table, `tools` registry, `tools/describe`, the
 approval principles. New in hearth: `org`, `orchestrate`, `native`, `provider`,
 `handbook`, `framing`, `rpc` (Connect over a Unix socket, not shhh's JSON-RPC).
@@ -77,3 +76,5 @@ hand-off instead of passing `ASTIMATE=true` silently as evidence.
 - New package has a `doc.go`; cross-package behaviour cites `docs/model.md`.
 - Tests follow the `testing` skill.
 - `make ci` is green, and astimate has run or is flagged for the orchestrator.
+
+shhh's `internal/memory` stays in shhh: hearth's per-bot Notes is its own package against `docs/model.md#concepts`, not a lift.
