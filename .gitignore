@@ -1,0 +1,21 @@
+.plan
+.claude
+.idea
+.cache
+
+# Binaries and build output
+/hearthd
+/bin
+/dist
+/THIRD_PARTY_LICENSES
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+.swiftpm/
+
+# A local workspace joins this module to ../llm or ../agentcore while a change spans both.
+/go.work
+/go.work.sum
