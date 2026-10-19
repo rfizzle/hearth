@@ -78,6 +78,8 @@ is opt-in and `git push --no-verify` skips it.
   loop, a temp-dir SQLite file for the store.
 - **Never `os.Chdir` or `t.Chdir` in a test**: it makes the package
   uncacheable. Don't add `-count=1` to `make test`.
+- **A Unix socket path must stay under about 100 bytes.** `t.TempDir()` in a
+  worktree is longer, so socket tests bind under `/tmp`.
 - Stdlib `testing` only, table-driven, beside the source.
 
 ## Version control
