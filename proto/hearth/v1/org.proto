@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// OrgService is the one org: its name and its Hearth folder.
+service OrgService {
+  // GetOrg returns the org, or no org while onboarding has not finished.
+  rpc GetOrg(GetOrgRequest) returns (GetOrgResponse) {}
+  // UpdateOrg names the org and sets its Hearth folder. The first call
+  // creates the org and the folder layout; later calls rename or move.
+  rpc UpdateOrg(UpdateOrgRequest) returns (UpdateOrgResponse) {}
+}
+
+message Org {
+  string name = 1;
+  // The Hearth folder, as an absolute path the app has resolved.
+  string workspace_path = 2;
+}
+
+message GetOrgRequest {}
+
+message GetOrgResponse {
+  // Unset until UpdateOrg has been called once.
+  Org org = 1;
+}
+
+message UpdateOrgRequest {
+  string name = 1;
+  string workspace_path = 2;
+}
+
+message UpdateOrgResponse {
+  Org org = 1;
+}

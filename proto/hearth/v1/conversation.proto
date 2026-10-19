@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// ConversationService lists conversations and their messages, sends an
+// owner message, and stops the run it started. Tokens never come back on
+// Send: they arrive on EventService.Subscribe as message deltas.
+service ConversationService {
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {}
+  // ListMessages pages backwards from the newest message.
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse) {}
+  // Send stores the owner's message and starts one run for the bot.
+  // It fails with failed_precondition while a run in this conversation
+  // is still working.
+  rpc Send(SendRequest) returns (SendResponse) {}
+  // Cancel stops a run; what the bot had written so far is kept.
+  rpc Cancel(CancelRequest) returns (CancelResponse) {}
+}
+
+enum ConversationKind {
+  CONVERSATION_KIND_UNSPECIFIED = 0;
+  CONVERSATION_KIND_DM = 1;
+  CONVERSATION_KIND_CHANNEL = 2;
+  CONVERSATION_KIND_TASK = 3;
+}
+
+message Conversation {
+  string id = 1;
+  ConversationKind kind = 2;
+  // The bot in a DM; the lead's team in a channel comes later.
+  string bot_id = 3;
+  string title = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+enum MessageKind {
+  MESSAGE_KIND_UNSPECIFIED = 0;
+  MESSAGE_KIND_TEXT = 1;
+  MESSAGE_KIND_TOOL_CALL = 2;
+  MESSAGE_KIND_TOOL_RESULT = 3;
+  MESSAGE_KIND_ASSIGNMENT = 4;
+  MESSAGE_KIND_RESULT = 5;
+  MESSAGE_KIND_QUESTION = 6;
+  MESSAGE_KIND_APPROVAL_REQUEST = 7;
+  MESSAGE_KIND_APPROVAL_DECISION = 8;
+  MESSAGE_KIND_SYSTEM = 9;
+}
+
+message Message {
+  string id = 1;
+  string conversation_id = 2;
+  // Position in the conversation, from 1; the page cursor.
+  int64 seq = 3;
+  // Empty when the owner wrote it.
+  string author_bot_id = 4;
+  MessageKind kind = 5;
+  string content = 6;
+  google.protobuf.Timestamp created_at = 7;
+  // The run that produced it; empty for the owner's messages.
+  string run_id = 8;
+  // Set on tool_call and tool_result messages.
+  ToolCall tool = 9;
+  // Files this message produced, for Show in Finder.
+  repeated FileRef files = 10;
+  // True while a run is still appending to content through message deltas.
+  bool streaming = 11;
+}
+
+message ToolCall {
+  string call_id = 1;
+  string name = 2;
+  string arguments_json = 3;
+  // The plain-English effect from the tool's own describer.
+  string summary = 4;
+}
+
+message FileRef {
+  // Absolute path on this Mac.
+  string path = 1;
+  string name = 2;
+}
+
+message ListConversationsRequest {
+  // Empty lists every conversation.
+  string bot_id = 1;
+}
+
+message ListConversationsResponse {
+  repeated Conversation conversations = 1;
+}
+
+message ListMessagesRequest {
+  string conversation_id = 1;
+  // Messages with seq below this; 0 means from the newest.
+  int64 before_seq = 2;
+  // 0 means the core's default page.
+  int32 limit = 3;
+}
+
+message ListMessagesResponse {
+  // Ascending by seq.
+  repeated Message messages = 1;
+  bool has_more = 2;
+}
+
+message SendRequest {
+  string conversation_id = 1;
+  string text = 2;
+}
+
+message SendResponse {
+  // The owner's message as stored.
+  Message message = 1;
+  Run run = 2;
+}
+
+message CancelRequest {
+  string run_id = 1;
+}
+
+message CancelResponse {}
+
+enum RunState {
+  RUN_STATE_UNSPECIFIED = 0;
+  RUN_STATE_QUEUED = 1;
+  RUN_STATE_WORKING = 2;
+  RUN_STATE_WAITING_OWNER = 3;
+  RUN_STATE_DONE = 4;
+  RUN_STATE_FAILED = 5;
+  RUN_STATE_CANCELLED = 6;
+}
+
+message Run {
+  string id = 1;
+  string conversation_id = 2;
+  string bot_id = 3;
+  RunState state = 4;
+  // Tool rounds taken so far.
+  int32 steps = 5;
+  // Why it failed, in plain words; empty otherwise.
+  string failure = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp ended_at = 8;
+}

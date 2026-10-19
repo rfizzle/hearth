@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// BotService creates and lists the org's bots and the role templates they
+// start from. Grants, notes and deletion arrive with later milestones.
+service BotService {
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {}
+  rpc CreateBot(CreateBotRequest) returns (CreateBotResponse) {}
+  rpc ListBots(ListBotsRequest) returns (ListBotsResponse) {}
+  rpc GetBot(GetBotRequest) returns (GetBotResponse) {}
+}
+
+// Tier is the quality tier the org maps to a provider and model.
+enum Tier {
+  TIER_UNSPECIFIED = 0;
+  TIER_FAST = 1;
+  TIER_BALANCED = 2;
+  TIER_BEST = 3;
+}
+
+enum BotStatus {
+  BOT_STATUS_UNSPECIFIED = 0;
+  BOT_STATUS_IDLE = 1;
+  BOT_STATUS_WORKING = 2;
+  BOT_STATUS_PAUSED = 3;
+  BOT_STATUS_DISABLED = 4;
+}
+
+message Bot {
+  string id = 1;
+  string name = 2;
+  string role = 3;
+  string job_description = 4;
+  Tier tier = 5;
+  BotStatus status = 6;
+  // An SF Symbol name or an emoji; empty shows the name's initials.
+  string avatar = 7;
+  // The bot's own folder inside the Hearth folder, absolute.
+  string folder_path = 8;
+  // The bot's direct-message conversation, created with the bot.
+  string dm_conversation_id = 9;
+}
+
+message RoleTemplate {
+  string id = 1;
+  string role = 2;
+  // One line shown on the template card.
+  string summary = 3;
+  string job_description = 4;
+  Tier suggested_tier = 5;
+}
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated RoleTemplate templates = 1;
+}
+
+message CreateBotRequest {
+  string name = 1;
+  string role = 2;
+  string job_description = 3;
+  Tier tier = 4;
+  string avatar = 5;
+}
+
+message CreateBotResponse {
+  Bot bot = 1;
+}
+
+message ListBotsRequest {}
+
+message ListBotsResponse {
+  repeated Bot bots = 1;
+}
+
+message GetBotRequest {
+  string id = 1;
+}
+
+message GetBotResponse {
+  Bot bot = 1;
+}

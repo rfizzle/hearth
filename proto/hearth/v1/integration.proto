@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// IntegrationService is the optional services that are not model providers,
+// a web-search backend today. A key stored here switches a tool on for every
+// bot whose grants allow it; no key, no tool. The core never returns a key.
+service IntegrationService {
+  rpc ListIntegrations(ListIntegrationsRequest) returns (ListIntegrationsResponse) {}
+  rpc SetIntegrationKey(SetIntegrationKeyRequest) returns (SetIntegrationKeyResponse) {}
+  rpc ClearIntegration(ClearIntegrationRequest) returns (ClearIntegrationResponse) {}
+}
+
+// Integration is one service. Another search service is a new value here
+// and a new backend file in the core; the tool does not change.
+enum Integration {
+  INTEGRATION_UNSPECIFIED = 0;
+  INTEGRATION_BRAVE_SEARCH = 1;
+}
+
+// IntegrationKind is what an integration provides, so the app can say which
+// tool a key switches on.
+enum IntegrationKind {
+  INTEGRATION_KIND_UNSPECIFIED = 0;
+  INTEGRATION_KIND_WEB_SEARCH = 1;
+}
+
+message IntegrationAccount {
+  Integration integration = 1;
+  IntegrationKind kind = 2;
+  // Shown to the person, for example "Brave Search".
+  string name = 3;
+  bool configured = 4;
+  // The key's last four characters; never the key.
+  string label = 5;
+  // Where the person gets a key.
+  string help_url = 6;
+}
+
+message ListIntegrationsRequest {}
+
+message ListIntegrationsResponse {
+  repeated IntegrationAccount integrations = 1;
+}
+
+message SetIntegrationKeyRequest {
+  Integration integration = 1;
+  string key = 2;
+}
+
+message SetIntegrationKeyResponse {
+  IntegrationAccount integration = 1;
+}
+
+message ClearIntegrationRequest {
+  Integration integration = 1;
+}
+
+message ClearIntegrationResponse {}

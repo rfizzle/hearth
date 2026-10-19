@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "hearth/v1/bot.proto";
+import "hearth/v1/conversation.proto";
+import "hearth/v1/integration.proto";
+import "hearth/v1/provider.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// EventService is the one stream the app consumes: every change the core
+// makes, in order, with a sequence number for reconnecting.
+service EventService {
+  // Subscribe replays events after after_sequence, then follows live. A
+  // sequence older than the core still holds gets a resync first.
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse) {}
+}
+
+message SubscribeRequest {
+  // 0 asks for live events only.
+  uint64 after_sequence = 1;
+}
+
+message SubscribeResponse {
+  uint64 sequence = 1;
+  oneof event {
+    MessageDelta message_delta = 2;
+    MessageUpserted message_upserted = 3;
+    RunChanged run_changed = 4;
+    AccountChanged account_changed = 5;
+    BotChanged bot_changed = 6;
+    Resync resync = 7;
+    Heartbeat heartbeat = 8;
+    IntegrationChanged integration_changed = 9;
+  }
+}
+
+// MessageDelta is text appended to a streaming message.
+message MessageDelta {
+  string conversation_id = 1;
+  string message_id = 2;
+  string run_id = 3;
+  string text = 4;
+}
+
+// MessageUpserted is a message created or replaced whole, including the
+// final form of one that streamed.
+message MessageUpserted {
+  Message message = 1;
+}
+
+message RunChanged {
+  Run run = 1;
+}
+
+message AccountChanged {
+  ProviderAccount account = 1;
+}
+
+message BotChanged {
+  Bot bot = 1;
+}
+
+message IntegrationChanged {
+  IntegrationAccount integration = 1;
+}
+
+// Resync says the requested sequence is older than the core keeps; the
+// app refetches its lists and continues from this event's sequence.
+message Resync {}
+
+// Heartbeat keeps a quiet subscription under the client's idle timeout.
+message Heartbeat {}

@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// ProviderService is sign-in: which providers have a credential, storing
+// or clearing an API key, and starting the ChatGPT browser sign-in. The
+// core never returns a credential.
+service ProviderService {
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse) {}
+  rpc SetAPIKey(SetAPIKeyRequest) returns (SetAPIKeyResponse) {}
+  rpc ClearCredential(ClearCredentialRequest) returns (ClearCredentialResponse) {}
+  // StartChatGPTLogin returns the page the app opens in the browser and
+  // keeps the sign-in going; the result arrives as an account_changed
+  // event on EventService.Subscribe.
+  rpc StartChatGPTLogin(StartChatGPTLoginRequest) returns (StartChatGPTLoginResponse) {}
+}
+
+enum Provider {
+  PROVIDER_UNSPECIFIED = 0;
+  PROVIDER_CHATGPT = 1;
+  PROVIDER_ANTHROPIC = 2;
+  PROVIDER_GEMINI = 3;
+  PROVIDER_OPENROUTER = 4;
+  PROVIDER_OPENAI_COMPATIBLE = 5;
+}
+
+enum AccountState {
+  ACCOUNT_STATE_UNSPECIFIED = 0;
+  ACCOUNT_STATE_SIGNED_OUT = 1;
+  ACCOUNT_STATE_SIGNING_IN = 2;
+  ACCOUNT_STATE_SIGNED_IN = 3;
+}
+
+message ProviderAccount {
+  Provider provider = 1;
+  AccountState state = 2;
+  // The signed-in email, or the last four characters of a key; never the
+  // credential itself.
+  string label = 3;
+  // The failure of the last sign-in attempt, in plain words; empty otherwise.
+  string failure = 4;
+}
+
+message ListAccountsRequest {}
+
+message ListAccountsResponse {
+  repeated ProviderAccount accounts = 1;
+}
+
+message SetAPIKeyRequest {
+  Provider provider = 1;
+  string key = 2;
+  // Only for PROVIDER_OPENAI_COMPATIBLE; empty otherwise.
+  string base_url = 3;
+}
+
+message SetAPIKeyResponse {
+  ProviderAccount account = 1;
+}
+
+message ClearCredentialRequest {
+  Provider provider = 1;
+}
+
+message ClearCredentialResponse {}
+
+message StartChatGPTLoginRequest {}
+
+message StartChatGPTLoginResponse {
+  string authorize_url = 1;
+}
