@@ -35,7 +35,7 @@ intent is the citation in the comment:
 ```go
 // Act-tier tools always go through the approval gate: hearth cannot know
 // whether a tool changed something outside the workspace, so it assumes it did.
-// See docs/model.md#assignment-delegation.
+// See docs/model.md#3-assignment-delegation.
 ```
 
 - **The reason goes in the comment as prose.** The citation is a pointer to the

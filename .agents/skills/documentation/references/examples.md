@@ -52,7 +52,7 @@ hundreds of comments, so both sent readers to something they could not open.
 - // allowed to reach (S-141).
 + // Package scope holds a session's working scope: the directories the work is
 + // allowed to reach
-+ // (docs/model.md#assignment-delegation).
++ // (docs/model.md#3-assignment-delegation).
 ```
 
 The prose was already good. Only the anchor was wrong — that is the usual

@@ -13,5 +13,5 @@ Four files that are meant to stay true, one folder that is meant to go stale.
 Rules that keep the surface small:
 
 - A fact lives in one place. Working guidance (how to add a view, how to change the proto, how to release) is a skill in `.agents/skills`, not a document here. Where the code is and what the traps are is `AGENTS.md`. The plan is `.plan/BACKLOG.md`.
-- Documents name no code symbols; code cites documents by path and heading (`// See docs/model.md#assignment-delegation`). `make docs-check` fails on a citation that does not resolve and lists headings nothing cites, which is how dead sections get found.
+- Documents name no code symbols; code cites documents by path and heading (`// See docs/model.md#3-assignment-delegation`). `make docs-check` fails on a citation that does not resolve and lists headings nothing cites, which is how dead sections get found.
 - Anything time-bound (an API table, a competitor's feature list, a sketch of a screen) goes in `research/` with the date in the filename and is not edited afterwards.
