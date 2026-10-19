@@ -12,6 +12,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "HearthNative"),
+        .executableTarget(name: "OnDeviceSpike", dependencies: ["HearthNative"]),
         .testTarget(name: "HearthNativeTests", dependencies: ["HearthNative"]),
     ],
     swiftLanguageModes: [.v6]
