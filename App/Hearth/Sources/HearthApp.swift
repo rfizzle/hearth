@@ -18,6 +18,8 @@ struct HearthApp: App {
                 .environment(store)
                 .task { appDelegate.supervisor.start() }
         }
+        .commands { DebugCommands() }
+        ShortcutsDebugWindow()
     }
 }
 
