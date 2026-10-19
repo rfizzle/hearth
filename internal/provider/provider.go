@@ -14,8 +14,9 @@ import (
 
 	// Each backend registers itself by name when imported. The plan route is a
 	// mode of the Responses backend, so importing it makes "chatgpt"
-	// resolvable. Anthropic and Gemini are not linked yet: their SDKs are new
-	// module requirements, so SetKey refuses them in words.
+	// resolvable.
+	_ "github.com/rfizzle/llm/anthropic"
+	_ "github.com/rfizzle/llm/gemini"
 	_ "github.com/rfizzle/llm/openai/responses"
 	_ "github.com/rfizzle/llm/openrouter"
 )

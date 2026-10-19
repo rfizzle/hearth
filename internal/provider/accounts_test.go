@@ -279,9 +279,14 @@ func TestKeysListSetClear(t *testing.T) {
 		t.Errorf("OnChange saw %+v", seen)
 	}
 
-	for _, p := range []Provider{ChatGPT, "nope", Anthropic} {
+	for _, p := range []Provider{ChatGPT, "nope"} {
 		if err := accts.SetKey(p, "sk-ant-abcdef1234567890"); err == nil {
 			t.Errorf("SetKey(%q) succeeded", p)
+		}
+	}
+	for _, p := range []Provider{Anthropic, Gemini} {
+		if err := accts.SetKey(p, "sk-ant-abcdef1234567890"); err != nil {
+			t.Errorf("SetKey(%q) = %v, want the linked backend to accept it", p, err)
 		}
 	}
 	if err := accts.ClearKey(ChatGPT); err == nil {
