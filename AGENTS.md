@@ -105,10 +105,10 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/ and provider/ exist so far
+internal/             dependencies point down only; only rpc/, provider/ and agent/ exist so far
   rpc/                Connect handlers and the token check; generated code under gen/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
-  agent/              one bot's turn: loop, tool rounds, retry, compaction
+  agent/              one bot's turn: loop, tool rounds, retry, compaction; the loop is agentcore's (exists)
   tools/ memory/ handbook/ meter/ provider/ native/ secret/ skill/ framing/
   org/                domain types, grant resolution, budget math
   store/              SQLite, migrations, repositories

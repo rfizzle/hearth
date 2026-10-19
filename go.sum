@@ -26,6 +26,8 @@ github.com/invopop/jsonschema v0.14.0 h1:MHQqLhvpNUZfw+hM3AZDYK7jxO8FZoQeQM77g8i
 github.com/invopop/jsonschema v0.14.0/go.mod h1:ygm6C2EaVNMBDPpaPlnOA2pFAxBnxGjFlMZABxm9n2I=
 github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP1nBjY=
 github.com/pb33f/ordered-map/v2 v2.3.1/go.mod h1:qxFQgd0PkVUtOMCkTapqotNgzRhMPL7VvaHKbd1HnmQ=
+github.com/rfizzle/agentcore v0.1.0 h1:SxcDmDOEsUYzxCKVbcc6ejvO+1yXUhq4g/xecrmbI3E=
+github.com/rfizzle/agentcore v0.1.0/go.mod h1:PGt5EbWlhYxpO3j3wweJByy0rY3VZnzOM01Cbrz959o=
 github.com/rfizzle/llm v0.7.0 h1:uLSQ8lTVmHn4m7Q+EbbV3ggnZaVJdCrK1amGXQFsOGI=
 github.com/rfizzle/llm v0.7.0/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
 github.com/sashabaranov/go-openai v1.41.2 h1:vfPRBZNMpnqu8ELsclWcAvF19lDNgh1t6TVfFFOPiSM=
