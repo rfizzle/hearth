@@ -8,7 +8,7 @@ Four files that are meant to stay true, one folder that is meant to go stale.
 | `model.md` | What are the things in the system and how does work flow between them? | When behaviour changes; code cites its headings |
 | `architecture.md` | What are the big shapes, and why those? | When a shape changes |
 | `decisions.md` | What was decided, when, and why; what is still open? | When a decision is made |
-| `research/` | Dated snapshots: prior art, platform survey, the first UX sketch, what was lifted from shhh, the helper and on-device spike results, the ChatGPT sign-in spike | Never; a new snapshot gets a new dated file |
+| `research/` | Dated snapshots: prior art, platform survey, the first UX sketch, what was lifted from shhh, the helper and on-device spike results, the ChatGPT sign-in spike, the Shortcuts spike | Never; a new snapshot gets a new dated file |
 
 Rules that keep the surface small:
 

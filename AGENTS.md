@@ -177,3 +177,6 @@ from `Hearth`.
 - **`make skills-check` fails on a vendored skill edited here.** Skills live
   in `.agents/skills`; `.agents/skills/README.md` says how they are organised
   and which are shared.
+- **A child that reads standard input hangs if the pipe stays open.** `shortcuts
+  run` did. Any process runner writes its input and closes the pipe, even when
+  the input is empty.
