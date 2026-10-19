@@ -157,6 +157,8 @@ from `Hearth`.
   the check refuses to run without it. Install: `go install
   github.com/bufbuild/buf/cmd/buf@v1.73.0`. Its generators are remote
   plugins, so `make proto-check` (and with it `make ci`) needs the network.
+  The BSR rate-limits anonymous generation (`resource_exhausted: too many
+  requests`); wait a few minutes, or `buf registry login`.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
