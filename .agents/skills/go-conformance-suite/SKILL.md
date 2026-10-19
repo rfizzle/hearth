@@ -2,7 +2,7 @@
 name: go-conformance-suite
 description: Use this skill when designing or reviewing tests for a Go interface that has, or will have, more than one implementation (drivers, backends, extractors, storage adapters, language plugins), when the user asks where interface tests should live versus implementation tests, when a second implementation of an existing interface is being added, or when someone asks for a "contract test", "conformance suite", "shared test suite", "<pkg>test package" or "fstest-style" tests. Also use it to decide the opposite case, when a package is small enough that local unit tests are enough and a conformance package would be overkill. Not for mocking guidance, table-test style in general, or integration tests against external services.
 metadata:
-  author: copierson
+  author: rfizzle
   standard: agentskills.io
 ---
 

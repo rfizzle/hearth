@@ -18,8 +18,9 @@ serious harm may be called out separately as a windfall; don't fold it in.
 
 ## Documentation
 
-`.agents/skills/documentation/SKILL.md` is the working guide;
-`sound-patterns` settles style (default to what the Go stdlib does, measure).
+`project-docs` is the standard (the document set, comments, the same-commit
+rule); `documentation` is hearth's delta; `sound-patterns` settles style
+(default to what the Go stdlib does, measure).
 
 - **Each document answers one question.** `docs/product.md` is what hearth is,
   `docs/model.md` the things and how work flows, `docs/architecture.md` the
@@ -44,6 +45,8 @@ serious harm may be called out separately as a windfall; don't fold it in.
 | Format | `make fmt` |
 | Static checks | `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
+| Shared skills match their source | `make skills-check` |
+| Refresh shared skills from `../skills` | `make skills-sync` |
 | Contract / integration tests | `make test-contract` / `make test-integration` |
 | CI pipeline | `make ci` |
 | Everything before a push | `make prepush` |
@@ -150,3 +153,6 @@ from `Hearth`.
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
 - **Skills live in `.agents/skills`**; `.claude/skills` is a symlink. Never
   copy a skill into a client directory.
+- **Shared skills are vendored.** `.agents/skills/shared.sum` lists them;
+  `make skills-check` fails on one edited here. Edit it in `../skills`,
+  commit there, then `make skills-sync`.

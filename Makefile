@@ -19,6 +19,7 @@ GOVULNCHECK=govulncheck
 # astimate is run locally until the binary is published; CI overrides ASTIMATE.
 ASTIMATE ?= astimate
 ASTIMATE_BASE ?= master
+SKILLS_SOURCE ?= ../skills
 # `make fmt` rewrites files, so it finds them on disk; dotted directories are
 # skipped because they can hold somebody else's working tree.
 PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./.*")
@@ -74,6 +75,12 @@ astimate: ## Run the astimate quality gate against the base branch
 docs-check: cache-dir ## Verify every docs/ citation resolves and no story or epic id leaks into docs or code
 	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/docscheck
 
+skills-sync: ## Refresh the shared skills from $(SKILLS_SOURCE); add new ones with SKILLS="a b" (local only)
+	@$(SKILLS_SOURCE)/scripts/sync -C . $(SKILLS)
+
+skills-check: cache-dir ## Fail if a vendored shared skill differs from the copy recorded in .agents/skills/shared.sum
+	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/skillscheck
+
 ## Test:
 # Cacheable on purpose: nothing here adds -count=1.
 test: cache-dir ## Run the hermetic tier: no listener, daemon or network
@@ -103,7 +110,7 @@ gallery-build: ## Placeholder, not yet: lands with S-0002
 
 ## CI:
 # Order matters: the cheap checks fail first.
-ci: fmt-check vet lint test docs-check astimate ## Run every check CI runs
+ci: fmt-check vet lint test docs-check skills-check astimate ## Run every check CI runs
 
 prepush: ## Run the ci targets before a push
 	@$(MAKE) --no-print-directory ci

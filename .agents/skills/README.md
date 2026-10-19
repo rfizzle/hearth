@@ -11,16 +11,20 @@ whose frontmatter has a `name` (matching the directory) and a `description`.
 
 - Skills live in `.agents/skills`. `.claude/skills` is a symlink to it, tracked
   in git; the rest of `.claude/` is ignored.
+- Shared skills are copies from `../skills`, listed with their source commit
+  and content hash in `shared.sum`. `make skills-check` fails on a copy
+  edited here; edit the source, commit it, then `make skills-sync`.
 - Never copy a skill into a client directory. Copies drift.
 - Keep `SKILL.md` free of client-only tool names and slash-command syntax.
 - A skill is worth adding when a tool or a reviewer acts on it. Descriptions
   name the paths or situations that trigger the skill.
 
-| Skill | Use it for |
-|---|---|
-| `documentation` | Docs, comments, citations |
-| `testing` | Go test tiers and fixtures |
-| `sound-patterns` | Settling style questions against the Go stdlib |
-| `go-conformance-suite` | One test suite over several implementations of an interface |
-| `go-structure` | Any change under `internal/` or `cmd/` |
-| `swiftui-structure` | Any change under `App/` |
+| Skill | Shared | Use it for |
+|---|---|---|
+| `project-docs` | yes | The document set, comments, where a fact belongs |
+| `sound-patterns` | yes | Settling style questions against the Go stdlib |
+| `go-conformance-suite` | yes | One test suite over several implementations of an interface |
+| `documentation` | | hearth's delta on `project-docs`: citations, where the model reads it |
+| `testing` | | Go test tiers and fixtures |
+| `go-structure` | | Any change under `internal/` or `cmd/` |
+| `swiftui-structure` | | Any change under `App/` (planned) |
