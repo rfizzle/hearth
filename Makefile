@@ -93,20 +93,20 @@ test-integration: cache-dir ## Run the tests behind the integration tag (may nee
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v $(PROJECT_PACKAGES)
 
 ## Swift:
-swift-format-check: ## Placeholder, not yet: lands with S-0002
-	@echo "not yet: lands with S-0002"
+swift-format-check: ## Placeholder, not yet: lands with the Xcode project
+	@echo "not yet: lands with the Xcode project"
 
-swift-lint: ## Placeholder, not yet: lands with S-0002
-	@echo "not yet: lands with S-0002"
+swift-lint: ## Placeholder, not yet: lands with the Xcode project
+	@echo "not yet: lands with the Xcode project"
 
-swift-test: ## Placeholder, not yet: lands with S-0002
-	@echo "not yet: lands with S-0002"
+swift-test: ## Placeholder, not yet: lands with the Xcode project
+	@echo "not yet: lands with the Xcode project"
 
-tokens-check: ## Placeholder, not yet: lands with S-0002
-	@echo "not yet: lands with S-0002"
+tokens-check: ## Placeholder, not yet: lands with the Xcode project
+	@echo "not yet: lands with the Xcode project"
 
-gallery-build: ## Placeholder, not yet: lands with S-0002
-	@echo "not yet: lands with S-0002"
+gallery-build: ## Placeholder, not yet: lands with the Xcode project
+	@echo "not yet: lands with the Xcode project"
 
 ## CI:
 # Order matters: the cheap checks fail first.
