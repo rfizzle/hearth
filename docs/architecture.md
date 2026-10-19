@@ -96,7 +96,7 @@ Lifecycle: the app launches `hearthd` with a random socket path under the app's 
 - **Developer ID, notarised, Sparkle 2 updates** first. A Mac App Store build is a possible later SKU that would lose Shortcuts execution, Mail automation and wide file access, and would need the helper signed with `app-sandbox` + `inherit`. (D5, decided 2026-10-19)
 - Licence MIT or Apache-2.0 to keep the App Store option open and to satisfy OpenAI's open-source sign-in programme. (D6, decided 2026-10-19)
 - Minimum macOS 26 (Foundation Models, Liquid Glass, current App Intents). Apple Silicon only unless there is a reason to pay for Intel. (D7, decided 2026-10-19)
-- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, astimate ceilings), `xcodebuild test` for Swift, a notarised build on tags.
+- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, skills-check, astimate ceilings), `xcodebuild test` for Swift, a notarised build on tags.
 
 ### 7. What is lifted from shhh and how
 
@@ -216,7 +216,7 @@ Dependency direction: `Hearth` → `HearthFeatures` → `HearthUI` → `HearthDe
 | **Primitive** | A domain-free atomic view backed by one system control or a plain shape: `Avatar`, `StatusDot`, `Pill`, `CardSurface`, `DisclosureRow` | `HearthDesign` | header comment + `PreviewState` |
 | **Component** | An atomic, domain-aware view of one model with no state of its own beyond presentation: `TaskStateBadge`, `ToolRow`, `CostLabel`, `DecisionBar` | `HearthUI` | header comment + `PreviewState` |
 | **Composition** | An assembly of two or more existing units with its own local state and interaction flows, accessibility delegated to children: `TaskCard`, `MessageRow`, `ApprovalCard`, `SidebarOutline`, `Inspector` | `HearthUI` | header comment + `PreviewState` |
-| **Feature** | A screen or flow: a store plus the compositions it drives: Conversation, Inbox, Onboarding, Settings, Usage, Handbook, Hire | `HearthFeatures` | the plan from plan-task, with a unit inventory |
+| **Feature** | A screen or flow: a store plus the compositions it drives: Conversation, Inbox, Onboarding, Settings, Usage, Handbook, Hire | `HearthFeatures` | its plan, with a unit inventory |
 
 "Backed by a system control" replaces overwatch's "backed by a Bits UI primitive": a primitive names the SwiftUI or AppKit control it wraps (`Button`, `List`, `NSTextView`) and inherits that control's keyboard and VoiceOver behaviour rather than reimplementing it. Custom drawing is allowed only where no control fits, and the header comment says why.
 
