@@ -56,6 +56,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Known vulnerabilities | `make vulncheck` |
 | Install the opt-in pre-push hook | `make hooks` |
 | Swift gates | `make ci-swift` |
+| Build Hearth.app | `make app-build` |
 | Format Swift | `make swift-fmt` |
 | List every target | `make help` |
 
@@ -159,8 +160,10 @@ from `Hearth`.
 - **`make swift-test` builds each package in its own `.build`**; the first run
   compiles swift-protobuf more than once (minutes), later runs are cached.
 - **A package resource (`Bundle.module`) is a `.bundle` beside the
-  executable.** The app bundle has to carry it in `Contents/Resources`, or
+  executable.** `make app-build` copies them into `Contents/Resources`, or
   the app aborts at launch.
+- **`HEARTH_HELPER=./hearthd`** lets `swift run --package-path App Hearth`
+  find the helper outside a bundle.
 - **`make skills-check` fails on a vendored skill edited here.** Skills live
   in `.agents/skills`; `.agents/skills/README.md` says how they are organised
   and which are shared.

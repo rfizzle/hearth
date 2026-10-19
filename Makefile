@@ -38,11 +38,12 @@ SWIFT_TEST_PACKAGES=$(APP_DIR)/Packages/HearthKit $(APP_DIR)/Packages/HearthDesi
 # Generated Swift is left as buf writes it, as generated Go is.
 SWIFT_SOURCES=$(shell find $(APP_DIR) -name '*.swift' -not -path '*/.build/*' -not -path '*/Gen/*')
 TOKENS_FILE=$(APP_DIR)/Packages/HearthDesign/Sources/HearthDesign/Resources/tokens.json
+DIST_DIR=$(CURDIR)/dist
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift cache-dir
+.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build cache-dir
 
 all: help
 
@@ -157,6 +158,16 @@ gallery-build: ## Build the gallery app: every component in every state
 	@$(SWIFT) build --package-path $(APP_DIR) --product HearthGallery
 
 ci-swift: swift-format-check swift-lint swift-test gallery-build ## Run every Swift check CI runs (macOS only)
+
+## App:
+# The helper is built for the app's platform whatever the host, and the bundle
+# is assembled by a script because there is no Xcode project.
+app-build: cache-dir ## Build dist/Hearth.app with the helper inside (VERSION sets the bundle version)
+	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
+	@mkdir -p $(DIST_DIR)
+	@$(HERMETIC_ENV) GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/hearthd ./cmd/hearthd
+	@$(SWIFT) build -c release --package-path $(APP_DIR) --product Hearth
+	@scripts/app/bundle.sh $(APP_DIR)/.build/release $(DIST_DIR)/hearthd $(VERSION) $(DIST_DIR)
 
 ## CI:
 # Order matters: the cheap checks fail first.
