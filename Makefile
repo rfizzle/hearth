@@ -17,7 +17,7 @@ GOIMPORTS=goimports
 GOLANGCI_LINT=golangci-lint
 GOVULNCHECK=govulncheck
 BUF=buf
-# What `buf generate` writes; proto-check fails when it drifts from the commit.
+# What `buf generate` writes; proto-drift fails when it drifts from the commit.
 PROTO_GEN_DIRS=internal/rpc/gen App/Packages/HearthKit/Sources/HearthKit/Gen
 # astimate is run locally until the binary is published; CI overrides ASTIMATE.
 ASTIMATE ?= astimate
@@ -43,7 +43,7 @@ DIST_DIR=$(CURDIR)/dist
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build app-sign notarize app-verify cache-dir
+.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build app-sign notarize app-verify cache-dir
 
 all: help
 
@@ -97,10 +97,9 @@ skills-sync: ## Refresh the shared skills from $(SKILLS_SOURCE); add new ones wi
 skills-check: cache-dir ## Fail if a vendored shared skill differs from the copy recorded in .agents/skills/shared.sum
 	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/skillscheck
 
-# The generators are remote buf plugins, so this needs the network, as
-# vulncheck does. The breaking check compares against master and is skipped,
+# Offline: lint, and breaking changes against master, which is skipped,
 # saying so, only while master carries no proto.
-proto-check: cache-dir ## Lint the contract, check it against master for breaking changes, fail on generated drift
+proto-check: cache-dir ## Lint the contract and check it against master for breaking changes (offline)
 	@command -v $(BUF) >/dev/null 2>&1 || { echo "buf not found (install: go install github.com/bufbuild/buf/cmd/buf@v1.73.0)"; exit 1; }
 	@$(HERMETIC_ENV) $(BUF) lint
 	@# buf drops the empty fsmonitor value when it runs git; false means the same.
@@ -109,6 +108,11 @@ proto-check: cache-dir ## Lint the contract, check it against master for breakin
 	else \
 		echo "no proto on master yet, breaking check skipped"; \
 	fi
+
+# The generators are remote buf plugins, so this needs the network, and the
+# BSR rate-limits anonymous generation; it is kept out of ci for that reason.
+proto-drift: cache-dir ## Regenerate with buf's remote plugins and fail on drift (needs the network; set BUF_TOKEN to lift the BSR rate limit)
+	@command -v $(BUF) >/dev/null 2>&1 || { echo "buf not found (install: go install github.com/bufbuild/buf/cmd/buf@v1.73.0)"; exit 1; }
 	@$(HERMETIC_ENV) $(BUF) generate
 	@git diff --exit-code -- $(PROTO_GEN_DIRS) || { echo "Generated code drifted from proto/. Run make proto and commit."; exit 1; }
 	@untracked="$$(git ls-files --others --exclude-standard -- $(PROTO_GEN_DIRS))"; \

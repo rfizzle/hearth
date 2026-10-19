@@ -40,7 +40,8 @@ jobs:
           go install golang.org/x/tools/cmd/goimports@v0.52.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      # `make proto-check` refuses to run without buf rather than skipping.
+      # `make proto-check` and `make proto-drift` refuse to run without buf
+      # rather than skipping.
       - name: Install buf
         run: |
           go install github.com/bufbuild/buf/cmd/buf@v1.73.0
@@ -50,6 +51,14 @@ jobs:
       # runs astimate locally until the binary is published.
       - name: make ci
         run: make ci ASTIMATE=true
+
+      # Regenerates with buf's remote plugins and fails on drift. One generate
+      # per run stays under the BSR's unauthenticated limit; BUF_TOKEN is
+      # optional belt-and-braces and may be unset.
+      - name: make proto-drift
+        run: make proto-drift
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
 
       # Each package builds in its own .build; a cold run compiles
       # swift-protobuf more than once, so the builds are cached.

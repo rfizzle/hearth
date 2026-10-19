@@ -61,7 +61,8 @@ A fix to a lifted package is made in the shared module, not in a hearth copy.
 
 `make ci` runs, in order:
 `fmt-check vet lint test docs-check skills-check proto-check astimate`. The
-cheap checks fail first.
+cheap checks fail first. `proto-drift` (regenerate and diff, needs the
+network) runs in CI as its own step.
 
 astimate is the ceiling: capacity limits are absolute, and `orchestrate` and
 `store` are split by responsibility early (`orchestrate/schedule`,

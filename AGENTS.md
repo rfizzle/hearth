@@ -46,7 +46,8 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Static checks | `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
 | Regenerate the contract | `make proto` |
-| Contract lint, breaking, drift | `make proto-check` |
+| Contract lint and breaking changes (offline) | `make proto-check` |
+| Generated code matches the contract (network) | `make proto-drift` |
 | Shared skills match their source | `make skills-check` |
 | Refresh shared skills from `../skills` | `make skills-sync` |
 | Contract / integration tests | `make test-contract` / `make test-integration` |
@@ -153,12 +154,12 @@ from `Hearth`.
   `ASTIMATE=true` to `make ci` and says so; the orchestrator runs the real one.
 - **`goimports` must be on the `PATH`** for `make fmt-check`; it refuses to run
   without it. Install: `go install golang.org/x/tools/cmd/goimports@latest`.
-- **`buf` must be on the `PATH`** for `make proto` and `make proto-check`;
-  the check refuses to run without it. Install: `go install
-  github.com/bufbuild/buf/cmd/buf@v1.73.0`. Its generators are remote
-  plugins, so `make proto-check` (and with it `make ci`) needs the network.
-  The BSR rate-limits anonymous generation (`resource_exhausted: too many
-  requests`); wait a few minutes, or `buf registry login`.
+- **`buf` must be on the `PATH`** for `make proto`, `make proto-check` and
+  `make proto-drift`; they refuse to run without it. Install: `go install
+  github.com/bufbuild/buf/cmd/buf@v1.73.0`. The generators are remote
+  plugins and the BSR rate-limits anonymous generation, so drift is checked
+  outside `make ci`: after editing the proto, run `make proto && make
+  proto-drift`. `buf registry login` lifts the limit locally.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
   `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
