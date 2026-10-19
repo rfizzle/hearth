@@ -169,7 +169,7 @@ Each package states its contract the Go way: a `doc.go` whose package comment na
 
 ### 3. Lifting from shhh (D8: extract first)
 
-The packages listed as "lifted" are extracted from shhh into a shared Go module beside llm (working name `rfizzle/agentcore`; final name open) before hearth's agent loop work starts, with coding-specific imports (classifier, mode, patterns, tools) left behind in shhh. shhh is repointed at the module under its own gates and the module is tagged like llm (two-phase tag, never moved). hearth consumes the tag. This is M0 item 0.6 and it gates M1.5; it was chosen over copy-then-extract on 2026-10-19 so the two apps never diverge.
+The packages listed as "lifted" are extracted from shhh into a shared Go module beside llm (`github.com/rfizzle/agentcore`, D12) before hearth's agent loop work starts, with coding-specific imports (classifier, mode, patterns, tools) left behind in shhh. shhh is repointed at the module under its own gates and the module is tagged like llm (two-phase tag, never moved). hearth consumes the tag. The module stays v0 until both apps ship a milestone on one tag (D15); its gate checks the exported API against the previous tag, so a tag's message says what it broke. This is M0 item 0.6 and it gates M1.5; it was chosen over copy-then-extract on 2026-10-19 so the two apps never diverge.
 
 ### 4. Gates
 
