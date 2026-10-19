@@ -32,12 +32,12 @@ func TestClassify(t *testing.T) {
 		{"100.100.100.200", classMetadata},
 		{"fd00:ec2::254", classMetadata},
 		{"::ffff:169.254.169.254", classMetadata},
-		{"64:ff9b::a9fe:a9fe", classMetadata},  // NAT64 of 169.254.169.254
-		{"64:ff9b::7f00:1", classLoopback},     // NAT64 of 127.0.0.1
-		{"64:ff9b:1::a00:1", classPrivate},     // local-use NAT64 of 10.0.0.1
-		{"2002:7f00:1::", classLoopback},       // 6to4 of 127.0.0.1
-		{"2002:5db8:d70e::1", classPublic},     // 6to4 of a public address
-		{"::7f00:1", classLoopback},            // IPv4-compatible 127.0.0.1
+		{"64:ff9b::a9fe:a9fe", classMetadata}, // NAT64 of 169.254.169.254
+		{"64:ff9b::7f00:1", classLoopback},    // NAT64 of 127.0.0.1
+		{"64:ff9b:1::a00:1", classPrivate},    // local-use NAT64 of 10.0.0.1
+		{"2002:7f00:1::", classLoopback},      // 6to4 of 127.0.0.1
+		{"2002:5db8:d70e::1", classPublic},    // 6to4 of a public address
+		{"::7f00:1", classLoopback},           // IPv4-compatible 127.0.0.1
 		{"0.0.0.0", classUnspecified},
 		{"::", classUnspecified},
 		{"0.1.2.3", classReserved},

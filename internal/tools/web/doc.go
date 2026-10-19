@@ -8,7 +8,8 @@
 //
 // Invariants the types do not hold:
 //   - Every hop of a fetch, the first and each redirect, has its host looked
-//     up and every address checked before a request is made, and the
+//     up and every address checked before a request is made, by range and
+//     against this machine's own interface networks, and the
 //     connection goes to the checked address and no other. A request that
 //     reaches the dial without a checked address is refused there.
 //   - The address policy guards web.fetch only. A search service's address

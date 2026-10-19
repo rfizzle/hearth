@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -73,30 +74,31 @@ func read(_ context.Context, call tools.Call) (tools.Result, error) {
 	if err := json.Unmarshal(call.Args, &a); err != nil || a.Offset < 0 {
 		return tools.Result{}, errors.New("files.read: offset must be a whole number of bytes, 0 or more")
 	}
+	name := shown(call)
+	info, err := os.Lstat(call.Path)
+	if err != nil {
+		return tools.Result{}, failed("files.read", "read", name, err)
+	}
+	if err := regular(info, name); err != nil {
+		return tools.Result{}, fmt.Errorf("files.read: %w", err)
+	}
 	f, err := os.Open(call.Path)
 	if err != nil {
-		return tools.Result{}, fmt.Errorf("files.read: %w", err)
+		return tools.Result{}, failed("files.read", "open", name, err)
 	}
 	defer f.Close()
-	info, err := f.Stat()
-	if err != nil {
-		return tools.Result{}, fmt.Errorf("files.read: %w", err)
-	}
-	if info.IsDir() {
-		return tools.Result{}, fmt.Errorf("files.read: %s is a folder, not a file", a.Path)
-	}
 	size := info.Size()
 	if a.Offset > size {
-		return tools.Result{}, fmt.Errorf("files.read: offset %d is past the end of %s (%d bytes)", a.Offset, a.Path, size)
+		return tools.Result{}, fmt.Errorf("files.read: offset %d is past the end of %s (%d bytes)", a.Offset, name, size)
 	}
 	buf := make([]byte, readCap)
 	n, err := f.ReadAt(buf, a.Offset)
 	if err != nil && !errors.Is(err, io.EOF) {
-		return tools.Result{}, fmt.Errorf("files.read: %w", err)
+		return tools.Result{}, failed("files.read", "read", name, err)
 	}
 	start, page := wholeRunes(buf[:n], a.Offset+int64(n) < size)
 	if !isText(page) {
-		return tools.Result{}, fmt.Errorf("files.read: %s is not a text file; files.read reads text only", a.Path)
+		return tools.Result{}, fmt.Errorf("files.read: %s is not a text file; files.read reads text only", name)
 	}
 	from := a.Offset + int64(start)
 	end := from + int64(len(page))
@@ -149,27 +151,35 @@ func write(_ context.Context, call tools.Call) (tools.Result, error) {
 	if err := json.Unmarshal(call.Args, &a); err != nil || a.Content == nil {
 		return tools.Result{}, errors.New("files.write: content is required")
 	}
+	name := shown(call)
 	if err := os.MkdirAll(filepath.Dir(call.Path), 0o755); err != nil {
-		return tools.Result{}, fmt.Errorf("files.write: %w", err)
+		return tools.Result{}, failed("files.write", "create the folders above", name, err)
 	}
-	if err := stillInside(call); err != nil {
+	if err := stillInside(call, name); err != nil {
 		return tools.Result{}, err
+	}
+	if info, err := os.Lstat(call.Path); err == nil {
+		if err := regular(info, name); err != nil {
+			return tools.Result{}, fmt.Errorf("files.write: %w; nothing was written", err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return tools.Result{}, failed("files.write", "write", name, err)
 	}
 	// O_NOFOLLOW refuses a symlink at the file itself, the one element
 	// stillInside cannot hold steady between its check and this open.
 	f, err := os.OpenFile(call.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, 0o644)
 	if err != nil {
-		return tools.Result{}, fmt.Errorf("files.write: %s cannot be written: %w", a.Path, err)
+		return tools.Result{}, failed("files.write", "write", name, err)
 	}
 	_, err = io.WriteString(f, *a.Content)
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}
 	if err != nil {
-		return tools.Result{}, fmt.Errorf("files.write: %w", err)
+		return tools.Result{}, failed("files.write", "write", name, err)
 	}
 	return tools.Result{
-		Text:  fmt.Sprintf("Wrote %s to %s.", size(len(*a.Content)), call.Path),
+		Text:  fmt.Sprintf("Wrote %s to %s.", size(len(*a.Content)), name),
 		Files: []org.FileRef{{Path: call.Path, Name: filepath.Base(call.Path)}},
 	}, nil
 }
@@ -177,12 +187,52 @@ func write(_ context.Context, call tools.Call) (tools.Result, error) {
 // stillInside resolves the path again now that its folders exist, and
 // refuses it unless it is still the path the dispatcher checked: a folder
 // swapped for a symlink in between would otherwise take the write with it.
-func stillInside(call tools.Call) error {
+func stillInside(call tools.Call, name string) error {
 	again, err := workspace.Resolve(call.Folder, call.Path)
 	if err != nil || again != call.Path {
-		return fmt.Errorf("files.write: %s no longer leads inside the folder; nothing was written", call.Path)
+		return fmt.Errorf("files.write: %s no longer leads inside the folder; nothing was written", name)
 	}
 	return nil
+}
+
+// regular refuses anything but a regular file. A named pipe or a device
+// would block the open until something else answered, and the call would
+// never return.
+func regular(info fs.FileInfo, name string) error {
+	switch {
+	case info.IsDir():
+		return fmt.Errorf("%s is a folder, not a file", name)
+	case !info.Mode().IsRegular():
+		return fmt.Errorf("%s is not a regular file", name)
+	}
+	return nil
+}
+
+// shown is the path as the model reads it: relative to the granted folder.
+// The absolute path names the owner's account, so it stays out of anything
+// the model reads and travels only in the result's files, for the owner.
+func shown(call tools.Call) string {
+	if rel, err := filepath.Rel(call.Folder, call.Path); err == nil && call.Folder != "" {
+		return filepath.ToSlash(rel)
+	}
+	return filepath.Base(call.Path)
+}
+
+// failed is a file system error in words the model reads: the operation and
+// the relative path, without the absolute path an *os.PathError carries.
+func failed(tool, op, name string, err error) error {
+	reason := "the system refused"
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		reason = "no such file"
+	case errors.Is(err, fs.ErrPermission):
+		reason = "permission denied"
+	case errors.Is(err, syscall.EISDIR):
+		reason = "it is a folder"
+	case errors.Is(err, syscall.ENOTDIR):
+		reason = "a part of the path is a file, not a folder"
+	}
+	return fmt.Errorf("%s: could not %s %s: %s", tool, op, name, reason)
 }
 
 func describeRead(args json.RawMessage) string {

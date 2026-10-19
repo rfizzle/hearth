@@ -32,6 +32,9 @@ type Resolver interface {
 type Fetcher struct {
 	resolver Resolver
 	client   *http.Client
+	// interfaces lists this machine's interface addresses with their
+	// masks; net.InterfaceAddrs outside tests.
+	interfaces func() ([]net.Addr, error)
 }
 
 // Page is a fetched response: the URL it was finally read from, its content
@@ -53,7 +56,8 @@ func NewFetcher() *Fetcher {
 
 func newFetcher(resolver Resolver, transport http.RoundTripper) *Fetcher {
 	return &Fetcher{
-		resolver: resolver,
+		resolver:   resolver,
+		interfaces: net.InterfaceAddrs,
 		client: &http.Client{
 			Transport: transport,
 			// Followed in Fetch, where each hop is checked; the client must
@@ -136,27 +140,78 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (Page, error) {
 }
 
 // checkHop is the address policy for one hop: the URL first, then every
-// address its host has. One address that is not public refuses the hop,
-// because the dial could otherwise be steered to it. It returns the address
-// the hop is pinned to.
+// address its host has. One address that is not public, or that is on one
+// of this machine's own networks, refuses the hop, because the dial could
+// otherwise be steered to it. It returns the address the hop is pinned to.
 func (f *Fetcher) checkHop(ctx context.Context, u *url.URL) (netip.Addr, error) {
 	host, err := checkURL(u)
 	if err != nil {
 		return netip.Addr{}, err
 	}
+	addrs := []netip.Addr{}
 	if literal, err := netip.ParseAddr(host); err == nil {
-		return literal, checkAddr(literal)
-	}
-	addrs, err := f.resolver.LookupNetIP(ctx, "ip", host)
-	if err != nil || len(addrs) == 0 {
+		addrs = append(addrs, literal)
+	} else if addrs, err = f.resolver.LookupNetIP(ctx, "ip", host); err != nil || len(addrs) == 0 {
 		return netip.Addr{}, fmt.Errorf("%s: the host %s could not be found", u.Redacted(), host)
 	}
+	local, err := f.localNetworks()
+	if err != nil {
+		return netip.Addr{}, fmt.Errorf("%s: this Mac's own networks could not be listed, so the address cannot be checked", u.Redacted())
+	}
 	for _, a := range addrs {
-		if err := checkAddr(a); err != nil {
+		err := checkAddr(a)
+		if err == nil {
+			err = checkLocal(a, local)
+		}
+		if err != nil {
 			return netip.Addr{}, fmt.Errorf("%s: %w", u.Redacted(), err)
 		}
 	}
 	return addrs[0], nil
+}
+
+// localNetworks is the prefix of every interface on this machine. An
+// interface with no usable mask, or a /0, counts as its own address alone,
+// so a stray default route cannot refuse the whole internet.
+func (f *Fetcher) localNetworks() ([]netip.Prefix, error) {
+	addrs, err := f.interfaces()
+	if err != nil {
+		return nil, err
+	}
+	var nets []netip.Prefix
+	for _, a := range addrs {
+		ipnet, ok := a.(*net.IPNet)
+		if !ok {
+			continue
+		}
+		ip, ok := netip.AddrFromSlice(ipnet.IP)
+		if !ok {
+			continue
+		}
+		ip = ip.Unmap()
+		ones, bits := ipnet.Mask.Size()
+		if bits == 128 && ip.Is4() {
+			ones -= 96
+		}
+		if ones <= 0 || ones > ip.BitLen() {
+			ones = ip.BitLen()
+		}
+		nets = append(nets, netip.PrefixFrom(ip, ones).Masked())
+	}
+	return nets, nil
+}
+
+// checkLocal refuses an address on one of local's networks. The ranges in
+// classify cannot see these: on an IPv6 network the router, the printer and
+// this Mac have global addresses under the site's prefix, and a LAN may use
+// public IPv4 space, yet a page served there is not on the public internet.
+func checkLocal(a netip.Addr, local []netip.Prefix) error {
+	for _, p := range local {
+		if p.Contains(a.Unmap()) {
+			return fmt.Errorf("%s is on this Mac's own network, and web.fetch reads public pages only", a)
+		}
+	}
+	return nil
 }
 
 func (f *Fetcher) get(ctx context.Context, u *url.URL, pin netip.Addr) (*http.Response, error) {

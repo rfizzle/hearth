@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/rfizzle/hearth/internal/org"
@@ -55,6 +56,14 @@ func (b bot) put(t *testing.T, name string, content []byte) {
 	}
 }
 
+// fifo makes a named pipe in the folder, which opening would block on.
+func (b bot) fifo(t *testing.T, name string) {
+	t.Helper()
+	if err := syscall.Mkfifo(filepath.Join(b.folder, name), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func (b bot) call(name string, args any) (tools.Result, error) {
 	raw, _ := json.Marshal(args)
 	return b.d.Execute(context.Background(), name, raw)
@@ -71,6 +80,7 @@ func TestRead(t *testing.T) {
 	b.put(t, "empty.md", nil)
 	b.put(t, "logo.png", []byte{0x89, 'P', 'N', 'G', 0, 0, 0, 0})
 	b.put(t, "sub/notes.md", []byte("notes"))
+	b.fifo(t, "pipe")
 
 	cases := []struct {
 		name   string
@@ -88,7 +98,8 @@ func TestRead(t *testing.T) {
 		{"an offset inside a character", map[string]any{"path": "split.md", "offset": readCap}, "tail", "bytes 65537 to 65541 of 65541, the end of the file.]", ""},
 		{"a binary file", map[string]any{"path": "logo.png"}, "", "", "not a text file"},
 		{"a folder", map[string]any{"path": "sub"}, "", "", "is a folder"},
-		{"a missing file", map[string]any{"path": "nope.md"}, "", "", "no such file"},
+		{"a missing file", map[string]any{"path": "nope.md"}, "", "", "could not read nope.md: no such file"},
+		{"a named pipe", map[string]any{"path": "pipe"}, "", "", "pipe is not a regular file"},
 		{"an offset past the end", map[string]any{"path": "brief.md", "offset": 100}, "", "", "past the end"},
 		{"a negative offset", map[string]any{"path": "brief.md", "offset": -1}, "", "", "0 or more"},
 	}
@@ -96,8 +107,8 @@ func TestRead(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := b.call("files.read", tc.args)
 			if tc.err != "" {
-				if err == nil || !strings.Contains(err.Error(), tc.err) {
-					t.Fatalf("err = %v, want %q", err, tc.err)
+				if err == nil || !strings.Contains(err.Error(), tc.err) || strings.Contains(err.Error(), b.folder) {
+					t.Fatalf("err = %v, want %q and no absolute path", err, tc.err)
 				}
 				return
 			}
@@ -130,6 +141,7 @@ func TestWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	b.put(t, "old.md", []byte("a much longer old text"))
+	b.fifo(t, "wpipe")
 
 	cases := []struct {
 		name string
@@ -141,14 +153,16 @@ func TestWrite(t *testing.T) {
 		{"creates the folders above it", "drafts/2026/plan.md", filepath.Join(b.folder, "drafts", "2026", "plan.md"), ""},
 		{"replaces a file", "old.md", filepath.Join(b.folder, "old.md"), ""},
 		{"through a symlink out", "out/leak.md", "", "outside the folders"},
-		{"onto a folder", "drafts", "", "cannot be written"},
+		{"onto a folder", "drafts", "", "drafts is a folder"},
+		{"onto a named pipe", "wpipe", "", "wpipe is not a regular file"},
+		{"under a file", "old.md/x.md", "", "old.md/x.md is outside the folders"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := b.call("files.write", map[string]any{"path": tc.path, "content": "hello"})
 			if tc.err != "" {
-				if err == nil || !strings.Contains(err.Error(), tc.err) {
-					t.Fatalf("err = %v, want %q", err, tc.err)
+				if err == nil || !strings.Contains(err.Error(), tc.err) || strings.Contains(err.Error(), b.folder) {
+					t.Fatalf("err = %v, want %q and no absolute path", err, tc.err)
 				}
 				return
 			}
@@ -163,8 +177,8 @@ func TestWrite(t *testing.T) {
 			if len(res.Files) != 1 || res.Files[0] != want[0] {
 				t.Fatalf("files = %v, want %v", res.Files, want)
 			}
-			if !strings.Contains(res.Text, tc.want) {
-				t.Fatalf("text %q does not name %s", res.Text, tc.want)
+			if !strings.HasSuffix(res.Text, " to "+tc.path+".") || strings.Contains(res.Text, b.folder) {
+				t.Fatalf("text %q does not name %s relative to the folder", res.Text, tc.path)
 			}
 		})
 	}

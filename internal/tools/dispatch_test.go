@@ -104,6 +104,8 @@ func TestDispatcher_Execute(t *testing.T) {
 		{"dot-dot out of the folder", readWrite(bot), bot, "files.write", `{"path":"../../elsewhere/x.md"}`, "", "outside the folders"},
 		{"an absolute path outside", readWrite(bot), bot, "files.read", `{"path":"` + filepath.Join(outside, "x") + `"}`, "", "outside the folders"},
 		{"a relative path with no root", readWrite(bot), "", "files.read", `{"path":"x.md"}`, "", "no folder"},
+		{"a relative root", readWrite(bot), "Hearth/Writer", "files.write", `{"path":"x.md"}`, "", "not an absolute path"},
+		{"a relative root with an absolute path", readWrite(bot), "Hearth/Writer", "files.read", `{"path":"` + filepath.Join(bot, "x.md") + `"}`, "", "not an absolute path"},
 		{"a granted folder that does not exist", readWrite(filepath.Join(base, "gone")), bot, "files.read", `{"path":"x.md"}`, "", "outside the folders"},
 		{"no path", readWrite(bot), bot, "files.read", `{}`, "", "path is required"},
 		{"arguments that are not an object", readWrite(bot), bot, "files.read", `"x"`, "", "not a JSON object"},

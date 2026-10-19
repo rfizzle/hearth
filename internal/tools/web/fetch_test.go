@@ -81,10 +81,29 @@ var resolver = fakeResolver{
 	"example.org":       {"93.184.215.14"},
 	"other.example":     {"93.184.215.15"},
 	"intranet.example":  {"10.0.0.5"},
+	"lan6.example":      {"2a02:8071:1:2::99"},
 	"split.example":     {"93.184.215.16", "192.168.0.10"},
 	"rebind.example":    {"127.0.0.1"},
 	"metadata.example":  {"169.254.169.254"},
 	"v6private.example": {"fd00::1"},
+}
+
+// testFetcher is a Fetcher over the fake resolver and transport whose
+// machine has the interfaces given in CIDR form and no others.
+func testFetcher(transport http.RoundTripper, interfaces ...string) *Fetcher {
+	f := newFetcher(resolver, transport)
+	f.interfaces = func() ([]net.Addr, error) {
+		var addrs []net.Addr
+		for _, cidr := range interfaces {
+			ip, n, err := net.ParseCIDR(cidr)
+			if err != nil {
+				return nil, err
+			}
+			addrs = append(addrs, &net.IPNet{IP: ip, Mask: n.Mask})
+		}
+		return addrs, nil
+	}
+	return f
 }
 
 func html200(body string) reply {
@@ -142,7 +161,7 @@ func TestFetch(t *testing.T) {
 		{
 			name: "a redirect to another public host is checked and followed", url: "https://example.org/go",
 			replies: map[string]reply{
-				"https://example.org/go":     {status: http.StatusSeeOther, location: "https://other.example/there"},
+				"https://example.org/go":      {status: http.StatusSeeOther, location: "https://other.example/there"},
 				"https://other.example/there": html200("arrived"),
 			},
 			want: "arrived", urls: []string{"https://example.org/go", "https://other.example/there"},
@@ -175,7 +194,7 @@ func TestFetch(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			transport := &fakeTransport{replies: tc.replies}
-			f := newFetcher(resolver, transport)
+			f := testFetcher(transport)
 			page, err := f.Fetch(context.Background(), tc.url)
 			if tc.err != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.err) {
@@ -212,6 +231,55 @@ func TestFetch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFetch_LocalNetworks(t *testing.T) {
+	ok := map[string]reply{
+		"http://[2a02:8071:1:2::1]/": html200("router"),
+		"http://81.2.69.1/":          html200("lan"),
+		"https://example.org/":       html200("public"),
+		"https://lan6.example/":      html200("nas"),
+	}
+	site := "2a02:8071:1:2::abcd/64" // this Mac's global IPv6 address on its site's /64
+	cases := []struct {
+		name       string
+		url        string
+		interfaces []string
+		err        string
+	}{
+		{"a global IPv6 address inside a local /64", "http://[2a02:8071:1:2::1]/", []string{"127.0.0.1/8", site}, "on this Mac's own network"},
+		{"the same address with no interface on its network", "http://[2a02:8071:1:2::1]/", []string{"127.0.0.1/8", "2a02:8071:9:9::1/64"}, ""},
+		{"a public IPv4 prefix a LAN uses", "http://81.2.69.1/", []string{"81.2.69.10/24"}, "on this Mac's own network"},
+		{"this Mac's own address", "http://81.2.69.10/", []string{"81.2.69.10/24"}, "on this Mac's own network"},
+		{"a name that resolves onto a local network", "https://lan6.example/", []string{site}, "on this Mac's own network"},
+		{"a public page elsewhere", "https://example.org/", []string{site, "81.2.69.10/24"}, ""},
+		{"an interface with a /0 is only its own address", "https://example.org/", []string{"93.184.215.99/0"}, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			transport := &fakeTransport{replies: ok}
+			_, err := testFetcher(transport, tc.interfaces...).Fetch(context.Background(), tc.url)
+			if tc.err == "" {
+				if err != nil {
+					t.Fatalf("Fetch: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.err) {
+				t.Fatalf("err = %v, want %q", err, tc.err)
+			}
+			if len(transport.sent) != 0 {
+				t.Fatalf("a request went out: %v", transport.sent)
+			}
+		})
+	}
+	t.Run("interfaces that cannot be listed", func(t *testing.T) {
+		f := testFetcher(&fakeTransport{replies: ok})
+		f.interfaces = func() ([]net.Addr, error) { return nil, errors.New("no interfaces") }
+		if _, err := f.Fetch(context.Background(), "https://example.org/"); err == nil || !strings.Contains(err.Error(), "could not be listed") {
+			t.Fatalf("err = %v, want a refusal", err)
+		}
+	})
 }
 
 func TestFetcher_KeepsNoCookies(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 
 func fetchExecute(t *testing.T, replies map[string]reply) func(string) (tools.Result, error) {
 	t.Helper()
-	defs := Definitions(newFetcher(resolver, &fakeTransport{replies: replies}), nil)
+	defs := Definitions(testFetcher(&fakeTransport{replies: replies}), nil)
 	return func(url string) (tools.Result, error) {
 		args, _ := json.Marshal(map[string]string{"url": url})
 		return defs[0].Execute(context.Background(), tools.Call{Args: args})
@@ -50,7 +50,7 @@ func TestFetchTool(t *testing.T) {
 		{"JSON as it came", "https://example.org/data", `{"a":1}`, "", ""},
 		{"HTML with no content type", "https://example.org/bare", "sniffed", "", ""},
 		{"a PDF is refused", "https://example.org/x.pdf", "", "", "application/pdf, not a page of text"},
-		{"a refused address", "http://10.0.0.1/", "", "", "web.fetch: 10.0.0.1 is a private address"},
+		{"a refused address", "http://10.0.0.1/", "", "", "web.fetch: http://10.0.0.1/: 10.0.0.1 is a private address"},
 	}
 	execute := fetchExecute(t, replies)
 	for _, tc := range cases {
@@ -87,7 +87,7 @@ func tail(s string) string {
 }
 
 func TestDefinitions(t *testing.T) {
-	fetcher := newFetcher(resolver, &fakeTransport{})
+	fetcher := testFetcher(&fakeTransport{})
 	none := Definitions(fetcher, nil)
 	with := Definitions(fetcher, &FakeSearcher{})
 	if names(none) != "web.fetch" || names(with) != "web.fetch web.search" {
@@ -120,7 +120,7 @@ func names(defs []tools.Definition) string {
 // TestDispatcher_WebSearch is the search tool behind the grant check: it is
 // offered only when a searcher is configured and the bot is granted it.
 func TestDispatcher_WebSearch(t *testing.T) {
-	fetcher := newFetcher(resolver, &fakeTransport{})
+	fetcher := testFetcher(&fakeTransport{})
 	both := []org.Grant{{Capability: org.WebFetch, Mode: org.ModeAllowed}, {Capability: org.WebSearch, Mode: org.ModeAllowed}}
 	fetchOnly := []org.Grant{{Capability: org.WebFetch, Mode: org.ModeAllowed}}
 	cases := []struct {
@@ -161,11 +161,11 @@ func TestDispatcher_WebSearch(t *testing.T) {
 
 func TestDescribeFetch(t *testing.T) {
 	cases := map[string]string{
-		`{"url":"https://example.org/page"}`:         "Fetch example.org/page",
-		`{"url":"https://example.org/"}`:             "Fetch example.org",
+		`{"url":"https://example.org/page"}`:           "Fetch example.org/page",
+		`{"url":"https://example.org/"}`:               "Fetch example.org",
 		`{"url":"https://example.org/a?token=x#frag"}`: "Fetch example.org/a",
-		`{"url":"not a url"}`:                        "Fetch not a url",
-		`nonsense`:                                   "Fetch ",
+		`{"url":"not a url"}`:                          "Fetch not a url",
+		`nonsense`:                                     "Fetch ",
 	}
 	for args, want := range cases {
 		if got := describeFetch(json.RawMessage(args)); got != want {

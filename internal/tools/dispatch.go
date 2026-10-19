@@ -112,6 +112,12 @@ func pathArg(args json.RawMessage) (string, error) {
 // /var is really under /private/var, so comparing the stored text with a
 // resolved path would refuse every call.
 func containPath(root string, folders []string, requested string) (path, folder string, err error) {
+	// A relative root would be joined on again under each granted folder by
+	// workspace.Resolve, so the bot's files would land somewhere the owner
+	// never picked.
+	if root != "" && !filepath.IsAbs(root) {
+		return "", "", errors.New("this bot's folder is not an absolute path, so no file call can run")
+	}
 	abs := requested
 	if !filepath.IsAbs(abs) {
 		if root == "" {
