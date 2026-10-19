@@ -29,7 +29,7 @@ Hearth.app
 
 **Why a subprocess and not a linked library.** Crash isolation (a Go panic cannot take the UI down), independent testing of the core from a CLI (`hearthd --repl`, like `shhh serve`), no cgo, no Go/Swift thread coexistence, and a contract that a future iOS companion could speak to a core running elsewhere. gomobile has no first-class macOS path; cgo c-shared makes streaming callbacks painful and couples the runtimes. (D2, decided 2026-10-19)
 
-**Why Connect-RPC over a Unix socket.** One proto file is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it works over a socket with no ports and no TLS. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19)
+**Why Connect-RPC over a Unix socket.** One proto file is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it works over a socket with no ports and no TLS. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19; the socket transport itself is open, D16)
 
 ### 2. Responsibilities
 
@@ -100,18 +100,7 @@ Lifecycle: the app launches `hearthd` with a random socket path under the app's 
 
 ### 7. What is lifted from shhh and how
 
-| shhh package | Verdict | Plan |
-|---|---|---|
-| `internal/agent` core (messages, rounds, tool-round split, steering queue, repeat detection, round caps) | generic | Extract into the shared module (D8, decided 2026-10-19). |
-| `internal/agent/retry.go` | generic | Lift with it. |
-| `internal/meter` | cleanly generic | Lift as is; attribute Origin = (bot, task, run). |
-| `internal/memory` | shhh's model | Stays in shhh (D13). hearth's Notes package is new, against `model.md`'s per-bot notes. |
-| `internal/skill` | generic | Lift; role templates can be skills in disguise (SKILL.md with frontmatter) which also gives a path to sharing. |
-| `internal/storage` migrations + `chat_messages` | pattern | Copy the pattern, not the schema. |
-| `internal/approval` principles (standing rules first, two doors, fail closed) | principles | Re-implement for grants; no shell rules. |
-| `internal/secret` scrub | generic | Lift. |
-| `internal/rpc` | precedent | Read for shape; hearth uses proto. |
-| `internal/tools`, `internal/subagent` worktrees, `internal/ui`, `internal/cli` | coding-specific | Do not lift. |
+The package-by-package verdict on what to lift from shhh, as assessed when the architecture was first written, is frozen in [research/2026-10-19-shhh-lift.md](research/2026-10-19-shhh-lift.md).
 
 ### 8. Alternative considered: pure Swift
 
@@ -169,17 +158,18 @@ Each package states its contract the Go way: a `doc.go` whose package comment na
 
 ### 3. Lifting from shhh (D8: extract first)
 
-The packages listed as "lifted" are extracted from shhh into a shared Go module beside llm (`github.com/rfizzle/agentcore`, D12) before hearth's agent loop work starts, with coding-specific imports (classifier, mode, patterns, tools) left behind in shhh. shhh is repointed at the module under its own gates and the module is tagged like llm (two-phase tag, never moved). hearth consumes the tag. The module stays v0 until both apps ship a milestone on one tag (D15); its gate checks the exported API against the previous tag, so a tag's message says what it broke. This is M0 item 0.6 and it gates M1.5; it was chosen over copy-then-extract on 2026-10-19 so the two apps never diverge.
+The packages listed as "lifted" are extracted from shhh into a shared Go module beside llm (`github.com/rfizzle/agentcore`, D12) before hearth's agent loop work starts, with coding-specific imports (classifier, mode, patterns, tools) left behind in shhh. shhh is repointed at the module under its own gates and the module is tagged like llm (two-phase tag, never moved). hearth consumes the tag. The module stays v0 until both apps ship a milestone on one tag (D15); its gate checks the exported API against the previous tag, so a tag's message says what it broke. It was chosen over copy-then-extract on 2026-10-19 so the two apps never diverge.
 
 ### 4. Gates
 
-Every story passes, in this order, before it lands:
+Every change passes, in this order, before it lands:
 
 ```
 make fmt-check vet lint test docs-check     # shhh's set, same golangci config shape
 make astimate                                # astimate check --base <landing head>; new in hearth: wired into make ci
-make proto-check                             # buf lint + breaking against the last tag; generated code is committed and must match
 ```
+
+Once the proto exists, a check that the generated code is current joins them: buf lint and a breaking-change check against the last tag, with the committed generated code required to match.
 
 astimate: ship `astimate.yaml` as the embedded default from the astimate repo plus hearth's exemptions section. Capacity ceilings are absolute, so the package map above is designed with them in mind: `orchestrate` and `store` are the two packages most likely to approach a ceiling and are split by responsibility early (`orchestrate/schedule`, `store/migrate`) rather than later.
 
@@ -187,7 +177,7 @@ Test tiers follow shhh's `testing` skill: hermetic by default (fake stream funct
 
 ### 5. The core without the app
 
-`hearthd --repl` drives the core from a terminal: create an org from a template file, send a message, watch the event stream, decide approvals. It exists so that orchestration, budgets and framing can be developed and evaluated without Xcode, and so the twenty-scenario evaluation (roadmap M5.7) runs in CI against the core alone. Native tools are stubbed with canned answers in this mode.
+`hearthd --repl` drives the core from a terminal: create an org from a template file, send a message, watch the event stream, decide approvals. It exists so that orchestration, budgets and framing can be developed and evaluated without Xcode, and so the twenty-scenario evaluation runs in CI against the core alone. Native tools are stubbed with canned answers in this mode.
 
 ## Swift app
 
@@ -251,28 +241,20 @@ The overwatch workflow (a spec file per unit, draft/approved status, human sign-
 | Visual regressions | Snapshot goldens compared in CI |
 | Placement in the taxonomy | Review; the only question is "primitive, component, composition or feature?", answered by the folder it lands in |
 
-The description of a unit lives in the unit, so it cannot drift away from it:
+The description of a unit lives in the unit, so it cannot drift away from it: a header comment, the list of its states kept current by the compiler, and a preview per state. Decisions that span units (why the task card has one shape everywhere, what the three columns mean, the vocabulary) live in `docs/model.md` and are cited from code.
 
-- **Header comment** at the top of the file: purpose in one or two sentences, the system control it is backed by (primitives), the children it composes (compositions), and anything non-obvious about accessibility or layout. Written before the body, edited in the same change as the body. No status field.
-- **`PreviewState`** enum: the list of states, kept current by the compiler.
-- **`#Preview` per state** using `PreviewClient` fixtures: the stories.
-- Decisions that span units (why the task card has one shape everywhere, what the three columns mean, the vocabulary) live in `docs/model.md` (the task card rule, the vocabulary) and are cited from code with `// See docs/model.md#...`. Nothing in `docs/research/` is ever cited from code.
-
-For the handful of shared units that everything else reuses (tokens, the primitives, and `TaskCard`, `MessageRow`, `ApprovalCard`), it is worth agreeing the states and the API in conversation before building, because a change there touches every screen. That agreement is a short exchange and a header comment, not a document with a status.
-
-A new screen gets a one-page plan from the existing plan-task workflow with one extra section: the unit inventory (reuse / enhance / new primitive / new component / new composition) and the build order. That plan is the brief; there is no separate brief format.
+The handful of shared units that everything else reuses are agreed before they are built, because a change there touches every screen. That agreement is a short exchange and a header comment, not a document with a status.
 
 ### 6. Previews, gallery and goldens
 
-- Every component and composition declares a `PreviewState` enum and a `#Preview` per state. This is the story and the state list in one place.
-- `HearthGallery` is an app target that walks every `PreviewState` and renders it in light and dark, at default and the largest accessibility text size. It is what the owner looks at when a unit changes, and it is what SwiftUI-Kit does for system controls.
-- `swift-snapshot-testing` records a PNG per (unit, state, appearance) under `App/Goldens/`. CI compares. A golden changes only in a change that says why, the same rule as shhh's goldens.
-- Store tests run against `PreviewClient` fixtures and assert view state, not pixels.
+- The gallery is an app target that renders every unit in every state, in light and dark, at default and the largest accessibility text size. It is what the owner looks at when a unit changes, and it is what SwiftUI-Kit does for system controls.
+- Snapshot goldens record each (unit, state, appearance) and CI compares them, so a state seen in the gallery is a state a test covers.
+- Store tests run against fixtures and assert view state, not pixels.
 - UI tests (XCUITest) cover the golden path of each screen and run in the integration tier.
 
 ### 7. AppKit escape hatches
 
-Allowed, by name, in `HearthDesign` or `HearthUI` only, each with a header comment that says why SwiftUI was insufficient: the composer (`NSTextView` via `NSViewRepresentable` for attachments, mentions and paste), and if needed the transcript (`NSTableView`-backed list for cross-message selection). Any other `NSViewRepresentable` needs a reason in review. `swiftui-introspect` is not used; reaching into SwiftUI internals is the kind of coupling that breaks on every OS release.
+AppKit is allowed, by name, in the design and UI packages only, where SwiftUI falls short: the composer (attachments, mentions and paste) and, if needed, the transcript (cross-message selection). `swiftui-introspect` is not used; reaching into SwiftUI internals is the kind of coupling that breaks on every OS release.
 
 ### 8. Third-party packages
 
@@ -282,9 +264,9 @@ Minimal by policy; every dependency is a maintenance cost on a long-lived app. O
 |---|---|---|
 | `connectrpc/connect-swift` + `apple/swift-protobuf` | Generated client for the core | yes |
 | `pointfreeco/swift-snapshot-testing` | Goldens | yes |
-| `sparkle-project/Sparkle` | Updates | yes (M5) |
-| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, unless `AttributedString(markdown:)` plus a small table renderer proves enough in M1 |
-| `sindresorhus/KeyboardShortcuts` | User-configurable global hotkey | yes, M4 only |
+| `sparkle-project/Sparkle` | Updates | yes |
+| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, unless `AttributedString(markdown:)` plus a small table renderer proves enough |
+| `sindresorhus/KeyboardShortcuts` | User-configurable global hotkey | yes |
 | `nalexn/ViewInspector` | View-tree unit tests | no by default; store tests plus snapshots cover it, and it tracks SwiftUI internals |
 | `siteline/swiftui-introspect` | SwiftUI internals access | no (§7) |
 | `kishikawakatsumi/KeychainAccess` | Keychain wrapper | no; the Security framework calls are a hundred lines in `HearthNative` and the surface is tiny |
@@ -304,57 +286,3 @@ make gallery-build          # the gallery target compiles: every unit has a Prev
 ```
 
 The intended end state is astimate judging Swift packages with the same rules as Go. astimate's extractor interface is language-agnostic and its TypeScript extractor is a pure-Go tree-sitter runtime, so a Swift extractor with `tree-sitter-swift` is a bounded addition to the astimate repo. Until it exists, SwiftLint's size and complexity rules are the ceiling.
-
-### 10. The first units to build (before any screen)
-
-In build order, because everything above them reuses them: tokens; `Avatar`, `StatusDot`, `Pill`, `CardSurface`, `DisclosureRow`; `TaskStateBadge`, `ToolRow`, `CostLabel`, `DecisionBar`; `TaskCard`, `MessageRow`, `ApprovalCard`, `QuestionCard`, `DeliverableCard`; then the Conversation screen. `TaskCard` is used in five places and is the composition to get right first.
-
-## Skills and agents
-
-### 1. Copy from existing repos
-
-| Skill | From | Edit |
-|---|---|---|
-| `documentation` | shhh | Point the "where a fact belongs" table at hearth's `docs/` files; keep the citation convention and `make docs-check`. |
-| `testing` | shhh | Swap in hearth's fixtures: fake stream function, in-memory store, stubbed native tools under `hearthd --repl`. |
-| `sound-patterns` | shhh | None. |
-| `go-conformance-suite` | global | None. Applies to tool executors, the credential store and native tools, each with a live and a fake implementation. |
-| `golang-code-style`, `golang-naming`, `golang-error-handling`, `golang-structs-interfaces`, `golang-concurrency`, `golang-context`, `golang-testing` | go-starter | None expected. Add others only when a story needs them. |
-
-Not copied: `backend-spec`, `component-spec`, `composition-spec`, `component-build`, `composition-build`, `feature-decompose`, `project-conventions` and the spec validators. Their useful content (the taxonomy, build order, reuse-first, tokens by role) is folded into the two new skills below.
-
-### 2. Write new
-
-| Skill | Purpose | Triggers |
-|---|---|---|
-| `swiftui-structure` | The whole of `architecture.md#swift-app` as working guidance: thin-client rule, package layout and import direction, the unit taxonomy and where a new view goes, Observation stores, `PreviewState` and gallery, goldens, tokens by role, the AppKit escape hatch rule, the accessibility checklist (VoiceOver label/value/traits, full keyboard access, Reduce Motion, Increase Contrast, Dynamic Type, 24 pt targets). | Any change under `App/`. |
-| `go-structure` | The four layers and import rules from `architecture.md#go-core`, the `doc.go` contract convention, which packages are lifted from shhh and how a fix is ported back, astimate as the ceiling. | Any change under `internal/` or `cmd/`. |
-| `proto-contract` | How to change `proto/hearth/v1`: edit, `buf lint`, `buf breaking` against the last tag, regenerate both sides, commit the generated code. The thin-client rule in reverse: if Swift needs logic, add an RPC or event here. | Any change under `proto/`, or a Swift change that wants domain logic. |
-| `core-repl` | Driving `hearthd --repl` to reproduce a bug, run a scenario from the evaluation set, or demonstrate orchestration without the app. | Debugging orchestration, budgets, framing; running evals. |
-| `mac-release` | Runbook: signing inside-out, `notarytool`, `stapler`, `vtool` checks, Sparkle appcast and keys, the release checklist. | Tagging a release or touching the build pipeline. |
-
-Two skills carry the structure; three carry mechanics nobody should have to rediscover. If a sixth is proposed, the test is whether a tool or a reviewer acts on it.
-
-### 3. Agents
-
-The global set is enough: `planning` for a screen's plan (with the unit inventory and build order as a section), `implementation` for the work, `review` and `diff-reviewer` with the thin-client rule and taxonomy placement on their checklist, `verification` for the gates, `architect` for the orchestration state machine and for the security review of the tool gate before M1 lands. No spec-drafter and no spec-enforcer.
-
-### 4. Gates that replace approvals
-
-Everything that overwatch gated by a human approving a markdown file, hearth gates mechanically or not at all:
-
-| Was | Now |
-|---|---|
-| Spec approved before build | A short conversation for the shared units only (tokens, primitives, `TaskCard`, `MessageRow`, `ApprovalCard`); header comment written first for everything |
-| All spec states implemented | Gallery build fails on a missing `PreviewState`; goldens cover each state |
-| Props widening needs a revision | Review |
-| Semantic tokens only | SwiftLint custom rule |
-| Contrast validated | `make tokens-check` |
-| Spec/code drift | Nothing to drift: the description is in the file |
-
-### 5. Bootstrap order (roadmap 0.5)
-
-1. `.agents/skills/` with the copied skills and the symlink convention.
-2. `AGENTS.md` in shhh's section order: what it is, scope and restraint, documentation rules, commands table, testing, before a push, version control, architecture (the package map and package layout above), invariants (thin-client rule, grants checked in the core, no credentials in context), gotchas.
-3. The two structure skills, then the three mechanics skills as their subject arrives (proto with 0.1, repl with 0.6, release with M5).
-4. Then the first unit: `Theme.swift` and `tokens-check`.
