@@ -107,8 +107,8 @@ The app watches the folder; files the owner adds are visible to bots with the fo
 
 | Capability | What it allows | Default for new bots |
 |---|---|---|
-| `files.read(<folder>)` | Read files under a folder (Workspace subfolders, or any folder the owner picks via the open panel, stored as a security-scoped bookmark) | own team's Workspace subfolder |
-| `files.write(<folder>)` | Create/replace files | own team's Workspace subfolder |
+| `files.read(<folder>)` | Read files under a folder (Workspace subfolders, or any folder the owner picks via the open panel, stored as a security-scoped bookmark) | own team's Workspace subfolder; an org-level bot's own folder |
+| `files.write(<folder>)` | Create/replace files | own team's Workspace subfolder; an org-level bot's own folder |
 | `files.delete(<folder>)` | Delete files | ask me |
 | `web.fetch` | Fetch a URL (read-only, no cookies) | allowed |
 | `web.search` | Web search via the provider's or a configured search tool | allowed |
