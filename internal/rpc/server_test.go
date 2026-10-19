@@ -159,9 +159,11 @@ func TestStreamHello(t *testing.T) {
 		count     int32
 		wantWords []string
 		wantCode  connect.Code
+		wantLen   int
 	}{
 		{name: "five words cycle the list", token: testToken, count: 5, wantWords: []string{"one", "two", "three", "one", "two"}},
 		{name: "zero means the default ten", token: testToken, count: 0, wantWords: []string{"one", "two", "three", "one", "two", "three", "one", "two", "three", "one"}},
+		{name: "a request above the cap is cut to it", token: testToken, count: maxCount * 100, wantLen: maxCount},
 		{name: "wrong token", token: "nope", count: 3, wantCode: connect.CodeUnauthenticated},
 		{name: "missing token", token: "", count: 3, wantCode: connect.CodeUnauthenticated},
 	}
@@ -177,6 +179,12 @@ func TestStreamHello(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("StreamHello: %v", err)
+			}
+			if tt.wantLen != 0 {
+				if len(got) != tt.wantLen {
+					t.Fatalf("got %d words, want %d", len(got), tt.wantLen)
+				}
+				return
 			}
 			if strings.Join(got, " ") != strings.Join(tt.wantWords, " ") {
 				t.Errorf("words = %q, want %q", got, tt.wantWords)

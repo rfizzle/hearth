@@ -17,6 +17,12 @@ const (
 	defaultInterval = 50 * time.Millisecond
 	// defaultCount is how many words StreamHello sends when asked for none.
 	defaultCount = 10
+	// maxCount caps how many words one StreamHello may ask for. The count is
+	// request input and every word holds the stream open for an interval, so
+	// without a cap one caller could pin a handler for as long as it liked.
+	// 1,000 words is far more than the demo stream needs and ends within a
+	// minute at the default pace.
+	maxCount     = 1000
 	defaultWords = "Hello from hearthd, the Go core of hearth, streaming one word at a time to the app."
 )
 
@@ -65,6 +71,7 @@ func (s *service) StreamHello(ctx context.Context, req *connect.Request[hearthv1
 	if count <= 0 {
 		count = defaultCount
 	}
+	count = min(count, maxCount)
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	for i := range count {
