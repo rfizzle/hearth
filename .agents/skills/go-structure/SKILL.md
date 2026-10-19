@@ -5,8 +5,8 @@ description: Use this skill for any change under internal/ or cmd/ (the hearthd 
 
 # Go core structure
 
-Today only `cmd/hearthd` and `scripts/` exist; the packages below are the
-target map. The reasons live in `docs/architecture.md`, section "Go core".
+Today `cmd/hearthd`, `internal/rpc`, `proto/` and `scripts/` exist; the
+other packages below are the target map. The reasons live in `docs/architecture.md`, section "Go core".
 
 ## Layers
 
@@ -54,7 +54,7 @@ Lifted from shhh through the shared module (`agentcore`, working name; hearth
 consumes its tag): `agent` (loop, retry, compaction), `meter`, `secret`, `skill`. Shapes copied, not code: `store`
 migrations and the messages table, `tools` registry, `tools/describe`, the
 approval principles. New in hearth: `org`, `orchestrate`, `native`, `provider`,
-`handbook`, `framing`, `rpc` (Connect over a Unix socket, not shhh's JSON-RPC).
+`handbook`, `framing`, `rpc` (Connect over loopback with a launch token, not shhh's JSON-RPC).
 A fix to a lifted package is made in the shared module, not in a hearth copy.
 
 ## Gates

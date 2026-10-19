@@ -2,9 +2,9 @@
 
 `hearth` is a native Mac app where you run a small organisation of AI
 employees. It is a SwiftUI app in `App/` (planned) over a bundled pure-Go
-core, `hearthd`, in `cmd/` and `internal/` (planned), that the app launches and
-talks to over a Unix socket with Connect-RPC. The core owns the org, the agent loop and the
-tools; the app is a thin client. Providers come from `github.com/rfizzle/llm`.
+core, `hearthd`, in `cmd/` and `internal/`, that the app launches and talks to
+over loopback with Connect-RPC and a per-launch token. The core owns the org,
+the agent loop and the tools; the app is a thin client. Providers come from `github.com/rfizzle/llm`.
 The design is in `docs/`; start at `docs/README.md`.
 
 ## Scope and restraint
@@ -90,16 +90,16 @@ These yield to an explicit instruction to do otherwise.
 ## Architecture
 
 Package doc comments (`doc.go`) and the comments at each trap are the detailed
-map. Only `cmd/hearthd` and `scripts/` exist today; the rest is the target
-from `docs/architecture.md`. Skills for each side: `go-structure` and
+map. `cmd/hearthd`, `internal/rpc`, `proto/` and `scripts/` exist today; the
+rest is the target from `docs/architecture.md`. Skills for each side: `go-structure` and
 `swiftui-structure`.
 
 ```
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             (planned) dependencies point down only
-  rpc/                Connect handlers; translation only, no domain logic
+internal/             dependencies point down only; only rpc/ exists so far
+  rpc/                Connect handlers and the token check; generated code under gen/
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus
   agent/              one bot's turn: loop, tool rounds, retry, compaction
   tools/ memory/ handbook/ meter/ provider/ native/ secret/ skill/ framing/

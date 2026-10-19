@@ -14,7 +14,7 @@ Hearth.app
 └── Contents/Helpers/hearthd         Go, pure (CGO_ENABLED=0), launched by the app
 
    Hearth (Swift)                                 hearthd (Go)
-   ┌──────────────────────────┐   Unix socket     ┌──────────────────────────────┐
+   ┌──────────────────────────┐loopback TCP, token┌──────────────────────────────┐
    │ Windows, sidebar, chat,  │ ◄──────────────► │ Org model, bots, conversations│
    │ Inbox, Settings          │  Connect-RPC     │ Agent loop, orchestration     │
    │ Keychain, TCC, EventKit, │  (proto schema)  │ Providers via rfizzle/llm     │
@@ -29,7 +29,7 @@ Hearth.app
 
 **Why a subprocess and not a linked library.** Crash isolation (a Go panic cannot take the UI down), independent testing of the core from a CLI (`hearthd --repl`, like `shhh serve`), no cgo, no Go/Swift thread coexistence, and a contract that a future iOS companion could speak to a core running elsewhere. gomobile has no first-class macOS path; cgo c-shared makes streaming callbacks painful and couples the runtimes. (D2, decided 2026-10-19)
 
-**Why Connect-RPC over a Unix socket.** One proto file is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it works over a socket with no ports and no TLS. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19; the socket transport itself is open, D16)
+**Why Connect-RPC over a Unix socket.** One proto file is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it works over a socket with no ports and no TLS. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19; D16 settled the transport: loopback TCP with a per-launch token)
 
 ### 2. Responsibilities
 
@@ -69,7 +69,7 @@ NativeToolService (served by the app, called by the core): Calendar*, Reminders*
 
 Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple.
 
-Lifecycle: the app launches `hearthd` with a random socket path under the app's container and a one-time token; the core exits when the socket closes. The app restarts it on crash and shows a quiet banner. Version handshake on connect; mismatch is a bug, not a user-facing state, because they ship together.
+Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a loopback port and reports it, and exits when the pipe the app holds closes. The app restarts it on crash and shows a quiet banner. Version handshake on connect; mismatch is a bug, not a user-facing state, because they ship together.
 
 ### 4. Data
 
@@ -86,7 +86,7 @@ Lifecycle: the app launches `hearthd` with a random socket path under the app's 
 - Credentials never enter model context. Tool results are scrubbed for the known key shapes before they are appended (lift shhh's `secret` scrub).
 - Web fetch has no cookies, follows redirects with a cap, strips scripts, limits size, and blocks link-local and private ranges.
 - Prompt injection from fetched pages and files is treated as untrusted data: the framing says so, and act-tier tools require approval regardless of what a page says. There is no "always allow" for `files.delete` or any Shortcut that the owner did not individually grant.
-- The socket is in a user-only directory; the core checks the peer uid and the launch token.
+- The core listens on loopback only and checks the launch token on every request (D16).
 - No telemetry. Crash reports only with an explicit opt-in, via the macOS mechanism.
 
 ### 6. Build, sign, ship
