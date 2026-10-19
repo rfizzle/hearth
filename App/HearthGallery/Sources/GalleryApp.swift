@@ -36,6 +36,26 @@ struct GalleryApp: App {
                     .environment(\.colorScheme, scheme)
                 }
                 // End onboarding.
+                // Hire: TemplateCard and TierPicker, light and dark.
+                ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
+                    Section("TemplateCard, \(scheme == .light ? "light" : "dark")") {
+                        ForEach(TemplateCard.PreviewState.allCases, id: \.self) { state in
+                            LabeledContent(state.rawValue) {
+                                TemplateCard(previewState: state)
+                            }
+                        }
+                    }
+                    .environment(\.colorScheme, scheme)
+                    Section("TierPicker, \(scheme == .light ? "light" : "dark")") {
+                        ForEach(TierPicker.PreviewState.allCases, id: \.self) { state in
+                            LabeledContent(state.rawValue) {
+                                TierPicker(previewState: state)
+                            }
+                        }
+                    }
+                    .environment(\.colorScheme, scheme)
+                }
+                // End hire.
             }
         }
     }
