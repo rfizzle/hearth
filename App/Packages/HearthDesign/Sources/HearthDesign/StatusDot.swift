@@ -4,6 +4,7 @@
 // the system's pulse symbol effect, which is switched off under Reduce Motion
 // and leaves the plain dot. The colour never stands alone: the label is what
 // VoiceOver reads.
+// See docs/design.md#colour
 
 import SwiftUI
 

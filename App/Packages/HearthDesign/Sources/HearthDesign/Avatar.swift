@@ -3,6 +3,7 @@
 // secondary surface colour, regular or large. The diameter scales with Dynamic Type. It is
 // hidden from VoiceOver: an avatar always sits beside the name it stands for,
 // and reading both says the name twice.
+// See docs/design.md#the-transcript
 
 import SwiftUI
 

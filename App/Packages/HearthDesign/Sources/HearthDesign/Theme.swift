@@ -14,6 +14,7 @@
 // Type is the system's text styles by role, spacing and radii are the scales
 // below, and sizes are the few fixed measures the screens share. None of them
 // is in the JSON: nothing checks them.
+// See docs/design.md#colour
 
 import AppKit
 import SwiftUI

@@ -4,6 +4,7 @@
 // NSColor, because SwiftUI has no API that returns a document icon for a type.
 // The icon is decoration beside the file's name, so it is hidden from
 // VoiceOver, and it scales with Dynamic Type.
+// See docs/design.md#the-transcript
 
 import AppKit
 import SwiftUI

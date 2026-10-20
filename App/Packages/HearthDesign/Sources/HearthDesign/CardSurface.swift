@@ -5,6 +5,7 @@
 // Button or a selectable row around it, which carries the traits. The
 // selected state is shown by the stroke and must also be said by whatever
 // wraps it, because a stroke is not a label.
+// See docs/design.md#spacing-and-shape
 
 import SwiftUI
 

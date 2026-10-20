@@ -2,6 +2,7 @@
 // a Text on a Capsule, so it grows with Dynamic Type and VoiceOver reads the
 // text as it is. The tone picks a text colour and the fill that sits behind it;
 // the word carries the meaning, the colour only supports it.
+// See docs/design.md#colour
 
 import SwiftUI
 

@@ -3,6 +3,7 @@
 // keyboard (Space and the arrow keys) and the VoiceOver expanded and collapsed
 // state are the system's. This only sets the label in secondary callout type,
 // keeps it at least a minimum target tall, and insets the content.
+// See docs/design.md#the-transcript
 
 import SwiftUI
 

@@ -24,7 +24,8 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 
 - **Each document answers one question.** `docs/product.md` is what hearth is,
   `docs/model.md` the things and how work flows, `docs/architecture.md` the
-  big shapes and why, `docs/decisions.md` what was decided, this file where the
+  big shapes and why, `docs/design.md` what the app looks like and why,
+  `docs/decisions.md` what was decided, this file where the
   code is and what will bite you.
 - **Documents name no Go symbol; code cites documents.** The reason goes in
   the comment as prose, then the pointer: `// See docs/model.md#<heading>`.
@@ -132,7 +133,7 @@ App/                  Package.swift root: the app and gallery targets
   HearthGallery/      every component and composition in every state
   Packages/
     HearthKit/        generated client, HearthClient, LiveClient, PreviewClient
-    HearthDesign/     tokens and primitives
+    HearthDesign/     tokens and primitives (the look: docs/design.md)
     HearthUI/         components and compositions
     HearthFeatures/   one @Observable store and screens per feature
     HearthNative/     EventKit, Contacts, Shortcuts, Keychain, notifications
