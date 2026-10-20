@@ -23,6 +23,11 @@ private struct EmptyOrgClient: HearthClient {
     func createBot(_ request: Hearth_V1_CreateBotRequest) async throws -> Hearth_V1_Bot {
         try await base.createBot(request)
     }
+    func draftBot(
+        _ request: Hearth_V1_DraftBotRequest
+    ) async throws -> Hearth_V1_DraftBotResponse {
+        try await base.draftBot(request)
+    }
     func listBots() async throws -> [Hearth_V1_Bot] { [] }
     func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {
         try await base.listConversations(botID: botID)
@@ -182,4 +187,84 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     #expect(store.bots.count == 2)
     await store.handle(.with { $0.event = .resync(Hearth_V1_Resync()) })
     #expect(store.bots.map(\.id) == [Fixtures.bot.id])
+}
+
+@MainActor
+@Test func improveShowsAProposalAndLeavesTheOwnersTextAlone() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[0])
+    store.name = "Sam"
+    await store.improve()
+    #expect(store.proposal?.name == Fixtures.draft.name)
+    #expect(store.proposal?.jobDescription == Fixtures.draft.jobDescription)
+    #expect(store.jobDescription == Fixtures.templates[0].jobDescription)
+    #expect(store.name == "Sam")
+    #expect(store.error == nil)
+}
+
+@MainActor
+@Test func improveIsOffWithNothingToImprove() async {
+    let store = HireStore(client: PreviewClient())
+    #expect(!store.canDraft)
+    await store.improve()
+    #expect(store.proposal == nil)
+}
+
+@MainActor
+@Test func usingTheProposalMovesItIntoTheFormAndCreateSendsIt() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[0])
+    await store.improve()
+    store.proposal?.workingStyle = "Warm and patient"
+    store.useProposal()
+    #expect(store.proposal == nil)
+    #expect(store.name == Fixtures.draft.name)
+    #expect(store.role == Fixtures.draft.role)
+    #expect(store.tier == Fixtures.draft.tier)
+    let shown = Fixtures.draft.jobDescription + "\n\nWorking style: Warm and patient"
+    #expect(store.jobDescription == shown)
+    await store.create()
+    #expect(store.createdBot?.jobDescription == shown)
+    #expect(store.createdBot?.name == Fixtures.draft.name)
+}
+
+@MainActor
+@Test func keepingMineDropsTheProposalAndChangesNothing() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[1])
+    store.name = "Sam"
+    await store.improve()
+    store.keepMine()
+    #expect(store.proposal == nil)
+    #expect(store.name == "Sam")
+    #expect(store.role == Fixtures.templates[1].role)
+    #expect(store.jobDescription == Fixtures.templates[1].jobDescription)
+    #expect(store.tier == .best)
+}
+
+@MainActor
+@Test func aChipAddsOneVisibleSentenceAndTheNextChipReplacesIt() async {
+    let store = HireStore(client: PreviewClient())
+    store.describe()
+    store.jobDescription = "Keep my plants alive."
+    await store.improve()
+    let plain = Fixtures.draft.jobDescription
+    store.choose(.warm)
+    #expect(store.proposal?.jobDescription == plain + " " + HireStore.Style.warm.sentence)
+    #expect(store.proposal?.style == .warm)
+    store.choose(.thorough)
+    #expect(store.proposal?.jobDescription == plain + " " + HireStore.Style.thorough.sentence)
+    store.choose(.thorough)
+    #expect(store.proposal?.jobDescription == plain)
+    #expect(store.proposal?.style == nil)
+    #expect(store.jobDescription == "Keep my plants alive.")
+}
+
+@MainActor
+@Test func pickingAnotherStartDropsTheProposal() async {
+    let store = HireStore(client: PreviewClient())
+    store.pick(Fixtures.templates[0])
+    await store.improve()
+    store.describe()
+    #expect(store.proposal == nil)
 }

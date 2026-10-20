@@ -4,8 +4,10 @@
 // and the form is plain text input, so only the second is a Form. The whole
 // body scrolls, and Cancel and the one prominent Create float on a scroll
 // edge at the bottom: Escape cancels, Return creates once a name and a job
-// description are typed. The sheet is a function of store state; it reports
-// the new bot to its caller and has no local state beyond the editor's height.
+// description are typed. Under the form, DraftPanel offers "Improve this" and
+// shows the core's suggestion beside the owner's text. The sheet is a function
+// of store state; it reports the new bot to its caller and has no local state
+// beyond the editor's height.
 // See docs/design.md#forms-sheets-and-settings
 
 import HearthDesign
@@ -45,6 +47,8 @@ public struct HireSheet: View {
                 cards
                     .padding(.horizontal, Theme.Spacing.xl)
                 form(fields: $store)
+                DraftPanel(store: store)
+                    .padding(.horizontal, Theme.Spacing.xl)
             }
             .padding(.top, Theme.Spacing.xl)
         }

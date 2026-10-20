@@ -49,6 +49,19 @@ public enum Fixtures {
         },
     ]
 
+    /// What the model proposes for a short description of a research job.
+    public static let draft = Hearth_V1_DraftBotResponse.with {
+        $0.name = "Wren"
+        $0.role = "Research Analyst"
+        $0.jobDescription =
+            "You look into the questions the owner brings you and report what you find. "
+            + "You read the original sources, say where each fact came from, and keep every "
+            + "brief to one page. Good work is accurate, easy to skim and honest about "
+            + "what you could not confirm."
+        $0.workingStyle = "Direct and brief; leads with the answer; asks before guessing"
+        $0.tier = .balanced
+    }
+
     /// Dana, a research lead hired from the first template, idle.
     public static let bot = Hearth_V1_Bot.with {
         $0.id = "bot-dana"

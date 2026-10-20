@@ -74,6 +74,12 @@ public final class LiveClient: HearthClient {
         try await bots.createBot(request: request).value().bot
     }
 
+    public func draftBot(
+        _ request: Hearth_V1_DraftBotRequest
+    ) async throws -> Hearth_V1_DraftBotResponse {
+        try await bots.draftBot(request: request).value()
+    }
+
     public func listBots() async throws -> [Hearth_V1_Bot] {
         try await bots.listBots(request: Hearth_V1_ListBotsRequest()).value().bots
     }

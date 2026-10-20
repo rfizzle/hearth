@@ -18,7 +18,8 @@ extension Catalog {
                     onboarding(.signIn, name: "sign in"),
                     onboarding(.nameAndFolder, name: "name and folder"),
                 ]),
-            GalleryPage(package: package, name: "HireSheet", states: [hireWithTemplate()]),
+            GalleryPage(
+                package: package, name: "HireSheet", states: [hireWithDraft(), hireWithTemplate()]),
             GalleryPage(
                 package: package, name: "BotList", states: botListStates),
             GalleryPage(
@@ -53,6 +54,21 @@ extension Catalog {
         }
         return GalleryState(
             name: "template picked", width: 560,
+            view: AnyView(HireSheet(store: store, onHired: { _ in }, onCancel: {})))
+    }
+
+    /// A template picked and "Improve this" answered: the owner's text and the
+    /// suggestion side by side, with a working-style chip chosen.
+    private static func hireWithDraft() -> GalleryState {
+        let store = HireStore(client: PreviewClient())
+        Task {
+            await store.load()
+            if let template = store.templates.first { store.pick(template) }
+            await store.improve()
+            store.choose(.cautious)
+        }
+        return GalleryState(
+            name: "draft shown", width: 560,
             view: AnyView(HireSheet(store: store, onHired: { _ in }, onCancel: {})))
     }
 
@@ -116,6 +132,11 @@ private struct NoBotsClient: HearthClient {
     }
     func createBot(_ request: Hearth_V1_CreateBotRequest) async throws -> Hearth_V1_Bot {
         try await preview.createBot(request)
+    }
+    func draftBot(
+        _ request: Hearth_V1_DraftBotRequest
+    ) async throws -> Hearth_V1_DraftBotResponse {
+        try await preview.draftBot(request)
     }
     func listBots() async throws -> [Hearth_V1_Bot] { [] }
     func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {

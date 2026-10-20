@@ -54,6 +54,12 @@ public struct PreviewClient: HearthClient {
         return bot
     }
 
+    public func draftBot(
+        _ request: Hearth_V1_DraftBotRequest
+    ) async throws -> Hearth_V1_DraftBotResponse {
+        Fixtures.draft
+    }
+
     public func listBots() async throws -> [Hearth_V1_Bot] {
         [Fixtures.bot]
     }

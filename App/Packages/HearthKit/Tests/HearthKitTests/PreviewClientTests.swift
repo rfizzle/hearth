@@ -45,6 +45,13 @@ import Testing
     #expect(try await client.listConversations(botID: "bot-other").isEmpty)
 }
 
+@Test func draftBotServesTheFixtureDraft() async throws {
+    let request = Hearth_V1_DraftBotRequest.with { $0.description_p = "Read up on competitors" }
+    let draft = try await PreviewClient().draftBot(request)
+    #expect(draft == Fixtures.draft)
+    #expect(!draft.jobDescription.isEmpty && !draft.workingStyle.isEmpty)
+}
+
 @Test func signInAnswersWithoutTheCredential() async throws {
     let client = PreviewClient()
     let account = try await client.setAPIKey(provider: .anthropic, key: "sk-secret-1234")

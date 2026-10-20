@@ -23,6 +23,9 @@ public protocol HearthClient: Sendable {
     func createBot(_ request: Hearth_V1_CreateBotRequest) async throws -> Hearth_V1_Bot
     /// Every bot in the org.
     func listBots() async throws -> [Hearth_V1_Bot]
+    /// Asks the model to propose a name, role, job description and working
+    /// style from the owner's words. It only proposes; nothing is stored.
+    func draftBot(_ request: Hearth_V1_DraftBotRequest) async throws -> Hearth_V1_DraftBotResponse
 
     /// The conversations `botID` is in; an empty id lists every conversation.
     func listConversations(botID: String) async throws -> [Hearth_V1_Conversation]
