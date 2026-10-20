@@ -5,6 +5,10 @@
 # Layout is swift format's job; SwiftLint rules that fight it are off.
 disabled_rules:
   - trailing_comma
+identifier_name:
+  # The spacing and radius scales are named xs to xxl.
+  # Listing names replaces SwiftLint's own defaults, so they are repeated.
+  excluded: [id, URL, GlobalAPIKey, xs, sm, md, lg, xl]
 excluded:
   - "**/Gen"
   - "**/.build"

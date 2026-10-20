@@ -1,4 +1,5 @@
-// Placeholder test for HearthDesign: every colour role has a token.
+// Every colour role and tone resolves, and the spacing and radius scales
+// climb.
 
 import Testing
 
@@ -7,4 +8,37 @@ import Testing
 @Test(arguments: ColorRole.allCases)
 func everyColorRoleResolves(role: ColorRole) {
     #expect(Theme.pair(role) != nil)
+}
+
+@Test(arguments: ColorRole.allCases)
+func everyColorRoleHasALightAndADarkHex(role: ColorRole) throws {
+    let pair = try #require(Theme.pair(role))
+    for hex in [pair.light, pair.dark] {
+        #expect(hex.count == 7 && hex.hasPrefix("#"))
+        #expect(UInt32(hex.dropFirst(), radix: 16) != nil)
+    }
+}
+
+@Test func theTokenFileHoldsExactlyTheRoles() {
+    #expect(ColorRole.allCases.count == 11)
+    #expect(Set(ColorRole.allCases.map(\.rawValue)) == Set(Theme.tokens.colors.keys))
+}
+
+@Test(arguments: Tone.allCases)
+func everyToneHasAColourAndAFill(tone: Tone) {
+    // Resolving is the test: a role with no token traps.
+    _ = Theme.color(tone)
+    _ = Theme.fill(tone)
+}
+
+@Test func spacingAndRadiusAscend() {
+    let spacing = [
+        Theme.Spacing.xs, Theme.Spacing.sm, Theme.Spacing.md, Theme.Spacing.lg,
+        Theme.Spacing.xl, Theme.Spacing.xxl,
+    ]
+    let radii = [Theme.Radius.sm, Theme.Radius.md, Theme.Radius.lg]
+    #expect(spacing == [4, 8, 12, 16, 24, 32])
+    #expect(radii == [6, 10, 16])
+    #expect(zip(spacing, spacing.dropFirst()).allSatisfy { $0 < $1 })
+    #expect(zip(radii, radii.dropFirst()).allSatisfy { $0 < $1 })
 }
