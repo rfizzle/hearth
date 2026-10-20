@@ -49,3 +49,27 @@ func TestRenderNamesNoTool(t *testing.T) {
 		t.Errorf("framing names a tool: %q", m)
 	}
 }
+
+func TestRenderAsksThePerson(t *testing.T) {
+	got := framing.Render(framing.Input{OrgName: "O", BotName: "B", Role: "R", JobDescription: "J", FolderPath: "/f"})
+	i := strings.Index(got, "## Asking the person")
+	if i < 0 {
+		t.Fatalf("framing has no section on asking the person:\n%s", got)
+	}
+	section := got[i:]
+	for _, want := range []string{
+		"Single choice", "Multiple choice", "Free text", "Yes or no", "Date", "File or folder", "Scale",
+		"The owner chose: Keep it", "The owner chose: Other:", "The owner chose none", "The owner answered:",
+		"The owner said: Yes", "The owner picked the date: 2026-10-24", "The owner picked: /", "The owner rated it 4 of 5",
+	} {
+		if !strings.Contains(section, want) {
+			t.Errorf("the section is missing %q", want)
+		}
+	}
+	// The section describes the behaviour; it never names the tool that asks.
+	for _, tool := range []string{"ask_owner", "tool", "widget", "JSON"} {
+		if strings.Contains(section, tool) {
+			t.Errorf("the section names %q", tool)
+		}
+	}
+}

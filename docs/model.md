@@ -81,7 +81,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 
 **Approval** (`Approval`). A request to use a tool whose grant is "ask me". Shows exactly what will happen in plain language (e.g. "Send an email to Dana Ortiz with subject 'Invoice March' via your 'Send Mail' shortcut"), with Allow once / Allow for this task / Always allow for this bot / Deny. Decisions are recorded in the thread.
 
-**Question** (`Question`). A bot asking the owner something, with optional suggested answers. Pauses the task; the answer resumes it with the question and answer appended to the brief.
+**Question** (`Question`). A bot asking the owner something, with optional suggested answers. Pauses the task; the answer resumes it with the question and answer appended to the brief. A question may carry one control from a fixed set (a single or multiple choice, free text, yes or no, a date, a file or folder, a scale); the owner answers it in the thread or the Inbox and the bot reads the answer in fixed words, never as data.
 
 ### Knowledge
 
