@@ -252,3 +252,30 @@ func TestDescribe(t *testing.T) {
 		}
 	}
 }
+
+// TestWrite_AHardLinkIsNotWrittenThrough refuses a file with a second name:
+// writing it would change the file under that name too, here outside the
+// folder.
+func TestWrite_AHardLinkIsNotWrittenThrough(t *testing.T) {
+	b := newBot(t, org.FilesWrite)
+	outside := filepath.Join(b.outside, "keep.txt")
+	if err := os.WriteFile(outside, []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Link(outside, filepath.Join(b.folder, "twin.md")); err != nil {
+		t.Fatal(err)
+	}
+	b.put(t, "twin.md.md", []byte("# Twin"))
+	if err := os.Link(outside, filepath.Join(b.folder, "twin.md.pdf")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.call("files.write", map[string]any{"path": "twin.md", "content": "gone"}); err == nil || !strings.Contains(err.Error(), "hard link") {
+		t.Errorf("files.write: %v, want a refusal naming the hard link", err)
+	}
+	if _, err := b.call("files.render", map[string]any{"path": "twin.md.md", "to": "pdf"}); err == nil || !strings.Contains(err.Error(), "hard link") {
+		t.Errorf("files.render: %v, want a refusal naming the hard link", err)
+	}
+	if got, _ := os.ReadFile(outside); string(got) != "keep" {
+		t.Errorf("the file outside now reads %q", got)
+	}
+}

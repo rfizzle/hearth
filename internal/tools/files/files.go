@@ -218,11 +218,37 @@ func openForWrite(tool, folder, path, name string) (*os.File, error) {
 	}
 	// O_NOFOLLOW refuses a symlink at the file itself, the one element
 	// stillInside cannot hold steady between its check and this open.
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, 0o644)
+	// It truncates only after the open file is checked: a file with a second
+	// name, a hard link perhaps outside the folder, would change under that
+	// name too.
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|syscall.O_NOFOLLOW, 0o644)
 	if err != nil {
 		return nil, failed(tool, "write", name, err)
 	}
+	info, err := f.Stat()
+	if err == nil {
+		err = regular(info, name)
+	}
+	if err == nil && links(info) > 1 {
+		err = fmt.Errorf("%s has another name elsewhere (a hard link), and writing it would change that file too", name)
+	}
+	if err != nil {
+		f.Close()
+		return nil, fmt.Errorf("%s: %w; nothing was written", tool, err)
+	}
+	if err := f.Truncate(0); err != nil {
+		f.Close()
+		return nil, failed(tool, "write", name, err)
+	}
 	return f, nil
+}
+
+// links is how many names the file has, or 1 when the system does not say.
+func links(info fs.FileInfo) uint64 {
+	if st, ok := info.Sys().(*syscall.Stat_t); ok {
+		return uint64(st.Nlink) //nolint:unconvert // Nlink is narrower on darwin
+	}
+	return 1
 }
 
 // stillInside resolves the path again now that its folders exist, and
