@@ -131,6 +131,32 @@ no sidebar and no toolbar, and a cross-fade to the split view once the
 organisation exists (D24 in `decisions.md`). Optional setup, such as web search,
 is collapsed and waits until after the first conversation.
 
+## Motion
+
+Motion follows Apple's Human Interface Guidelines page on motion: purposeful,
+brief, and never in the way. Two durations, named by what they are for: quick
+(0.2 s, ease-out) for feedback that follows a click, a swap or a fade; move
+(0.35 s, a spring with no bounce) for a layout change, a height growing or a row
+sliding in. Nothing else is written inline.
+
+What animates is a change the person asked for. What does not is content that
+arrives on its own (streamed text, events from the core, a status flipping); it
+appears, so the transcript never jitters while a reply streams.
+
+Reduce Motion: every animation passes through one helper that returns nothing
+under the setting, so nothing animates by accident. A change still happens, at
+once, or as a cross-fade where a jump would lose the person's place. Repeating
+effects, such as the working dot, stop; their labels stay. The system's motion
+stays the system's: glass, sheets, scroll edges, selection and hover.
+
+The transitions in use, one each: a disclosure grows with its body fading in; a
+revealed field slides down from the top; a state pill or a swapped button
+blur-replaces in place; a step change cross-fades while the column's height
+moves; the owner's sent message rises in and the newest line stays in view; a
+new team member slides into the sidebar; an empty state fades out and the
+content is simply there; a symbol that changes meaning (send, stop) replaces
+itself. Nothing travels between two places. No motion library is needed.
+
 ## What stays out
 
 - **Custom fonts.** The system's type scales, localises and is what people expect.

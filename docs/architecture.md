@@ -271,6 +271,7 @@ Minimal by policy; every dependency is a maintenance cost on a long-lived app. O
 | `sparkle-project/Sparkle` | Updates | yes |
 | `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, unless `AttributedString(markdown:)` plus a small table renderer proves enough |
 | `sindresorhus/KeyboardShortcuts` | User-configurable global hotkey | yes |
+| `EmergeTools/Pow` | Expressive transitions and change effects | no; evaluated for the motion pass and not needed: every transition hearth uses is one SwiftUI modifier, and the effects it adds are the gratuitous kind (`docs/design.md#motion`) |
 | `nalexn/ViewInspector` | View-tree unit tests | no by default; store tests plus snapshots cover it, and it tracks SwiftUI internals |
 | `siteline/swiftui-introspect` | SwiftUI internals access | no (§7) |
 | `kishikawakatsumi/KeychainAccess` | Keychain wrapper | no; the Security framework calls are a hundred lines in `HearthNative` and the surface is tiny |

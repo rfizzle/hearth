@@ -14,6 +14,7 @@
 // Type is the system's text styles by role, spacing and radii are the scales
 // below, and sizes are the few fixed measures the screens share. None of them
 // is in the JSON: nothing checks them.
+// Motion is two named animations and one helper that honours Reduce Motion.
 // See docs/design.md#colour
 
 import AppKit
@@ -95,8 +96,20 @@ public enum Theme {
         public static let sidebarMax: CGFloat = 320
     }
 
-    /// The one animation; callers pass nil under Reduce Motion.
+    /// Feedback that follows a click, a swap or a fade.
     public static let quick: Animation = .easeOut(duration: 0.2)
+
+    /// A layout move, where height or position changes: a spring with no
+    /// bounce.
+    public static let move: Animation = .smooth(duration: 0.35)
+
+    /// `animation`, or nil under Reduce Motion, so the change happens at once.
+    /// Every animation in hearth passes through this and nothing is written
+    /// inline; callers read `reduceMotion` from the environment.
+    /// See docs/design.md#motion
+    public static func motion(_ animation: Animation, reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : animation
+    }
 
     /// The text colour for `tone`; neutral is secondary text.
     public static func color(_ tone: Tone) -> Color {

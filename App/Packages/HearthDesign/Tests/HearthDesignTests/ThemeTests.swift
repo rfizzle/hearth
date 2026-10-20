@@ -1,6 +1,7 @@
 // Every colour role and tone resolves, and the spacing and radius scales
 // climb.
 
+import SwiftUI
 import Testing
 
 @testable import HearthDesign
@@ -41,4 +42,11 @@ func everyToneHasAColourAndAFill(tone: Tone) {
     #expect(radii == [6, 10, 16])
     #expect(zip(spacing, spacing.dropFirst()).allSatisfy { $0 < $1 })
     #expect(zip(radii, radii.dropFirst()).allSatisfy { $0 < $1 })
+}
+
+@Test func motionIsNilUnderReduceMotionAndTheAnimationOtherwise() {
+    #expect(Theme.motion(Theme.move, reduceMotion: true) == nil)
+    #expect(Theme.motion(Theme.quick, reduceMotion: true) == nil)
+    #expect(Theme.motion(Theme.move, reduceMotion: false) == Theme.move)
+    #expect(Theme.motion(Theme.quick, reduceMotion: false) == Theme.quick)
 }
