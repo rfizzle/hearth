@@ -82,6 +82,7 @@ public struct ToolCallRow: View {
         case "web.fetch": "globe"
         case "files.write": "doc.badge.plus"
         case "files.read": "doc.text"
+        case "files.delete": "trash"
         default: "gearshape"
         }
     }
