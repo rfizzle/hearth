@@ -92,6 +92,7 @@ var resolver = fakeResolver{
 // machine has the interfaces given in CIDR form and no others.
 func testFetcher(transport http.RoundTripper, interfaces ...string) *Fetcher {
 	f := newFetcher(resolver, transport)
+	f.budget = newClock().budget()
 	f.interfaces = func() ([]net.Addr, error) {
 		var addrs []net.Addr
 		for _, cidr := range interfaces {

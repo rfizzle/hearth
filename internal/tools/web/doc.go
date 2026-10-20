@@ -12,6 +12,9 @@
 //     against this machine's own interface networks, and the
 //     connection goes to the checked address and no other. A request that
 //     reaches the dial without a checked address is refused there.
+//   - A Fetcher's Budget is per run, not per process: the orchestrator takes
+//     ForRun for each run so the 40-fetch cap and the one-request-a-second
+//     pace per host start fresh. An https page never redirects to http.
 //   - The address policy guards web.fetch only. A search service's address
 //     is fixed in its file, so a query never chooses where a request goes.
 //   - web.search exists only when a Searcher is configured; with none, the

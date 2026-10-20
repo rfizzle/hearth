@@ -3,12 +3,14 @@ package web
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/charset"
 )
 
 // droppedTags are the elements whose content is not the page's text: code,
@@ -34,12 +36,29 @@ func pageText(p Page) (string, error) {
 	}
 	switch {
 	case media == "text/html" || media == "application/xhtml+xml":
-		return reduceHTML(p.Body), nil
-	case strings.HasPrefix(media, "text/") || media == "application/json" || media == "application/xml" ||
+		return reduceHTML(decode(p)), nil
+	case strings.HasPrefix(media, "text/"):
+		return strings.ToValidUTF8(string(decode(p)), ""), nil
+	case media == "application/json" || media == "application/xml" ||
 		strings.HasSuffix(media, "+json") || strings.HasSuffix(media, "+xml"):
 		return strings.ToValidUTF8(string(p.Body), ""), nil
 	}
 	return "", fmt.Errorf("%s is %s, not a page of text; web.fetch reads text only", p.URL, media)
+}
+
+// decode is p's body in UTF-8, read by the charset the response names, then
+// the page's own declaration, and UTF-8 when neither says. A body that
+// cannot be decoded is left as it came.
+func decode(p Page) []byte {
+	r, err := charset.NewReader(bytes.NewReader(p.Body), p.ContentType)
+	if err != nil {
+		return p.Body
+	}
+	out, err := io.ReadAll(r)
+	if err != nil {
+		return p.Body
+	}
+	return out
 }
 
 // reduceHTML is the text of an HTML document, one line per block, with the

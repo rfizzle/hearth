@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,8 @@ const (
 	dialTimeout  = 10 * time.Second
 	maxRedirects = 5
 	maxBody      = 1 << 20
+	hostInterval = time.Second
+	maxFetches   = 40
 	userAgent    = "Hearth/1.0 (+https://github.com/rfizzle/hearth)"
 )
 
@@ -35,6 +38,8 @@ type Fetcher struct {
 	// interfaces lists this machine's interface addresses with their
 	// masks; net.InterfaceAddrs outside tests.
 	interfaces func() ([]net.Addr, error)
+	// budget paces and counts this fetcher's requests; ForRun makes a new one.
+	budget *Budget
 }
 
 // Page is a fetched response: the URL it was finally read from, its content
@@ -58,6 +63,7 @@ func newFetcher(resolver Resolver, transport http.RoundTripper) *Fetcher {
 	return &Fetcher{
 		resolver:   resolver,
 		interfaces: net.InterfaceAddrs,
+		budget:     NewBudget(),
 		client: &http.Client{
 			Transport: transport,
 			// Followed in Fetch, where each hop is checked; the client must
@@ -65,6 +71,70 @@ func newFetcher(resolver Resolver, transport http.RoundTripper) *Fetcher {
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		},
 	}
+}
+
+// Budget is what one run may fetch: at most 40 fetches, and one request to a
+// host a second. It is safe for concurrent use.
+type Budget struct {
+	mu    sync.Mutex
+	count int
+	next  map[string]time.Time // the earliest the host may be asked again
+	now   func() time.Time
+	sleep func(ctx context.Context, d time.Duration) error
+}
+
+// NewBudget is a fresh budget on the real clock.
+func NewBudget() *Budget {
+	return &Budget{next: map[string]time.Time{}, now: time.Now, sleep: sleepCtx}
+}
+
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+// spend counts one fetch and refuses it when the run has used its 40.
+func (b *Budget) spend() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.count >= maxFetches {
+		return fmt.Errorf("this run has already made %d fetches, the most it may; web.fetch will not read more pages in it", maxFetches)
+	}
+	b.count++
+	return nil
+}
+
+// pace waits until host may be asked again, and books the next second.
+func (b *Budget) pace(ctx context.Context, host string) error {
+	b.mu.Lock()
+	now := b.now()
+	at := b.next[host]
+	if at.Before(now) {
+		at = now
+	}
+	b.next[host] = at.Add(hostInterval)
+	b.mu.Unlock()
+	if d := at.Sub(now); d > 0 {
+		return b.sleep(ctx, d)
+	}
+	return nil
+}
+
+// ForRun is f with a fresh budget, so a run's fetches are counted from
+// zero. It shares f's connections policy; a nil f stays nil.
+func (f *Fetcher) ForRun() *Fetcher {
+	if f == nil {
+		return nil
+	}
+	c := *f
+	c.budget = NewBudget()
+	return &c
 }
 
 // pinnedTransport dials only the address a hop was checked against. The
@@ -113,10 +183,20 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (Page, error) {
 	if err != nil {
 		return Page{}, fmt.Errorf("%q is not a URL", rawURL)
 	}
+	var prev *url.URL // the hop that redirected to u
+	if err := f.budget.spend(); err != nil {
+		return Page{}, err
+	}
 	for hop := 0; ; hop++ {
 		addr, err := f.checkHop(ctx, u)
 		if err != nil {
 			return Page{}, err
+		}
+		if prev != nil && prev.Scheme == "https" && u.Scheme == "http" {
+			return Page{}, fmt.Errorf("%s redirected to %s, which is not secure; web.fetch refused to follow it", prev.Redacted(), u.Redacted())
+		}
+		if err := f.budget.pace(ctx, u.Hostname()); err != nil {
+			return Page{}, fmt.Errorf("%s did not answer within %s", u.Redacted(), fetchTimeout)
 		}
 		resp, err := f.get(ctx, u, addr)
 		if err != nil {
@@ -135,7 +215,7 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (Page, error) {
 		if hop == maxRedirects {
 			return Page{}, fmt.Errorf("%s redirected more than %d times; web.fetch stopped", rawURL, maxRedirects)
 		}
-		u = next
+		prev, u = u, next
 	}
 }
 

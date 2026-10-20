@@ -157,5 +157,5 @@ func (s *Service) registry() (*tools.Registry, error) {
 			searcher = found
 		}
 	}
-	return toolset.Registry(s.d.Fetcher, searcher, s.extra...)
+	return toolset.Registry(s.d.Fetcher.ForRun(), searcher, s.extra...)
 }
