@@ -485,3 +485,45 @@ func TestDispatcher_NoGrantReachesAReservedFolder(t *testing.T) {
 		t.Errorf("with nothing reserved the same grant reaches it: %v", err)
 	}
 }
+
+// A reserved folder that is not made yet, such as the owner's templates
+// before the first is saved, is refused as one that is, whether the grant
+// names the Hearth folder directly or through a link.
+func TestDispatcher_AReservedFolderCountsBeforeItExists(t *testing.T) {
+	base, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	hearth := filepath.Join(base, "Hearth")
+	mkdir(t, hearth)
+	link := filepath.Join(base, "Link")
+	symlink(t, hearth, link)
+	check := func(folder, reserved, path string) error {
+		d := Dispatcher{
+			Defs:     registry(t, &recorder{}),
+			Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: folder}},
+			Root:     folder,
+			Reserved: []string{reserved},
+		}
+		_, err := d.Check("files.write", json.RawMessage(`{"path":"`+path+`"}`))
+		return err
+	}
+	templates := filepath.Join(hearth, "Templates")
+	if err := check(hearth, templates, filepath.Join(templates, "x.deliverable.json")); !errors.Is(err, ErrRefused) {
+		t.Errorf("Templates not made yet: err = %v, want a refusal", err)
+	}
+	linked := filepath.Join(link, "Templates")
+	if err := check(link, linked, filepath.Join(linked, "y.deliverable.json")); !errors.Is(err, ErrRefused) {
+		t.Errorf("Templates not made yet, through a link: err = %v, want a refusal", err)
+	}
+	if err := check(hearth, templates, filepath.Join(hearth, "Templates.md")); err != nil {
+		t.Errorf("a file beside the folder not made yet: %v", err)
+	}
+	mkdir(t, templates)
+	if err := check(hearth, templates, filepath.Join(templates, "x.deliverable.json")); !errors.Is(err, ErrRefused) {
+		t.Errorf("Templates made: err = %v, want a refusal", err)
+	}
+	if _, err := os.Stat(filepath.Join(templates, "x.deliverable.json")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a check wrote a file: %v", err)
+	}
+}

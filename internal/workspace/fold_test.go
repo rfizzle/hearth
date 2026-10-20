@@ -47,8 +47,18 @@ func TestInside_FollowsTheFileSystem(t *testing.T) {
 	if got := Inside(root, filepath.Join(dir, "templates", "x.png")); got != folds {
 		t.Errorf("Inside in another case = %v, want %v", got, folds)
 	}
-	if Inside(filepath.Join(dir, "Missing"), filepath.Join(dir, "Missing", "x")) {
-		t.Error("a folder that does not exist holds nothing")
+	if !Inside(filepath.Join(dir, "Missing"), filepath.Join(dir, "Missing", "x")) {
+		t.Error("a folder that does not exist yet holds nothing")
+	}
+	if Inside(filepath.Join(dir, "Missing"), filepath.Join(dir, "Other", "x")) {
+		t.Error("a folder that does not exist yet holds its sibling")
+	}
+	link := filepath.Join(dir, "Link")
+	if err := os.Symlink(dir, link); err != nil {
+		t.Fatal(err)
+	}
+	if !Inside(filepath.Join(link, "Missing"), filepath.Join(dir, "Missing", "x")) {
+		t.Error("a folder not made yet, named through a link, holds nothing")
 	}
 	if Inside("relative", "/x") || Inside(root, "relative") {
 		t.Error("a relative path is inside nothing")

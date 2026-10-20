@@ -13,15 +13,17 @@ import (
 var foldCache sync.Map
 
 // Inside reports whether path is root or lies under it, for a reserved or
-// granted folder check. root is resolved with its links followed and must be
-// an absolute path that exists, or nothing is inside it; path is taken as
-// given, already resolved. Letter case is ignored when root's file system
-// ignores it, so Templates/x and templates/x are the same place on a Mac.
+// granted folder check. root is an absolute path resolved with its links
+// followed; a root that does not exist yet is resolved through its nearest
+// existing parent, so a reserved folder counts before it is made and a
+// write cannot be the one that makes it. path is taken as given, already
+// resolved. Letter case is ignored when root's file system ignores it, so
+// Templates/x and templates/x are the same place on a Mac.
 func Inside(root, path string) bool {
 	if !filepath.IsAbs(root) || !filepath.IsAbs(path) {
 		return false
 	}
-	real, err := filepath.EvalSymlinks(root)
+	real, err := resolveExisting(filepath.Clean(root))
 	if err != nil {
 		return false
 	}
