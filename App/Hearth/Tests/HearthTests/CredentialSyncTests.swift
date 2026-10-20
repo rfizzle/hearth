@@ -58,6 +58,20 @@ struct CredentialSyncTests {
         #expect(reports.lines.isEmpty)
     }
 
+    @Test func anEmptyKeychainItemIsLeftOutAndTheRestSync() async {
+        let keychain = FakeKeychain(records: [
+            "anthropic": Data("fixture-value-1".utf8), "brave-search": Data(),
+        ])
+        let script = CredentialScript()
+        let reports = Reports()
+        let sync = makeSync(keychain, reports)
+        sync.helperStarted(client: PreviewClient(credentials: script))
+        await sync.settle()
+        #expect(script.syncs.count == 2)
+        #expect(script.syncs[0].map(\.name) == ["anthropic"])
+        #expect(reports.lines.isEmpty)
+    }
+
     @Test func aHandshakeWithNothingToStoreStillSyncsTwice() async {
         let script = CredentialScript()
         let sync = makeSync(FakeKeychain(), Reports())

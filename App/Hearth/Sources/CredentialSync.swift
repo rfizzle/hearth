@@ -67,7 +67,7 @@ final class CredentialSync {
     private func handshake(with client: any HearthClient) async {
         do {
             let returned = try await client.syncCredentials(try records())
-            for record in returned where !record.name.isEmpty {
+            for record in returned where !record.name.isEmpty && !record.value.isEmpty {
                 try keychain.save(record.name, record.value)
             }
             _ = try await client.syncCredentials(try records())
@@ -84,17 +84,18 @@ final class CredentialSync {
                 try keychain.delete(change.name)
             } else {
                 let record = try await client.exportCredential(name: change.name)
-                try keychain.save(change.name, record.value)
+                if !record.value.isEmpty { try keychain.save(change.name, record.value) }
             }
         } catch {
             fail("keep a changed key", error)
         }
     }
 
-    /// Every record in the Keychain.
+    /// Every record in the Keychain that holds a value; the core refuses an empty
+    /// one, so an empty item is left out rather than failing every handshake.
     private func records() throws -> [Hearth_V1_Credential] {
         try keychain.list().compactMap { name in
-            guard let value = try keychain.load(name) else { return nil }
+            guard let value = try keychain.load(name), !value.isEmpty else { return nil }
             return .with {
                 $0.name = name
                 $0.value = value

@@ -45,7 +45,9 @@ public struct KeychainError: Error, LocalizedError, Equatable {
 /// access group; an ad-hoc build, which is the one the owner runs from a
 /// developer Mac, is refused with errSecMissingEntitlement (-34018). So the
 /// first call probes once, and a refused probe moves every later call to the
-/// login keychain, with the same service, account and accessibility. The
+/// login keychain, with the same service and account. The login keychain
+/// ignores the accessibility attribute; its items are protected by the login
+/// password, open while the session is, and approved per app. The
 /// choice is made once per process.
 public final class Keychain: KeychainStore {
     private let service: String
