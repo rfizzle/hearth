@@ -28,6 +28,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return rpc.Options{}, nil, err
 	}
+	reserved := reservedFolders(dataDir)
 	provider.Init()
 	db, err := store.Open(filepath.Join(dataDir, "hearth.db"))
 	if err != nil {
@@ -52,7 +53,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 			s := integrations.Searcher()
 			return s, s != nil
 		},
-		Bus: bus,
+		Bus: bus, Reserved: reserved,
 	}, accounts)
 	svc, err := orchestrate.Open(ctx, deps)
 	if err != nil {
@@ -60,14 +61,30 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		return rpc.Options{}, nil, fmt.Errorf("open the orchestrator: %w", err)
 	}
 	return rpc.Options{
-		Store:        db,
-		Orchestrator: svc,
-		Accounts:     accounts,
-		Integrations: integrations,
-		Templates:    skill.Templates(),
-		Drafter:      drafter(skill.Templates(), deps.Streams, deps.Scrub),
-		Bus:          bus,
+		Store:           db,
+		Orchestrator:    svc,
+		Accounts:        accounts,
+		Integrations:    integrations,
+		Templates:       skill.Templates(),
+		ReservedFolders: reserved,
+		Drafter:         drafter(skill.Templates(), deps.Streams, deps.Scrub),
+		Bus:             bus,
 	}, func() { _ = db.Close() }, nil
+}
+
+// reservedFolders are the folders the tools and the grants must keep away
+// from: the data folder, as given and as it resolves, since the app may be
+// handed either.
+func reservedFolders(dir string) []string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		abs = dir
+	}
+	out := []string{abs}
+	if real, err := filepath.EvalSymlinks(abs); err == nil && real != abs {
+		out = append(out, real)
+	}
+	return out
 }
 
 // drafter proposes a bot with the model the Fast tier resolves to. A model

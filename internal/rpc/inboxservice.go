@@ -34,6 +34,9 @@ func (s *inboxService) Decide(ctx context.Context, req *connect.Request[hearthv1
 	if err != nil {
 		return nil, err
 	}
+	if err := widgetwire.Words("the reason", m.GetReason()); err != nil {
+		return nil, fail(err)
+	}
 	it, run, err := s.opts.Orchestrator.Decide(ctx, m.GetItemId(), d, m.GetReason())
 	if err != nil {
 		return nil, fail(err)
@@ -48,6 +51,9 @@ func (s *inboxService) Answer(ctx context.Context, req *connect.Request[hearthv1
 	m := req.Msg
 	if err := need("item_id", m.GetItemId()); err != nil {
 		return nil, err
+	}
+	if err := widgetwire.Words("the answer", m.GetAnswer()); err != nil {
+		return nil, fail(err)
 	}
 	var control widgetwire.Control
 	if m.GetValue() != nil {

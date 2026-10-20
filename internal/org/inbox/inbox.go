@@ -117,12 +117,25 @@ func Standing(c org.Capability) bool { return !noStanding(c) }
 // which could name a different place than the owner chose.
 var ErrBadFolder = errors.New("a folder must be a full path with no . or .. in it")
 
+// ErrReservedFolder is a grant scoped to a folder that holds, or lies inside,
+// one of hearth's own, such as the folder its credentials are kept in.
+var ErrReservedFolder = errors.New("that folder holds hearth's own files")
+
 // CheckGrants refuses grants that would leave a capability allowed for good
-// that has no standing, and grants scoped to a folder that is not a clean
-// full path. The grant to ask the owner is always allowed and is not the
-// owner's to set, so it is not judged for its mode.
-func CheckGrants(grants []org.Grant) error {
+// that has no standing, grants scoped to a folder that is not a clean full
+// path, and grants scoped to a folder that contains or lies inside one of
+// reserved. The comparison is of the text given, so a caller passes each
+// reserved folder as written and as resolved; the tools resolve every path a
+// call names and refuse the reserved folders whatever is granted. The grant
+// to ask the owner is always allowed and is not the owner's to set, so it is
+// not judged for its mode.
+func CheckGrants(grants []org.Grant, reserved ...string) error {
 	for _, g := range grants {
+		for _, r := range reserved {
+			if r != "" && g.Folder != "" && (covers(r, g.Folder) || covers(g.Folder, r)) {
+				return fmt.Errorf("%q: %w", g.Folder, ErrReservedFolder)
+			}
+		}
 		if g.Folder != "" && (!filepath.IsAbs(g.Folder) || filepath.Clean(g.Folder) != g.Folder) {
 			return fmt.Errorf("%q: %w", g.Folder, ErrBadFolder)
 		}

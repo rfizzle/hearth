@@ -46,6 +46,8 @@ type Deps struct {
 	// leaves web.search out.
 	Searcher func() (web.Searcher, bool)
 	Bus      *Bus
+	// Reserved are folders no tool may touch, whatever a bot is granted.
+	Reserved []string
 	// Resume is how a run that continues a parked one is handed the round
 	// it parked in.
 	Resume park.Resume

@@ -58,6 +58,9 @@ type Options struct {
 	Integrations *integration.Integrations
 	// Templates are the role templates BotService lists.
 	Templates []org.RoleTemplate
+	// ReservedFolders are the folders hearth keeps its own files in; a grant
+	// that contains or lies inside one is refused.
+	ReservedFolders []string
 	// Drafter proposes a bot from the owner's words; BotService.DraftBot
 	// asks it. Unset, a draft is unavailable.
 	Drafter Drafter

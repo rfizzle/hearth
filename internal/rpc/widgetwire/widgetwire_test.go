@@ -1,6 +1,7 @@
 package widgetwire
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -10,8 +11,63 @@ import (
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
+// inZone makes zone the Mac's local zone for the test.
+func inZone(t *testing.T, zone string) {
+	t.Helper()
+	loc, err := time.LoadLocation(zone)
+	if err != nil {
+		t.Skipf("no zone data for %s: %v", zone, err)
+	}
+	was := time.Local
+	time.Local = loc
+	t.Cleanup(func() { time.Local = was })
+}
+
+func TestDates_AMacEastOrWestOfUTCKeepsTheOwnersDayAndTime(t *testing.T) {
+	for _, zone := range []string{"Asia/Tokyo", "America/Los_Angeles", "UTC"} {
+		t.Run(zone, func(t *testing.T) {
+			inZone(t, zone)
+			// The owner picks a plain day: the picker's start of the day.
+			day := timestamppb.New(time.Date(2026, 10, 24, 0, 0, 0, 0, time.Local))
+			if got := dateFromProto(day, false); got != "2026-10-24" {
+				t.Errorf("a plain day = %q, want 2026-10-24", got)
+			}
+			// And 14:30 on a control that asks for a time.
+			at := timestamppb.New(time.Date(2026, 10, 24, 14, 30, 0, 0, time.Local))
+			if got := dateFromProto(at, true); got != "2026-10-24 14:30" {
+				t.Errorf("14:30 = %q, want 2026-10-24 14:30", got)
+			}
+			// 00:30 the next day stays the next day, past a bound the bot set.
+			late := timestamppb.New(time.Date(2026, 11, 1, 0, 30, 0, 0, time.Local))
+			if got := dateFromProto(late, true); got != "2026-11-01 00:30" {
+				t.Errorf("00:30 = %q, want 2026-11-01 00:30", got)
+			}
+			// Back again: the stored text names the instant the owner picked.
+			if got := dateToProto("2026-10-24 14:30").AsTime(); !got.Equal(at.AsTime()) {
+				t.Errorf("round trip of 14:30 = %v, want %v", got, at.AsTime())
+			}
+			if got := dateToProto("2026-10-24").AsTime(); !got.Equal(day.AsTime()) {
+				t.Errorf("round trip of the day = %v, want %v", got, day.AsTime())
+			}
+		})
+	}
+}
+
+func TestWords_AreOneShortLine(t *testing.T) {
+	for text, want := range map[string]bool{
+		"": true, "Keep it": true, "two\nlines": false, "tab\there": false,
+		strings.Repeat("a", 4096): true, strings.Repeat("a", 4097): false,
+	} {
+		err := Words("the answer", text)
+		if (err == nil) != want || (err != nil && !Invalid(err)) {
+			t.Errorf("Words(%.12q) = %v, want ok %v and an Invalid refusal", text, err, want)
+		}
+	}
+}
+
 func TestDates_TravelAsTimestampsAndAreKeptAsText(t *testing.T) {
-	midnight := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)
+	inZone(t, "Asia/Tokyo")
+	midnight := time.Date(2026, 10, 24, 0, 0, 0, 0, time.Local)
 	afternoon := midnight.Add(14*time.Hour + 30*time.Minute)
 	tests := []struct {
 		name     string
@@ -107,7 +163,7 @@ func TestControl_EveryKindReadsIntoTheContract(t *testing.T) {
 		{"date", `{"kind":"date","with_time":true,"earliest":"2026-10-01","latest":"2026-10-31"}`,
 			func(w *hearthv1.Widget) bool {
 				d := w.GetDate()
-				return d.GetWithTime() && d.GetEarliest().AsTime().Day() == 1 && d.GetLatest().AsTime().Day() == 31
+				return d.GetWithTime() && d.GetEarliest().AsTime().In(time.Local).Day() == 1 && d.GetLatest().AsTime().In(time.Local).Day() == 31
 			}},
 		{"path", `{"kind":"path","folders":true,"start_path":"/w"}`,
 			func(w *hearthv1.Widget) bool { return w.GetPath().GetFolders() && w.GetPath().GetStartPath() == "/w" }},

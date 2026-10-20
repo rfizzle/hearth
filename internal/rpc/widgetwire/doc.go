@@ -9,10 +9,14 @@
 // package refuses an answer its control does not allow.
 //
 // Invariants the types do not hold:
-//   - A date travels as a timestamp and is kept as text in UTC. A calendar
-//     day is its UTC midnight and reads back as the day, unless the control
-//     asked for a time; any other instant is a date and a time. Both
-//     directions agree with how the widget package parses a date.
+//   - A date travels as a timestamp and is kept as text in the Mac's own
+//     zone, the zone of the owner's date picker and of the bounds a bot
+//     writes. A calendar day is its local midnight and reads back as the
+//     day, unless the control asked for a time; any other instant is a date
+//     and a time on the local clock. The core and the app run on one Mac, so
+//     both read the same day and time.
+//   - Words the owner types beside a control, and a reason for a refusal,
+//     are one line of at most 4,096 characters.
 //   - An answer with no value is the control left empty, of the control's
 //     own kind, or "Other" when it carries that text, so a refusal names
 //     the control rather than a kind the owner never chose.

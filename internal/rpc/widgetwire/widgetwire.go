@@ -2,7 +2,9 @@ package widgetwire
 
 import (
 	"errors"
+	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -26,6 +28,19 @@ func Of(stored string) Control {
 		return Control{}
 	}
 	return Control{spec}
+}
+
+// maxWords is the longest reply or reason the owner may type, in runes.
+const maxWords = 4096
+
+// Words refuses text the owner typed, named what in the refusal, that is
+// longer than a reply needs or holds a line break or another control
+// character. The refusal is one Invalid is true for.
+func Words(what, text string) error {
+	if n := utf8.RuneCountInString(text); n > maxWords {
+		return fmt.Errorf("%w: %s is %d characters; keep it to %d or fewer", widget.ErrInvalid, what, n, maxWords)
+	}
+	return widget.Plain(what, text)
 }
 
 // Invalid is true for a refusal by the widget package: an answer its control
@@ -78,14 +93,15 @@ func choices(opts []widget.Option) []*hearthv1.Choice {
 	return out
 }
 
-// A date the owner picks travels as a timestamp and is kept as text, in
-// UTC: a day as that day's midnight, a time as the instant. The widget
-// package reads and checks the text in UTC, so the two sides agree on which
-// day a date is wherever the Mac is.
+// A date the owner picks travels as a timestamp and is kept as text in the
+// Mac's own zone, the zone of the owner's picker and of the bounds a bot
+// writes: a day as that day's local midnight, a time as the instant read on
+// the local clock. The core and the app run on one Mac, so the owner and the
+// bot read the same day and the same time.
 
-// day is the UTC midnight of a stored day, or nil for none.
+// day is the local midnight of a stored day, or nil for none.
 func day(stored string) *timestamppb.Timestamp {
-	t, err := time.Parse(widget.DateLayout, stored)
+	t, err := time.ParseInLocation(widget.DateLayout, stored, time.Local)
 	if err != nil {
 		return nil
 	}
@@ -94,18 +110,18 @@ func day(stored string) *timestamppb.Timestamp {
 
 // dateToProto is the timestamp a stored date or date and time names.
 func dateToProto(stored string) *timestamppb.Timestamp {
-	if t, err := time.Parse(widget.DateTimeLayout, stored); err == nil {
+	if t, err := time.ParseInLocation(widget.DateTimeLayout, stored, time.Local); err == nil {
 		return timestamppb.New(t)
 	}
 	return day(stored)
 }
 
 // dateFromProto is the text for a timestamp the owner picked: a day for the
-// UTC midnight a calendar day travels as, unless the control asked for a
-// time, and the instant otherwise.
+// local midnight a calendar day travels as, unless the control asked for a
+// time, and the instant on the local clock otherwise.
 func dateFromProto(t *timestamppb.Timestamp, withTime bool) string {
-	at := t.AsTime()
-	if !withTime && at.Equal(at.Truncate(24*time.Hour)) {
+	at := t.AsTime().In(time.Local)
+	if h, m, s := at.Clock(); !withTime && h == 0 && m == 0 && s == 0 && at.Nanosecond() == 0 {
 		return at.Format(widget.DateLayout)
 	}
 	return at.Format(widget.DateTimeLayout)

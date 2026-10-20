@@ -70,3 +70,20 @@ func TestOpenCore_GivesOlderBotsTheRightToAsk(t *testing.T) {
 		t.Errorf("grants after open = %v, %v, want the right to ask", got, err)
 	}
 }
+
+func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
+	dir := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, dir)
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if len(opts.ReservedFolders) == 0 || opts.ReservedFolders[0] != dir {
+		t.Errorf("ReservedFolders = %v, want the data folder", opts.ReservedFolders)
+	}
+	if got := reservedFolders(filepath.Join(dir, "x", "..")); got[0] != dir {
+		t.Errorf("reservedFolders = %v, want the cleaned path", got)
+	}
+}

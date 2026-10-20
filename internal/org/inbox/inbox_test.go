@@ -69,6 +69,33 @@ func TestApply(t *testing.T) {
 	}
 }
 
+func TestCheckGrants_RefusesTheFoldersHearthKeepsItsOwnFilesIn(t *testing.T) {
+	reserved := []string{"/Users/me/Library/Application Support/hearth", "/private/data"}
+	tests := []struct {
+		folder  string
+		wantErr error
+	}{
+		{"/Users/me", ErrReservedFolder},
+		{"/Users/me/Library", ErrReservedFolder},
+		{"/Users/me/Library/Application Support/hearth", ErrReservedFolder},
+		{"/Users/me/Library/Application Support/hearth/keys", ErrReservedFolder},
+		{"/private/data/x", ErrReservedFolder},
+		{"/Users/me/Documents", nil},
+		{"/Users/me/Library/Application Support/hearth2", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.folder, func(t *testing.T) {
+			err := CheckGrants([]org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: tt.folder}}, reserved...)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("err = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+	if err := CheckGrants([]org.Grant{{Capability: org.WebFetch, Mode: org.ModeAllowed}}, reserved...); err != nil {
+		t.Errorf("a grant with no folder = %v", err)
+	}
+}
+
 func TestStandingAndCheckGrants(t *testing.T) {
 	for c, want := range map[org.Capability]bool{
 		org.FilesRead: true, org.FilesWrite: true, org.WebFetch: true, org.WebSearch: true,

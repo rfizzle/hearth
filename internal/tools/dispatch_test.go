@@ -450,3 +450,38 @@ func TestRegistry(t *testing.T) {
 		t.Fatal("a nil registry is not empty")
 	}
 }
+
+func TestDispatcher_NoGrantReachesAReservedFolder(t *testing.T) {
+	home := t.TempDir()
+	data := filepath.Join(home, "Library", "hearth")
+	mkdir(t, filepath.Join(data, "keys"))
+	mkdir(t, filepath.Join(home, "Documents"))
+	link := filepath.Join(home, "Documents", "sneak")
+	symlink(t, filepath.Join(data, "keys"), link)
+
+	d := Dispatcher{
+		Defs:     registry(t, &recorder{}),
+		Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: home}},
+		Root:     filepath.Join(home, "Documents"),
+		Reserved: []string{data},
+	}
+	for name, path := range map[string]string{
+		"the data folder":      filepath.Join(data, "hearth.db"),
+		"a file in its keys":   filepath.Join(data, "keys", "openai"),
+		"a link into it":       filepath.Join(link, "openai"),
+		"a new file in it":     filepath.Join(data, "new.md"),
+		"the folder itself":    data,
+		"a relative way to it": "../Library/hearth/hearth.db",
+	} {
+		if _, err := d.Check("files.write", json.RawMessage(`{"path":"`+path+`"}`)); !errors.Is(err, ErrRefused) {
+			t.Errorf("%s: err = %v, want a refusal", name, err)
+		}
+	}
+	if _, err := d.Check("files.write", json.RawMessage(`{"path":"`+filepath.Join(home, "Documents", "ok.md")+`"}`)); err != nil {
+		t.Errorf("a file beside the reserved folder = %v, want it allowed", err)
+	}
+	d.Reserved = nil
+	if _, err := d.Check("files.write", json.RawMessage(`{"path":"`+filepath.Join(data, "hearth.db")+`"}`)); err != nil {
+		t.Errorf("with nothing reserved the same grant reaches it: %v", err)
+	}
+}

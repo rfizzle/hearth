@@ -146,7 +146,7 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID string) (t
 	if err != nil {
 		return tools.Dispatcher{}, err
 	}
-	return tools.Dispatcher{Defs: reg, Grants: grants, Allowances: allowances, Root: bot.FolderPath}, nil
+	return tools.Dispatcher{Defs: reg, Grants: grants, Allowances: allowances, Root: bot.FolderPath, Reserved: s.d.Reserved}, nil
 }
 
 // registry is every tool configured now: the file tools, asking the owner,

@@ -31,7 +31,7 @@ func fail(err error) error {
 		code = connect.CodeAlreadyExists
 	case errors.Is(err, orchestrate.ErrBusy), errors.Is(err, orchestrate.ErrWaiting), errors.Is(err, orchestrate.ErrClosed):
 		code = connect.CodeFailedPrecondition
-	case errors.Is(err, orchestrate.ErrMismatch), widgetwire.Invalid(err), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder):
+	case errors.Is(err, orchestrate.ErrMismatch), widgetwire.Invalid(err), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder), errors.Is(err, inbox.ErrReservedFolder):
 		code = connect.CodeInvalidArgument
 	case errors.Is(err, ErrUnavailable):
 		code = connect.CodeUnavailable

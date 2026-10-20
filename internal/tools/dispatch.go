@@ -25,6 +25,9 @@ type Dispatcher struct {
 	Grants     []org.Grant
 	Allowances []inbox.Allowance
 	Root       string
+	// Reserved are folders no files call may reach whatever is granted, such
+	// as the folder hearth keeps its own files in.
+	Reserved []string
 }
 
 // Verdict is what the grants say about a call that may run.
@@ -150,7 +153,7 @@ func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
 			return Checked{}, refuse(name, err.Error())
 		}
 		var g org.Grant
-		g, c.Call.Path, c.Call.Folder, err = place(d.Root, d.Grants, def.Capability, requested)
+		g, c.Call.Path, c.Call.Folder, err = place(d.Root, d.Reserved, d.Grants, def.Capability, requested)
 		if err != nil {
 			return Checked{}, refuse(name, err.Error())
 		}
@@ -259,7 +262,7 @@ var errOutside = errors.New("is outside the folders this bot may use")
 // folders granted without asking before those granted in ask mode, so a path
 // in both runs without asking. It returns the grant, the resolved path and
 // the resolved folder.
-func place(root string, grants []org.Grant, capability org.Capability, requested string) (org.Grant, string, string, error) {
+func place(root string, reserved []string, grants []org.Grant, capability org.Capability, requested string) (org.Grant, string, string, error) {
 	for _, mode := range []org.Mode{org.ModeAllowed, org.ModeAsk} {
 		var scoped []org.Grant
 		var folders []string
@@ -269,7 +272,7 @@ func place(root string, grants []org.Grant, capability org.Capability, requested
 				folders = append(folders, g.Folder)
 			}
 		}
-		path, folder, i, err := containPath(root, folders, requested)
+		path, folder, i, err := containPath(root, reserved, folders, requested)
 		if err == nil {
 			return scoped[i], path, folder, nil
 		}
@@ -288,7 +291,7 @@ func place(root string, grants []org.Grant, capability org.Capability, requested
 // as well as the path: a grant stores a folder as it was given, and on macOS
 // a folder under /var is really under /private/var, so comparing the stored
 // text with a resolved path would refuse every call.
-func containPath(root string, folders []string, requested string) (path, folder string, index int, err error) {
+func containPath(root string, reserved, folders []string, requested string) (path, folder string, index int, err error) {
 	// A relative root would be joined on again under each granted folder by
 	// workspace.Resolve, so the bot's files would land somewhere the owner
 	// never picked.
@@ -311,6 +314,11 @@ func containPath(root string, folders []string, requested string) (path, folder 
 	}
 	if index < 0 {
 		return "", "", 0, fmt.Errorf("%s %w", requested, errOutside)
+	}
+	for _, r := range reserved {
+		if _, err := workspace.Resolve(r, path); err == nil {
+			return "", "", 0, fmt.Errorf("%s is in a folder hearth keeps for itself", requested)
+		}
 	}
 	return path, folder, index, nil
 }

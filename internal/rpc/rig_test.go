@@ -160,14 +160,15 @@ func newRig(t *testing.T, steps ...step) *rig {
 		bus:  bus,
 		root: filepath.Join(dir, "Hearth"),
 		opts: Options{
-			Token:        testToken,
-			Store:        db,
-			Orchestrator: svc,
-			Accounts:     accounts,
-			Integrations: &integration.Integrations{Keys: accounts.Keys},
-			Templates:    skill.Templates(),
-			Drafter:      drafterOver(func(org.Tier) (agent.Stream, error) { return sc.stream, nil }, nil),
-			Bus:          bus,
+			Token:           testToken,
+			Store:           db,
+			Orchestrator:    svc,
+			Accounts:        accounts,
+			Integrations:    &integration.Integrations{Keys: accounts.Keys},
+			Templates:       skill.Templates(),
+			Drafter:         drafterOver(func(org.Tier) (agent.Stream, error) { return sc.stream, nil }, nil),
+			Bus:             bus,
+			ReservedFolders: []string{filepath.Join(dir, "data")},
 		},
 	}
 }

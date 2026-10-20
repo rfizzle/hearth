@@ -113,7 +113,7 @@ func (s *botService) SetGrants(ctx context.Context, req *connect.Request[hearthv
 		}
 		grants = append(grants, one)
 	}
-	if err := inbox.CheckGrants(grants); err != nil {
+	if err := inbox.CheckGrants(grants, s.opts.ReservedFolders...); err != nil {
 		return nil, fail(err)
 	}
 	if err := s.opts.Store.ReplaceGrants(ctx, m.GetBotId(), grants); err != nil {
