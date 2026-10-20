@@ -3,6 +3,7 @@ package draft_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -52,7 +53,7 @@ func TestDraft_ReadsTheStrictShape(t *testing.T) {
 		Name: "Wren", Role: "Research Analyst", JobDescription: "You find and sum up sources. You check each one.",
 		WorkingStyle: "Direct and brief; asks before guessing", Tier: org.TierBest,
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Draft = %+v, want %+v", got, want)
 	}
 	if len(m.tools) != 0 {

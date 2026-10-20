@@ -82,7 +82,7 @@ func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1
 	d, err := s.opts.Drafter(ctx, DraftRequest{Description: m.GetDescription(), TemplateID: m.GetTemplateId(), Tier: tier})
 	var concerns []concern.Concern
 	if err == nil {
-		concerns, err = s.check(ctx, d.Name, d.Role, d.JobDescription)
+		concerns, err = s.check(ctx, d.Name, d.Role, d.JobDescription, d.Concerns)
 	}
 	return wire.Reply(&hearthv1.DraftBotResponse{
 		Name: d.Name, Role: d.Role, JobDescription: d.JobDescription,
@@ -96,14 +96,15 @@ func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1
 // See docs/model.md#owner-interaction
 func (s *botService) CheckBot(ctx context.Context, req *connect.Request[hearthv1.CheckBotRequest]) (*connect.Response[hearthv1.CheckBotResponse], error) {
 	m := req.Msg
-	concerns, err := s.check(ctx, m.GetName(), m.GetRole(), m.GetJobDescription())
+	concerns, err := s.check(ctx, m.GetName(), m.GetRole(), m.GetJobDescription(), nil)
 	return wire.Reply(&hearthv1.CheckBotResponse{Concerns: wire.Each(concerns, wire.ConcernToProto)}, err)
 }
 
-// check is the rule concerns for a hire against the bots the org has.
-func (s *botService) check(ctx context.Context, name, role, jobDescription string) ([]concern.Concern, error) {
+// check is the concerns for a hire: the rules' against the bots the org has,
+// then the model's, if any, behind the same cap.
+func (s *botService) check(ctx context.Context, name, role, jobDescription string, model []concern.Concern) ([]concern.Concern, error) {
 	bots, err := s.opts.Store.Bots(ctx)
-	return concern.Cap(concern.Bot(name, role, jobDescription, bots), nil), err
+	return concern.Cap(concern.Bot(name, role, jobDescription, bots), model), err
 }
 
 // ListGrants is what the bot may do, one row per capability and per folder.

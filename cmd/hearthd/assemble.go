@@ -175,7 +175,7 @@ func drafter(templates []org.RoleTemplate, streams func(org.Bot) (agent.Stream, 
 		if errors.Is(err, draft.ErrUnavailable) {
 			err = wire.Unavailable(err)
 		}
-		return rpc.Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
+		return rpc.Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier, Concerns: d.Concerns}, err
 	}
 }
 

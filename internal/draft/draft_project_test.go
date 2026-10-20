@@ -118,18 +118,17 @@ func TestDraftProject_BotBoundsAreCutToo(t *testing.T) {
 
 func TestDraftProject_MalformedReplies(t *testing.T) {
 	for name, reply := range map[string]string{
-		"prose":              "I would start with a template.",
-		"empty":              "",
-		"broken object":      `{"goal": "Ship it", "done_when": `,
-		"no goal":            `{"done_when": "It is shipped."}`,
-		"blank goal":         `{"goal": "  ", "done_when": "It is shipped."}`,
-		"no done_when":       `{"goal": "Ship it."}`,
-		"blank done_when":    `{"goal": "Ship it.", "done_when": "\n"}`,
-		"an array":           `["goal"]`,
-		"wrong type":         `{"goal": 7, "done_when": "x"}`,
-		"an unknown field":   `{"goal": "g", "done_when": "d", "assign_to": "Wren"}`,
-		"concerns not asked": `{"goal": "g", "done_when": "d", "concerns": []}`,
-		"two objects":        `{"goal": "g", "done_when": "d"} and {"goal": "h", "done_when": "e"}`,
+		"prose":            "I would start with a template.",
+		"empty":            "",
+		"broken object":    `{"goal": "Ship it", "done_when": `,
+		"no goal":          `{"done_when": "It is shipped."}`,
+		"blank goal":       `{"goal": "  ", "done_when": "It is shipped."}`,
+		"no done_when":     `{"goal": "Ship it."}`,
+		"blank done_when":  `{"goal": "Ship it.", "done_when": "\n"}`,
+		"an array":         `["goal"]`,
+		"wrong type":       `{"goal": 7, "done_when": "x"}`,
+		"an unknown field": `{"goal": "g", "done_when": "d", "assign_to": "Wren"}`,
+		"two objects":      `{"goal": "g", "done_when": "d"} and {"goal": "h", "done_when": "e"}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			m := &model{reply: reply}

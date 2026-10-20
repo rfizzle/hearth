@@ -7,7 +7,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rfizzle/hearth/internal/draft/concern"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
 
 // The seeds are the replies the parser is built for and the ones it must
@@ -21,6 +23,8 @@ var botSeeds = []string{
 	`{"job_description": "You help.", "extra": 1}`,
 	`{"name": "` + strings.Repeat("n", 10000) + `", "job_description": "You help."}`,
 	`{"job_description": "You help."} {"job_description": "again"}`,
+	`{"job_description": "You help.", "concerns": [{"field": "job_description", "concern": "Thin.", "suggestion": "You help with the weekly report."}, {"field": "tier", "concern": 7}]}`,
+	`{"job_description": "You help.", "concerns": {"field": "role"}}`,
 }
 
 var projectSeeds = []string{
@@ -29,6 +33,8 @@ var projectSeeds = []string{
 	`Here is the project: {"goal": "Ship it.", "done_when": "The page loads.", "target_date": ""} Anything else?`,
 	`["goal", "done_when"]`,
 	`{"goal": "Ship it.", "done_when": "The page loads.", "concerns": []}`,
+	`{"goal": "Ship it.", "done_when": "x", "concerns": [{"field": "goal", "concern": "Too short.", "suggestion": "Ship it by Friday."}, {"field": "tier", "concern": 7}]}`,
+	`{"goal": "Ship it.", "done_when": "x", "concerns": "none"}`,
 	`{"name": "` + strings.Repeat("n", 10000) + `", "goal": "Ship it.", "done_when": "Done.\nreally"}`,
 	`{"goal": "Ship it.", "done_when": "x", "target_date": "tomorrow"}`,
 }
@@ -52,6 +58,9 @@ func FuzzParse(f *testing.F) {
 		within(t, "role", r.Role, maxRole, true)
 		within(t, "working style", r.WorkingStyle, maxStyle, true)
 		within(t, "job description", r.JobDescription, maxPart, false)
+		if len(r.Concerns) > concern.Max*4 {
+			t.Fatalf("parse(%q) read %d concerns, want at most %d", raw, len(r.Concerns), concern.Max*4)
+		}
 		if r.Tier < org.TierFast || r.Tier > org.TierBest {
 			t.Fatalf("parse(%q) tier = %v, want one of the three", raw, r.Tier)
 		}
@@ -78,6 +87,9 @@ func FuzzParseProject(f *testing.F) {
 		within(t, "context", r.Brief.Context, maxPart, false)
 		within(t, "done looks like", r.Brief.DoneLooksLike, maxPart, false)
 		within(t, "done when", r.Brief.DoneWhen, maxPart, true)
+		if len(r.Concerns) > concern.Max*4 {
+			t.Fatalf("parseProject(%q) read %d concerns, want at most %d", raw, len(r.Concerns), concern.Max*4)
+		}
 		if r.TargetDate != "" {
 			if _, err := time.Parse(dateLayout, r.TargetDate); err != nil {
 				t.Fatalf("parseProject(%q) target date = %q, want a day or nothing", raw, r.TargetDate)
@@ -92,6 +104,9 @@ func within(t *testing.T, what, s string, n int, oneLine bool) {
 	t.Helper()
 	if c := utf8.RuneCountInString(s); c > n {
 		t.Fatalf("%s has %d characters, want at most %d", what, c, n)
+	}
+	if memory.Plain(s) != s {
+		t.Fatalf("%s = %q, want no invisible or control character", what, s)
 	}
 	if s != strings.TrimSpace(s) {
 		t.Fatalf("%s = %q, want it trimmed", what, s)

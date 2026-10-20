@@ -2,6 +2,7 @@ package draft
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/draft/concern"
@@ -34,6 +35,8 @@ type projectReply struct {
 	DoneLooksLike string `json:"done_looks_like"`
 	DoneWhen      string `json:"done_when"`
 	TargetDate    string `json:"target_date"`
+	// Concerns is read leniently (see concerns), so it stays raw here.
+	Concerns json.RawMessage `json:"concerns"`
 }
 
 // DraftProject asks the model once and parses its answer. A model that cannot
@@ -66,6 +69,7 @@ func parseProject(raw string) (ProjectResult, error) {
 			DoneWhen:      line(r.DoneWhen, maxPart),
 		},
 		TargetDate: day(r.TargetDate),
+		Concerns:   concerns(r.Concerns),
 	}
 	if res.Brief.Goal == "" || res.Brief.DoneWhen == "" {
 		return ProjectResult{}, ErrMalformed

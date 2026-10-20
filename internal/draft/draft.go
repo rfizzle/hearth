@@ -2,12 +2,14 @@ package draft
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/draft/concern"
 	"github.com/rfizzle/hearth/internal/framing"
 	"github.com/rfizzle/hearth/internal/org"
 )
@@ -40,6 +42,9 @@ type Result struct {
 	JobDescription string
 	WorkingStyle   string
 	Tier           org.Tier
+	// Concerns are the model's, as it sent them and not yet capped or
+	// checked; the caller passes them through concern.Cap with the rules'.
+	Concerns []concern.Concern
 }
 
 // reply is the shape the model is asked for.
@@ -49,6 +54,8 @@ type reply struct {
 	JobDescription string `json:"job_description"`
 	WorkingStyle   string `json:"working_style"`
 	Tier           string `json:"tier"`
+	// Concerns is read leniently (see concerns), so it stays raw here.
+	Concerns json.RawMessage `json:"concerns"`
 }
 
 var tiers = map[string]org.Tier{"fast": org.TierFast, "balanced": org.TierBalanced, "best": org.TierBest}
@@ -105,6 +112,7 @@ func parse(raw string, asked org.Tier) (Result, error) {
 		JobDescription: multi(r.JobDescription, maxPart),
 		WorkingStyle:   line(r.WorkingStyle, maxStyle),
 		Tier:           asked,
+		Concerns:       concerns(r.Concerns),
 	}
 	if res.JobDescription == "" {
 		return Result{}, ErrMalformed

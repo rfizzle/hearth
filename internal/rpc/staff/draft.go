@@ -31,6 +31,7 @@ type Draft struct {
 	JobDescription string
 	WorkingStyle   string
 	Tier           org.Tier
+	Concerns       []concern.Concern // the model's, as the drafter parsed them; the handler caps them behind the rules'
 }
 
 // Drafter makes a proposal from the owner's words, at the Fast tier. Its
