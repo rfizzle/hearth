@@ -135,7 +135,7 @@ func TestReadCaps(t *testing.T) {
 }
 
 func TestReadStopsAtTheDeadline(t *testing.T) {
-	d, err := Read(context.Background(), fixture("text3.pdf"), Options{Limit: time.Nanosecond})
+	d, err := readExpired(t, "text3.pdf", KindPDF)
 	if err != nil || len(d.Pages) != 0 || !hasNotice(d, "[Reading stopped after 1 seconds, before any page was read.]") {
 		t.Errorf("expired: %+v, %v", d, err)
 	}

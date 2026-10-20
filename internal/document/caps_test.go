@@ -48,7 +48,7 @@ func TestWordRunsMergeInLinearTime(t *testing.T) {
 		t.Errorf("text is %d bytes", len(d.Text))
 	}
 	// The merge looks at the deadline: an expired one ends it with the notice.
-	d, err = readFixture(t, "runs.docx", "runs.docx", Options{Limit: time.Nanosecond})
+	d, err = readExpired(t, "runs.docx", KindDocx)
 	if err != nil || !hasNotice(d, "[Reading stopped after 1 seconds.]") {
 		t.Errorf("expired: %q, %v", d.Notices, err)
 	}

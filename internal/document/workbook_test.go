@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -100,7 +99,7 @@ func TestReadWorkbookRefusals(t *testing.T) {
 }
 
 func TestReadWorkbookStopsAtTheDeadline(t *testing.T) {
-	d, err := Read(context.Background(), fixture("sales.xlsx"), Options{Limit: time.Nanosecond})
+	d, err := readExpired(t, "sales.xlsx", KindXLSX)
 	if err != nil || len(d.Text) != 0 || !hasNotice(d, "[Reading stopped after 1 seconds, before any sheet was read.]") {
 		t.Errorf("expired: %+v, %v", d, err)
 	}

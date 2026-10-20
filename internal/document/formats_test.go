@@ -157,12 +157,39 @@ func TestOfficeRefusals(t *testing.T) {
 	}
 }
 
+// readExpired reads a fixture with a context whose deadline has already
+// passed and a Limit of one second, so the outcome never depends on a timer
+// firing in time: a 1 ns Limit can still let a short file be read to the end.
+func readExpired(t *testing.T, file string, kind Kind) (Document, error) {
+	t.Helper()
+	ctx, cancel := context.WithDeadline(context.Background(), time.Unix(0, 0))
+	defer cancel()
+	f, err := os.Open(fixture(file))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, ok := lookup(kind)
+	if !ok {
+		t.Fatalf("no reader for %s", kind)
+	}
+	return row.read(ctx, f, info.Size(), file, Options{Limit: time.Second, path: fixture(file)})
+}
+
 func TestOfficeReadsStopAtTheDeadline(t *testing.T) {
-	for _, tc := range []struct{ file, notice string }{
-		{"notes.docx", "[Reading stopped after 1 seconds.]"},
-		{"deck.pptx", "[Reading stopped after 1 seconds, before any slide was read.]"},
+	for _, tc := range []struct {
+		file   string
+		kind   Kind
+		notice string
+	}{
+		{"notes.docx", KindDocx, "[Reading stopped after 1 seconds.]"},
+		{"deck.pptx", KindPPTX, "[Reading stopped after 1 seconds, before any slide was read.]"},
 	} {
-		d, err := Read(context.Background(), fixture(tc.file), Options{Name: tc.file, Limit: time.Nanosecond})
+		d, err := readExpired(t, tc.file, tc.kind)
 		if err != nil || len(d.Notices) != 1 || d.Notices[0] != tc.notice {
 			t.Errorf("%s: %+v, %v", tc.file, d, err)
 		}
