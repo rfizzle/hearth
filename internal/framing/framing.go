@@ -4,7 +4,12 @@ import (
 	_ "embed"
 	"strings"
 	"text/template"
+
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
+
+//go:embed consolidate.md
+var consolidateText string
 
 //go:embed dm.md
 var dmText string
@@ -44,3 +49,34 @@ type Input struct {
 
 // Render returns the system text for a direct conversation with the owner.
 func Render(in Input) string { return render("dm", dmText, in) }
+
+// consolidateRoom is how many notes under the cap the tidied set leaves free,
+// so the bot has room to write more before it is tidied again.
+const consolidateRoom = 20
+
+// ConsolidateMax is the most notes the tidied unpinned set may have when
+// pinned notes are kept beside it: the cap less the pinned ones less some
+// room, and at least one.
+func ConsolidateMax(pinned int) int { return max(memory.Cap-pinned-consolidateRoom, 1) }
+
+type consolidateData struct {
+	Pinned, Unpinned []string
+	Max              int
+}
+
+// RenderConsolidate returns the system text that asks for the unpinned
+// notes to be merged into fewer, at most ConsolidateMax(len(pinned)). Pinned
+// notes are shown as fixed. Notes are inserted verbatim, with their dates.
+func RenderConsolidate(pinned, unpinned []memory.Note) string {
+	return render("consolidate", consolidateText, consolidateData{
+		Pinned: noteLines(pinned), Unpinned: noteLines(unpinned), Max: ConsolidateMax(len(pinned)),
+	})
+}
+
+func noteLines(notes []memory.Note) []string {
+	out := make([]string, len(notes))
+	for i, n := range notes {
+		out[i] = n.CreatedAt.Format("2006-01-02") + ": " + n.Text
+	}
+	return out
+}

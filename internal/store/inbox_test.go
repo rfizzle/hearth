@@ -178,6 +178,7 @@ func TestReplaceGrants_TheOwnFolderKeepsItsRowsAndTakesTheModesAndTheRestIsRepla
 	}
 	wantRest := []org.Grant{
 		{BotID: bot.ID, Capability: org.AskOwner, Mode: org.ModeAllowed}, // kept: the owner never edits it
+		{BotID: bot.ID, Capability: org.Remember, Mode: org.ModeAllowed},
 		{BotID: bot.ID, Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: "/w/Shared"},
 		{BotID: bot.ID, Capability: org.WebFetch, Mode: org.ModeAsk},
 	}

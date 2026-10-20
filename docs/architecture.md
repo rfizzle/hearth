@@ -152,6 +152,7 @@ Rules:
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
+| `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
 | `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
@@ -163,6 +164,7 @@ Rules:
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
 | `internal/rpc` | Connect handlers, event stream, version handshake | new |
 | `internal/framing` | The fixed instructions wrapped around job descriptions (Chief of Staff, lead, member) as embedded text with tests that they render | new |
+| `internal/assembly` | Side runs around a run: tidying a bot's notes when they overflow (the run summary and the prompt join it later) | new |
 | `cmd/hearthd` | Assembly, `--repl` harness for driving the core without the app | new |
 
 Each package states its contract the Go way: a `doc.go` whose package comment names the responsibility, the invariants the type system does not hold, and the seams it is handed. Behaviour that spans packages (assignment, approvals, budgets, schedules) is already written down in `model.md#orchestration`; code cites those headings. No per-package spec files and no approval states: shhh's convention, which has held up, rather than overwatch's, which became paperwork.

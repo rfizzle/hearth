@@ -12,6 +12,7 @@ const (
 	WebFetch    Capability = "web.fetch"
 	WebSearch   Capability = "web.search"
 	AskOwner    Capability = "ask_owner"
+	Remember    Capability = "remember"
 )
 
 // Mode is how a capability is granted. The zero value is not granted.

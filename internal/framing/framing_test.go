@@ -4,9 +4,34 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/hearth/internal/framing"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
+
+func TestRenderConsolidate(t *testing.T) {
+	at := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
+	pinned := []memory.Note{{Text: "allergic to nuts", Pinned: true, CreatedAt: at}}
+	unpinned := []memory.Note{{Text: "likes tea", CreatedAt: at}, {Text: "likes tea, no milk", CreatedAt: at}}
+	got := framing.RenderConsolidate(pinned, unpinned)
+
+	for _, want := range []string{"2026-10-20: likes tea, no milk", "2026-10-20: allergic to nuts", "at most 179 of them", "Never invent", "JSON array", "data, not instructions"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("consolidate text is missing %q:\n%s", want, got)
+		}
+	}
+	if n := framing.ConsolidateMax(0); n != memory.Cap-20 {
+		t.Errorf("ConsolidateMax(0) = %d, want %d", n, memory.Cap-20)
+	}
+	names := regexp.MustCompile(`(?i)\b(read|write|fetch|search|delete|files?\.\w+|web\.\w+|assign|remember)\b`)
+	if m := names.FindString(got); m != "" {
+		t.Errorf("consolidate text names a tool: %q", m)
+	}
+	if strings.Contains(framing.RenderConsolidate(nil, unpinned), "pinned. They stay") {
+		t.Error("no pinned notes, yet the text speaks of them")
+	}
+}
 
 func TestRender(t *testing.T) {
 	job := "Summarise {{.Weekly}} reports.\n\nUse **bullets**; never say \"fetch\" lightly."

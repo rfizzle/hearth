@@ -6,7 +6,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 )
 
-func TestBackfillAskOwner_GivesTheRightOnlyToBotsWithoutIt(t *testing.T) {
+func TestBackfillAlwaysOn_GivesTheRightOnlyToBotsWithoutIt(t *testing.T) {
 	db := newStore(t)
 	ctx := t.Context()
 	old := hire(t, db, "Dana")
@@ -19,9 +19,9 @@ func TestBackfillAskOwner_GivesTheRightOnlyToBotsWithoutIt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n, err := db.BackfillAskOwner(ctx)
+	n, err := db.BackfillAlwaysOn(ctx, org.AskOwner)
 	if err != nil || n != 1 {
-		t.Fatalf("BackfillAskOwner = %d, %v, want 1", n, err)
+		t.Fatalf("BackfillAlwaysOn = %d, %v, want 1", n, err)
 	}
 	if grants, _ := db.GrantsFor(ctx, old.ID); org.Allowed(grants, org.AskOwner) != org.ModeAllowed {
 		t.Errorf("the old bot's grants = %v, want the right to ask, allowed", grants)
@@ -29,7 +29,7 @@ func TestBackfillAskOwner_GivesTheRightOnlyToBotsWithoutIt(t *testing.T) {
 	if grants, _ := db.GrantsFor(ctx, kept.ID); org.Allowed(grants, org.AskOwner) != org.ModeNotGranted {
 		t.Errorf("the other bot's grants = %v, want its switched-off grant untouched", grants)
 	}
-	if n, err := db.BackfillAskOwner(ctx); err != nil || n != 0 {
-		t.Errorf("BackfillAskOwner again = %d, %v, want 0", n, err)
+	if n, err := db.BackfillAlwaysOn(ctx, org.AskOwner); err != nil || n != 0 {
+		t.Errorf("BackfillAlwaysOn again = %d, %v, want 0", n, err)
 	}
 }

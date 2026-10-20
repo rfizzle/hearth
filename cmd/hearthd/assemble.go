@@ -40,9 +40,11 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		_ = db.Close()
 		return rpc.Options{}, nil, err
 	}
-	if _, err := db.BackfillAskOwner(ctx); err != nil {
-		_ = db.Close()
-		return rpc.Options{}, nil, fmt.Errorf("give older bots the right to ask: %w", err)
+	for _, c := range []org.Capability{org.AskOwner, org.Remember} {
+		if _, err := db.BackfillAlwaysOn(ctx, c); err != nil {
+			_ = db.Close()
+			return rpc.Options{}, nil, fmt.Errorf("give older bots the right to %s: %w", c, err)
+		}
 	}
 	integrations := &integration.Integrations{Keys: accounts.Keys}
 	bus := orchestrate.NewBus()

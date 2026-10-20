@@ -60,6 +60,7 @@ func TestNewBot_GrantsTheDefaultsAndNothingElse(t *testing.T) {
 		{WebFetch, ModeAllowed, nil},
 		{WebSearch, ModeAllowed, nil},
 		{AskOwner, ModeAllowed, nil},
+		{Remember, ModeAllowed, nil},
 		{"calendar.read", ModeNotGranted, nil},
 		{"shortcuts.run", ModeNotGranted, nil},
 	}
@@ -71,8 +72,8 @@ func TestNewBot_GrantsTheDefaultsAndNothingElse(t *testing.T) {
 			t.Errorf("FolderGrants(%s) = %q, want %q", m.capability, got, m.folders)
 		}
 	}
-	if len(grants) != 6 {
-		t.Fatalf("%d grants, want exactly the six defaults: %+v", len(grants), grants)
+	if len(grants) != 7 {
+		t.Fatalf("%d grants, want exactly the seven defaults: %+v", len(grants), grants)
 	}
 	for _, g := range grants {
 		if g.BotID != "" {

@@ -85,6 +85,7 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 		{Capability: WebFetch, Mode: ModeAllowed},
 		{Capability: WebSearch, Mode: ModeAllowed},
 		{Capability: AskOwner, Mode: ModeAllowed},
+		{Capability: Remember, Mode: ModeAllowed},
 	}
 	dm := Conversation{Kind: ConversationDM, Title: name}
 	return bot, grants, dm
