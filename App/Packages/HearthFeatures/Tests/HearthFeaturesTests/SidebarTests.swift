@@ -13,10 +13,10 @@ import Testing
     #expect(InboxRow.count(inbox.openCount) == nil)
     #expect(InboxRow.spoken(inbox.openCount) == "Nothing waiting")
     await inbox.load()
-    #expect(InboxRow.count(inbox.openCount) == "3")
-    #expect(InboxRow.spoken(inbox.openCount) == "3 items waiting")
+    #expect(InboxRow.count(inbox.openCount) == "4")
+    #expect(InboxRow.spoken(inbox.openCount) == "4 items waiting")
 
-    for item in [Fixtures.approval, Fixtures.question] {
+    for item in [Fixtures.approval, Fixtures.widgetQuestion, Fixtures.question] {
         var closed = item
         closed.state = .closed
         await inbox.handle(.with { $0.event = .inboxChanged(.with { $0.item = closed }) })

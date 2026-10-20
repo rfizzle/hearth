@@ -5,8 +5,9 @@
 // item joins, a closed one leaves), keeps grants current, and refetches on a
 // resync. Decide, answer, acknowledge and retry are calls; while one is in
 // flight its card waits, and once the core answers the card shows the core's
-// outcome until the item's closing change removes it. The store decides
-// nothing about any of them. The sidebar's count, the Inbox screen and the
+// outcome until the item's closing change removes it. A question's answer may
+// be changed until then, since the core holds it open for a short grace. The
+// store decides nothing about any of them. The sidebar's count, the Inbox screen and the
 // conversation's cards read it.
 // See docs/model.md#owner-interaction and docs/model.md#8-approvals
 
@@ -97,10 +98,12 @@ public final class InboxStore {
 
     /// Where `item`'s card is.
     public func state(of item: Hearth_V1_InboxItem) -> InboxCardState {
+        // A changed answer waits like the first one did.
+        if pending.contains(item.id) { return .deciding }
         if let closed = answered[item.id] {
             return .closed(Self.outcome(closed), Self.tone(closed))
         }
-        return pending.contains(item.id) ? .deciding : .open
+        return .open
     }
 
     /// Whether `item`'s card offers Always Allow: every grant behind its
@@ -136,9 +139,29 @@ public final class InboxStore {
         }
     }
 
-    /// Replies `text` to the question `item`.
-    public func answer(_ item: Hearth_V1_InboxItem, _ text: String) async {
-        await call(item) { try await self.client.answer(itemID: item.id, text).item }
+    /// Answers the question `itemID` with the owner's words `text` and, when
+    /// it has a control, the control's answer `value`. Until the core closes
+    /// the item a question can be answered again: the core holds an answer
+    /// open for a short grace before the run goes on, and the newer answer
+    /// replaces it.
+    /// See docs/model.md#owner-interaction
+    public func answer(itemID: String, text: String, value: Hearth_V1_WidgetAnswer? = nil) async {
+        guard let item = items.first(where: { $0.id == itemID }) else { return }
+        await call(item) {
+            try await self.client.answer(itemID: itemID, text, value: value).item
+        }
+    }
+
+    /// Whether `item`'s answered card offers Change: the core has the answer
+    /// and has not closed the item, so a new answer still replaces it.
+    public func canChange(_ item: Hearth_V1_InboxItem) -> Bool {
+        item.kind == .question && answered[item.id] != nil && !pending.contains(item.id)
+            && items.contains { $0.id == item.id }
+    }
+
+    /// The item as the core answered it, while the card still shows it.
+    public func answeredItem(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem? {
+        answered[item.id]
     }
 
     /// Closes the notice `item`.
@@ -190,8 +213,9 @@ public final class InboxStore {
     private func call(
         _ item: Hearth_V1_InboxItem, _ body: () async throws -> Hearth_V1_InboxItem
     ) async {
+        // A question answered but not yet closed takes a changed answer.
         guard items.contains(where: { $0.id == item.id }), !pending.contains(item.id),
-            answered[item.id] == nil
+            answered[item.id] == nil || item.kind == .question
         else { return }
         pending.insert(item.id)
         defer { pending.remove(item.id) }

@@ -9,9 +9,10 @@
 // the revealInFinder action the app target sets. Only the owner's own send
 // moves in; everything from the core appears in place, and the empty state
 // fades out. An approval or a question the run parked on stands in the thread
-// as its Inbox card while it is open, and as a quiet line once answered;
-// meanwhile the status line says the bot is waiting and the composer asks
-// for the answer instead of a message.
+// as a RequestRow: its Inbox card while it is open, then a quiet line, or a
+// quiet card for a question answered with its control. While it is open the
+// status line says the bot is waiting and the composer asks for the answer
+// instead of a message.
 // See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run,
 // docs/design.md#motion and docs/model.md#owner-interaction
 
@@ -98,7 +99,9 @@ public struct ConversationScreen: View {
                         ToolCallRow(call: call, result: result)
                             .transition(.identity)
                     case .request(let message, let item):
-                        request(message, item: item)
+                        RequestRow(
+                            message: message, item: item, inbox: store.inbox, bot: bot,
+                            isDefault: item != nil && item?.id == store.waitingItem?.id)
                     }
                 }
             }
@@ -112,18 +115,6 @@ public struct ConversationScreen: View {
         }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
-    }
-
-    /// An open request as its card, acting through the Inbox; an answered one
-    /// as its message.
-    @ViewBuilder
-    private func request(_ message: Hearth_V1_Message, item: Hearth_V1_InboxItem?) -> some View {
-        if let item, let inbox = store.inbox {
-            InboxItemCard(
-                store: inbox, item: item, bot: bot, isDefault: item.id == store.waitingItem?.id)
-        } else {
-            MessageRow(message: message, author: message.authorBotID.isEmpty ? nil : bot)
-        }
     }
 
     /// The owner's own message, which moves in; a system notice is the core's.

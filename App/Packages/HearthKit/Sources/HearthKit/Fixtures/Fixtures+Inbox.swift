@@ -1,7 +1,9 @@
 // What waits on the owner, as the core would list it: an approval to delete a
-// file, a question with two suggested answers and a failure, and the grants
-// behind the Access sheet. The approval has its thread messages so a screen
-// can draw the request in the transcript and in the Inbox from one source.
+// file, a question with a single-choice control, a question with two
+// suggested answers and a failure, and the grants behind the Access sheet.
+// The approval and the question with a control have their thread messages so
+// a screen can draw the request in the transcript and in the Inbox from one
+// source.
 
 import Foundation
 
@@ -58,6 +60,53 @@ extension Fixtures {
         $0.createdAt = time(10)
     }
 
+    /// The control Dana asked the owner to answer with: one of three lengths.
+    public static let lengthChoice = Hearth_V1_Widget.with {
+        $0.required = true
+        $0.singleChoice = .with {
+            $0.options = [
+                .with {
+                    $0.id = "one-page"
+                    $0.label = "One page"
+                    $0.detail = "The short brief you asked for"
+                },
+                .with {
+                    $0.id = "two-pages"
+                    $0.label = "Two pages"
+                    $0.detail = "Room for a running-cost table"
+                },
+                .with {
+                    $0.id = "slides"
+                    $0.label = "Five slides"
+                },
+            ]
+        }
+    }
+
+    /// The thread message the question with a control stands behind.
+    public static let widgetQuestionMessage: Hearth_V1_Message = {
+        var message = dmMessage(
+            14, minute: 14, run: workingRun.id, kind: .question,
+            text: "How long should the brief be?")
+        message.widget = lengthChoice
+        return message
+    }()
+
+    /// An open question Dana asked with a control.
+    public static let widgetQuestion = Hearth_V1_InboxItem.with {
+        $0.id = "inbox-widget-question"
+        $0.kind = .question
+        $0.state = .open
+        $0.botID = bot.id
+        $0.conversationID = dmConversation.id
+        $0.runID = workingRun.id
+        $0.messageID = widgetQuestionMessage.id
+        $0.title = "Dana has a question"
+        $0.question = widgetQuestionMessage.content
+        $0.widget = lengthChoice
+        $0.createdAt = time(14)
+    }
+
     /// An open notice that a run failed.
     public static let failure = Hearth_V1_InboxItem.with {
         $0.id = "inbox-failure"
@@ -72,8 +121,9 @@ extension Fixtures {
         $0.createdAt = time(1)
     }
 
-    /// The Inbox PreviewClient lists: the approval, the question and the failure.
-    public static let inbox: [Hearth_V1_InboxItem] = [approval, question, failure]
+    /// The Inbox PreviewClient lists: the approval, the two questions and the
+    /// failure, newest first.
+    public static let inbox: [Hearth_V1_InboxItem] = [approval, widgetQuestion, question, failure]
 
     /// Dana's grants at the defaults: reading allowed, everything else asks,
     /// deleting never standing; each file capability sits on her own folder.

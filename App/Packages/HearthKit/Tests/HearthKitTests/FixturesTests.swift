@@ -49,9 +49,12 @@ import Testing
     #expect(deltas == Fixtures.replyDeltas)
 }
 
-@Test func theInboxHoldsAnApprovalAQuestionAndAFailure() {
+@Test func theInboxHoldsAnApprovalTwoQuestionsAndAFailure() {
     let items = Fixtures.inbox
-    #expect(items.map(\.kind) == [.approval, .question, .failure])
+    #expect(items.map(\.kind) == [.approval, .question, .question, .failure])
+    #expect(Fixtures.widgetQuestion.widget.singleChoice.options.count == 3)
+    #expect(Fixtures.widgetQuestionMessage.widget == Fixtures.widgetQuestion.widget)
+    #expect(Fixtures.widgetQuestionMessage.id == Fixtures.widgetQuestion.messageID)
     #expect(items.allSatisfy { $0.state == .open && !$0.title.isEmpty })
     #expect(Fixtures.approval.call.name == "files.delete")
     #expect(Fixtures.approval.effect.contains("brief.md"))

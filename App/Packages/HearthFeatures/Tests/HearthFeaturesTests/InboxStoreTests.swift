@@ -1,4 +1,4 @@
-// Store tests for the Inbox: PreviewClient's three items in two sections, the
+// Store tests for the Inbox: PreviewClient's four items in two sections, the
 // four calls and what each card shows until the core's change removes it,
 // Always Allow offered from the grants, and a resync refetching.
 
@@ -30,13 +30,16 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
 }
 
 @MainActor
-@Test func theFixtureInboxListsThreeItemsInTwoSectionsNewestFirst() async {
+@Test func theFixtureInboxListsFourItemsInTwoSectionsNewestFirst() async {
     let store = await loadedStore()
     #expect(store.loaded)
-    #expect(store.openCount == 3)
-    #expect(store.items.map(\.id) == ["inbox-approval", "inbox-question", "inbox-failure"])
+    #expect(store.openCount == 4)
+    #expect(
+        store.items.map(\.id) == [
+            "inbox-approval", "inbox-widget-question", "inbox-question", "inbox-failure",
+        ])
     #expect(store.sections == [.needsDecision, .toNote])
-    #expect(store.items(in: .needsDecision).map(\.kind) == [.approval, .question])
+    #expect(store.items(in: .needsDecision).map(\.kind) == [.approval, .question, .question])
     #expect(store.items(in: .toNote).map(\.kind) == [.failure])
     #expect(InboxStore.Section.needsDecision.rawValue == "Needs a decision")
     #expect(InboxStore.Section.toNote.rawValue == "To note")
@@ -51,10 +54,10 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
     // PreviewClient answers as the core would: closed, with its outcome.
     #expect(store.answered[item.id]?.decision == .allowOnce)
     #expect(store.state(of: item) == .closed("Allowed", .positive))
-    #expect(store.openCount == 3)
+    #expect(store.openCount == 4)
 
     await store.handle(changed(closed(item)))
-    #expect(store.openCount == 2)
+    #expect(store.openCount == 3)
     #expect(store.openItem(forMessage: item.messageID) == nil)
     #expect(store.answered.isEmpty)
     #expect(store.sections == [.needsDecision, .toNote])
@@ -74,16 +77,17 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
 @Test func aQuestionTakesASuggestionOrTypedWords() async {
     let suggested = Fixtures.question.suggestedAnswers[1]
     let store = await loadedStore()
-    await store.answer(Fixtures.question, suggested)
+    await store.answer(itemID: Fixtures.question.id, text: suggested)
     #expect(store.answered[Fixtures.question.id]?.answer == suggested)
     #expect(store.state(of: Fixtures.question) == .closed("Answered", .positive))
 
     let typed = await loadedStore()
-    await typed.answer(Fixtures.question, "Air-source, and a line on ground-source")
+    await typed.answer(
+        itemID: Fixtures.question.id, text: "Air-source, and a line on ground-source")
     #expect(
         typed.answered[Fixtures.question.id]?.answer == "Air-source, and a line on ground-source")
     await typed.handle(changed(closed(Fixtures.question)))
-    #expect(typed.items(in: .needsDecision).map(\.kind) == [.approval])
+    #expect(typed.items(in: .needsDecision).map(\.kind) == [.approval, .question])
 }
 
 @MainActor
@@ -98,7 +102,7 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
     await dismissed.acknowledge(Fixtures.failure)
     #expect(dismissed.state(of: Fixtures.failure) == .closed("Acknowledged", .neutral))
     await dismissed.handle(changed(closed(Fixtures.failure)))
-    #expect(dismissed.openCount == 2)
+    #expect(dismissed.openCount == 3)
 }
 
 @MainActor
@@ -146,11 +150,11 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
     newer.messageID = "message-30"
     newer.createdAt = .init(date: Fixtures.approval.createdAt.date.addingTimeInterval(60))
     await store.handle(changed(newer))
-    #expect(store.openCount == 4)
+    #expect(store.openCount == 5)
     #expect(store.items.first?.id == "inbox-newer")
     // The same change again replaces it rather than adding a second.
     await store.handle(changed(newer))
-    #expect(store.openCount == 4)
+    #expect(store.openCount == 5)
 }
 
 @MainActor
@@ -167,13 +171,13 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
     let store = await loadedStore(relay: relay)
     await store.handle(changed(closed(Fixtures.approval)))
     await store.handle(changed(closed(Fixtures.question)))
-    #expect(store.openCount == 1)
+    #expect(store.openCount == 2)
 
     relay.start()
-    for _ in 0..<400 where store.openCount != 3 {
+    for _ in 0..<400 where store.openCount != 4 {
         try await Task.sleep(for: .milliseconds(5))
     }
     relay.stop()
-    #expect(store.openCount == 3)
+    #expect(store.openCount == 4)
     #expect(relay.lastSequence == 4)
 }
