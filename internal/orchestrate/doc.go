@@ -16,7 +16,8 @@
 //   - Every run ends done, cancelled or failed, or waits on the owner, and
 //     the conversation is free again before the bus hears so. A failed run
 //     leaves a system message in the thread saying why, written as the bot's
-//     on that run.
+//     on that run. One a model provider failed also leaves an Inbox item that
+//     holds no conversation, closed by an acknowledgement or a retry.
 //   - A run waits on the owner holding no model call: at a call the
 //     dispatcher gates it ends waiting, with the request in the thread and
 //     one open item in the Inbox. Nothing times it out and a relaunch leaves

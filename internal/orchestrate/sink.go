@@ -22,9 +22,10 @@ import (
 // reply is one text message per stretch of text: a tool call closes the
 // stretch before it, and the next token opens another.
 type sink struct {
-	s     *Service
-	ctx   context.Context // for writes; a stop does not cancel it
-	botID string
+	s       *Service
+	ctx     context.Context // for writes; a stop does not cancel it
+	botID   string
+	botName string
 
 	mu       sync.Mutex
 	run      org.Run
@@ -148,7 +149,7 @@ func (k *sink) Retry(int, int, time.Duration) {
 // with what streamed kept, waiting on the owner with the request in the
 // thread and the Inbox, or failed with the reason in plain words in the run
 // and in the thread. A provider failure, a cap or a run that could not start
-// all end it failed.
+// all end it failed; a provider failure also leaves an item in the Inbox.
 // See docs/model.md#9-failure-handling.
 func (k *sink) finish(out agent.Outcome, err error) {
 	k.mu.Lock()
@@ -181,6 +182,7 @@ func (k *sink) finish(out agent.Outcome, err error) {
 		// messages: the owner did not write it, and it belongs to the run
 		// it explains.
 		k.append(org.Message{Kind: org.MessageSystem, Content: sentence(k.run.Failure)})
+		k.openFailure(err)
 	}
 	if k.run.State != org.RunWaitingOwner {
 		k.run.EndedAt = k.s.d.Now()

@@ -6,7 +6,9 @@
 // the Inbox item that ask the owner about it; word each decision for the
 // thread and a denial for the bot, and raise a grant for an always-allow;
 // turn the owner's answer to a question into their words for the thread and
-// the fixed words the bot reads; find in a thread the tool round a run
+// the fixed words the bot reads; turn a run a provider failed into the
+// Inbox item the owner retries or acknowledges; find in a thread the tool
+// round a run
 // parked in; and assemble the history and the prompt a run is handed, the
 // text that fits its budget and, for a run that resumes, the round's calls
 // and results or one note from the app.

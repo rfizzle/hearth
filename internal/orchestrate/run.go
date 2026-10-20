@@ -30,7 +30,7 @@ type ask struct {
 // ends when the run is cancelled; every write uses a context that does not,
 // so what a stopped run wrote is still saved.
 func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
-	k := &sink{s: s, ctx: context.WithoutCancel(ctx), run: r, botID: bot.ID,
+	k := &sink{s: s, ctx: context.WithoutCancel(ctx), run: r, botID: bot.ID, botName: bot.Name,
 		calls: map[string]org.ToolCall{}, describe: map[string]func(json.RawMessage) string{}}
 	k.run.State = org.RunWorking
 	k.run.StartedAt = s.d.Now()
@@ -108,7 +108,7 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (a
 		Prompt:  text,
 		Tools:   offered,
 		Stream:  stream,
-		Execute: execute(disp, k),
+		Execute: toolset.Execute(disp, k.crash),
 		Gate:    disp.Gated,
 		// See docs/model.md#4-termination-guarantees.
 		MaxRounds: s.d.Caps.Steps,
@@ -160,24 +160,4 @@ func (s *Service) registry() (*tools.Registry, error) {
 		}
 	}
 	return toolset.Registry(s.d.Fetcher, searcher, s.extra...)
-}
-
-// execute runs a call through the dispatcher, the one place its grants are
-// checked, and hands the loop the paths of the files it wrote. A panic in the
-// call stops the run through k.
-func execute(d tools.Dispatcher, k *sink) agent.Execute {
-	return func(ctx context.Context, name string, args json.RawMessage) (res agent.Result, err error) {
-		defer func() {
-			if p := recover(); p != nil {
-				k.crash(p)
-				err = fmt.Errorf("%s stopped unexpectedly", name)
-			}
-		}()
-		r, err := d.Execute(ctx, name, args)
-		paths := make([]string, len(r.Files))
-		for i, f := range r.Files {
-			paths[i] = f.Path
-		}
-		return agent.Result{Text: r.Text, Files: paths}, err
-	}
 }

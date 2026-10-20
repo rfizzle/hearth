@@ -132,8 +132,9 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 }
 
 // Retry answers the owner's last message in the DM convID again, as a new
-// run from scratch; the runs before it are left as they are. It refuses with
-// ErrBusy while a run in the conversation is still working.
+// run from scratch; the runs before it are left as they are, and the Inbox
+// items their failures left are closed. It refuses with ErrBusy while a run
+// in the conversation is still working.
 // See docs/model.md#9-failure-handling.
 func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 	bot, err := s.dmBot(ctx, convID)
@@ -153,6 +154,7 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 		s.release(convID, "")
 		return org.Run{}, err
 	}
+	s.retried(context.WithoutCancel(ctx), convID)
 	go s.run(runCtx, bot, r, ask{msg: prompt})
 	return r, nil
 }
