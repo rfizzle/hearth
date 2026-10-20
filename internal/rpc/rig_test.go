@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // step answers one request of the scripted model.
@@ -169,6 +170,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 			Drafter:         drafterOver(func(org.Tier) (agent.Stream, error) { return sc.stream, nil }, nil),
 			Bus:             bus,
 			ReservedFolders: []string{filepath.Join(dir, "data")},
+			EnsureWorkspace: workspace.Ensure,
 		},
 	}
 }

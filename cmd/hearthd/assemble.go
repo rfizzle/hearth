@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools/web"
+	"github.com/rfizzle/hearth/internal/workspace"
 	"github.com/rfizzle/llm"
 )
 
@@ -69,6 +70,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		ReservedFolders: reserved,
 		Drafter:         drafter(skill.Templates(), deps.Streams, deps.Scrub),
 		Bus:             bus,
+		EnsureWorkspace: workspace.Ensure,
 	}, func() { _ = db.Close() }, nil
 }
 

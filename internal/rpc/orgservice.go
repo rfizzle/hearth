@@ -2,12 +2,12 @@ package rpc
 
 import (
 	"context"
+	"errors"
 
 	"connectrpc.com/connect"
 
 	"github.com/rfizzle/hearth/internal/org"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
-	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // GetOrg leaves the org unset before the owner has named it: nothing is
@@ -31,7 +31,10 @@ func (s *orgService) UpdateOrg(ctx context.Context, req *connect.Request[hearthv
 	if err := need("name", m.GetName(), "workspace_path", m.GetWorkspacePath()); err != nil {
 		return nil, err
 	}
-	if err := workspace.Ensure(m.GetWorkspacePath()); err != nil {
+	if s.opts.EnsureWorkspace == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("no way to create the Hearth folder is set"))
+	}
+	if err := s.opts.EnsureWorkspace(m.GetWorkspacePath()); err != nil {
 		return nil, invalid("%v", err)
 	}
 	o := org.Org{Name: m.GetName(), WorkspacePath: m.GetWorkspacePath()}

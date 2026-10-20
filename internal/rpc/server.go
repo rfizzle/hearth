@@ -66,6 +66,9 @@ type Options struct {
 	Drafter Drafter
 	// Bus is what EventService streams and the handlers publish to.
 	Bus *orchestrate.Bus
+	// EnsureWorkspace creates the Hearth folder at a path UpdateOrg is
+	// given, or says why it cannot; UpdateOrg refuses while it is unset.
+	EnsureWorkspace func(path string) error
 }
 
 // publish tells the bus about a change a handler made; with no bus nobody

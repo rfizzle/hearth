@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -85,5 +86,25 @@ func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
 	}
 	if got := reservedFolders(filepath.Join(dir, "x", "..")); got[0] != dir {
 		t.Errorf("reservedFolders = %v, want the cleaned path", got)
+	}
+}
+
+func TestOpenCore_TheOrgFolderIsMadeByTheWorkspacePackage(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, t.TempDir())
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if opts.EnsureWorkspace == nil {
+		t.Fatal("EnsureWorkspace is not set: UpdateOrg would refuse every folder")
+	}
+	root := filepath.Join(t.TempDir(), "Hearth")
+	if err := opts.EnsureWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Stat(filepath.Join(root, "Inbox")); err != nil || !fi.IsDir() {
+		t.Fatalf("the Hearth folder was not made: %v", err)
 	}
 }

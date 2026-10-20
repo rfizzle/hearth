@@ -31,5 +31,6 @@
 // Seams it is handed (Options): the version string Ping reports, the word
 // list StreamHello cycles through and the interval between words; the store,
 // the orchestrator, the accounts, the integrations, the role templates, the
-// function that drafts a bot, and the event bus. See docs/architecture.md#1-layering
+// function that drafts a bot, the function that creates the Hearth folder,
+// and the event bus. See docs/architecture.md#1-layering
 package rpc
