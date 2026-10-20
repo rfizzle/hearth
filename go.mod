@@ -4,6 +4,7 @@ go 1.26.9
 
 require (
 	connectrpc.com/connect v1.21.1
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
 	github.com/rfizzle/agentcore v0.1.0
 	github.com/rfizzle/llm v0.7.0
