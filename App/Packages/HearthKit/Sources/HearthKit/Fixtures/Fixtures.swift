@@ -28,6 +28,7 @@ public enum Fixtures {
                 "You research questions for the owner. Read primary sources, "
                 + "say where each fact came from, and keep briefs to one page."
             $0.suggestedTier = .balanced
+            $0.introduction = researchIntroduction
         },
         .with {
             $0.id = "template-writer"
@@ -48,6 +49,63 @@ public enum Fixtures {
             $0.suggestedTier = .fast
         },
     ]
+
+    /// What a research lead opens with: the template's, and so Dana's.
+    public static let researchIntroduction = Hearth_V1_Introduction.with {
+        $0.purpose =
+            "I find things out. Ask me a question and I look for the answer, read what I "
+            + "find and write a short brief that answers first and shows the evidence after."
+        $0.how = [
+            .with {
+                $0.symbol = "magnifyingglass"
+                $0.text = "Tell me what you need to decide, and I look for what bears on it."
+            },
+            .with {
+                $0.symbol = "quote.opening"
+                $0.text = "Every claim says where it came from, and I say so when sources disagree."
+            },
+            .with {
+                $0.symbol = "folder"
+                $0.text =
+                    "Write-ups are saved in my folder in your Hearth folder, and I tell you where."
+            },
+        ]
+        $0.tryAsking = [
+            "Compare two standing desks under $500",
+            "Is it worth switching to a heat pump?",
+            "What changed in the new tax rules?",
+        ]
+    }
+
+    /// What the Chief of Staff opens with: the office guide.
+    public static let chiefOfStaffIntroduction = Hearth_V1_Introduction.with {
+        $0.purpose =
+            "I run your office. Bring me whatever is on your plate, large or small, and I "
+            + "either take care of it myself or hand it to the right team and bring you back "
+            + "the result. I am the one you can always ask first."
+        $0.how = [
+            .with {
+                $0.symbol = "text.bubble"
+                $0.text =
+                    "Say what you want in plain words. If something is unclear I ask one question, not a list."
+            },
+            .with {
+                $0.symbol = "arrow.triangle.branch"
+                $0.text =
+                    "Small things I do myself. Bigger ones go to the team that does that kind of work, "
+                    + "with a full brief, and I check the result before it reaches you."
+            },
+            .with {
+                $0.symbol = "folder"
+                $0.text = "Anything we make lands in your Hearth folder, and I tell you where."
+            },
+        ]
+        $0.tryAsking = [
+            "Help me plan a week in Lisbon in May",
+            "What would a heat pump cost for a small house?",
+            "Remember that I prefer short answers",
+        ]
+    }
 
     /// What the model proposes for a short description of a research job.
     public static let draft = Hearth_V1_DraftBotResponse.with {
@@ -74,6 +132,7 @@ public enum Fixtures {
         $0.folderPath = workspacePath + "/Dana"
         $0.dmConversationID = "conversation-dana"
         $0.scope = .team
+        $0.introduction = researchIntroduction
     }
 
     /// The Chief of Staff, the org-level bot hired at onboarding, idle.
@@ -89,6 +148,7 @@ public enum Fixtures {
         $0.folderPath = workspacePath + "/Chief of Staff"
         $0.dmConversationID = "conversation-chief-of-staff"
         $0.scope = .org
+        $0.introduction = chiefOfStaffIntroduction
     }
 
     /// ChatGPT signed in, an Anthropic key stored, Gemini signed out.

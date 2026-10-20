@@ -121,7 +121,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
     files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
-  org/                domain types, grant resolution, budget math (exists)
+  org/                domain types, grant resolution, budget math (exists); intro/ is a bot's introduction card and the rule that assembles one
   workspace/          the Hearth folder's layout and path containment (exists)
   store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps, store/books the notes, handbook, usage, budgets and tiers, store/sqlrow the row mechanics they share
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen

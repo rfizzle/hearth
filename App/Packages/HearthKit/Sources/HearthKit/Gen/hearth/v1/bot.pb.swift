@@ -352,6 +352,57 @@ public nonisolated struct Hearth_V1_Bot: Sendable {
   /// Staff does. The sidebar lists org-level bots under "Office".
   public var scope: Hearth_V1_BotScope = .unspecified
 
+  /// What the app opens the bot's conversation with. App-rendered text: it
+  /// is not a message and the model never sees it.
+  public var introduction: Hearth_V1_Introduction {
+    get {_introduction ?? Hearth_V1_Introduction()}
+    set {_introduction = newValue}
+  }
+  /// Returns true if `introduction` has been explicitly set.
+  public var hasIntroduction: Bool {self._introduction != nil}
+  /// Clears the value of `introduction`. Subsequent reads from it will return its default value.
+  public mutating func clearIntroduction() {self._introduction = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _introduction: Hearth_V1_Introduction? = nil
+}
+
+/// Introduction is a bot's card: what it is here for, three lines on how to
+/// work with it and three prompts to try.
+public nonisolated struct Hearth_V1_Introduction: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Two or three sentences.
+  public var purpose: String = String()
+
+  /// Exactly three lines.
+  public var how: [Hearth_V1_HowLine] = []
+
+  /// Exactly three example prompts, each at most 48 characters; the app puts
+  /// one in the message field on a click.
+  public var tryAsking: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// HowLine is one "how to work with me" line.
+public nonisolated struct Hearth_V1_HowLine: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// An SF Symbol name.
+  public var symbol: String = String()
+
+  public var text: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -373,9 +424,21 @@ public nonisolated struct Hearth_V1_RoleTemplate: Sendable {
 
   public var suggestedTier: Hearth_V1_Tier = .unspecified
 
+  /// What a bot hired from the template opens with.
+  public var introduction: Hearth_V1_Introduction {
+    get {_introduction ?? Hearth_V1_Introduction()}
+    set {_introduction = newValue}
+  }
+  /// Returns true if `introduction` has been explicitly set.
+  public var hasIntroduction: Bool {self._introduction != nil}
+  /// Clears the value of `introduction`. Subsequent reads from it will return its default value.
+  public mutating func clearIntroduction() {self._introduction = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _introduction: Hearth_V1_Introduction? = nil
 }
 
 public nonisolated struct Hearth_V1_ListTemplatesRequest: Sendable {
@@ -414,6 +477,11 @@ public nonisolated struct Hearth_V1_CreateBotRequest: Sendable {
   public var tier: Hearth_V1_Tier = .unspecified
 
   public var avatar: String = String()
+
+  /// The template the owner started from, if any. A bot hired from one keeps
+  /// its introduction; any other gets one assembled from its role and job
+  /// description.
+  public var templateID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -944,7 +1012,7 @@ nonisolated extension Hearth_V1_SetGrantsResponse: SwiftProtobuf.Message, SwiftP
 
 nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Bot"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}status\0\u{1}avatar\0\u{3}folder_path\0\u{3}dm_conversation_id\0\u{3}model_override\0\u{1}scope\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}status\0\u{1}avatar\0\u{3}folder_path\0\u{3}dm_conversation_id\0\u{3}model_override\0\u{1}scope\0\u{1}introduction\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -963,12 +1031,17 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 9: try { try decoder.decodeSingularStringField(value: &self.dmConversationID) }()
       case 10: try { try decoder.decodeSingularStringField(value: &self.modelOverride) }()
       case 11: try { try decoder.decodeSingularEnumField(value: &self.scope) }()
+      case 12: try { try decoder.decodeSingularMessageField(value: &self._introduction) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.id.isEmpty {
       try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
     }
@@ -1002,6 +1075,9 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if self.scope != .unspecified {
       try visitor.visitSingularEnumField(value: self.scope, fieldNumber: 11)
     }
+    try { if let v = self._introduction {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1017,6 +1093,82 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.dmConversationID != rhs.dmConversationID {return false}
     if lhs.modelOverride != rhs.modelOverride {return false}
     if lhs.scope != rhs.scope {return false}
+    if lhs._introduction != rhs._introduction {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_Introduction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Introduction"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}purpose\0\u{1}how\0\u{3}try_asking\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.purpose) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.how) }()
+      case 3: try { try decoder.decodeRepeatedStringField(value: &self.tryAsking) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.purpose.isEmpty {
+      try visitor.visitSingularStringField(value: self.purpose, fieldNumber: 1)
+    }
+    if !self.how.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.how, fieldNumber: 2)
+    }
+    if !self.tryAsking.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.tryAsking, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_Introduction, rhs: Hearth_V1_Introduction) -> Bool {
+    if lhs.purpose != rhs.purpose {return false}
+    if lhs.how != rhs.how {return false}
+    if lhs.tryAsking != rhs.tryAsking {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_HowLine: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".HowLine"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}symbol\0\u{1}text\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.symbol) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.symbol.isEmpty {
+      try visitor.visitSingularStringField(value: self.symbol, fieldNumber: 1)
+    }
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_HowLine, rhs: Hearth_V1_HowLine) -> Bool {
+    if lhs.symbol != rhs.symbol {return false}
+    if lhs.text != rhs.text {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1024,7 +1176,7 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 nonisolated extension Hearth_V1_RoleTemplate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".RoleTemplate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}role\0\u{1}summary\0\u{3}job_description\0\u{3}suggested_tier\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}role\0\u{1}summary\0\u{3}job_description\0\u{3}suggested_tier\0\u{1}introduction\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1037,12 +1189,17 @@ nonisolated extension Hearth_V1_RoleTemplate: SwiftProtobuf.Message, SwiftProtob
       case 3: try { try decoder.decodeSingularStringField(value: &self.summary) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self.jobDescription) }()
       case 5: try { try decoder.decodeSingularEnumField(value: &self.suggestedTier) }()
+      case 6: try { try decoder.decodeSingularMessageField(value: &self._introduction) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.id.isEmpty {
       try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
     }
@@ -1058,6 +1215,9 @@ nonisolated extension Hearth_V1_RoleTemplate: SwiftProtobuf.Message, SwiftProtob
     if self.suggestedTier != .unspecified {
       try visitor.visitSingularEnumField(value: self.suggestedTier, fieldNumber: 5)
     }
+    try { if let v = self._introduction {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1067,6 +1227,7 @@ nonisolated extension Hearth_V1_RoleTemplate: SwiftProtobuf.Message, SwiftProtob
     if lhs.summary != rhs.summary {return false}
     if lhs.jobDescription != rhs.jobDescription {return false}
     if lhs.suggestedTier != rhs.suggestedTier {return false}
+    if lhs._introduction != rhs._introduction {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1123,7 +1284,7 @@ nonisolated extension Hearth_V1_ListTemplatesResponse: SwiftProtobuf.Message, Sw
 
 nonisolated extension Hearth_V1_CreateBotRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateBotRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}avatar\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}avatar\0\u{3}template_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1136,6 +1297,7 @@ nonisolated extension Hearth_V1_CreateBotRequest: SwiftProtobuf.Message, SwiftPr
       case 3: try { try decoder.decodeSingularStringField(value: &self.jobDescription) }()
       case 4: try { try decoder.decodeSingularEnumField(value: &self.tier) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self.avatar) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.templateID) }()
       default: break
       }
     }
@@ -1157,6 +1319,9 @@ nonisolated extension Hearth_V1_CreateBotRequest: SwiftProtobuf.Message, SwiftPr
     if !self.avatar.isEmpty {
       try visitor.visitSingularStringField(value: self.avatar, fieldNumber: 5)
     }
+    if !self.templateID.isEmpty {
+      try visitor.visitSingularStringField(value: self.templateID, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1166,6 +1331,7 @@ nonisolated extension Hearth_V1_CreateBotRequest: SwiftProtobuf.Message, SwiftPr
     if lhs.jobDescription != rhs.jobDescription {return false}
     if lhs.tier != rhs.tier {return false}
     if lhs.avatar != rhs.avatar {return false}
+    if lhs.templateID != rhs.templateID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

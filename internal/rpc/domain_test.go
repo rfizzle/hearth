@@ -57,14 +57,21 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	}
 
 	tpls := unary(t, c.bot.ListTemplates, &hearthv1.ListTemplatesRequest{}).GetTemplates()
-	if len(tpls) != 3 || tpls[0].GetJobDescription() == "" {
-		t.Fatalf("ListTemplates = %v", tpls)
+	if len(tpls) != 3 || tpls[0].GetJobDescription() == "" || len(tpls[0].GetIntroduction().GetHow()) != 3 || len(tpls[0].GetIntroduction().GetTryAsking()) != 3 {
+		t.Fatalf("ListTemplates = %v, want three, each with its introduction", tpls)
+	}
+	if in := office[0].GetIntroduction(); !strings.HasPrefix(in.GetPurpose(), "I run your office.") || len(in.GetHow()) != 3 || len(in.GetTryAsking()) != 3 {
+		t.Fatalf("the Chief of Staff's introduction = %v, want the template's", in)
 	}
 
 	f := follow(t, c, r.bus)
 	bot := unary(t, c.bot.CreateBot, &hearthv1.CreateBotRequest{
 		Name: "Dana", Role: tpls[0].GetRole(), JobDescription: tpls[0].GetJobDescription(), Tier: tpls[0].GetSuggestedTier(),
+		TemplateId: tpls[0].GetId(),
 	}).GetBot()
+	if bot.GetIntroduction().GetPurpose() != tpls[0].GetIntroduction().GetPurpose() || bot.GetIntroduction().GetPurpose() == "" {
+		t.Fatalf("CreateBot introduction = %v, want the template's %v", bot.GetIntroduction(), tpls[0].GetIntroduction())
+	}
 	if bot.GetId() == "" || bot.GetDmConversationId() == "" || bot.GetStatus() != hearthv1.BotStatus_BOT_STATUS_IDLE ||
 		bot.GetFolderPath() != filepath.Join(r.root, "Dana") {
 		t.Fatalf("CreateBot = %v", bot)

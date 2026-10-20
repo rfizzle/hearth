@@ -186,6 +186,10 @@ var migrations = []string{
 	// A bot works on a team (1) or for the whole org (2); every bot hired
 	// before scopes existed was a team member.
 	`ALTER TABLE bots ADD COLUMN scope INTEGER NOT NULL DEFAULT 1;`,
+
+	// The introduction a bot was hired with, as JSON; empty for a bot hired
+	// before introductions existed, which the store reads as an assembled one.
+	`ALTER TABLE bots ADD COLUMN introduction TEXT NOT NULL DEFAULT '';`,
 }
 
 // Count is the number of steps, the version a current file records.

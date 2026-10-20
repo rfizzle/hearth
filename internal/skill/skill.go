@@ -41,6 +41,7 @@ func ChiefOfStaff(workspaceRoot string) (org.Bot, []org.Grant, org.Conversation)
 		if t.ID == chiefOfStaffID {
 			bot, grants, dm := org.NewBot(t.Role, t.Role, t.JobDescription, t.SuggestedTier, workspaceRoot)
 			bot.Scope = t.Scope
+			bot.Introduction = t.Introduction
 			return bot, grants, dm
 		}
 	}
@@ -63,6 +64,14 @@ func all() []org.RoleTemplate {
 		if !ok {
 			panic(fmt.Sprintf("skill: template %s names scope %q", s.Name, s.Metadata["scope"]))
 		}
+		file, err := builtin.ReadFile("builtin/" + s.Name + "/SKILL.md")
+		if err != nil {
+			panic(fmt.Sprintf("skill: template %s: %v", s.Name, err))
+		}
+		introduction, err := introductionOf(string(file))
+		if err != nil {
+			panic(fmt.Sprintf("skill: template %s: %v", s.Name, err))
+		}
 		out = append(out, org.RoleTemplate{
 			ID:             s.Name,
 			Role:           s.Metadata["role"],
@@ -70,6 +79,7 @@ func all() []org.RoleTemplate {
 			JobDescription: body,
 			SuggestedTier:  tier,
 			Scope:          scope,
+			Introduction:   introduction,
 		})
 	}
 	return out

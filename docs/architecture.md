@@ -123,6 +123,7 @@ internal/agent                   one bot's turn: the loop, tool rounds, retry, c
 internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/integration  internal/native
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
+internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
 internal/workspace               the Hearth folder's layout and path containment; imports org only
 internal/store                   SQLite, migrations, repositories; knows org types, nothing above
 proto/hearth/v1                  the contract; generated Go under internal/rpc/gen, Swift under App/Packages/HearthKit
@@ -144,6 +145,7 @@ Rules:
 |---|---|---|
 | `internal/org` | Domain types, grant resolution, hierarchy rules, budget math | new |
 | `internal/org/widget` | The seven controls a bot may ask with, their limits, and the fixed words an answer reaches the bot in (decisions.md D28) | new |
+| `internal/org/intro` | A bot's introduction (purpose, three how lines, three prompts), the rule that assembles one for a bot hired from a description, and the check a shipped one passes; app-rendered, never in a run | new |
 | `internal/org/memory` | Bot notes and handbook pages, their caps, and the pure rules for which pages a bot reads and how full the handbook is | new |
 | `internal/org/usage` | Usage records, the month's totals, budgets, and the rule that says how near a budget the spending is | new |
 | `internal/workspace` | The Hearth folder's layout and path containment | new |

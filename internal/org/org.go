@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/rfizzle/hearth/internal/org/intro"
 )
 
 // Org is the one organisation an install runs: its name and the folder its
@@ -66,6 +68,11 @@ type Bot struct {
 
 	// Scope is a team's, or the org's for a bot above the teams.
 	Scope Scope
+
+	// Introduction is the card the app opens the bot's conversation with.
+	// It is app-rendered text, never a message and never in a run's context.
+	// See docs/model.md#people
+	Introduction intro.Introduction
 }
 
 // RoleTemplate is a starting point for hiring: a role, a summary of it, the
@@ -78,13 +85,17 @@ type RoleTemplate struct {
 	JobDescription string
 	SuggestedTier  Tier
 	Scope          Scope
+
+	// Introduction is what a bot hired from the template opens with.
+	Introduction intro.Introduction
 }
 
 // NewBot returns a new idle team bot, the grants a bot starts with and its DM with
 // the owner. The bot's folder is its file-system-safe name under
 // workspaceRoot. A new bot can read and write its own folder, fetch pages,
 // search the web and ask the owner a question, and must ask before deleting
-// a file in its folder; it is granted nothing else.
+// a file in its folder; it is granted nothing else. Its introduction is the
+// one assembled from its role and job description; a template's replaces it.
 // See docs/model.md#access.
 func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Grant, Conversation) {
 	folder := filepath.Join(workspaceRoot, FolderName(name))
@@ -96,6 +107,7 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 		Status:         BotIdle,
 		FolderPath:     folder,
 		Scope:          ScopeTeam,
+		Introduction:   intro.Assemble(role, desc),
 	}
 	grants := []Grant{
 		{Capability: FilesRead, Mode: ModeAllowed, Folder: folder},

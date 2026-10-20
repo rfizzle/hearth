@@ -23,6 +23,7 @@ The things in the system, how they relate, and the rules that govern how work fl
 | quality tier | Fast / Balanced / Best, mapped to a concrete provider+model per tier in org settings; Advanced shows and overrides the model | Owner |
 | notes | The bot's memory: a list of short plain-language facts it has learned, each with a date and a source link | Bot writes, owner edits/deletes |
 | status | idle, working, paused (budget), disabled | System |
+| introduction | The card a conversation opens with: what the bot is here for, three lines on how to work with it and three prompts to try. It comes from the template the bot was hired from, or is assembled by rule from its role and job description, and it is app-rendered text the model never sees: never a message, never in a run's context. | Template, rule |
 
 **Role template** (`RoleTemplate`). A starting point: role, job description, suggested access, suggested tier, suggested team. Shipped templates live in the app bundle; the owner's saved ones live in the org. A starter org is a set of templates plus a team layout.
 

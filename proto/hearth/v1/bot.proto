@@ -125,6 +125,28 @@ message Bot {
   // Where the bot works: on a team, or for the whole org, as the Chief of
   // Staff does. The sidebar lists org-level bots under "Office".
   BotScope scope = 11;
+  // What the app opens the bot's conversation with. App-rendered text: it
+  // is not a message and the model never sees it.
+  Introduction introduction = 12;
+}
+
+// Introduction is a bot's card: what it is here for, three lines on how to
+// work with it and three prompts to try.
+message Introduction {
+  // Two or three sentences.
+  string purpose = 1;
+  // Exactly three lines.
+  repeated HowLine how = 2;
+  // Exactly three example prompts, each at most 48 characters; the app puts
+  // one in the message field on a click.
+  repeated string try_asking = 3;
+}
+
+// HowLine is one "how to work with me" line.
+message HowLine {
+  // An SF Symbol name.
+  string symbol = 1;
+  string text = 2;
 }
 
 message RoleTemplate {
@@ -134,6 +156,8 @@ message RoleTemplate {
   string summary = 3;
   string job_description = 4;
   Tier suggested_tier = 5;
+  // What a bot hired from the template opens with.
+  Introduction introduction = 6;
 }
 
 message ListTemplatesRequest {}
@@ -148,6 +172,10 @@ message CreateBotRequest {
   string job_description = 3;
   Tier tier = 4;
   string avatar = 5;
+  // The template the owner started from, if any. A bot hired from one keeps
+  // its introduction; any other gets one assembled from its role and job
+  // description.
+  string template_id = 6;
 }
 
 message CreateBotResponse {

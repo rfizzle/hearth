@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -82,11 +83,11 @@ func TestCreateBot_StoresTheBotItsGrantsAndItsDM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != bot {
+	if !reflect.DeepEqual(got, bot) {
 		t.Fatalf("Bot = %+v, want %+v", got, bot)
 	}
 	bots, err := db.Bots(t.Context())
-	if err != nil || len(bots) != 1 || bots[0] != bot {
+	if err != nil || len(bots) != 1 || !reflect.DeepEqual(bots[0], bot) {
 		t.Fatalf("Bots = %+v, %v", bots, err)
 	}
 

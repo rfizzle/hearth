@@ -211,6 +211,7 @@ public final class HireStore {
                     $0.jobDescription = jobDescription
                     $0.tier = tier
                     $0.avatar = avatar
+                    if case .template(let id) = start { $0.templateID = id }
                 })
             error = nil
         } catch {

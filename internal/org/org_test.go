@@ -3,9 +3,13 @@ package org
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/hearth/internal/org/intro"
 )
 
 func TestFolders(t *testing.T) {
@@ -43,9 +47,13 @@ func TestNewBot_GrantsTheDefaultsAndNothingElse(t *testing.T) {
 		Status:         BotIdle,
 		FolderPath:     folder,
 		Scope:          ScopeTeam,
+		Introduction:   intro.Assemble("Analyst", "Finds things out."),
 	}
-	if bot != want {
+	if !reflect.DeepEqual(bot, want) {
 		t.Fatalf("bot = %+v, want %+v", bot, want)
+	}
+	if !strings.Contains(bot.Introduction.Purpose, "I'm your Analyst.") {
+		t.Errorf("introduction = %+v, want one assembled from the role", bot.Introduction)
 	}
 	if dm != (Conversation{Kind: ConversationDM, Title: "Research Analyst"}) {
 		t.Fatalf("dm = %+v", dm)

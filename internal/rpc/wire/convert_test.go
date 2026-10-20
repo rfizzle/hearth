@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/intro"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/store"
 )
@@ -81,5 +82,11 @@ func TestConversions(t *testing.T) {
 	}
 	if b := BotToProto(org.Bot{ID: "b1", Tier: org.TierFast}); b.GetId() != "b1" || b.GetTier() != hearthv1.Tier_TIER_FAST {
 		t.Errorf("BotToProto = %v", b)
+	}
+	in := intro.Assemble("Writer", "Writes.")
+	got := BotToProto(org.Bot{Introduction: in}).GetIntroduction()
+	if got.GetPurpose() != in.Purpose || len(got.GetHow()) != 3 || got.GetHow()[1].GetSymbol() != "folder" ||
+		got.GetHow()[1].GetText() != in.How[1].Text || len(got.GetTryAsking()) != 3 || got.GetTryAsking()[2] != in.Try[2] {
+		t.Errorf("IntroductionToProto = %v, want %+v", got, in)
 	}
 }

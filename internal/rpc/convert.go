@@ -20,6 +20,7 @@ func templateToProto(t org.RoleTemplate) *hearthv1.RoleTemplate {
 		Summary:        t.Summary,
 		JobDescription: t.JobDescription,
 		SuggestedTier:  hearthv1.Tier(t.SuggestedTier),
+		Introduction:   wire.IntroductionToProto(t.Introduction),
 	}
 }
 

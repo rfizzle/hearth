@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/intro"
 )
 
 func TestTemplates_LoadsTheThreeRoles(t *testing.T) {
@@ -66,30 +67,31 @@ func TestChiefOfStaff_IsAnOrgLevelBotWithTheRoutingPolicy(t *testing.T) {
 	}
 }
 
-// The introduction the app shows lives in the template's frontmatter: a
-// purpose, three lines on how it works and three things to try.
-func TestChiefOfStaff_CarriesItsIntroduction(t *testing.T) {
-	data, err := builtin.ReadFile("builtin/" + chiefOfStaffID + "/SKILL.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	front := strings.SplitN(string(data), "\n---\n", 2)[0]
-	_, intro, ok := strings.Cut(front, "\nintroduction:\n")
-	if !ok {
-		t.Fatalf("no introduction in the frontmatter:\n%s", front)
-	}
-	parts := map[string]string{}
-	for _, line := range strings.Split(intro, "\n") {
-		if k, v, ok := strings.Cut(strings.TrimSpace(line), ": "); ok {
-			parts[k] = strings.Trim(v, `"`)
+// Every shipped template carries an introduction that passes the check, and a
+// bot hired from the Chief of Staff's template opens with the template's.
+func TestTemplates_CarryTheirIntroductions(t *testing.T) {
+	for _, tpl := range all() {
+		if err := intro.Validate(tpl.Introduction); err != nil {
+			t.Errorf("template %s: %v", tpl.ID, err)
 		}
 	}
-	if parts["purpose"] == "" {
-		t.Error("the introduction has no purpose")
+	bot, _, _ := ChiefOfStaff(filepath.Join("/", "Users", "me", "Hearth"))
+	if !strings.HasPrefix(bot.Introduction.Purpose, "I run your office.") ||
+		bot.Introduction.How[1].Symbol != "arrow.triangle.branch" ||
+		bot.Introduction.Try[0] != "Help me plan a week in Lisbon in May" {
+		t.Errorf("the Chief of Staff's introduction = %+v, want the template's", bot.Introduction)
 	}
-	for _, k := range []string{"how", "try"} {
-		if n := len(strings.Split(parts[k], `\n`)); n != 3 {
-			t.Errorf("the introduction's %s has %d lines, want 3", k, n)
+}
+
+func TestIntroductionOf_RefusesWhatIsNotAnIntroduction(t *testing.T) {
+	for name, file := range map[string]string{
+		"none":        "---\nname: x\n---\nbody",
+		"unquoted":    "---\nintroduction:\n  purpose: plain\n---\n",
+		"two prompts": "---\nintroduction:\n  purpose: \"p\"\n  how: \"a x\\nb y\\nc z\"\n  try: \"one\\ntwo\"\n---\n",
+		"no symbol":   "---\nintroduction:\n  purpose: \"p\"\n  how: \"X y\\nb y\\nc z\"\n  try: \"1\\n2\\n3\"\n---\n",
+	} {
+		if _, err := introductionOf(file); err == nil {
+			t.Errorf("%s: accepted", name)
 		}
 	}
 }

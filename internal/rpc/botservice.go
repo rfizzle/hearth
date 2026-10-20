@@ -38,6 +38,11 @@ func (s *botService) CreateBot(ctx context.Context, req *connect.Request[hearthv
 	}
 	bot, grants, dm := org.NewBot(m.GetName(), m.GetRole(), m.GetJobDescription(), tier, o.WorkspacePath)
 	bot.Avatar = m.GetAvatar()
+	for _, t := range s.opts.Templates {
+		if t.ID == m.GetTemplateId() {
+			bot.Introduction = t.Introduction
+		}
+	}
 	if bot, err = s.opts.Store.CreateBot(ctx, bot, grants, dm); err == nil {
 		s.opts.publish(wire.BotChanged{Bot: bot})
 	}

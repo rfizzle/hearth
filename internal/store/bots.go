@@ -3,10 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/intro"
 	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
@@ -40,11 +42,14 @@ func (db *DB) insertBot(ctx context.Context, tx *sql.Tx, bot org.Bot, grants []o
 	if err := checkFolderFree(ctx, tx, bot.FolderPath); err != nil {
 		return org.Bot{}, err
 	}
+	if bot.Introduction.Purpose == "" {
+		bot.Introduction = intro.Assemble(bot.Role, bot.JobDescription)
+	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO bots
-		(id, name, role, job_description, tier, status, avatar, folder_path, created_at, scope)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(id, name, role, job_description, tier, status, avatar, folder_path, created_at, scope, introduction)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		bot.ID, bot.Name, bot.Role, bot.JobDescription, bot.Tier, bot.Status, bot.Avatar, bot.FolderPath,
-		now.UnixMilli(), bot.Scope); err != nil {
+		now.UnixMilli(), bot.Scope, introductionJSON(bot.Introduction)); err != nil {
 		return org.Bot{}, err
 	}
 	for _, g := range grants {
@@ -89,7 +94,7 @@ func checkFolderFree(ctx context.Context, tx *sql.Tx, folder string) error {
 // botColumns reads a bot with the id of its DM, which lives on the
 // conversation rather than the bot.
 const botColumns = `SELECT b.id, b.name, b.role, b.job_description, b.tier, b.status, b.avatar, b.folder_path,
-	b.created_at, b.model_override, b.scope, COALESCE((SELECT c.id FROM conversations c WHERE c.bot_id = b.id AND c.kind = ?
+	b.created_at, b.model_override, b.scope, b.introduction, COALESCE((SELECT c.id FROM conversations c WHERE c.bot_id = b.id AND c.kind = ?
 		ORDER BY c.created_at LIMIT 1), '')
 	FROM bots b`
 
@@ -120,11 +125,24 @@ func (db *DB) UpdateBot(ctx context.Context, bot org.Bot) (org.Bot, error) {
 	return db.Bot(ctx, bot.ID)
 }
 
+// introductionJSON is i as stored. Strings and slices of them always encode,
+// so there is no error to return.
+func introductionJSON(i intro.Introduction) []byte {
+	b, _ := json.Marshal(i)
+	return b
+}
+
 func scanBot(row sqlrow.Scanner) (org.Bot, error) {
 	var b org.Bot
 	var created sql.NullInt64
+	var introduction string
 	err := row.Scan(&b.ID, &b.Name, &b.Role, &b.JobDescription, &b.Tier, &b.Status, &b.Avatar, &b.FolderPath,
-		&created, &b.ModelOverride, &b.Scope, &b.DMConversationID)
+		&created, &b.ModelOverride, &b.Scope, &introduction, &b.DMConversationID)
 	b.CreatedAt = sqlrow.FromMillis(created)
+	// A bot hired before introductions existed, or one whose stored text
+	// cannot be read, opens with the one its role and job description give.
+	if json.Unmarshal([]byte(introduction), &b.Introduction) != nil || b.Introduction.Purpose == "" {
+		b.Introduction = intro.Assemble(b.Role, b.JobDescription)
+	}
 	return b, err
 }

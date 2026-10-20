@@ -8,6 +8,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/intro"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
@@ -48,6 +49,16 @@ func BotToProto(b org.Bot) *hearthv1.Bot {
 		DmConversationId: b.DMConversationID,
 		ModelOverride:    b.ModelOverride,
 		Scope:            hearthv1.BotScope(b.Scope),
+		Introduction:     IntroductionToProto(b.Introduction),
+	}
+}
+
+// IntroductionToProto is a bot's introduction as the app shows it.
+func IntroductionToProto(i intro.Introduction) *hearthv1.Introduction {
+	return &hearthv1.Introduction{
+		Purpose:   i.Purpose,
+		How:       Each(i.How, func(l intro.Line) *hearthv1.HowLine { return &hearthv1.HowLine{Symbol: l.Symbol, Text: l.Text} }),
+		TryAsking: i.Try,
 	}
 }
 
