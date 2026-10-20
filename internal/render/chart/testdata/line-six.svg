@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" role="img" font-family="sans-serif">
+<line x1="64" y1="272" x2="584" y2="272" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="276" font-size="11" text-anchor="end" fill="currentColor">0</text>
+<line x1="64" y1="189.33" x2="584" y2="189.33" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="193.33" font-size="11" text-anchor="end" fill="currentColor">10</text>
+<line x1="64" y1="106.67" x2="584" y2="106.67" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="110.67" font-size="11" text-anchor="end" fill="currentColor">20</text>
+<line x1="64" y1="24" x2="584" y2="24" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="28" font-size="11" text-anchor="end" fill="currentColor">30</text>
+<line x1="64" y1="272" x2="584" y2="272" fill="none" stroke="currentColor" stroke-width="1"/>
+<text x="69" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 1</text>
+<text x="119" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 6</text>
+<text x="169" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 11</text>
+<text x="219" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 16</text>
+<text x="269" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 21</text>
+<text x="319" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 26</text>
+<text x="369" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 31</text>
+<text x="419" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 36</text>
+<text x="469" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 41</text>
+<text x="519" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 46</text>
+<text x="569" y="288" font-size="11" text-anchor="middle" fill="currentColor">Week 51</text>
+<polyline points="69,272 79,185.2 89,234.8 99,148 109,197.6 119,247.2 129,160.4 139,210 149,259.6 159,172.8 169,222.4 179,272 189,185.2 199,234.8 209,148 219,197.6 229,247.2 239,160.4 249,210 259,259.6 269,172.8 279,222.4 289,272 299,185.2 309,234.8 319,148 329,197.6 339,247.2 349,160.4 359,210 369,259.6 379,172.8 389,222.4 399,272 409,185.2 419,234.8 429,148 439,197.6 449,247.2 459,160.4 469,210 479,259.6 489,172.8 499,222.4 509,272 519,185.2 529,234.8 539,148 549,197.6 559,247.2 569,160.4 579,210" fill="none" stroke="#2F6FDB" stroke-width="2" class="c1" stroke-linejoin="round"/>
+<polyline points="69,210 79,123.2 89,172.8 99,222.4 109,135.6 119,185.2 129,234.8 139,148 149,197.6 159,247.2 169,160.4 179,210 189,123.2 199,172.8 209,222.4 219,135.6 229,185.2 239,234.8 249,148 259,197.6 269,247.2 279,160.4 289,210 299,123.2 309,172.8 319,222.4 329,135.6 339,185.2 349,234.8 359,148 369,197.6 379,247.2 389,160.4 399,210 409,123.2 419,172.8 429,222.4 439,135.6 449,185.2 459,234.8 469,148 479,197.6 489,247.2 499,160.4 509,210 519,123.2 529,172.8 539,222.4 549,135.6 559,185.2 569,234.8 579,148" fill="none" stroke="#C25E00" stroke-width="2" class="c2" stroke-linejoin="round"/>
+<polyline points="69,148 79,197.6 89,110.8 99,160.4 109,210 119,123.2 129,172.8 139,222.4 149,135.6 159,185.2 169,98.4 179,148 189,197.6 199,110.8 209,160.4 219,210 229,123.2 239,172.8 249,222.4 259,135.6 269,185.2 279,98.4 289,148 299,197.6 309,110.8 319,160.4 329,210 339,123.2 349,172.8 359,222.4 369,135.6 379,185.2 389,98.4 399,148 409,197.6 419,110.8 429,160.4 439,210 449,123.2 459,172.8 469,222.4 479,135.6 489,185.2 499,98.4 509,148 519,197.6 529,110.8 539,160.4 549,210 559,123.2 569,172.8 579,222.4" fill="none" stroke="#2E8B57" stroke-width="2" class="c3" stroke-linejoin="round"/>
+<polyline points="69,86 79,135.6 89,185.2 99,98.4 109,148 119,197.6 129,110.8 139,160.4 149,73.6 159,123.2 169,172.8 179,86 189,135.6 199,185.2 209,98.4 219,148 229,197.6 239,110.8 249,160.4 259,73.6 269,123.2 279,172.8 289,86 299,135.6 309,185.2 319,98.4 329,148 339,197.6 349,110.8 359,160.4 369,73.6 379,123.2 389,172.8 399,86 409,135.6 419,185.2 429,98.4 439,148 449,197.6 459,110.8 469,160.4 479,73.6 489,123.2 499,172.8 509,86 519,135.6 529,185.2 539,98.4 549,148 559,197.6 569,110.8 579,160.4" fill="none" stroke="#8E44C9" stroke-width="2" class="c4" stroke-linejoin="round"/>
+<polyline points="69,160.4 79,73.6 89,123.2 99,172.8 109,86 119,135.6 129,48.8 139,98.4 149,148 159,61.2 169,110.8 179,160.4 189,73.6 199,123.2 209,172.8 219,86 229,135.6 239,48.8 249,98.4 259,148 269,61.2 279,110.8 289,160.4 299,73.6 309,123.2 319,172.8 329,86 339,135.6 349,48.8 359,98.4 369,148 379,61.2 389,110.8 399,160.4 409,73.6 419,123.2 429,172.8 439,86 449,135.6 459,48.8 469,98.4 479,148 489,61.2 499,110.8 509,160.4 519,73.6 529,123.2 539,172.8 549,86 559,135.6 569,48.8 579,98.4" fill="none" stroke="#C7358A" stroke-width="2" class="c5" stroke-linejoin="round"/>
+<polyline points="69,98.4 79,148 89,61.2 99,110.8 109,24 119,73.6 129,123.2 139,36.4 149,86 159,135.6 169,48.8 179,98.4 189,148 199,61.2 209,110.8 219,24 229,73.6 239,123.2 249,36.4 259,86 269,135.6 279,48.8 289,98.4 299,148 309,61.2 319,110.8 329,24 339,73.6 349,123.2 359,36.4 369,86 379,135.6 389,48.8 399,98.4 409,148 419,61.2 429,110.8 439,24 449,73.6 459,123.2 469,36.4 479,86 489,135.6 499,48.8 509,98.4 519,148 529,61.2 539,110.8 549,24 559,73.6 569,123.2 579,36.4" fill="none" stroke="#00899A" stroke-width="2" class="c6" stroke-linejoin="round"/>
+<rect x="16" y="295" width="10" height="10" fill="#2F6FDB" stroke="none" class="c1"/>
+<text x="30" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+<rect x="110.67" y="295" width="10" height="10" fill="#C25E00" stroke="none" class="c2"/>
+<text x="124.67" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+<rect x="205.33" y="295" width="10" height="10" fill="#2E8B57" stroke="none" class="c3"/>
+<text x="219.33" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+<rect x="300" y="295" width="10" height="10" fill="#8E44C9" stroke="none" class="c4"/>
+<text x="314" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+<rect x="394.67" y="295" width="10" height="10" fill="#C7358A" stroke="none" class="c5"/>
+<text x="408.67" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+<rect x="489.33" y="295" width="10" height="10" fill="#00899A" stroke="none" class="c6"/>
+<text x="503.33" y="304" font-size="11" text-anchor="start" fill="currentColor">Series numb…</text>
+</svg>

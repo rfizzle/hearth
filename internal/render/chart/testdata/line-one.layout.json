@@ -1,0 +1,209 @@
+{
+  "w": 600,
+  "h": 320,
+  "items": [
+    {
+      "kind": "text",
+      "x": 64,
+      "y": 12,
+      "fill": "ink",
+      "text": "Runs",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 296,
+      "x2": 584,
+      "y2": 296,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 300,
+      "fill": "ink",
+      "text": "0",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 205.33,
+      "x2": 584,
+      "y2": 205.33,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 209.33,
+      "fill": "ink",
+      "text": "5",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 114.67,
+      "x2": 584,
+      "y2": 114.67,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 118.67,
+      "fill": "ink",
+      "text": "10",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 24,
+      "x2": 584,
+      "y2": 24,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 28,
+      "fill": "ink",
+      "text": "15",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 296,
+      "x2": 584,
+      "y2": 296,
+      "stroke": "ink",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 116,
+      "y": 312,
+      "fill": "ink",
+      "text": "Mon",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 220,
+      "y": 312,
+      "fill": "ink",
+      "text": "Tue",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 324,
+      "y": 312,
+      "fill": "ink",
+      "text": "Wed",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 428,
+      "y": 312,
+      "fill": "ink",
+      "text": "Thu",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 532,
+      "y": 312,
+      "fill": "ink",
+      "text": "Fri",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "polyline",
+      "points": [
+        {
+          "x": 116,
+          "y": 241.6
+        },
+        {
+          "x": 220,
+          "y": 150.93
+        },
+        {
+          "x": 324,
+          "y": 205.33
+        },
+        {
+          "x": 428,
+          "y": 60.27
+        },
+        {
+          "x": 532,
+          "y": 132.8
+        }
+      ],
+      "fill": "none",
+      "stroke": "chart.1",
+      "width": 2
+    },
+    {
+      "kind": "circle",
+      "x": 116,
+      "y": 241.6,
+      "r": 3,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 220,
+      "y": 150.93,
+      "r": 3,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 324,
+      "y": 205.33,
+      "r": 3,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 428,
+      "y": 60.27,
+      "r": 3,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 532,
+      "y": 132.8,
+      "r": 3,
+      "fill": "chart.1",
+      "stroke": "none"
+    }
+  ]
+}

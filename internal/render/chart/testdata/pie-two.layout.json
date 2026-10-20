@@ -1,0 +1,79 @@
+{
+  "w": 600,
+  "h": 360,
+  "items": [
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "end": 252,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 401.94,
+      "y": 228.06,
+      "fill": "ink",
+      "text": "70%",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 252,
+      "end": 360,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 198.06,
+      "y": 79.94,
+      "fill": "ink",
+      "text": "30%",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "rect",
+      "x": 16,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 30,
+      "y": 344,
+      "fill": "ink",
+      "text": "Done",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 158,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 172,
+      "y": 344,
+      "fill": "ink",
+      "text": "Open",
+      "size": 11,
+      "anchor": "start"
+    }
+  ]
+}

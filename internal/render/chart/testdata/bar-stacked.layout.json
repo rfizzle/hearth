@@ -1,0 +1,294 @@
+{
+  "w": 600,
+  "h": 320,
+  "items": [
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 272,
+      "x2": 584,
+      "y2": 272,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 276,
+      "fill": "ink",
+      "text": "-100",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 210,
+      "x2": 584,
+      "y2": 210,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 214,
+      "fill": "ink",
+      "text": "0",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 148,
+      "x2": 584,
+      "y2": 148,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 152,
+      "fill": "ink",
+      "text": "100",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 86,
+      "x2": 584,
+      "y2": 86,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 90,
+      "fill": "ink",
+      "text": "200",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 24,
+      "x2": 584,
+      "y2": 24,
+      "stroke": "grid",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 28,
+      "fill": "ink",
+      "text": "300",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "line",
+      "x": 64,
+      "y": 210,
+      "x2": 584,
+      "y2": 210,
+      "stroke": "ink",
+      "width": 1
+    },
+    {
+      "kind": "text",
+      "x": 129,
+      "y": 288,
+      "fill": "ink",
+      "text": "Q1",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 259,
+      "y": 288,
+      "fill": "ink",
+      "text": "Q2",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 389,
+      "y": 288,
+      "fill": "ink",
+      "text": "Q3",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "text",
+      "x": 519,
+      "y": 288,
+      "fill": "ink",
+      "text": "Q4",
+      "size": 11,
+      "anchor": "middle"
+    },
+    {
+      "kind": "rect",
+      "x": 77,
+      "y": 135.6,
+      "w": 104,
+      "h": 74.4,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 77,
+      "y": 210,
+      "w": 104,
+      "h": 37.2,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 77,
+      "y": 129.4,
+      "w": 104,
+      "h": 6.2,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 207,
+      "y": 210,
+      "w": 104,
+      "h": 24.8,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 207,
+      "y": 191.4,
+      "w": 104,
+      "h": 18.6,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 207,
+      "y": 234.8,
+      "w": 104,
+      "h": 3.1,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 337,
+      "y": 163.19,
+      "w": 104,
+      "h": 46.81,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 337,
+      "y": 210,
+      "w": 104,
+      "h": 55.8,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 467,
+      "y": 86,
+      "w": 104,
+      "h": 124,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 467,
+      "y": 57.94,
+      "w": 104,
+      "h": 28.06,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 467,
+      "y": 210,
+      "w": 104,
+      "h": 12.4,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 16,
+      "y": 295,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 30,
+      "y": 304,
+      "fill": "ink",
+      "text": "Revenue",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 205.33,
+      "y": 295,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 219.33,
+      "y": 304,
+      "fill": "ink",
+      "text": "Costs",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 394.67,
+      "y": 295,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 408.67,
+      "y": 304,
+      "fill": "ink",
+      "text": "Refunds",
+      "size": 11,
+      "anchor": "start"
+    }
+  ]
+}

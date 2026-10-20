@@ -116,7 +116,7 @@ internal/             dependencies point down only
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists); gateway/ is the address check, the model list and the known services, models/ the choice among models
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
-  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal); document/ reads a file as text, PDF, Word, PowerPoint and CSV so far (exists, below tools); render/, deliverables/ and native/ (planned)
+  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal); document/ reads a file as text, PDF, Word, PowerPoint and CSV so far (exists, below tools); render/chart is the chart layout and its SVG (exists); the rest of render/, deliverables/ and native/ (planned)
     memory/ files/    remember appends a note for the calling bot; files.read, files.write and files.delete work inside a granted folder (exist)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   deliverable/        the spec of a shaped deliverable, its ten widgets, the refusals in words and the canonical JSON; template/ is the five shipped and the owner's (exists)

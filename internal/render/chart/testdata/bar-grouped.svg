@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" role="img" font-family="sans-serif">
+<line x1="64" y1="272" x2="584" y2="272" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="276" font-size="11" text-anchor="end" fill="currentColor">-100</text>
+<line x1="64" y1="189.33" x2="584" y2="189.33" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="193.33" font-size="11" text-anchor="end" fill="currentColor">0</text>
+<line x1="64" y1="106.67" x2="584" y2="106.67" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="110.67" font-size="11" text-anchor="end" fill="currentColor">100</text>
+<line x1="64" y1="24" x2="584" y2="24" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+<text x="56" y="28" font-size="11" text-anchor="end" fill="currentColor">200</text>
+<line x1="64" y1="189.33" x2="584" y2="189.33" fill="none" stroke="currentColor" stroke-width="1"/>
+<text x="129" y="288" font-size="11" text-anchor="middle" fill="currentColor">Q1</text>
+<text x="259" y="288" font-size="11" text-anchor="middle" fill="currentColor">Q2</text>
+<text x="389" y="288" font-size="11" text-anchor="middle" fill="currentColor">Q3</text>
+<text x="519" y="288" font-size="11" text-anchor="middle" fill="currentColor">A rather lo…</text>
+<rect x="77" y="90.13" width="34.67" height="99.2" fill="#2F6FDB" stroke="none" class="c1"/>
+<rect x="111.67" y="189.33" width="34.67" height="49.6" fill="#C25E00" stroke="none" class="c2"/>
+<rect x="146.33" y="181.07" width="34.67" height="8.27" fill="#2E8B57" stroke="none" class="c3"/>
+<rect x="207" y="189.33" width="34.67" height="33.07" fill="#2F6FDB" stroke="none" class="c1"/>
+<rect x="241.67" y="164.53" width="34.67" height="24.8" fill="#C25E00" stroke="none" class="c2"/>
+<rect x="276.33" y="189.33" width="34.67" height="4.13" fill="#2E8B57" stroke="none" class="c3"/>
+<rect x="337" y="126.92" width="34.67" height="62.41" fill="#2F6FDB" stroke="none" class="c1"/>
+<rect x="371.67" y="189.33" width="34.67" height="74.4" fill="#C25E00" stroke="none" class="c2"/>
+<rect x="467" y="24" width="34.67" height="165.33" fill="#2F6FDB" stroke="none" class="c1"/>
+<rect x="501.67" y="151.93" width="34.67" height="37.41" fill="#C25E00" stroke="none" class="c2"/>
+<rect x="536.33" y="189.33" width="34.67" height="16.53" fill="#2E8B57" stroke="none" class="c3"/>
+<rect x="16" y="295" width="10" height="10" fill="#2F6FDB" stroke="none" class="c1"/>
+<text x="30" y="304" font-size="11" text-anchor="start" fill="currentColor">Revenue</text>
+<rect x="205.33" y="295" width="10" height="10" fill="#C25E00" stroke="none" class="c2"/>
+<text x="219.33" y="304" font-size="11" text-anchor="start" fill="currentColor">Costs</text>
+<rect x="394.67" y="295" width="10" height="10" fill="#2E8B57" stroke="none" class="c3"/>
+<text x="408.67" y="304" font-size="11" text-anchor="start" fill="currentColor">Refunds</text>
+</svg>

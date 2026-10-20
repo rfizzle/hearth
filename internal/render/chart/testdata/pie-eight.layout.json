@@ -1,0 +1,283 @@
+{
+  "w": 600,
+  "h": 360,
+  "items": [
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "end": 108,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 401.94,
+      "y": 79.94,
+      "fill": "ink",
+      "text": "30%",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 108,
+      "end": 180,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 374.06,
+      "y": 255.94,
+      "fill": "ink",
+      "text": "20%",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 180,
+      "end": 234,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 242.8,
+      "y": 266.27,
+      "fill": "ink",
+      "text": "15%",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 234,
+      "end": 277.2,
+      "fill": "chart.4",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 177.96,
+      "y": 185.33,
+      "fill": "ink",
+      "text": "12%",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 277.2,
+      "end": 313.2,
+      "fill": "chart.5",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 185.99,
+      "y": 100.35,
+      "fill": "ink",
+      "text": "10%",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 313.2,
+      "end": 342,
+      "fill": "chart.6",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 232.49,
+      "y": 47.61,
+      "fill": "ink",
+      "text": "8%",
+      "size": 11,
+      "anchor": "end"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 342,
+      "end": 352.8,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "wedge",
+      "x": 300,
+      "y": 150,
+      "r": 110,
+      "start": 352.8,
+      "end": 360,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 16,
+      "y": 311,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 30,
+      "y": 320,
+      "fill": "ink",
+      "text": "Alpha",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 158,
+      "y": 311,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 172,
+      "y": 320,
+      "fill": "ink",
+      "text": "Beta",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 300,
+      "y": 311,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.3",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 314,
+      "y": 320,
+      "fill": "ink",
+      "text": "Gamma",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 442,
+      "y": 311,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.4",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 456,
+      "y": 320,
+      "fill": "ink",
+      "text": "Delta",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 16,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.5",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 30,
+      "y": 344,
+      "fill": "ink",
+      "text": "Epsilon",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 158,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.6",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 172,
+      "y": 344,
+      "fill": "ink",
+      "text": "Zeta",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 300,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.1",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 314,
+      "y": 344,
+      "fill": "ink",
+      "text": "Eta",
+      "size": 11,
+      "anchor": "start"
+    },
+    {
+      "kind": "rect",
+      "x": 442,
+      "y": 335,
+      "w": 10,
+      "h": 10,
+      "fill": "chart.2",
+      "stroke": "none"
+    },
+    {
+      "kind": "text",
+      "x": 456,
+      "y": 344,
+      "fill": "ink",
+      "text": "Theta is a …",
+      "size": 11,
+      "anchor": "start"
+    }
+  ]
+}

@@ -133,7 +133,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document and internal/deliverable exist; render, measure and native are planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, internal/deliverable and internal/render/chart exist; the rest of render, measure and native are planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -186,7 +186,7 @@ Rules:
 | `internal/deliverable` | The spec of a shaped deliverable, the closed catalogue of ten widgets, the refusals in words, the canonical form; stdlib only | new |
 | `internal/deliverable/template` | The five shipped templates and the owner's from `Templates/`; the positional check | new |
 | `internal/measure` (planned) | The closed registry of measure ids and one read over the store, the meter and the project rule | new |
-| `internal/render/chart` (planned) | One deterministic chart layout feeding the SVG and the PDF; the six hues | new |
+| `internal/render/chart` | One deterministic chart layout feeding the SVG and the PDF; the six hues | new |
 | `internal/render/html` (planned) | A spec to a self-contained web page, no script, with a content-security-policy | new |
 | `internal/render/paper` (planned) | A spec to a PDF through the Markdown engine, vector charts, reproducible | new |
 | `internal/tools/deliverables` (planned) | `deliverables.write`: validates before the gate, fills measures, writes the spec, the page and the PDF beside each other | new |
