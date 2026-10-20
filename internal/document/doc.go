@@ -1,0 +1,38 @@
+// Package document reads the text out of a file a bot is pointed at: a PDF
+// today, the other common kinds as their readers land.
+//
+// Responsibility: decide what kind of file it is from its name and its first
+// bytes, read it within fixed caps, and return its text with page markers
+// and the notices that tell the model what was left out. It sits below the
+// tools, so a tool, the context assembly or a later service can read a
+// document without importing the tool layer; the engines are decision D38.
+//
+// Invariants the types do not hold:
+//   - A parsed document is data, never instructions. The text is cleaned
+//     before it leaves this package: invalid UTF-8 and control characters
+//     other than newline and tab are gone, and a line that begins as the
+//     app's own voice does is pushed off the start of the line. Every notice
+//     is one of a fixed set of strings in brackets; only a file name and
+//     numbers are filled in. The limits and this rule are decision D41.
+//   - A read is bounded: a file over 64 MB is refused before it is opened as
+//     a document, a call reads at most 100 pages and 2 MB of text, and the
+//     whole read stops after a minute and says how far it got. The deadline
+//     is checked between pages and while a page is parsed.
+//   - A reader runs a third-party parser on a file the owner did not write.
+//     A page the parser fails on or panics on is reported as unread; it
+//     never ends the caller. What this package cannot bound is the parser's
+//     own memory use on a crafted file; see pdftext.
+//   - Nothing from a document's content is written to a log, here or by a
+//     caller of this package.
+//   - A picture page (a scan, or a page whose text layer is garbage) is
+//     found by a fixed rule. The Recogniser that would read it is not
+//     consulted yet; with or without one, such a page is reported as a
+//     picture that could not be read.
+//
+// A kind is one row in kinds.go: its name, extensions, the check its first
+// bytes must pass, and its reader. A new kind is a new row and a sub-package.
+//
+// See docs/decisions.md#hearth--decisions
+//
+// It imports pdftext and the standard library.
+package document

@@ -133,7 +133,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, render, measure, deliverable and native are planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document exists; render, measure, deliverable and native are planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -181,7 +181,7 @@ Rules:
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
-| `internal/document` (planned) | Reads the common document kinds as text: kind by header, the caps, the notices and the picture-page rule; pure Go | new |
+| `internal/document` | Reads the common document kinds as text: kind by header, the caps, the notices and the picture-page rule; pure Go | new |
 | `internal/render` (planned) | Renders a Markdown file to PDF or Word, deterministically, for `files.render` | new |
 | `internal/deliverable` (planned) | The spec of a shaped deliverable, the closed catalogue of ten widgets, the refusals in words, the canonical form; stdlib only | new |
 | `internal/deliverable/template` (planned) | The five shipped templates and the owner's from `Templates/`; the positional check | new |
