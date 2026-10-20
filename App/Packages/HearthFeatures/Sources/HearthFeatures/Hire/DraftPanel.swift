@@ -21,11 +21,22 @@ struct DraftPanel: View {
     @ScaledMetric(relativeTo: .body) private var editorHeight: CGFloat = 96
 
     var body: some View {
-        if let proposal = Binding($store.proposal) {
-            suggestion(proposal)
+        if store.proposal != nil {
+            suggestion(proposalBinding)
         } else {
             offer
         }
+    }
+
+    /// A binding that stays safe after "Keep mine" drops the proposal: the
+    /// fields bound to it are still alive for one update, and an unwrapping
+    /// binding would trap there. Reads fall back to an empty proposal for
+    /// that update; writes land only while a proposal exists.
+    private var proposalBinding: Binding<HireStore.Proposal> {
+        Binding(
+            get: { store.proposal ?? .empty },
+            set: { if store.proposal != nil { store.proposal = $0 } }
+        )
     }
 
     private var offer: some View {

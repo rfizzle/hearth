@@ -57,6 +57,10 @@ public final class HireStore {
         public var tier: Hearth_V1_Tier
         /// The chip whose sentence is at the end of `jobDescription`, if any.
         public fileprivate(set) var style: Style?
+
+        /// What a view shows when no proposal exists; never sent anywhere.
+        public static let empty = Proposal(
+            name: "", role: "", jobDescription: "", workingStyle: "", tier: .balanced, style: nil)
     }
 
     /// The templates the core offers.
