@@ -51,13 +51,9 @@ public final class LiveClient: HearthClient {
     }
 
     public func getOrg() async throws -> Hearth_V1_Org? {
-        // The core answers not_found until onboarding has named the org.
-        do {
-            let response = try await org.getOrg(request: Hearth_V1_GetOrgRequest()).value()
-            return response.hasOrg ? response.org : nil
-        } catch let error as ConnectError where error.code == .notFound {
-            return nil
-        }
+        // Until onboarding has named the org the core answers with none.
+        let response = try await org.getOrg(request: Hearth_V1_GetOrgRequest()).value()
+        return response.hasOrg ? response.org : nil
     }
 
     public func updateOrg(name: String, workspacePath: String) async throws -> Hearth_V1_Org {
