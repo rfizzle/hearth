@@ -1,7 +1,11 @@
-// What a bot can see and do: the capability row and the folder row.
+// What a bot can see and do: the capability row, the folder row and the sheet
+// that holds them.
 
 import HearthDesign
+import HearthFeatures
+import HearthKit
 import HearthUI
+import SwiftUI
 
 extension Catalog {
     static var access: [GalleryPage] {
@@ -17,6 +21,55 @@ extension Catalog {
                 states: GalleryState.each(FolderRow.PreviewState.self, width: 560) {
                     FolderRow(previewState: $0).padding(.horizontal, Theme.Spacing.lg)
                 }),
+            GalleryPage(
+                package: "HearthFeatures", name: "AccessSheet", states: accessSheetStates),
+        ]
+    }
+
+    /// The sheet at the core's defaults, and again once the core reports a
+    /// second folder: the file rows then stand for both, at the same modes.
+    @MainActor
+    static var accessSheetStates: [GalleryState] {
+        let client = PreviewClient()
+        let extra = "/Users/preview/Documents/Heat pumps"
+        let widened = Fixtures.grants.flatMap { grant -> [Hearth_V1_Grant] in
+            guard !grant.folder.isEmpty else { return [grant] }
+            var other = grant
+            other.folder = extra
+            other.ownFolder = false
+            return [grant, other]
+        }
+        let change = Hearth_V1_SubscribeResponse.with {
+            $0.sequence = 1
+            $0.event = .grantsChanged(
+                .with {
+                    $0.botID = Fixtures.bot.id
+                    $0.grants = widened
+                })
+        }
+        // The change arrives after the sheet's own fetch, as it would live.
+        let relay = EventRelay(subscribe: { _ in
+            AsyncThrowingStream { continuation in
+                let task = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    continuation.yield(change)
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        })
+        relay.start()
+        let defaults = GrantsStore(
+            client: client, relay: EventRelay(client: client), botID: Fixtures.bot.id)
+        let widenedStore = GrantsStore(client: client, relay: relay, botID: Fixtures.bot.id)
+        return [
+            GalleryState(
+                name: "defaults", width: Theme.Size.sheetWidth,
+                view: AnyView(
+                    AccessSheet(store: defaults, botName: Fixtures.bot.name, onDone: {}))),
+            GalleryState(
+                name: "extra folder", width: Theme.Size.sheetWidth,
+                view: AnyView(
+                    AccessSheet(store: widenedStore, botName: Fixtures.bot.name, onDone: {}))),
         ]
     }
 }
