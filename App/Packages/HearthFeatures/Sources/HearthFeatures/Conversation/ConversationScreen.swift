@@ -13,7 +13,10 @@
 // quiet card for a question answered with its control. While it is open the
 // status line says the bot is waiting and the composer asks for the answer
 // instead of a message. A run that failed or was stopped offers Retry on the
-// status line.
+// status line. When the core has written a summary of the earlier part, a
+// disclosure row above the oldest loaded message opens it in secondary text;
+// the composer takes files dropped on it as chips, and the store sends them
+// as paths.
 // See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run,
 // docs/design.md#motion, docs/model.md#owner-interaction and
 // docs/model.md#9-failure-handling
@@ -31,11 +34,14 @@ public struct ConversationScreen: View {
     /// Whether the first page has come back, so an empty transcript is known to
     /// be empty rather than not yet loaded.
     @State private var loaded = false
+    @State private var summaryOpen: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(store: ConversationStore, bot: Hearth_V1_Bot) {
+    /// A screen for `store`; `summaryOpen` starts the earlier-summary row open.
+    public init(store: ConversationStore, bot: Hearth_V1_Bot, summaryOpen: Bool = false) {
         self.store = store
         self.bot = bot
+        _summaryOpen = State(initialValue: summaryOpen)
     }
 
     public var body: some View {
@@ -90,6 +96,9 @@ public struct ConversationScreen: View {
                         .frame(maxWidth: .infinity)
                         .onAppear { Task { await store.loadOlder() } }
                 }
+                if !store.summary.isEmpty {
+                    summary
+                }
                 ForEach(store.rows) { row in
                     switch row {
                     case .message(let message):
@@ -119,6 +128,30 @@ public struct ConversationScreen: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
     }
 
+    private var summary: some View {
+        DisclosureRow(
+            isExpanded: $summaryOpen,
+            label: {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Earlier in this conversation")
+                    Text("What \(bot.name) remembers of the earlier part")
+                        .font(Theme.caption)
+                }
+            },
+            content: {
+                Text(store.summary)
+                    .font(Theme.body)
+                    .foregroundStyle(Theme.color(.textSecondary))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Theme.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
+                            .fill(Theme.color(.surfaceSecondary))
+                    )
+            })
+    }
+
     /// The owner's own message, which moves in; a system notice is the core's.
     private static func isSend(_ message: Hearth_V1_Message) -> Bool {
         message.authorBotID.isEmpty && message.kind == .text
@@ -146,6 +179,10 @@ public struct ConversationScreen: View {
                 isWorking: store.isWorking && !store.isWaiting,
                 waitingPrompt: store.waitingPrompt(botName: bot.name)
                     ?? store.pausedPrompt(botName: bot.name),
+                attachments: store.attachments,
+                attachmentNotice: store.attachmentNotice,
+                onDrop: { urls in store.attach(urls) },
+                onRemove: { file in store.removeAttachment(path: file.path) },
                 onSend: { text in await store.send(text) },
                 onStop: { Task { await store.cancel() } })
         }

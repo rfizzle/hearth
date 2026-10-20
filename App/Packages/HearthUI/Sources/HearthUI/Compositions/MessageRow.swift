@@ -2,7 +2,8 @@
 // readable column: an Avatar, the name and the time over the text, and a
 // FileRow per file it produced, the way a thread reads in a mail client. The
 // owner's is a quiet grey bubble on the trailing edge with no name, and its
-// time is help text and the accessibility value. A system message is a
+// time is help text and the accessibility value; the files the owner attached
+// sit under it as FileRows. A system message is a
 // centred notice. The text is TranscriptText while the message is still
 // streaming and parsed inline Markdown once it is complete; tables and code
 // blocks wait for a Markdown package. There is no streaming cursor: the status
@@ -76,6 +77,9 @@ public struct MessageRow: View {
                 .frame(maxWidth: Theme.Size.bubbleWidth, alignment: .trailing)
                 .help(timeText)
                 .accessibilityValue(timeText)
+            ForEach(message.attachments, id: \.path) { file in
+                FileRow(file: file)
+            }
             ForEach(message.files, id: \.path) { file in
                 FileRow(file: file)
             }
@@ -169,6 +173,7 @@ extension MessageRow {
         case streaming
         case complete
         case withFile
+        case ownerWithAttachments
         case system
         case askedApproval
         case askedQuestion
@@ -199,6 +204,17 @@ extension MessageRow {
                 message.streaming = false
                 message.files = [Fixtures.briefFile]
                 return message
+            case .ownerWithAttachments:
+                var message = Fixtures.dmMessages[0]
+                message.content = "Use these as the starting point."
+                message.attachments = [
+                    Fixtures.briefFile,
+                    .with {
+                        $0.name = "House survey.pdf"
+                        $0.path = "/Users/owner/Hearth/Inbox/House survey.pdf"
+                    },
+                ]
+                return message
             case .system:
                 return Fixtures.dmMessages[1]
             case .askedApproval:
@@ -228,6 +244,7 @@ extension MessageRow {
 #Preview("Streaming") { MessageRow(previewState: .streaming).padding() }
 #Preview("Complete") { MessageRow(previewState: .complete).padding() }
 #Preview("With a file") { MessageRow(previewState: .withFile).padding() }
+#Preview("Owner with files") { MessageRow(previewState: .ownerWithAttachments).padding() }
 #Preview("System") { MessageRow(previewState: .system).padding() }
 #Preview("Asked for approval") { MessageRow(previewState: .askedApproval).padding() }
 #Preview("Asked a question") { MessageRow(previewState: .askedQuestion).padding() }

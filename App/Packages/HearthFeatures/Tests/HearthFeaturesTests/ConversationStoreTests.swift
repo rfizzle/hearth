@@ -313,3 +313,82 @@ private struct Parked {
     #expect(store.messages.count == Fixtures.dmMessages.count - 1)
     #expect(!store.rows.contains { $0.id == doomed })
 }
+
+/// A file and a folder in a scratch directory, removed when `body` ends.
+@MainActor
+private func withDroppedFiles(
+    _ body: (_ file: URL, _ folder: URL) async -> Void
+) async throws {
+    let root = FileManager.default.temporaryDirectory
+        .appendingPathComponent("drop-\(UUID().uuidString)", isDirectory: true)
+    let folder = root.appendingPathComponent("Receipts", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let file = root.appendingPathComponent("Survey.pdf")
+    try Data("x".utf8).write(to: file)
+    defer { try? FileManager.default.removeItem(at: root) }
+    await body(file, folder)
+}
+
+@MainActor
+@Test func aDroppedFileBecomesAChipAndIsSentAsItsResolvedPath() async throws {
+    try await withDroppedFiles { file, _ in
+        let store = store()
+        await store.load()
+        // A dot segment resolves away, and the same file dropped twice is one chip.
+        let resolved = file.standardizedFileURL.resolvingSymlinksInPath().path
+        let dotted = file.deletingLastPathComponent().appendingPathComponent("./Survey.pdf")
+        store.attach([dotted, dotted])
+        #expect(store.attachments.map(\.path) == [resolved])
+        #expect(store.attachments.map(\.name) == ["Survey.pdf"])
+        #expect(store.attachmentNotice == nil)
+
+        #expect(await store.send("Read this."))
+        #expect(store.messages.last?.attachments.map(\.path) == [resolved])
+        #expect(store.attachments.isEmpty)
+    }
+}
+
+@MainActor
+@Test func removingAChipDropsItFromTheNextSend() async throws {
+    try await withDroppedFiles { file, _ in
+        let store = store()
+        await store.load()
+        store.attach([file])
+        store.removeAttachment(path: store.attachments[0].path)
+        #expect(store.attachments.isEmpty)
+        await store.send("Nothing attached.")
+        #expect(store.messages.last?.attachments.isEmpty == true)
+    }
+}
+
+@MainActor
+@Test func aFolderOrANonFileURLIsNotAttached() async throws {
+    try await withDroppedFiles { _, folder in
+        let store = store()
+        store.attach([folder, URL(string: "https://example.com/a.pdf")!])
+        #expect(store.attachments.isEmpty)
+        #expect(store.attachmentNotice == "Receipts is a folder; drop a file instead.")
+    }
+}
+
+@MainActor
+@Test func theFixtureConversationExposesItsSummaryAndAChangeReplacesIt() async {
+    let store = store()
+    #expect(store.summary.isEmpty)
+    await store.load()
+    #expect(store.summary == Fixtures.summaryText)
+    await store.handle(Fixtures.summaryEvents[0])
+    #expect(store.summary != Fixtures.summaryText)
+    #expect(store.summary.hasPrefix(Fixtures.summaryText))
+    await store.handle(
+        .with {
+            $0.event = .conversationChanged(
+                .with {
+                    $0.conversation = .with {
+                        $0.id = "another"
+                        $0.summary = "Not ours"
+                    }
+                })
+        })
+    #expect(store.summary.hasPrefix(Fixtures.summaryText))
+}

@@ -35,7 +35,7 @@ public protocol HearthClient: Sendable {
         -> Hearth_V1_ListMessagesResponse
     /// Stores the owner's message and starts one run; the reply arrives on
     /// `subscribe`. `attachmentPaths` are absolute paths the app resolved; the
-    /// core ignores them until attachments arrive.
+    /// core copies each into the Inbox unless the bot may already read it.
     func send(conversationID: String, text: String, attachmentPaths: [String]) async throws
         -> Hearth_V1_SendResponse
     /// Stops a run, keeping what the bot had written so far.

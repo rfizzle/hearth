@@ -58,6 +58,15 @@ public final class ConversationStore {
     public private(set) var run: Hearth_V1_Run?
     /// The last failed call's text, if one failed.
     public private(set) var error: String?
+    /// What the bot remembers of the part of the conversation before the
+    /// loaded page; empty until the core has written one.
+    public private(set) var summary = ""
+    /// The files dropped on the composer and not yet sent, in the order they
+    /// arrived. A file is its resolved path and name; the app reads nothing
+    /// from it.
+    public private(set) var attachments: [Hearth_V1_FileRef] = []
+    /// Why the last drop took nothing, in a line, or nil.
+    public private(set) var attachmentNotice: String?
 
     private var loadingOlder = false
     private let client: any HearthClient
@@ -156,8 +165,11 @@ public final class ConversationStore {
     /// the run as it was; the page decides whether the call failed.
     public func load() async {
         let conversation = try? await client.getConversation(id: conversationID)
-        if let conversation, conversation.hasLatestRun, run == nil {
-            run = conversation.latestRun
+        if let conversation {
+            summary = conversation.summary
+            if conversation.hasLatestRun, run == nil {
+                run = conversation.latestRun
+            }
         }
         do {
             let page = try await client.listMessages(
@@ -187,12 +199,47 @@ public final class ConversationStore {
         }
     }
 
-    /// Sends the owner's `text`, which starts a run; false when the core
-    /// refused it.
+    /// Takes the files dropped on the composer. Only file URLs count; each is
+    /// sent as its standardised path with symlinks resolved, which is
+    /// the one thing the app learns of it besides whether it is a folder.
+    /// A folder is refused with a caption, a file already attached is kept
+    /// once, and a path that does not exist is left for the core to refuse.
+    public func attach(_ urls: [URL]) {
+        attachmentNotice = nil
+        for url in urls where url.isFileURL {
+            let resolved = url.standardizedFileURL.resolvingSymlinksInPath()
+            var isDirectory: ObjCBool = false
+            let exists = FileManager.default.fileExists(
+                atPath: resolved.path, isDirectory: &isDirectory)
+            if exists && isDirectory.boolValue {
+                attachmentNotice = "\(resolved.lastPathComponent) is a folder; drop a file instead."
+                continue
+            }
+            guard !attachments.contains(where: { $0.path == resolved.path }) else { continue }
+            attachments.append(
+                .with {
+                    $0.path = resolved.path
+                    $0.name = resolved.lastPathComponent
+                })
+        }
+    }
+
+    /// Drops one attached file before it is sent.
+    public func removeAttachment(path: String) {
+        attachments.removeAll { $0.path == path }
+        attachmentNotice = nil
+    }
+
+    /// Sends the owner's `text` with the attached files, which starts a run;
+    /// false when the core refused it, and then the files stay attached.
     @discardableResult
     public func send(_ text: String) async -> Bool {
+        let sent = attachments
         do {
-            let response = try await client.send(conversationID: conversationID, text: text)
+            let response = try await client.send(
+                conversationID: conversationID, text: text, attachmentPaths: sent.map(\.path))
+            attachments.removeAll { file in sent.contains { $0.path == file.path } }
+            attachmentNotice = nil
             upsert(response.message)
             // The run's own events can arrive before this answer does; theirs
             // are newer, so the answer only introduces a run.
@@ -245,6 +292,8 @@ public final class ConversationStore {
             upsert(change.message)
         case .runChanged(let change) where change.run.conversationID == conversationID:
             run = change.run
+        case .conversationChanged(let change) where change.conversation.id == conversationID:
+            summary = change.conversation.summary
         case .messageDeleted(let deleted) where deleted.conversationID == conversationID:
             messages.removeAll { $0.id == deleted.messageID }
         case .resync:

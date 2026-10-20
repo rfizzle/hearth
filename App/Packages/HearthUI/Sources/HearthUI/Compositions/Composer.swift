@@ -14,11 +14,16 @@
 // itself, so the pointer target stays put. While the conversation waits for
 // the owner to answer a card above it, the field is disabled and says so in
 // place of its label, and Send stays disabled: the core takes no message
-// until the answer.
+// until the answer. Files dropped anywhere on the bar are handed to the
+// screen as URLs and come back as chips in a row inside the glass, above the
+// field, each with a remove button; the bar takes a tint stroke while a drag
+// is over it. The composer reads nothing from a dropped URL. A one-line caption
+// under the chips says why a drop took nothing.
 // See docs/design.md#materials, docs/design.md#motion and
 // docs/model.md#8-approvals
 
 import HearthDesign
+import HearthKit
 import SwiftUI
 
 /// The message field under a conversation.
@@ -26,29 +31,46 @@ public struct Composer: View {
     let label: String
     let isWorking: Bool
     let waitingPrompt: String?
+    let attachments: [Hearth_V1_FileRef]
+    let attachmentNotice: String?
+    let onDrop: ([URL]) -> Void
+    let onRemove: (Hearth_V1_FileRef) -> Void
     let onSend: (String) async -> Bool
     let onStop: () -> Void
 
     @State private var draft: String
+    @State private var isTargeted: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A composer labelled `label` ("Message Dana"); `isWorking` while the
     /// conversation's run has not ended, and `waitingPrompt` ("Answer Dana
-    /// above first") while it waits for the owner.
+    /// above first") while it waits for the owner. `attachments` are the
+    /// chips for the files dropped and not yet sent; `onDrop` takes what was
+    /// dropped on the bar and `onRemove` a chip taken off.
     public init(
         label: String,
         isWorking: Bool,
         waitingPrompt: String? = nil,
+        attachments: [Hearth_V1_FileRef] = [],
+        attachmentNotice: String? = nil,
+        onDrop: @escaping ([URL]) -> Void = { _ in },
+        onRemove: @escaping (Hearth_V1_FileRef) -> Void = { _ in },
         draft: String = "",
+        isTargeted: Bool = false,
         onSend: @escaping (String) async -> Bool,
         onStop: @escaping () -> Void
     ) {
         self.label = label
         self.isWorking = isWorking
         self.waitingPrompt = waitingPrompt
+        self.attachments = attachments
+        self.attachmentNotice = attachmentNotice
+        self.onDrop = onDrop
+        self.onRemove = onRemove
         self.onSend = onSend
         self.onStop = onStop
         _draft = State(initialValue: draft)
+        _isTargeted = State(initialValue: isTargeted)
     }
 
     public var body: some View {
@@ -75,19 +97,59 @@ public struct Composer: View {
         .animation(
             Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: waitingPrompt != nil
         )
+        .animation(
+            Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: attachments.map(\.path)
+        )
+        .dropDestination(for: URL.self) { urls, _ in
+            onDrop(urls)
+            return !urls.isEmpty
+        } isTargeted: {
+            isTargeted = $0
+        }
         .padding(.horizontal, Theme.Spacing.lg)
         .padding(.bottom, Theme.Spacing.md)
     }
 
     private var editor: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            if !attachments.isEmpty {
+                chips
+            }
+            if let attachmentNotice {
+                Text(attachmentNotice)
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.color(Tone.negative))
+            }
+            field
+        }
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.vertical, Theme.Spacing.sm)
+        .glassEffect(.regular, in: .rect(cornerRadius: Theme.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
+                .stroke(Color.accentColor, lineWidth: 2)
+                .opacity(isTargeted ? 1 : 0)
+        )
+    }
+
+    private var chips: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: Theme.Spacing.xs) {
+                ForEach(attachments, id: \.path) { file in
+                    AttachmentChip(file: file) { onRemove(file) }
+                }
+            }
+            .padding(Theme.Spacing.xs)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private var field: some View {
         TextField(waitingPrompt ?? label, text: $draft, axis: .vertical)
             .textFieldStyle(.plain)
             .lineLimit(1...8)
             .font(Theme.body)
             .foregroundStyle(Theme.color(.textPrimary))
-            .padding(.horizontal, Theme.Spacing.md)
-            .padding(.vertical, Theme.Spacing.sm)
-            .glassEffect(.regular, in: .rect(cornerRadius: Theme.Radius.lg))
             .accessibilityLabel(waitingPrompt ?? label)
             .disabled(waitingPrompt != nil)
             .onKeyPress(keys: [.return], phases: .down) { press in
@@ -133,22 +195,35 @@ extension Composer {
         case threeLines
         case working
         case waiting
+        case targeted
+        case twoChips
 
         var draft: String {
             switch self {
-            case .empty, .waiting: ""
-            case .drafted, .working: "Add a section on running costs."
+            case .empty, .waiting, .targeted: ""
+            case .drafted, .working, .twoChips: "Add a section on running costs."
             case .threeLines:
                 "Add a section on running costs.\nKeep it to one paragraph.\nUse pounds, not dollars."
             }
         }
     }
 
+    /// Two files waiting to be sent.
+    static let sampleChips: [Hearth_V1_FileRef] = [
+        Fixtures.briefFile,
+        .with {
+            $0.name = "House survey.pdf"
+            $0.path = "/Users/owner/Hearth/Inbox/House survey.pdf"
+        },
+    ]
+
     /// A composer showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
             label: "Message Dana", isWorking: state == .working,
-            waitingPrompt: state == .waiting ? "Answer Dana above first" : nil, draft: state.draft,
+            waitingPrompt: state == .waiting ? "Answer Dana above first" : nil,
+            attachments: state == .twoChips ? Self.sampleChips : [], draft: state.draft,
+            isTargeted: state == .targeted,
             onSend: { _ in true }, onStop: {})
     }
 }
@@ -157,4 +232,6 @@ extension Composer {
 #Preview("Drafted") { Composer(previewState: .drafted).padding() }
 #Preview("Three lines") { Composer(previewState: .threeLines).padding() }
 #Preview("Working") { Composer(previewState: .working).padding() }
+#Preview("Targeted") { Composer(previewState: .targeted).padding() }
+#Preview("Two chips") { Composer(previewState: .twoChips).padding() }
 #Preview("Waiting") { Composer(previewState: .waiting).padding() }

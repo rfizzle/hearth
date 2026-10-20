@@ -24,7 +24,10 @@ extension Catalog {
                 package: package, name: "BotList", states: botListStates),
             GalleryPage(
                 package: package, name: "ConversationScreen",
-                states: [conversationMidStream(), conversationWaiting(), conversationEmpty()]),
+                states: [
+                    conversationMidStream(), conversationSummaryOpen(), conversationWaiting(),
+                    conversationEmpty(),
+                ]),
         ]
     }
 
@@ -100,6 +103,19 @@ extension Catalog {
 }
 
 extension Catalog {
+    /// The DM with the earlier-summary row open.
+    fileprivate static func conversationSummaryOpen() -> GalleryState {
+        let client = PreviewClient()
+        let relay = EventRelay(client: client)
+        let store = ConversationStore(
+            client: client, relay: relay, conversationID: Fixtures.dmConversation.id)
+        return GalleryState(
+            name: "earlier summary open", width: 560,
+            view: AnyView(
+                ConversationScreen(store: store, bot: Fixtures.bot, summaryOpen: true)
+                    .frame(height: 700)))
+    }
+
     /// A conversation nobody has written in yet: the id matches no messages.
     fileprivate static func conversationEmpty() -> GalleryState {
         let client = PreviewClient()

@@ -13,8 +13,14 @@ extension Fixtures {
         $0.kind = .dm
         $0.botID = bot.id
         $0.title = bot.name
+        $0.summary = summaryText
         $0.updatedAt = time(14)
     }
+
+    /// What Dana remembers of the part of the DM before the loaded page.
+    public static let summaryText =
+        "You asked Dana for a one-page brief on heat pumps for a 1930s house. "
+        + "She prefers pounds to dollars and wants the grants listed last."
 
     /// The brief Dana wrote, in her folder.
     public static let briefFile = Hearth_V1_FileRef.with {

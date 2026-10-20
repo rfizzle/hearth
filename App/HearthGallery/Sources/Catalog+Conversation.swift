@@ -22,6 +22,11 @@ extension Catalog {
                     FileRow(previewState: $0)
                 }),
             GalleryPage(
+                package: package, name: "AttachmentChip",
+                states: GalleryState.each(AttachmentChip.PreviewState.self, width: 560) {
+                    AttachmentChip(previewState: $0)
+                }),
+            GalleryPage(
                 package: package, name: "RunStatusLine",
                 states: GalleryState.each(RunStatusLine.PreviewState.self, width: 560) {
                     RunStatusLine(previewState: $0)

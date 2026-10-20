@@ -1,13 +1,16 @@
-// FileRow is a file a bot wrote, drawn as a bordered chip with the Finder's
-// icon for its type; the chip is the action and clicking it calls the
-// revealInFinder environment action with the file's path. The context menu
-// offers the same. It is a system Button, so keyboard and VoiceOver behaviour
-// is the system's; its label names the file and the action, so a list of
-// several reads apart.
+// FileRow is a file in the transcript, a bot's or one the owner attached,
+// drawn as a bordered chip with the Finder's icon for its type. Clicking it, or
+// Return on it when focused, calls the revealInFinder environment action with
+// the file's path; Space opens Quick Look on it, and the context menu offers
+// both. It is a focusable view with the button trait rather than a Button,
+// since a Button takes Space for itself. Its label names the file and the
+// action, so a list of several reads apart; the app only names the path, and
+// Quick Look is the system's.
 // See docs/design.md#the-transcript
 
 import HearthDesign
 import HearthKit
+import QuickLook
 import SwiftUI
 
 /// A file in the transcript.
@@ -15,35 +18,49 @@ public struct FileRow: View {
     let file: Hearth_V1_FileRef
 
     @Environment(\.revealInFinder) private var revealInFinder
+    @State private var previewURL: URL?
 
     public init(file: Hearth_V1_FileRef) {
         self.file = file
     }
 
     public var body: some View {
-        Button {
-            revealInFinder(file.path)
-        } label: {
-            HStack(spacing: Theme.Spacing.xs) {
-                FileIcon(filename: file.name)
-                Text(file.name)
-                    .font(Theme.callout)
-                    .foregroundStyle(Theme.color(.textPrimary))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-            .padding(.horizontal, Theme.Spacing.sm)
-            .padding(.vertical, Theme.Spacing.xs)
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous)
-                    .stroke(.separator)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous))
+        HStack(spacing: Theme.Spacing.xs) {
+            FileIcon(filename: file.name)
+            Text(file.name)
+                .font(Theme.callout)
+                .foregroundStyle(Theme.color(.textPrimary))
+                .lineLimit(1)
+                .truncationMode(.middle)
         }
-        .buttonStyle(.plain)
-        .help("Show in Finder")
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.xs)
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous)
+                .stroke(.separator)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous))
+        .onTapGesture { revealInFinder(file.path) }
+        .focusable()
+        .onKeyPress(.return) {
+            revealInFinder(file.path)
+            return .handled
+        }
+        .onKeyPress(.space) {
+            previewURL = URL(fileURLWithPath: file.path)
+            return .handled
+        }
+        .quickLookPreview($previewURL)
+        .help("Quick Look (Space)")
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel("\(file.name), show in Finder")
+        .accessibilityAction { revealInFinder(file.path) }
+        .accessibilityAction(named: "Quick Look") {
+            previewURL = URL(fileURLWithPath: file.path)
+        }
         .contextMenu {
+            Button("Quick Look") { previewURL = URL(fileURLWithPath: file.path) }
             Button("Show in Finder") { revealInFinder(file.path) }
         }
     }

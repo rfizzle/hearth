@@ -117,6 +117,13 @@ starts again, a bar on the attention fill sits over the top of the conversation
 saying what stopped, with OK. It is not a modal, it stays until dismissed, and
 it does not apologise.
 
+Files go both ways. The owner drops a file on the composer and it waits there
+as a chip with the Finder's icon and a small remove button; a folder is
+declined in a line under the chips. Any file chip, the owner's or the bot's,
+opens in Quick Look on Space and from its context menu. When the bot has a
+summary of the earlier part of a conversation, a quiet row above the oldest
+message, "Earlier in this conversation", opens to show it.
+
 A bot's question is a card with the question, the control it asked for (a
 choice, a date, a folder) and one prominent button to answer, so choosing is
 a click rather than a sentence. An answered card goes quiet: no stroke, no

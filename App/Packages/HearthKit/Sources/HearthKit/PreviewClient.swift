@@ -103,6 +103,12 @@ public struct PreviewClient: HearthClient {
         var response = Fixtures.sendResponse
         response.message.conversationID = conversationID
         response.message.content = text
+        response.message.attachments = attachmentPaths.map { path in
+            .with {
+                $0.path = path
+                $0.name = (path as NSString).lastPathComponent
+            }
+        }
         response.run.conversationID = conversationID
         return response
     }

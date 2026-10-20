@@ -137,3 +137,20 @@ extension Fixtures {
         }
     }()
 }
+
+extension Fixtures {
+    /// Another script: the core rewrote the DM's summary after a run, so the
+    /// conversation arrives with its new summary. Sequences start at 1.
+    public static let summaryEvents: [Hearth_V1_SubscribeResponse] = {
+        var changed = dmConversation
+        changed.summary =
+            summaryText
+            + " The brief is written and saved in her folder; the grants are still open."
+        return [
+            .with {
+                $0.sequence = 1
+                $0.event = .conversationChanged(.with { $0.conversation = changed })
+            }
+        ]
+    }()
+}

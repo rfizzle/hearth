@@ -14,7 +14,7 @@ import Testing
     #expect(Composer.canSend(draft: "Add a section.", isWorking: false))
     #expect(!Composer.showsStop(isWorking: false))
     #expect(!Composer.canSend(draft: " \n", isWorking: false))
-    #expect(Composer.PreviewState.allCases.count == 5)
+    #expect(Composer.PreviewState.allCases.count == 7)
     #expect(Composer.PreviewState.threeLines.draft.split(separator: "\n").count == 3)
     #expect(Composer.PreviewState.empty.draft.isEmpty)
 }
@@ -50,6 +50,8 @@ import Testing
     #expect(states.streaming.message.streaming)
     #expect(!states.complete.message.streaming)
     #expect(states.withFile.message.files == [Fixtures.briefFile])
+    #expect(states.ownerWithAttachments.message.attachments.count == 2)
+    #expect(MessageRow(previewState: .ownerWithAttachments).isOwner)
     #expect(states.system.message.kind == .system)
 }
 
