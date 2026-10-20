@@ -4,11 +4,13 @@
 // and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A,
 // View carries Show Inspector on ⌥⌘I, and File carries New Project… on ⇧⌘N in
 // place of the New Window item a window group would put there. The menu bar
-// extra and the quick-ask window its global shortcut opens are scenes too; the
+// extra and the quick-ask window its global shortcut opens are scenes too, and
+// so is the window a shaped deliverable opens in, one per file; the
 // delegate starts the helper at launch and listens for the shortcut.
 // See docs/design.md#window-anatomy
 
 import AppKit
+import HearthFeatures
 import HearthNative
 import HearthUI
 import SwiftUI
@@ -22,6 +24,7 @@ struct HearthApp: App {
             ContentView()
                 .environment(appDelegate.model)
                 .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
+                .environment(\.openInBrowser, OpenInBrowserAction { Browser.open(path: $0) })
                 .environment(
                     \.pickFolder,
                     PickFolderAction { folders, files, start in
@@ -48,6 +51,16 @@ struct HearthApp: App {
             TeamCommands(model: appDelegate.model)
             DebugCommands()
         }
+        // One window per deliverable file: opening an equal path again brings
+        // the same window forward.
+        WindowGroup(id: DeliverableChip.windowID, for: String.self) { $path in
+            if let path {
+                DeliverableScreen(path: path)
+                    .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
+                    .environment(\.openInBrowser, OpenInBrowserAction { Browser.open(path: $0) })
+            }
+        }
+        .defaultSize(width: 760, height: 640)
         Settings {
             SettingsView().environment(appDelegate.model)
         }

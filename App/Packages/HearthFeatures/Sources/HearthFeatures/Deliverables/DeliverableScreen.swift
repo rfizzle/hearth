@@ -1,0 +1,103 @@
+// DeliverableScreen is a shaped deliverable in its own window: the title and
+// the cards DeliverableView draws from the spec file, scrolling. The toolbar
+// has Show in Finder, Open PDF (Quick Look), Open in Browser when those files
+// are beside the spec, and a menu with Reload. The file is read when the
+// window opens and again each time it becomes the key window. A file that does
+// not decode is one plain sentence. Nothing here loads the page: Open in
+// Browser hands it to the system.
+// See docs/design.md#window-anatomy, docs/decisions.md (D45)
+
+import HearthDesign
+import HearthKit
+import HearthUI
+import QuickLook
+import SwiftUI
+
+/// The window for one deliverable.
+public struct DeliverableScreen: View {
+    @State private var store: DeliverableStore
+
+    @Environment(\.revealInFinder) private var revealInFinder
+    @Environment(\.openInBrowser) private var openInBrowser
+    @Environment(\.controlActiveState) private var activeState
+    @State private var previewURL: URL?
+
+    /// A window for the spec file at `path`.
+    public init(path: String) {
+        _store = State(initialValue: DeliverableStore(path: path))
+    }
+
+    /// A window over `store`, for the gallery and previews.
+    public init(store: DeliverableStore) {
+        _store = State(initialValue: store)
+    }
+
+    public var body: some View {
+        content
+            .frame(minWidth: 480, minHeight: 320)
+            .navigationTitle(store.title)
+            .toolbar { toolbar }
+            .quickLookPreview($previewURL)
+            .task { await store.load() }
+            .onChange(of: activeState) { _, state in
+                if state == .key { Task { await store.load() } }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch store.state {
+        case .loading:
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .shown(let spec):
+            ScrollView {
+                DeliverableView(spec: spec, values: [:])
+                    .padding(Theme.Spacing.xl)
+            }
+        case .unreadable:
+            ContentUnavailableView(
+                "This file isn't a deliverable Hearth can show",
+                systemImage: "doc.questionmark",
+                description: Text("It may have been changed, or made by a newer Hearth."))
+        }
+    }
+
+    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            Button("Show in Finder", systemImage: "folder") { revealInFinder(store.path) }
+            if store.hasPDF {
+                Button("Open PDF", systemImage: "doc.richtext") {
+                    previewURL = URL(fileURLWithPath: store.pdfPath)
+                }
+            }
+            if store.hasPage {
+                Button("Open in Browser", systemImage: "safari") {
+                    openInBrowser(store.pagePath)
+                }
+            }
+            Menu("More", systemImage: "ellipsis.circle") {
+                Button("Reload") { Task { await store.load() } }
+            }
+        }
+    }
+}
+
+extension DeliverableScreen {
+    /// The states the gallery shows.
+    public enum PreviewState: String, CaseIterable, Sendable {
+        case dashboard
+        case undecodable
+    }
+
+    /// A window showing `state`, for the gallery and previews.
+    public init(previewState state: PreviewState) {
+        let path = Fixtures.bot.folderPath + "/Launch dashboard.deliverable.json"
+        switch state {
+        case .dashboard:
+            self.init(
+                store: DeliverableStore(
+                    path: path, previewing: Fixtures.kitchenSink, hasPage: true, hasPDF: true))
+        case .undecodable:
+            self.init(store: DeliverableStore(path: path))
+        }
+    }
+}

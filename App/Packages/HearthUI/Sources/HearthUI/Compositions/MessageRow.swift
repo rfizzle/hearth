@@ -1,6 +1,6 @@
 // MessageRow is one message in the transcript. A bot's message is flat in the
 // readable column: an Avatar, the name and the time over the text, and a
-// FileRow per file it produced, the way a thread reads in a mail client. The
+// FileRow per file it produced (a deliverable's files are one chip), the way a thread reads in a mail client. The
 // owner's is a quiet grey bubble on the trailing edge with no name, and its
 // time is help text and the accessibility value; the files the owner attached
 // sit under it as FileRows. A system message is a
@@ -56,9 +56,7 @@ public struct MessageRow: View {
             VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 header
                 content
-                ForEach(message.files, id: \.path) { file in
-                    FileRow(file: file)
-                }
+                TranscriptFiles(files: message.files)
             }
         }
         .frame(maxWidth: Theme.Size.readableWidth, alignment: .leading)
@@ -80,9 +78,7 @@ public struct MessageRow: View {
             ForEach(message.attachments, id: \.path) { file in
                 FileRow(file: file)
             }
-            ForEach(message.files, id: \.path) { file in
-                FileRow(file: file)
-            }
+            TranscriptFiles(files: message.files)
         }
         .frame(maxWidth: Theme.Size.readableWidth, alignment: .trailing)
         .accessibilityElement(children: .contain)

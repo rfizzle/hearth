@@ -1,7 +1,9 @@
 // Shaped deliverables: the whole deliverable with every widget as written,
 // live and with its measures missing, a file from a newer Hearth, and each
-// shipped template's sample; then each widget in each of its states.
+// shipped template's sample; then each widget in each of its states; the chip
+// in the transcript and the window.
 
+import HearthFeatures
 import HearthUI
 import SwiftUI
 
@@ -11,6 +13,16 @@ extension Catalog {
         let tile: CGFloat = 260
         let wide: CGFloat = 520
         return [
+            GalleryPage(
+                package: package, name: "DeliverableChip",
+                states: GalleryState.each(DeliverableChip.PreviewState.self, width: 360) {
+                    DeliverableChip(previewState: $0)
+                }),
+            GalleryPage(
+                package: "HearthFeatures", name: "DeliverableScreen",
+                states: GalleryState.each(DeliverableScreen.PreviewState.self, width: 720) {
+                    DeliverableScreen(previewState: $0).frame(height: 560)
+                }),
             GalleryPage(
                 package: package, name: "DeliverableView",
                 states: GalleryState.each(DeliverableView.PreviewState.self, width: 580) {

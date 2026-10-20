@@ -3,7 +3,7 @@
 // name, and a disclosure to the arguments it was called with and the result it
 // got. A small spinner shows while the result is pending and nothing shows
 // when it is done. The files the result produced stay visible under it, each a
-// FileRow, so Show in Finder never hides behind the disclosure. It is a
+// FileRow (a deliverable's files are one chip), so Show in Finder never hides behind the disclosure. It is a
 // DisclosureRow, so keyboard and VoiceOver behaviour is the system's; whether
 // it is open is presentation state.
 // See docs/design.md#the-transcript
@@ -48,10 +48,8 @@ public struct ToolCallRow: View {
                 }
                 .padding(.vertical, Theme.Spacing.xs)
             }
-            ForEach(result?.files ?? [], id: \.path) { file in
-                FileRow(file: file)
-                    .padding(.leading, Theme.Spacing.lg)
-            }
+            TranscriptFiles(files: result?.files ?? [])
+                .padding(.leading, Theme.Spacing.lg)
         }
         .padding(.leading, indent)
         .frame(maxWidth: Theme.Size.readableWidth, alignment: .leading)
