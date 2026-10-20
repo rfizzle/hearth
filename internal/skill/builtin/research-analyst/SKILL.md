@@ -19,3 +19,5 @@ rather than guessing.
 
 Save longer write-ups as files in your folder and tell the owner where they
 are.
+
+A findings report or a side-by-side comparison is a shaped deliverable; report and comparison are the templates for them.

@@ -21,7 +21,9 @@
 //     refuses to follow a symlink at the file itself, so a link that appeared
 //     after the dispatcher's check cannot carry the write out of the folder.
 //     It refuses a file with a second name, a hard link, which the write
-//     would change under that name too.
+//     would change under that name too. OpenForWrite is that opening, and
+//     another tool that writes in a granted folder opens its files through
+//     it.
 //
 //   - A delete removes one regular file and nothing else: never a folder,
 //     never a path that ends in a link, and only the file the call's own

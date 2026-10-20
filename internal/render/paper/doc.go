@@ -8,7 +8,8 @@
 // headings, paragraphs with bold, italic, struck and code text, links as
 // text with their address, lists and task lists, quotes, code blocks,
 // tables, rules and images. Another entry point can draw onto the same
-// Document.
+// Document; Render, for a shaped deliverable, answers ErrNotYet until it
+// does.
 //
 // Invariants the types do not hold:
 //   - A render is reproducible: no clock (the PDF's dates are the source's

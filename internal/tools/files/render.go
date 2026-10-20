@@ -82,7 +82,7 @@ func markdown(name string) bool {
 // render draws the Markdown at call.Path as a PDF or a Word file with the
 // same stem beside it. The output's name is derived from the source's resolved path, never
 // from anything else the model sent, and it is written through
-// openForWrite like any file files.write makes.
+// OpenForWrite like any file files.write makes.
 func (o Options) render(ctx context.Context, call tools.Call) (tools.Result, error) {
 	var a renderArgs
 	_ = json.Unmarshal(call.Args, &a) // Validate has accepted these arguments

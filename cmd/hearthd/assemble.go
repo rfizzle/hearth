@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/org/memory"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/provider/models"
 	"github.com/rfizzle/hearth/internal/rpc"
@@ -91,6 +92,11 @@ func openCore(ctx context.Context, dataDir string, recogniser func() document.Re
 	pages := &handbook.Service{Store: db, OnChange: func(p memory.Page, deleted bool) {
 		bus.Publish(books.PageChanged{Page: p, Deleted: deleted})
 	}}
+	// The project rule is the orchestrator's, made below; a figure is read
+	// only once a run is under way, after it exists.
+	figures := measures(db, func(ctx context.Context, id string) (project.Status, error) {
+		return svc.Status(ctx, id)
+	}, meterOf, pages)
 	deps := withModels(orchestrate.Deps{
 		Store:   db,
 		Meter:   meterOf,
@@ -101,6 +107,7 @@ func openCore(ctx context.Context, dataDir string, recogniser func() document.Re
 		},
 		Recogniser: recogniser,
 		Bus:        bus, Reserved: reserved,
+		Templates: deliverableTemplates(db), Measures: figures,
 		Coordinator: func(ctx context.Context) (org.Bot, bool) {
 			b, err := db.Coordinator(ctx)
 			return b, err == nil
@@ -124,7 +131,7 @@ func openCore(ctx context.Context, dataDir string, recogniser func() document.Re
 		EnsureWorkspace: workspace.Ensure,
 		Handbook:        pages,
 		Meter:           meterOf,
-		Deliverables:    deliverableDeps(db, measures(db, svc, meterOf, pages)),
+		Deliverables:    deliverableDeps(db, figures),
 	}, func() { _ = db.Close() }, nil
 }
 

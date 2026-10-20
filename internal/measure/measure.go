@@ -54,6 +54,14 @@ type Value struct {
 	Missing string
 }
 
+// The words Missing holds when an id's subject is gone: a project or a bot
+// that does not exist. Every other Missing is a figure that cannot be known
+// yet.
+const (
+	NoSuchProject = "No such project"
+	NoSuchBot     = "No such bot"
+)
+
 // Scope is what me and this mean for one caller: the calling bot and the
 // project of the conversation, either of which may be empty.
 type Scope struct{ BotID, ProjectID string }
@@ -237,6 +245,13 @@ func (id ID) String() string {
 		s += "/" + id.Period
 	}
 	return s
+}
+
+// Kind is the kind of value id's family reads, or a refusal in words for a
+// family the registry does not hold.
+func (id ID) Kind() (Kind, error) {
+	f, err := id.family()
+	return f.kind, err
 }
 
 // ParseID reads "family/subject[/period]" and refuses what the registry

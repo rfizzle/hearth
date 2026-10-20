@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/hearth/internal/document"
 	"github.com/rfizzle/hearth/internal/orchestrate/after"
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
+	"github.com/rfizzle/hearth/internal/orchestrate/toolset"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/project"
@@ -92,6 +93,11 @@ type Deps struct {
 	Coordinator func(ctx context.Context) (org.Bot, bool)
 	// Reserved are folders no tool may touch, whatever a bot is granted.
 	Reserved []string
+	// Templates are the deliverable templates a run is offered, and
+	// Measures the office's figures a deliverable binds; nil Measures leaves
+	// deliverables.write out.
+	Templates toolset.Templates
+	Measures  toolset.Measures
 	// Resume is how a run that continues a parked one is handed the round
 	// it parked in.
 	Resume assembly.Resume

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/llm"
 
+	"github.com/rfizzle/hearth/internal/measure"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/store"
@@ -160,5 +161,39 @@ func TestProjectGrants(t *testing.T) {
 	}
 	if st, err := f.svc.status(ctx, p.ID); err != nil || st.Light != project.LightNone {
 		t.Errorf("status = %+v, %v, want none", st, err)
+	}
+}
+
+// A run is offered deliverables.write once the office's figures are wired,
+// and this means the project of the conversation: refused in words in a
+// direct one, resolved in a project's.
+func TestDeliverablesBindThisProject(t *testing.T) {
+	f, p := projectFixture(t)
+	ctx := context.Background()
+	o, _ := f.db.Org(ctx)
+	if err := workspace.Ensure(o.WorkspacePath); err != nil {
+		t.Fatal(err)
+	}
+	if offers(t, f, "deliverables.write") {
+		t.Error("deliverables.write is offered with no measures wired")
+	}
+	if err := os.MkdirAll(p.FolderPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.d.Measures = measure.Deps{}
+	args := []byte(`{"path":"d","spec":{"version":1,"kind":"report","title":"T","sections":[{"widgets":[{"kind":"progress","label":"Tasks","measure":"project.tasks/this"}]}]}}`)
+	dm, err := f.svc.dispatcher(ctx, f.bot, f.bot.DMConversationID, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dm.Check("deliverables.write", args); err == nil || !strings.Contains(err.Error(), "not in a project") {
+		t.Errorf("this in a direct conversation: %v", err)
+	}
+	in, err := f.svc.dispatcher(ctx, f.bot, p.ConversationID, "", &p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := in.Check("deliverables.write", args); err != nil {
+		t.Errorf("this in the project's conversation: %v", err)
 	}
 }

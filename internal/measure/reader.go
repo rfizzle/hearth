@@ -72,14 +72,14 @@ func (r *reader) subject(f family, id ID) (string, error) {
 			return "", err
 		}
 		if _, ok := r.project(id.Subject); !ok {
-			return "No such project", nil
+			return NoSuchProject, nil
 		}
 	case aBot, botOrOrg, botOrEveryone:
 		if _, err := r.bots(); err != nil {
 			return "", err
 		}
 		if _, ok := r.bot(id.Subject); !ok && !f.special(id.Subject) {
-			return "No such bot", nil
+			return NoSuchBot, nil
 		}
 	}
 	return "", nil

@@ -197,11 +197,26 @@ func TestRead_EachFamily(t *testing.T) {
 func TestRead_MissingIsAValueNotAnError(t *testing.T) {
 	d, _ := rig(t)
 	vs := read(t, d, "project.tasks/gone", "notes.count/gone", "usage.cost/bot2/2026-10", "usage.budget/bot1/2026-10", "usage.cost/nobody/2026-10", "usage.cost/org/2025-01")
-	want := []string{"No such project", "No such bot", "Not priced", "No budget set", "No such bot", ""}
+	want := []string{NoSuchProject, NoSuchBot, "Not priced", "No budget set", "No such bot", ""}
 	for i, v := range vs {
 		if v.Missing != want[i] {
 			t.Errorf("%s missing = %q, want %q", v.ID, v.Missing, want[i])
 		}
+	}
+}
+
+func TestID_Kind(t *testing.T) {
+	for s, want := range map[string]Kind{"project.tasks/p1": Progress, "project.light/this": Light, "team.size": Number} {
+		id, err := ParseID(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, err := id.Kind(); err != nil || got != want {
+			t.Errorf("%s: kind %q, %v; want %q", s, got, err, want)
+		}
+	}
+	if _, err := (ID{Family: "nope"}).Kind(); !errors.Is(err, ErrInvalid) {
+		t.Errorf("an unknown family: %v", err)
 	}
 }
 

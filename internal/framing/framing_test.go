@@ -125,6 +125,20 @@ func TestRenderNamesNoTool(t *testing.T) {
 	}
 }
 
+func TestRenderShapedDeliverables(t *testing.T) {
+	got := framing.Render(framing.Input{OrgName: "O", BotName: "B", Role: "R", JobDescription: "J", FolderPath: "/f"})
+	work, asking := strings.Index(got, "## How you work"), strings.Index(got, "## Asking the person")
+	i := strings.Index(got, "## Deliverables with a shape")
+	if i < work || i > asking {
+		t.Fatalf("the shaped deliverables block is not after how you work and before asking:\n%s", got)
+	}
+	for _, want := range []string{"A report, a digest, a comparison or a dashboard is a shaped deliverable", "bound by measure, never typed in", "a Markdown file in your folder"} {
+		if !strings.Contains(got[i:asking], want) {
+			t.Errorf("the block is missing %q", want)
+		}
+	}
+}
+
 func TestRenderAsksThePerson(t *testing.T) {
 	got := framing.Render(framing.Input{OrgName: "O", BotName: "B", Role: "R", JobDescription: "J", FolderPath: "/f"})
 	i := strings.Index(got, "## Asking the person")

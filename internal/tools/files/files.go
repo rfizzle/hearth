@@ -182,9 +182,9 @@ func write(_ context.Context, call tools.Call) (tools.Result, error) {
 }
 
 // writeFile creates or replaces the file at path, inside folder, with data,
-// through openForWrite. name is the path as the model reads it.
+// through OpenForWrite. name is the path as the model reads it.
 func writeFile(tool, folder, path, name string, data []byte) error {
-	f, err := openForWrite(tool, folder, path, name)
+	f, err := OpenForWrite(tool, folder, path, name)
 	if err != nil {
 		return err
 	}
@@ -198,11 +198,14 @@ func writeFile(tool, folder, path, name string, data []byte) error {
 	return nil
 }
 
-// openForWrite opens path, inside folder, to be written from the start: it
+// OpenForWrite opens path, inside folder, to be written from the start: it
 // creates the folders above it, checks again that the path still leads
 // inside the folder, replaces only a regular file, and refuses a link at the
-// file itself. Every file a tool here writes is opened through it.
-func openForWrite(tool, folder, path, name string) (*os.File, error) {
+// file itself and a file with a second name. Every file a tool writes in a
+// granted folder is opened through it. path is resolved inside folder, as
+// the dispatcher placed it; tool names the caller and name is the path as
+// the model reads it, for the refusals. The caller closes the file.
+func OpenForWrite(tool, folder, path, name string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, failed(tool, "create the folders above", name, err)
 	}

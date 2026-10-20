@@ -249,6 +249,13 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID str
 		grants = append(grants, proposeGrant(bot.ID))
 		extra = append(extra, toolset.Propose(s.d.Store, s.d.Bus, s.status, bot.ID, convID))
 	}
+	if s.d.Measures != nil {
+		projectID := ""
+		if proj != nil {
+			projectID = proj.ID
+		}
+		extra = append(extra, toolset.Deliverables(s.d.Templates, s.d.Measures, bot.ID, projectID, s.d.Reserved))
+	}
 	reg, err := s.registry(append(extra, s.extra...))
 	if err != nil {
 		return tools.Dispatcher{}, err

@@ -4,35 +4,49 @@ import (
 	"context"
 	"path/filepath"
 
+	"github.com/rfizzle/hearth/internal/deliverable/template"
 	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/measure"
 	"github.com/rfizzle/hearth/internal/meter"
-	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org/usage"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/rpc/deliverables"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
 // measures wires the sources of the measure registry: the store's bots and
-// projects, the project rule through the orchestrator, a month of the meter's
-// usage, the Inbox's open items, a bot's notes and the handbook's meter.
-func measures(db *store.DB, svc *orchestrate.Service, m *meter.Meter, pages *handbook.Service) measure.Deps {
+// projects, the project rule through status, the orchestrator's, a month of
+// the meter's usage, the Inbox's open items, a bot's notes and the
+// handbook's meter.
+func measures(db *store.DB, status func(context.Context, string) (project.Status, error), m *meter.Meter, pages *handbook.Service) measure.Deps {
 	return measure.Deps{
-		Roster: db, Projects: db, Status: svc.Status,
+		Roster: db, Projects: db, Status: status,
 		Ledger: monthOf{m}, Inbox: openItems{db}, Notes: noteCount{db}, Handbook: handbookFill{pages},
 	}
 }
 
-// deliverableDeps adds where the Hearth folder is, read on each call since
-// the owner may name or move it while the core runs.
-func deliverableDeps(db *store.DB, d measure.Deps) deliverables.Deps {
-	return deliverables.Deps{Measures: d, Root: func() string {
+// hearthFolder is where the Hearth folder is, read on each call since the
+// owner may name or move it while the core runs.
+func hearthFolder(db *store.DB) func() string {
+	return func() string {
 		o, found, err := db.FindOrg(context.Background())
 		if err != nil || !found {
 			return ""
 		}
 		return o.WorkspacePath
-	}}
+	}
+}
+
+// deliverableDeps adds where the Hearth folder is.
+func deliverableDeps(db *store.DB, d measure.Deps) deliverables.Deps {
+	return deliverables.Deps{Measures: d, Root: hearthFolder(db)}
+}
+
+// deliverableTemplates loads the shipped templates and the owner's from the
+// Hearth folder, once per run, as the contract lists them.
+func deliverableTemplates(db *store.DB) func() []template.Template {
+	root := hearthFolder(db)
+	return func() []template.Template { return template.Load(root()).Templates }
 }
 
 // templatesFolders are the owner's templates folder as given and as it

@@ -6,8 +6,8 @@
 // run the loop's calls through the dispatcher. Which tools a bot is offered,
 // and whether a call runs, is the dispatcher's, from the bot's grants.
 //
-// It imports agent, the bus, org/memory, tools and the tool packages below
-// it.
+// It imports agent, the bus, org, org/memory, project, tools and the tool
+// packages below it.
 package toolset
 
 import (
@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/ask"
+	"github.com/rfizzle/hearth/internal/tools/deliverables"
 	"github.com/rfizzle/hearth/internal/tools/files"
 	notes "github.com/rfizzle/hearth/internal/tools/memory"
 	"github.com/rfizzle/hearth/internal/tools/propose"
@@ -63,6 +64,24 @@ func Remember(db Notes, b *bus.Bus, botID, convID, msgID string) tools.Definitio
 			all, err := db.Notes(ctx, botID)
 			return len(all), err
 		},
+	})
+}
+
+// Templates loads the deliverable templates a run is offered, and Measures
+// reads the office's figures a deliverable binds.
+type (
+	Templates = deliverables.Loader
+	Measures  = deliverables.Measures
+)
+
+// Deliverables is the deliverables.write tool for the bot botID in a
+// conversation of the project projectID, empty outside a project: the
+// aliases me and this mean them. templates is called once, now; no output
+// lands in a reserved folder.
+// See docs/decisions.md for D44.
+func Deliverables(templates Templates, measures Measures, botID, projectID string, reserved []string) tools.Definition {
+	return deliverables.Definition(deliverables.Options{
+		Templates: templates, Measures: measures, BotID: botID, ProjectID: projectID, Reserved: reserved,
 	})
 }
 

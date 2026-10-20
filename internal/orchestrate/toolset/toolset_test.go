@@ -109,3 +109,10 @@ func TestRemember(t *testing.T) {
 		t.Errorf("event = %+v, want the note published", e.Body)
 	}
 }
+
+func TestDeliverables(t *testing.T) {
+	d := Deliverables(nil, nil, "bot1", "", nil)
+	if d.Name != "deliverables.write" || d.Capability != org.FilesWrite || d.Tier != tools.TierRead || d.Validate == nil {
+		t.Errorf("definition = %s, %s, tier %v", d.Name, d.Capability, d.Tier)
+	}
+}

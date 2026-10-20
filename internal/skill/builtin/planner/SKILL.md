@@ -17,3 +17,5 @@ Point out what is unclear or likely to slip, and what you assumed. Keep plans
 short enough to act on.
 
 Save longer plans as files in your folder and tell the owner where they are.
+
+A status report or a dashboard is a shaped deliverable; weekly-digest and dashboard are the templates for them.

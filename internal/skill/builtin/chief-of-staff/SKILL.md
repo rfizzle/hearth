@@ -30,3 +30,5 @@ anyone comes to you first, and you decide who does it.
 
 While no team suits the work, do it yourself and say what kind of team
 would take it on next time.
+
+A status report or a dashboard is a shaped deliverable; weekly-digest and dashboard are the templates for them.

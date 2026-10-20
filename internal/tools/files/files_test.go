@@ -279,3 +279,25 @@ func TestWrite_AHardLinkIsNotWrittenThrough(t *testing.T) {
 		t.Errorf("the file outside now reads %q", got)
 	}
 }
+
+func TestOpenForWrite(t *testing.T) {
+	b := newBot(t)
+	path := filepath.Join(b.folder, "sub", "page.html")
+	f, err := OpenForWrite("test.tool", b.folder, path, "sub/page.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("x"); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	if err := os.Symlink(filepath.Join(b.outside, "o.html"), filepath.Join(b.folder, "o.html")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := OpenForWrite("test.tool", b.folder, filepath.Join(b.folder, "o.html"), "o.html"); err == nil || !strings.HasPrefix(err.Error(), "test.tool: ") {
+		t.Errorf("a link at the file: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(b.outside, "o.html")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a file appeared outside the folder: %v", err)
+	}
+}

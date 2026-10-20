@@ -311,3 +311,9 @@ func TestDocument(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderIsNotYet(t *testing.T) {
+	if out, _, err := Render(deliverable.Spec{Version: 1}, Options{}); !errors.Is(err, ErrNotYet) || out != nil {
+		t.Errorf("Render = %d bytes, %v; want ErrNotYet and nothing", len(out), err)
+	}
+}
