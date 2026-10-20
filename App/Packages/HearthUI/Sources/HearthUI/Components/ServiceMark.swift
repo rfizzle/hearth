@@ -16,10 +16,13 @@ import SwiftUI
 /// A one-letter mark for a service.
 public struct ServiceMark: View {
     let letter: String
+    let size: Avatar.Size
 
-    /// A mark showing the first letter of `name`.
-    public init(named name: String) {
+    /// A mark showing the first letter of `name`; the regular size is for a
+    /// row in a list, the large one for a card.
+    public init(named name: String, size: Avatar.Size = .large) {
         letter = String(name.prefix(1)).uppercased()
+        self.size = size
     }
 
     /// The mark for `provider`.
@@ -28,7 +31,7 @@ public struct ServiceMark: View {
     }
 
     public var body: some View {
-        Avatar(.initials(letter), size: .large)
+        Avatar(.initials(letter), size: size)
     }
 }
 

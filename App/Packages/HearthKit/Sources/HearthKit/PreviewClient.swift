@@ -107,6 +107,28 @@ public struct PreviewClient: HearthClient {
 
     public func clearCredential(provider: Hearth_V1_Provider) async throws {}
 
+    public func saveService(
+        _ request: Hearth_V1_SetAPIKeyRequest
+    ) async throws -> Hearth_V1_ProviderAccount {
+        .with {
+            $0.provider = .openaiCompatible
+            $0.state = .signedIn
+            $0.profile =
+                request.profile.isEmpty
+                ? Fixtures.profileID(for: request.displayName) : request.profile
+            $0.displayName = request.displayName
+            $0.baseURL = request.baseURL
+            $0.defaultModel = request.defaultModel
+            $0.label = String(request.key.suffix(4))
+        }
+    }
+
+    public func removeService(profile: String) async throws {}
+
+    public func listKnownServices() async throws -> [Hearth_V1_KnownService] {
+        Fixtures.knownServices
+    }
+
     public func startChatGPTLogin() async throws -> URL {
         Fixtures.authorizeURL
     }

@@ -159,6 +159,17 @@ private struct NoBotsClient: HearthClient {
     func clearCredential(provider: Hearth_V1_Provider) async throws {
         try await preview.clearCredential(provider: provider)
     }
+    func saveService(
+        _ request: Hearth_V1_SetAPIKeyRequest
+    ) async throws -> Hearth_V1_ProviderAccount {
+        try await preview.saveService(request)
+    }
+    func removeService(profile: String) async throws {
+        try await preview.removeService(profile: profile)
+    }
+    func listKnownServices() async throws -> [Hearth_V1_KnownService] {
+        try await preview.listKnownServices()
+    }
     func startChatGPTLogin() async throws -> URL { try await preview.startChatGPTLogin() }
     func listIntegrations() async throws -> [Hearth_V1_IntegrationAccount] {
         try await preview.listIntegrations()

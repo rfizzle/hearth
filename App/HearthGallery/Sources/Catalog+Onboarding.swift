@@ -1,4 +1,5 @@
-// The service mark and the sign-in and integration panels onboarding is built from.
+// The service mark, the service picker and the sign-in and integration panels
+// onboarding is built from.
 
 import HearthUI
 
@@ -10,6 +11,11 @@ extension Catalog {
                 package: package, name: "ServiceMark",
                 states: GalleryState.each(ServiceMark.PreviewState.self) {
                     ServiceMark(previewState: $0)
+                }),
+            GalleryPage(
+                package: package, name: "ServicePicker",
+                states: GalleryState.each(ServicePicker.PreviewState.self, width: 480) {
+                    ServicePicker(previewState: $0)
                 }),
             GalleryPage(
                 package: package, name: "SignInPanel",

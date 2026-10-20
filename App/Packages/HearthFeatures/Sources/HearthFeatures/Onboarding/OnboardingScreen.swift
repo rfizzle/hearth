@@ -138,12 +138,16 @@ public struct OnboardingScreen: View {
         let accounts = store.accounts
         return VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
             SignInPanel(
-                accounts: accounts.accounts, loginURL: accounts.loginURL,
-                failure: accounts.signInFailure, footer: signInFooter,
+                accounts: accounts.accounts, knownServices: accounts.knownServices,
+                loginURL: accounts.loginURL, failure: accounts.signInFailure,
+                serviceFailure: accounts.serviceError, footer: signInFooter,
                 onSignInWithChatGPT: { Task { await accounts.startChatGPTLogin() } },
                 onSetKey: { provider, key in Task { await accounts.setAPIKey(key, for: provider) }
                 },
-                onClear: { provider in Task { await accounts.clear(provider) } })
+                onClear: { provider in Task { await accounts.clear(provider) } },
+                onSaveService: { request in Task { await accounts.saveService(request) } },
+                onRemoveService: { profile in Task { await accounts.removeService(profile) } },
+                onCloseService: { accounts.dismissServiceError() })
             DisclosureGroup("Add web search (optional)", isExpanded: $isWebSearchOpen) {
                 IntegrationsPanel(
                     integrations: accounts.integrations, failure: accounts.integrationError,

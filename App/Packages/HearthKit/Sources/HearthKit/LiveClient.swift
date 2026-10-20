@@ -132,6 +132,27 @@ public final class LiveClient: HearthClient {
         _ = try await providers.clearCredential(request: request).value()
     }
 
+    public func saveService(
+        _ request: Hearth_V1_SetAPIKeyRequest
+    ) async throws -> Hearth_V1_ProviderAccount {
+        var request = request
+        request.provider = .openaiCompatible
+        return try await providers.setApikey(request: request).value().account
+    }
+
+    public func removeService(profile: String) async throws {
+        let request = Hearth_V1_ClearCredentialRequest.with {
+            $0.provider = .openaiCompatible
+            $0.profile = profile
+        }
+        _ = try await providers.clearCredential(request: request).value()
+    }
+
+    public func listKnownServices() async throws -> [Hearth_V1_KnownService] {
+        let request = Hearth_V1_ListKnownServicesRequest()
+        return try await providers.listKnownServices(request: request).value().services
+    }
+
     public func startChatGPTLogin() async throws -> URL {
         let request = Hearth_V1_StartChatGPTLoginRequest()
         let page = try await providers.startChatGptlogin(request: request).value().authorizeURL

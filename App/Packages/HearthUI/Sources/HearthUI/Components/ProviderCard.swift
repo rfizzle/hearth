@@ -2,7 +2,9 @@
 // on what it gives, its state at the top right and the one thing the owner can
 // do about it, inline. ChatGPT signs in through the browser; the others take a
 // key, which is typed into a field that opens inside the card, so signing in
-// reads as choosing a service rather than filling in a form. The card is a
+// reads as choosing a service rather than filling in a form. A service the
+// owner added by address is a card of the same shape under the name they gave
+// it, saying where it is and which model it answers with, and only Clear. The card is a
 // container of system buttons and a SecureField, so keyboard and VoiceOver
 // behaviour is theirs; the card itself is one labelled group. It has no hover
 // fill and no selected stroke: it holds controls and is not a choice.
@@ -38,6 +40,7 @@ public struct ProviderCard: View {
     }
 
     private var provider: Hearth_V1_Provider { account.provider }
+    private var isAddedService: Bool { provider == .openaiCompatible }
     private var isSignedIn: Bool { account.state == .signedIn }
     private var isWaiting: Bool { account.state == .signingIn }
     private var problem: String? {
@@ -47,16 +50,16 @@ public struct ProviderCard: View {
     public var body: some View {
         CardSurface {
             HStack(alignment: .top, spacing: Theme.Spacing.md) {
-                ServiceMark(provider)
+                ServiceMark(named: account.name)
                 VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(provider.displayName)
+                        Text(account.name)
                             .font(Theme.headline)
                             .foregroundStyle(Theme.color(.textPrimary))
                         Spacer()
                         state
                     }
-                    Text(provider.gives)
+                    Text(account.gives)
                         .font(Theme.callout)
                         .foregroundStyle(Theme.color(.textSecondary))
                     action
@@ -65,8 +68,8 @@ public struct ProviderCard: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(provider.displayName), \(stateText)")
-        .accessibilityHint(provider.gives)
+        .accessibilityLabel("\(account.name), \(stateText)")
+        .accessibilityHint(account.gives)
     }
 
     @ViewBuilder
@@ -87,6 +90,18 @@ public struct ProviderCard: View {
     private var action: some View {
         if provider == .chatgpt {
             chatGPTAction
+        } else if isAddedService {
+            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                HStack {
+                    Text(account.label.isEmpty ? "No key" : "Key ends in …\(account.label)")
+                        .font(Theme.callout)
+                        .foregroundStyle(Theme.color(.textSecondary))
+                    Spacer()
+                    Button("Clear", action: onClear)
+                        .accessibilityLabel("Clear \(account.name)")
+                }
+                if let problem { FailureLabel(text: problem) }
+            }
         } else {
             KeyActions(
                 name: provider.displayName,
@@ -119,13 +134,29 @@ public struct ProviderCard: View {
 
     private var stateText: String {
         if isSignedIn {
-            if account.label.isEmpty { return "signed in" }
+            if account.label.isEmpty { return isAddedService ? "added" : "signed in" }
             return provider == .chatgpt
                 ? "signed in as \(account.label)" : "key ends in \(account.label)"
         }
         if isWaiting { return "waiting for the browser" }
         if provider == .chatgpt && problem != nil { return "didn't finish" }
         return "not set up"
+    }
+}
+
+extension Hearth_V1_ProviderAccount {
+    /// The name on the card: the one the owner gave an added service, else
+    /// the provider's.
+    var name: String {
+        provider == .openaiCompatible && !displayName.isEmpty ? displayName : provider.displayName
+    }
+
+    /// The one line under the name: where an added service is and the model
+    /// it answers with, else what the provider gives.
+    var gives: String {
+        guard provider == .openaiCompatible else { return provider.gives }
+        let host = URL(string: baseURL)?.host() ?? baseURL
+        return defaultModel.isEmpty ? host : "\(host) · \(defaultModel)"
     }
 }
 

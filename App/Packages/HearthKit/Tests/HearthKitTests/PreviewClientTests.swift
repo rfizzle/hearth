@@ -71,3 +71,22 @@ import Testing
     #expect(account.kind == .webSearch)
     #expect(account.label == "9876")
 }
+
+@Test func anAddedServiceIsItsOwnAccountWithoutTheKey() async throws {
+    let client = PreviewClient()
+    let known = try await client.listKnownServices()
+    #expect(known.filter { $0.kind == .builtin }.count == 4)
+    #expect(known.allSatisfy { !$0.baseURL.isEmpty && !$0.helpURL.isEmpty })
+
+    let request = Hearth_V1_SetAPIKeyRequest.with {
+        $0.displayName = "Acme gateway"
+        $0.baseURL = "https://llm.acme.example/v1"
+        $0.defaultModel = "acme-large"
+        $0.key = "gw-secret-5678"
+    }
+    let account = try await client.saveService(request)
+    #expect(account.provider == .openaiCompatible)
+    #expect(!account.profile.isEmpty)
+    #expect(account.displayName == "Acme gateway")
+    #expect(account.label == "5678")
+}

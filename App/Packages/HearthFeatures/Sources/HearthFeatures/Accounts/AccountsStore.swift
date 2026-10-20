@@ -1,8 +1,10 @@
-// AccountsStore holds the provider accounts and the integrations as the core
-// last reported them, and turns the owner's intents into calls. It caches and
-// applies the account and integration changes the relay delivers, and
-// refetches both lists on a resync; it decides nothing. Onboarding uses it now
-// and Settings reuses it later.
+// AccountsStore holds the provider accounts, the services the owner added by
+// address, the known services and the integrations as the core last reported
+// them, and turns the owner's intents into calls. It caches and applies the
+// account and integration changes the relay delivers, and refetches the lists
+// on a resync; it decides nothing. An added service is an account of its own,
+// told apart by its profile id, and leaves the list when the core reports it
+// signed out. Onboarding and Settings share it.
 
 import Foundation
 import HearthKit
@@ -22,6 +24,10 @@ public final class AccountsStore {
     public private(set) var error: String?
     /// The last failed integration call's text, if one failed.
     public private(set) var integrationError: String?
+    /// The services the core knows the address of, for the add-a-service list.
+    public private(set) var knownServices: [Hearth_V1_KnownService] = []
+    /// The last failed add-a-service call's text, if one failed.
+    public private(set) var serviceError: String?
 
     private let client: any HearthClient
     @ObservationIgnored private let relay: EventRelay
@@ -54,6 +60,7 @@ public final class AccountsStore {
         do {
             accounts = try await client.listAccounts()
             integrations = try await client.listIntegrations()
+            knownServices = try await client.listKnownServices()
             error = nil
         } catch {
             self.error = error.localizedDescription
@@ -95,6 +102,33 @@ public final class AccountsStore {
         }
     }
 
+    /// Adds an OpenAI-compatible service, or changes the one
+    /// `request.profile` names; the core checks it and words any refusal.
+    public func saveService(_ request: Hearth_V1_SetAPIKeyRequest) async {
+        do {
+            upsert(try await client.saveService(request))
+            serviceError = nil
+        } catch {
+            serviceError = error.localizedDescription
+        }
+    }
+
+    /// Removes the added service `profile`.
+    public func removeService(_ profile: String) async {
+        do {
+            try await client.removeService(profile: profile)
+            accounts.removeAll { $0.provider == .openaiCompatible && $0.profile == profile }
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Forgets the last add-a-service failure, when the owner closes the card.
+    public func dismissServiceError() {
+        serviceError = nil
+    }
+
     /// Stores the key for `integration`.
     public func setKey(_ key: String, for integration: Hearth_V1_Integration) async {
         do {
@@ -129,11 +163,18 @@ public final class AccountsStore {
         }
     }
 
+    /// An account is one provider's, or one added service's by its profile.
+    /// An added service the core reports signed out has been removed.
     private func upsert(_ account: Hearth_V1_ProviderAccount) {
-        if let index = accounts.firstIndex(where: { $0.provider == account.provider }) {
-            accounts[index] = account
-        } else {
-            accounts.append(account)
+        let index = accounts.firstIndex {
+            $0.provider == account.provider && $0.profile == account.profile
+        }
+        let removed = account.provider == .openaiCompatible && account.state == .signedOut
+        switch (index, removed) {
+        case (let index?, true): accounts.remove(at: index)
+        case (let index?, false): accounts[index] = account
+        case (nil, false): accounts.append(account)
+        case (nil, true): break
         }
     }
 

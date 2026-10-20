@@ -93,6 +93,57 @@ public enum Fixtures {
         },
     ]
 
+    /// A company gateway the owner added as a service of its own.
+    public static let customService: Hearth_V1_ProviderAccount = .with {
+        $0.provider = .openaiCompatible
+        $0.state = .signedIn
+        $0.profile = "a1b2c3d4"
+        $0.displayName = "Acme gateway"
+        $0.baseURL = "https://llm.acme.example/v1"
+        $0.defaultModel = "acme-large"
+        $0.label = "9c4e"
+    }
+
+    /// The services the core knows the address of, in its order: hosted
+    /// services, a runtime on this Mac, then the four built-ins.
+    public static let knownServices: [Hearth_V1_KnownService] = [
+        known("zai", "Z.ai", "https://api.z.ai/api/paas/v4", "glm-4.6", .compatible),
+        known(
+            "groq", "Groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", .compatible
+        ),
+        known("deepseek", "DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat", .compatible),
+        known(
+            "mistral", "Mistral", "https://api.mistral.ai/v1", "mistral-large-latest", .compatible),
+        known(
+            "together", "Together", "https://api.together.xyz/v1",
+            "meta-llama/Llama-3.3-70B-Instruct-Turbo", .compatible),
+        known("ollama", "Ollama (local)", "http://localhost:11434/v1", "llama3.2", .local),
+        known("chatgpt", "ChatGPT", "https://chatgpt.com/backend-api/codex", "", .builtin),
+        known("anthropic", "Anthropic", "https://api.anthropic.com", "", .builtin),
+        known("gemini", "Gemini", "https://generativelanguage.googleapis.com", "", .builtin),
+        known("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "", .builtin),
+    ]
+
+    static func known(
+        _ id: String, _ name: String, _ baseURL: String, _ model: String,
+        _ kind: Hearth_V1_KnownServiceKind
+    ) -> Hearth_V1_KnownService {
+        .with {
+            $0.id = id
+            $0.name = name
+            $0.baseURL = baseURL
+            $0.helpURL = "https://example.com/\(id)"
+            $0.defaultModel = model
+            $0.kind = kind
+        }
+    }
+
+    /// The id a preview service gets: its name, lower-cased, as the core
+    /// would mint a fresh one.
+    static func profileID(for name: String) -> String {
+        "preview-" + name.lowercased().filter { $0.isLetter || $0.isNumber }
+    }
+
     /// Brave Search, the one web-search integration, with no key yet.
     public static let integrations: [Hearth_V1_IntegrationAccount] = [
         .with {

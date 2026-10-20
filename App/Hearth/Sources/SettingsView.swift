@@ -1,6 +1,7 @@
 // SettingsView is the Settings window: Accounts and Web Search panes, each the
 // same stack of cards onboarding shows, over the session's one AccountsStore.
-// With no helper there is nothing to show yet.
+// Accounts shows the configured cards and "Add a service", whose list holds
+// the rest. With no helper there is nothing to show yet.
 // See docs/design.md#forms-sheets-and-settings
 
 import HearthDesign
@@ -38,11 +39,15 @@ struct SettingsView: View {
 extension SignInPanel {
     fileprivate init(accounts: AccountsStore) {
         self.init(
-            accounts: accounts.accounts, loginURL: accounts.loginURL,
-            failure: accounts.signInFailure,
+            accounts: accounts.accounts, knownServices: accounts.knownServices,
+            loginURL: accounts.loginURL, failure: accounts.signInFailure,
+            serviceFailure: accounts.serviceError, showsEveryProvider: false,
             onSignInWithChatGPT: { Task { await accounts.startChatGPTLogin() } },
             onSetKey: { provider, key in Task { await accounts.setAPIKey(key, for: provider) } },
-            onClear: { provider in Task { await accounts.clear(provider) } })
+            onClear: { provider in Task { await accounts.clear(provider) } },
+            onSaveService: { request in Task { await accounts.saveService(request) } },
+            onRemoveService: { profile in Task { await accounts.removeService(profile) } },
+            onCloseService: { accounts.dismissServiceError() })
     }
 }
 

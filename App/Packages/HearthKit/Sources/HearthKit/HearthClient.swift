@@ -46,6 +46,16 @@ public protocol HearthClient: Sendable {
         -> Hearth_V1_ProviderAccount
     /// Forgets the credential for `provider`.
     func clearCredential(provider: Hearth_V1_Provider) async throws
+    /// Adds an OpenAI-compatible service, or changes the one `request.profile`
+    /// names, from its name, address, key and default model; the account it
+    /// returns is the service's own card.
+    func saveService(_ request: Hearth_V1_SetAPIKeyRequest) async throws
+        -> Hearth_V1_ProviderAccount
+    /// Removes the added service `profile` and its key.
+    func removeService(profile: String) async throws
+    /// The services the core knows the address of, offered when the owner
+    /// adds another service.
+    func listKnownServices() async throws -> [Hearth_V1_KnownService]
     /// Starts the ChatGPT sign-in and returns the page to open in the browser;
     /// the result arrives on `subscribe` as an account change.
     func startChatGPTLogin() async throws -> URL

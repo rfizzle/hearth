@@ -53,6 +53,17 @@ private struct EmptyOrgClient: HearthClient {
     func clearCredential(provider: Hearth_V1_Provider) async throws {
         try await base.clearCredential(provider: provider)
     }
+    func saveService(
+        _ request: Hearth_V1_SetAPIKeyRequest
+    ) async throws -> Hearth_V1_ProviderAccount {
+        try await base.saveService(request)
+    }
+    func removeService(profile: String) async throws {
+        try await base.removeService(profile: profile)
+    }
+    func listKnownServices() async throws -> [Hearth_V1_KnownService] {
+        try await base.listKnownServices()
+    }
     func startChatGPTLogin() async throws -> URL { try await base.startChatGPTLogin() }
     func listIntegrations() async throws -> [Hearth_V1_IntegrationAccount] {
         try await base.listIntegrations()
