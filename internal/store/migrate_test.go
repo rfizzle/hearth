@@ -14,6 +14,7 @@ import (
 // fails here; so does editing one that has already run somewhere.
 var releasedMigrations = []string{
 	"93df9e5c9bf09887", // 1: org, bots, grants, conversations, runs, messages
+	"f56ea3ed3d7ca9cc", // 2: inbox items, allowances, the message widget columns
 }
 
 func migrationDigest(m string) string {

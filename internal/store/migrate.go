@@ -75,6 +75,41 @@ var migrations = []string{
 		UNIQUE(conversation_id, seq)
 	);
 	CREATE INDEX messages_run ON messages(run_id);`,
+
+	`CREATE TABLE inbox_items (
+		id              TEXT PRIMARY KEY,
+		kind            INTEGER NOT NULL,
+		state           INTEGER NOT NULL,
+		bot_id          TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+		conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE,
+		run_id          TEXT REFERENCES runs(id) ON DELETE SET NULL,
+		message_id      TEXT REFERENCES messages(id) ON DELETE SET NULL,
+		title           TEXT NOT NULL DEFAULT '',
+		effect          TEXT NOT NULL DEFAULT '',
+		call            TEXT,
+		question        TEXT NOT NULL DEFAULT '',
+		suggested       TEXT,
+		widget_spec     TEXT,
+		widget_answer   TEXT,
+		created_at      INTEGER NOT NULL,
+		closed_at       INTEGER,
+		decision        INTEGER NOT NULL DEFAULT 0,
+		answer          TEXT NOT NULL DEFAULT '',
+		outcome         TEXT NOT NULL DEFAULT ''
+	);
+	CREATE INDEX inbox_items_state ON inbox_items(state);
+	CREATE INDEX inbox_items_conversation ON inbox_items(conversation_id);
+	CREATE UNIQUE INDEX inbox_items_one_open ON inbox_items(conversation_id) WHERE state = 1;
+
+	CREATE TABLE allowances (
+		conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+		capability      TEXT NOT NULL,
+		folder          TEXT NOT NULL DEFAULT '',
+		UNIQUE(conversation_id, capability, folder)
+	);
+
+	ALTER TABLE messages ADD COLUMN widget_spec TEXT;
+	ALTER TABLE messages ADD COLUMN widget_answer TEXT;`,
 }
 
 // migrate brings the store up to the current schema, one step per

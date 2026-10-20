@@ -28,7 +28,7 @@ func (db *DB) Messages(ctx context.Context, convID string, beforeSeq int64, limi
 	}
 	limit = min(limit, maxPage)
 	query := `SELECT id, conversation_id, seq, author_bot_id, kind, content, tool_calls, tool_call_id, files,
-		COALESCE(run_id, ''), streaming, created_at
+		COALESCE(run_id, ''), streaming, created_at, widget_spec, widget_answer
 		FROM messages WHERE conversation_id = ?`
 	args := []any{convID}
 	if beforeSeq > 0 {
@@ -81,10 +81,12 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO messages
-		(id, conversation_id, seq, author_bot_id, kind, content, tool_calls, tool_call_id, files, run_id, streaming, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(id, conversation_id, seq, author_bot_id, kind, content, tool_calls, tool_call_id, files, run_id, streaming, created_at,
+		widget_spec, widget_answer)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		m.ID, m.ConversationID, m.Seq, m.AuthorBotID, m.Kind, m.Content, calls, m.ToolCallID, files,
-		nullString(m.RunID), m.Streaming, millis(m.CreatedAt)); err != nil {
+		nullString(m.RunID), m.Streaming, millis(m.CreatedAt),
+		nullString(m.Widget), nullString(m.WidgetAnswer)); err != nil {
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -94,17 +96,18 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 }
 
 // UpdateMessage replaces what a stored message says: its content, tool calls,
-// the call it answers, its files and whether it is still streaming. Its
-// place in the thread, author, kind and run do not change. It is ErrNotFound
-// when no message has m.ID.
+// the call it answers, its files, its widget and answer, and whether it is
+// still streaming. Its place in the thread, author, kind and run do not
+// change. It is ErrNotFound when no message has m.ID.
 func (db *DB) UpdateMessage(ctx context.Context, m org.Message) error {
 	calls, files, err := encodeParts(m)
 	if err != nil {
 		return fmt.Errorf("update message: %w", err)
 	}
 	return db.update(ctx, "message "+m.ID, `UPDATE messages
-		SET content = ?, tool_calls = ?, tool_call_id = ?, files = ?, streaming = ? WHERE id = ?`,
-		m.Content, calls, m.ToolCallID, files, m.Streaming, m.ID)
+		SET content = ?, tool_calls = ?, tool_call_id = ?, files = ?, streaming = ?,
+		widget_spec = ?, widget_answer = ? WHERE id = ?`,
+		m.Content, calls, m.ToolCallID, files, m.Streaming, nullString(m.Widget), nullString(m.WidgetAnswer), m.ID)
 }
 
 // encodeParts is m's tool calls and files as JSON, NULL when there are none.
@@ -129,13 +132,14 @@ func encodeJSON(v any, n int) (sql.NullString, error) {
 
 func scanMessage(row scanner) (org.Message, error) {
 	var m org.Message
-	var calls, files sql.NullString
+	var calls, files, widget, answer sql.NullString
 	var created sql.NullInt64
 	if err := row.Scan(&m.ID, &m.ConversationID, &m.Seq, &m.AuthorBotID, &m.Kind, &m.Content, &calls,
-		&m.ToolCallID, &files, &m.RunID, &m.Streaming, &created); err != nil {
+		&m.ToolCallID, &files, &m.RunID, &m.Streaming, &created, &widget, &answer); err != nil {
 		return org.Message{}, err
 	}
 	m.CreatedAt = fromMillis(created)
+	m.Widget, m.WidgetAnswer = widget.String, answer.String
 	if calls.Valid {
 		if err := json.Unmarshal([]byte(calls.String), &m.ToolCalls); err != nil {
 			return org.Message{}, fmt.Errorf("message %s tool calls: %w", m.ID, err)
