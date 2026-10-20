@@ -11,10 +11,17 @@
 // process can read another's argv with `ps`. It is new on every launch
 // because it is the only thing that keeps another local process off the
 // helper's port.
+//
+// Before each launch the supervisor binds the native server, the app's own
+// loopback listener the core calls back into (to read pictures in documents),
+// with the same token as its bearer, and passes its port as --native. A port
+// is not a secret. If it cannot bind, the helper runs without it and says
+// pictures could not be read.
 // See docs/architecture.md#5-security-model
 
 import Foundation
 import HearthKit
+import HearthNative
 import Observation
 import Security
 import os
@@ -30,6 +37,8 @@ final class HelperSupervisor {
     private(set) var status = "Starting…"
 
     @ObservationIgnored private var process: Process?
+    @ObservationIgnored private var native: NativeServer?
+    @ObservationIgnored private var launching = false
     @ObservationIgnored private var lifeline: FileHandle?
     @ObservationIgnored private var stopping = false
     @ObservationIgnored private let log = Logger(
@@ -39,7 +48,7 @@ final class HelperSupervisor {
     /// safe and does nothing: the app calls it at launch and the main window
     /// each time it is made, which the menu bar extra can do many times.
     func start() {
-        guard process == nil, !stopping else { return }
+        guard process == nil, !launching, !stopping else { return }
         let token: String
         do {
             token = try Self.launchToken()
@@ -47,11 +56,45 @@ final class HelperSupervisor {
             status = "Could not create a launch token: \(error.localizedDescription)"
             return
         }
+        launching = true
+        Task {
+            let port = await bindNative(token: token)
+            launching = false
+            guard process == nil, !stopping else { return dropNative() }
+            launch(token: token, nativePort: port)
+        }
+    }
+
+    /// Binds the native server for this launch's token and returns its port,
+    /// or nil when it could not bind, so the helper runs without it.
+    private func bindNative(token: String) async -> UInt16? {
+        dropNative()
+        do {
+            let server = try NativeServer(token: token, extractor: TextExtractor())
+            native = server
+            return try await server.start()
+        } catch {
+            log.error(
+                "native server did not start: \(error.localizedDescription, privacy: .public)")
+            dropNative()
+            return nil
+        }
+    }
+
+    private func dropNative() {
+        native?.stop()
+        native = nil
+    }
+
+    private func launch(token: String, nativePort: UInt16?) {
         let process = Process()
         process.executableURL = Self.helperURL()
         process.arguments = ["serve", "--listen", "127.0.0.1:0"]
         if let dataDir = Self.dataDir() {
             process.arguments?.append(contentsOf: ["--data-dir", dataDir])
+        }
+        if let nativePort {
+            process.arguments?.append(contentsOf: ["--native", "127.0.0.1:\(nativePort)"])
         }
         let stdin = Pipe()
         let stdout = Pipe()
@@ -66,6 +109,7 @@ final class HelperSupervisor {
             try process.run()
         } catch {
             status = "Could not launch the helper: \(error.localizedDescription)"
+            dropNative()
             return
         }
         self.process = process
@@ -94,6 +138,7 @@ final class HelperSupervisor {
         try? lifeline?.close()
         lifeline = nil
         process?.terminate()
+        dropNative()
     }
 
     private func connect(reading stdout: FileHandle, token: String) async {
@@ -121,6 +166,7 @@ final class HelperSupervisor {
         try? lifeline?.close()
         lifeline = nil
         client = nil
+        dropNative()
         log.notice("helper exited with status \(code)")
         guard !stopping else { return }
         status = "The helper stopped; restarting…"
