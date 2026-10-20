@@ -5,11 +5,15 @@ import (
 	"context"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/hearth/internal/rpc"
 )
 
 func TestLifeline(t *testing.T) {
@@ -118,5 +122,47 @@ func TestBindUnixSocket(t *testing.T) {
 	}
 	if perm := fi.Mode().Perm(); perm&0o077 != 0 {
 		t.Errorf("socket mode = %o, want no group or world bits", perm)
+	}
+}
+
+func TestOpenCore_ServesTheServicesOverTheDataFolder(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "Hearth")
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, dir)
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if _, err := os.Stat(filepath.Join(dir, "hearth.db")); err != nil {
+		t.Errorf("the store is not in the data folder: %v", err)
+	}
+	opts.Token = "tok"
+	h := rpc.NewHandler(opts)
+
+	call := func(token, procedure string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, procedure, strings.NewReader("{}"))
+		req.Header.Set("Content-Type", "application/json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+	for _, procedure := range []string{
+		"/hearth.v1.BotService/ListTemplates",
+		"/hearth.v1.IntegrationService/ListIntegrations",
+		"/hearth.v1.ProviderService/ListAccounts",
+	} {
+		if rec := call("tok", procedure); rec.Code != http.StatusOK {
+			t.Errorf("%s = %d %s, want 200", procedure, rec.Code, rec.Body)
+		}
+		if rec := call("", procedure); rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s without the token = %d, want 401", procedure, rec.Code)
+		}
+	}
+	if rec := call("tok", "/hearth.v1.BotService/ListTemplates"); !strings.Contains(rec.Body.String(), "research-analyst") {
+		t.Errorf("ListTemplates = %s, want the shipped templates", rec.Body)
 	}
 }

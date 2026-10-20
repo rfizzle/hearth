@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc"
 )
 
@@ -25,6 +26,7 @@ func runServe(args []string) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	listen := fs.String("listen", "127.0.0.1:0", "TCP address to listen on")
 	socket := fs.String("socket", "", "Unix socket path to listen on instead of --listen")
+	dataDir := fs.String("data-dir", "", "folder for the database and credentials; default is the Hearth folder in Application Support")
 	token := fs.String("token", "", "launch token for hand-runs from a terminal; the app sends it on stdin, and stdin wins")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -33,7 +35,7 @@ func runServe(args []string) int {
 	fs.Visit(func(f *flag.Flag) { listenSet = listenSet || f.Name == "listen" })
 	logger := log.New(os.Stderr, "hearthd: ", log.LstdFlags)
 	usage := func() int {
-		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>]")
+		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>] [--data-dir <folder>]")
 		fmt.Fprintln(os.Stderr, "  The launch token is the first line of stdin; the rest of stdin is the lifeline.")
 		fmt.Fprintln(os.Stderr, "  By hand from a terminal: hearthd serve --token <t>")
 		fs.PrintDefaults()
@@ -63,6 +65,16 @@ func runServe(args []string) int {
 		return usage()
 	}
 
+	dir := *dataDir
+	if dir == "" {
+		d, err := provider.DefaultDir()
+		if err != nil {
+			logger.Print(err)
+			return 1
+		}
+		dir = d
+	}
+
 	l, addr, err := bind(*listen, *socket)
 	if err != nil {
 		logger.Print(err)
@@ -75,8 +87,17 @@ func runServe(args []string) int {
 	defer stop()
 	ctx = lifeline(ctx, stdin)
 
+	opts, closeCore, err := openCore(ctx, dir)
+	if err != nil {
+		logger.Print(err)
+		return 1
+	}
+	defer closeCore()
+	opts.Version, opts.Token = version, tok
+
 	srv := &http.Server{
-		Handler:           rpc.NewHandler(rpc.Options{Version: version, Token: tok}),
+		Handler:           rpc.NewHandler(opts),
+		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ReadHeaderTimeout: 5 * time.Second,
 		ErrorLog:          logger,
 	}

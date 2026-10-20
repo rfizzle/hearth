@@ -57,6 +57,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Known vulnerabilities | `make vulncheck` |
 | Install the opt-in pre-push hook | `make hooks` |
 | Sign in with ChatGPT, then try it (live, by hand) | `hearthd login chatgpt`, `hearthd say "hello"` |
+| Serve the contract by hand (data in `--data-dir`, default Application Support) | `hearthd serve --token <t> --data-dir <dir>` |
 | Swift gates | `make ci-swift` |
 | Build Hearth.app | `make app-build` |
 | Sign the bundle | `make app-sign` |
