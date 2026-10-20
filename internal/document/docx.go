@@ -42,6 +42,9 @@ func readDocx(ctx context.Context, f io.ReaderAt, size int64, name string, o Opt
 	case w.Cut:
 		doc.Notices = []string{noticeTextStop()}
 	}
+	if w.CellsCut {
+		doc.Notices = append(doc.Notices, noticeCellCap(office.MaxCells))
+	}
 	if w.Images || w.Footnotes {
 		doc.Notices = append(doc.Notices, noticeLeftOut(w.Images, w.Footnotes))
 	}

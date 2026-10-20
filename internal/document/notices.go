@@ -162,6 +162,9 @@ func commas(n int) string {
 // nameList is names as `"A", "B" and "C"`, at most listNames of them, then
 // the number left over.
 func nameList(names []string) string {
+	if len(names) == 0 {
+		return "none"
+	}
 	shown := names[:min(len(names), listNames)]
 	parts := make([]string, len(shown))
 	for i, n := range shown {

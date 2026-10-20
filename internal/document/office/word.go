@@ -18,6 +18,8 @@ type WordText struct {
 	Images, Footnotes bool
 	// Cut is a document that went on past maxText bytes.
 	Cut bool
+	// CellsCut says a table went on past MaxCells cells and was cut there.
+	CellsCut bool
 }
 
 // numbering is which lists are ordered, from word/numbering.xml.
@@ -93,7 +95,9 @@ type wordWalker struct {
 	paras   []*para // paragraphs open, innermost last (a text box nests one)
 	skip    int     // depth inside an element whose content is not read
 	tbl     int     // table depth
+	ctx     context.Context
 	rows    [][]string
+	width   int      // the widest row of the table so far
 	cells   []string // the row being read
 	cell    []string // the paragraphs of the cell being read
 	inCell  bool
@@ -110,7 +114,7 @@ func (a *Archive) Word(ctx context.Context, maxText int) (WordText, error) {
 	if err != nil {
 		return WordText{}, err
 	}
-	w := &wordWalker{num: num, maxText: maxText}
+	w := &wordWalker{ctx: ctx, num: num, maxText: maxText}
 	err = a.walk(ctx, "word/document.xml", w.token)
 	if err != nil {
 		return WordText{}, err
@@ -235,7 +239,7 @@ func (w *wordWalker) start(se xml.StartElement) error {
 	case "tbl":
 		w.tbl++
 		if w.tbl == 1 {
-			w.rows = nil
+			w.rows, w.width = nil, 0
 		}
 	case "tr":
 		if w.tbl == 1 {
@@ -278,11 +282,14 @@ func (w *wordWalker) end(ee xml.EndElement) error {
 		return w.paragraph(p)
 	case "tc":
 		if w.tbl == 1 {
-			w.cells = append(w.cells, strings.Join(w.cell, " "))
 			w.inCell = false
+			if w.fits(len(w.rows)+1, len(w.cells)+1) {
+				w.cells = append(w.cells, strings.Join(w.cell, " "))
+			}
 		}
 	case "tr":
-		if w.tbl == 1 {
+		if w.tbl == 1 && w.fits(len(w.rows)+1, len(w.cells)) {
+			w.width = max(w.width, len(w.cells))
 			w.rows = append(w.rows, w.cells)
 		}
 	case "tbl":
@@ -296,10 +303,26 @@ func (w *wordWalker) end(ee xml.EndElement) error {
 	return nil
 }
 
+// fits reports whether a table of rows rows, padded to the widest of them
+// and a row cols wide, stays within MaxCells; when it does not, the table is
+// cut there and the rest of it is not kept. Table pads every row, so the
+// count is rows times width, as sheet.go counts it.
+func (w *wordWalker) fits(rows, cols int) bool {
+	if rows*max(w.width, cols) > MaxCells {
+		w.out.CellsCut = true
+		return false
+	}
+	return true
+}
+
 // paragraph writes a finished paragraph, as a heading, a list item, a table
 // cell's line or plain text.
 func (w *wordWalker) paragraph(p *para) error {
-	text := strings.TrimSpace(render(p.spans))
+	merged, err := render(w.ctx, p.spans)
+	if err != nil {
+		return err
+	}
+	text := strings.TrimSpace(merged)
 	if text == "" {
 		return nil
 	}
@@ -350,38 +373,56 @@ func headingLevel(style string) int {
 }
 
 // render is the spans as Markdown: bold as ** and italic as _, merged across
-// neighbours with the same look, with the spaces left outside the marks.
-func render(spans []span) string {
-	var merged []span
-	for _, s := range spans {
+// neighbours with the same look, with the spaces left outside the marks. The
+// merge is linear, and it looks at the deadline as it goes.
+func render(ctx context.Context, spans []span) (string, error) {
+	type look struct {
+		bold, ital bool
+		text       strings.Builder
+	}
+	var merged []*look
+	for i, s := range spans {
+		if i%4096 == 0 {
+			if err := ctx.Err(); err != nil {
+				return "", err
+			}
+		}
 		if s.text == "" {
 			continue
 		}
 		if n := len(merged); n > 0 && merged[n-1].bold == s.bold && merged[n-1].ital == s.ital {
-			merged[n-1].text += s.text
+			merged[n-1].text.WriteString(s.text)
 			continue
 		}
-		merged = append(merged, s)
+		m := &look{bold: s.bold, ital: s.ital}
+		m.text.WriteString(s.text)
+		merged = append(merged, m)
 	}
 	var b strings.Builder
-	for _, s := range merged {
-		core := strings.TrimSpace(s.text)
-		if core == "" || (!s.bold && !s.ital) || strings.ContainsAny(core, "\n\t") {
-			b.WriteString(s.text)
+	for i, m := range merged {
+		if i%4096 == 0 {
+			if err := ctx.Err(); err != nil {
+				return "", err
+			}
+		}
+		text := m.text.String()
+		core := strings.TrimSpace(text)
+		if core == "" || (!m.bold && !m.ital) || strings.ContainsAny(core, "\n\t") {
+			b.WriteString(text)
 			continue
 		}
-		lead := s.text[:len(s.text)-len(strings.TrimLeft(s.text, " "))]
-		trail := s.text[len(strings.TrimRight(s.text, " ")):]
+		lead := text[:len(text)-len(strings.TrimLeft(text, " "))]
+		trail := text[len(strings.TrimRight(text, " ")):]
 		mark := ""
-		if s.bold {
+		if m.bold {
 			mark += "**"
 		}
-		if s.ital {
+		if m.ital {
 			mark += "_"
 		}
 		b.WriteString(lead + mark + core + reverse(mark) + trail)
 	}
-	return b.String()
+	return b.String(), nil
 }
 
 func reverse(mark string) string {

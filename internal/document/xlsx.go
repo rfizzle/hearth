@@ -21,9 +21,15 @@ const labelXLSX = "an Excel workbook"
 // at MaxText bytes at the end of a line.
 func readXLSX(ctx context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
 	doc := Document{Kind: KindXLSX}
+	if err := refusePages(o, name, labelXLSX); err != nil {
+		return doc, err
+	}
 	res, err := sheet.Read(ctx, f, size, o.Sheet)
 	var none *sheet.NoSheetError
 	switch {
+	case errors.As(err, &none) && len(none.Names) == 0: // nothing to name: the same as a workbook read without a sheet
+		doc.Notices = []string{noticeNoSheets(name)}
+		return doc, nil
 	case errors.As(err, &none):
 		return doc, fmt.Errorf("%s has no sheet called %q; its sheets are %s", name, oneLine(o.Sheet), nameList(none.Names))
 	case err != nil && ctx.Err() != nil && errors.Is(err, ctx.Err()):

@@ -47,6 +47,10 @@ var formatNames = map[string]string{"png": "a PNG", "jpeg": "a JPEG", "gif": "a 
 // runs past its header, and the text in it is left to the app's Recogniser,
 // which is not consulted yet; the notice says which of the two cases this is.
 func readImage(_ context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
+	if err := refusePages(o, name, "a picture"); err != nil {
+		return Document{}, err
+	}
+	name = oneLine(name)
 	cfg, format, err := image.DecodeConfig(io.NewSectionReader(f, 0, size))
 	if err != nil || cfg.Width <= 0 || cfg.Height <= 0 {
 		return Document{}, fmt.Errorf("%s could not be read as a picture; it may be damaged or cut short", name)
@@ -60,7 +64,7 @@ func readImage(_ context.Context, f io.ReaderAt, size int64, name string, o Opti
 	}
 	return Document{
 		Kind:    Kind(format),
-		Text:    fmt.Sprintf("%s is %s image, %d×%d.", name, kind, cfg.Width, cfg.Height),
+		Text:    fmt.Sprintf("File %s is %s image, %d×%d.", name, kind, cfg.Width, cfg.Height),
 		Notices: []string{noticePicture(name, o.Recogniser != nil)},
 	}, nil
 }

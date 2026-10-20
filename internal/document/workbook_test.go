@@ -174,10 +174,10 @@ var tinyWebP = []byte("RIFF\x12\x00\x00\x00WEBPVP8L\x05\x00\x00\x00\x2f\x00\x00\
 func TestReadImages(t *testing.T) {
 	webp := put(t, "p.webp", tinyWebP)
 	cases := []struct{ path, name, want string }{
-		{fixture("tiny.png"), "shot.png", "shot.png is a PNG image, 1×1."},
-		{fixture("tiny.jpg"), "photo.jpg", "photo.jpg is a JPEG image, 1×1."},
-		{fixture("tiny.gif"), "anim.gif", "anim.gif is a GIF image, 1×1."},
-		{webp, "p.webp", "p.webp is a WebP image, 1×1."},
+		{fixture("tiny.png"), "shot.png", "File shot.png is a PNG image, 1×1."},
+		{fixture("tiny.jpg"), "photo.jpg", "File photo.jpg is a JPEG image, 1×1."},
+		{fixture("tiny.gif"), "anim.gif", "File anim.gif is a GIF image, 1×1."},
+		{webp, "p.webp", "File p.webp is a WebP image, 1×1."},
 	}
 	for _, tc := range cases {
 		d, err := Read(context.Background(), tc.path, Options{Name: tc.name})

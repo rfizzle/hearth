@@ -17,6 +17,9 @@ const KindRTF Kind = "rtf"
 // bytes of it.
 func readRTF(ctx context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
 	doc := Document{Kind: KindRTF}
+	if err := refusePages(o, name, "an RTF file"); err != nil {
+		return doc, err
+	}
 	text, cut, err := rtf.Strip(ctx, io.NewSectionReader(f, 0, size), MaxText)
 	if ctx.Err() != nil {
 		doc.Notices = []string{noticeTimeLimitWhole(o.Limit)}

@@ -25,6 +25,11 @@
 // [Content_Types].xml header claims a terabyte; deep.docx has a document part
 // nested 150 levels deep. Each is a few kilobytes.
 //
+// cells.docx is a table whose first row has 8,000 empty cells followed by
+// 8,000 empty rows, which padded to its widest row is 64 million cells.
+// runs.docx is one paragraph of 300,000 runs with one look. nosheets.xlsx is
+// a workbook whose sheet list is empty. Each is a few kilobytes.
+//
 // sales.xlsx is written with excelize: a sheet "Sales" with a date shown as
 // yyyy-mm-dd, a number shown as #,##0.00 and a formula, and a sheet "Notes".
 // wide.xlsx is one sheet of 120 rows by 100 columns, 12,000 cells, past the
@@ -94,6 +99,9 @@ func main() {
 		"rows.csv":           rowsCSV(),
 		"bomb.docx":          bombDocx(),
 		"deep.docx":          deepDocx(),
+		"cells.docx":         cellsDocx(),
+		"runs.docx":          runsDocx(),
+		"nosheets.xlsx":      noSheetsXLSX(),
 		"sales.xlsx":         salesXLSX(),
 		"wide.xlsx":          wideXLSX(),
 		"letter.rtf":         []byte(letterRTF),
@@ -404,6 +412,41 @@ func deepDocx() []byte {
 	return zipOf([]part{
 		contentTypes("/word/document.xml", wordMain),
 		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
+	})
+}
+
+// cellsDocx is a table of one row of 8,000 empty cells and 8,000 empty rows.
+func cellsDocx() []byte {
+	body := "<w:tbl><w:tr>" + strings.Repeat("<w:tc/>", 8000) + "</w:tr>" + strings.Repeat("<w:tr/>", 8000) + "</w:tbl>"
+	return zipOf([]part{
+		contentTypes("/word/document.xml", wordMain),
+		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
+	})
+}
+
+// runsDocx is one paragraph of 300,000 runs that look alike, which a merge
+// that copies the paragraph for every run would take seconds over.
+func runsDocx() []byte {
+	body := "<w:p>" + strings.Repeat("<w:r><w:t>ab</w:t></w:r>", 300000) + "</w:p>"
+	return zipOf([]part{
+		contentTypes("/word/document.xml", wordMain),
+		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
+	})
+}
+
+// noSheetsXLSX is a workbook whose <sheets/> is empty, which excelize opens.
+func noSheetsXLSX() []byte {
+	const (
+		ns   = `http://schemas.openxmlformats.org/spreadsheetml/2006/main`
+		rels = `http://schemas.openxmlformats.org/package/2006/relationships`
+	)
+	return zipOf([]part{
+		{"[Content_Types].xml", xml + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>`},
+		{"_rels/.rels", xml + `<Relationships xmlns="` + rels + `"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+		{"xl/workbook.xml", xml + `<workbook xmlns="` + ns + `"><sheets/></workbook>`},
 	})
 }
 

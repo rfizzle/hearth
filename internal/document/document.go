@@ -177,6 +177,10 @@ func Read(ctx context.Context, path string, o Options) (Document, error) {
 	return doc, err
 }
 
+// OneLine is a file name as a notice shows it, for a caller that puts the name
+// in the app's voice itself.
+func OneLine(s string) string { return oneLine(s) }
+
 // oneLine is a file name as a notice shows it: no control characters, so a
 // name cannot start a line of its own.
 func oneLine(s string) string {

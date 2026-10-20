@@ -40,6 +40,7 @@ func kindOf(f *os.File, name string) (document.Kind, error) {
 // document costs what the model reads of it; offset counts bytes of the
 // extracted text, and pages picks a range to read it from.
 func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, name string) (tools.Result, error) {
+	name = document.OneLine(name)
 	pages, err := document.ParseRange(a.Pages)
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("files.read: %w", err)
