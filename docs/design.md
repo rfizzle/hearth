@@ -66,7 +66,9 @@ to 380 pt. Long text never runs the width of a wide window.
 
 One main window with two columns: the team in the sidebar, the conversation beside it. The window
 is titled by what is selected, never by the app's name. Every toolbar button is also a menu
-command, so the keyboard reaches all of it.
+command, so the keyboard reaches all of it. A flame in the menu bar (filled while anyone works,
+dotted while anything waits, off in Settings) opens a plain one-column panel, a quick ask over who
+is working and what needs you, and ⌃⌥Space opens the quick ask alone from any app.
 
 - **Sidebar.** "Your team": one row per bot with its mark, name and role. Then "Projects": the
   active ones, then the done ones, each with a small pie of its tasks done as the mark, its name,

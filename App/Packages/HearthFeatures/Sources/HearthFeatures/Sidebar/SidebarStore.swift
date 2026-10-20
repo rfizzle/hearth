@@ -2,7 +2,8 @@
 // the Inbox, a bot or a project, one selection for the whole sidebar, which
 // the detail column opens. It decides nothing: a selected bot or project that
 // has left its list resolves to nothing, and with nothing selected yet the
-// Chief of Staff, first in the Office, is.
+// Chief of Staff, first in the Office, is. The menu bar's rows select what
+// holds a conversation: its bot, its project, or the Inbox.
 // See docs/design.md#window-anatomy
 
 import HearthKit
@@ -51,6 +52,20 @@ public final class SidebarStore {
     /// Confirms a proposal and selects the project it became.
     public func confirm(_ proposal: Hearth_V1_Project) async {
         if let project = await projects.confirm(proposal) { selected = .project(project.id) }
+    }
+
+    /// Selects what holds the conversation `conversationID`: the bot whose
+    /// DM it is, else the project whose conversation it is, else the Inbox.
+    public func show(conversationID: String) {
+        if let bot = bots.bots.first(where: { $0.dmConversationID == conversationID }) {
+            selected = .bot(bot.id)
+        } else if let project = projects.projects.first(where: {
+            $0.conversationID == conversationID
+        }) {
+            selected = .project(project.id)
+        } else {
+            selected = .inbox
+        }
     }
 
     /// Selects the first org-level bot, the Chief of Staff, when nothing is

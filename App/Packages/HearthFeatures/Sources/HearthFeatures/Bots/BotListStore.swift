@@ -84,6 +84,12 @@ public final class BotListStore {
         }
     }
 
+    /// `botID`'s latest run as the core last reported it, if it has one; the
+    /// menu bar's Working rows read it.
+    public func latestRun(of botID: String) -> Hearth_V1_Run? {
+        runs[botID]
+    }
+
     /// Whether `botID` is paused this month; the sidebar's row shows it.
     public func isPaused(_ botID: String) -> Bool {
         usage?.isPaused(botID) ?? false

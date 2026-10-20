@@ -6,12 +6,20 @@
 // carried across. While no helper runs there is no session and the window says
 // so. A helper that comes back after one the window had a session over raises
 // the helper notice, which stays until the owner dismisses it.
+//
+// The model follows the supervisor itself, from launch, rather than from the
+// window: the menu bar extra outlives the window, so a helper that restarts
+// while the window is closed still gets its session. It also opens the
+// windows for the extra and the global shortcut, with the window opener the
+// scenes hand it.
 // See docs/design.md#window-anatomy, docs/model.md#9-failure-handling
 
+import AppKit
 import HearthFeatures
 import HearthKit
 import HearthNative
 import Observation
+import SwiftUI
 
 /// The app's current session and the one flag the menu and the window share.
 @MainActor
@@ -41,6 +49,9 @@ final class AppModel {
     @ObservationIgnored private var lostSession = false
     @ObservationIgnored private var builtGeneration: Int?
     @ObservationIgnored private var selection: SidebarSelection?
+    /// How a scene opens a window, from whichever scene showed last; the
+    /// global shortcut has no view of its own to ask.
+    @ObservationIgnored var windowOpener: OpenWindowAction?
 
     init(supervisor: HelperSupervisor, keychain: any KeychainStore = Keychain()) {
         self.supervisor = supervisor
@@ -54,9 +65,54 @@ final class AppModel {
         helperRestarted = false
     }
 
+    /// Follows the supervisor's client for the life of the app: builds a
+    /// session now and each time the client changes.
+    func follow() {
+        withObservationTracking {
+            _ = supervisor.client
+        } onChange: { [weak self] in
+            // Called before the change lands; read it on the next turn.
+            Task { @MainActor in self?.follow() }
+        }
+        helperChanged()
+    }
+
+    /// Brings the main window forward, making one when none is open, after
+    /// selecting what holds `conversationID` when there is one.
+    func showMain(at conversationID: String?, openWindow: OpenWindowAction) {
+        if let conversationID { session?.sidebar.show(conversationID: conversationID) }
+        // A hidden app's windows report themselves invisible.
+        if NSApp.isHidden { NSApp.unhide(nil) }
+        let open = NSApp.windows.first { window in
+            window.identifier?.rawValue.hasPrefix(Self.mainWindowID) == true
+                && (window.isVisible || window.isMiniaturized)
+        }
+        if let open {
+            if open.isMiniaturized { open.deminiaturize(nil) }
+            open.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(id: Self.mainWindowID)
+        }
+        NSApp.activate()
+    }
+
+    /// Opens the quick ask over whatever the owner is doing.
+    func showQuickAsk() {
+        windowOpener?(id: Self.quickAskWindowID)
+        NSApp.activate()
+    }
+
+    /// The main window's scene id.
+    static let mainWindowID = "main"
+    /// The quick ask's scene id.
+    static let quickAskWindowID = "quick-ask"
+
     /// Builds the session for the supervisor's client, or drops it when the
-    /// helper has gone.
+    /// helper has gone. The same helper keeps its session.
     func helperChanged() {
+        if supervisor.client != nil, session != nil, supervisor.generation == builtGeneration {
+            return
+        }
         if let current = session?.sidebar.selected { selection = current }
         isHiring = false
         accessBotID = nil
@@ -78,7 +134,8 @@ final class AppModel {
         }
         builtGeneration = supervisor.generation
         let relay = self.relay ?? EventRelay(client: client)
-        session = Session(client: client, relay: relay, selection: selection)
+        let session = Session(client: client, relay: relay, selection: selection)
+        self.session = session
         if self.relay == nil {
             self.relay = relay
             relay.register { [credentials] event in await credentials.handle(event) }
@@ -86,6 +143,8 @@ final class AppModel {
         } else {
             relay.reset(client: client)
         }
+        // The extra shows who works and what waits before any window asks.
+        Task { await session.menuBar.load() }
     }
 }
 
@@ -120,12 +179,15 @@ final class Session {
     /// Which model each tier asks for: one store for the session, which the
     /// Models pane and every Access sheet's Advanced choice read.
     let models: ModelsStore
+    /// What the menu bar extra and the quick ask show: one store for the
+    /// session, over the bots and the Inbox, so it lives as long as they do.
+    let menuBar: MenuBarStore
 
     private var fetchedOrg: Hearth_V1_Org?
     private var failure: String?
     private var checked = false
     @ObservationIgnored let relay: EventRelay
-    @ObservationIgnored private var conversations: [String: ConversationStore] = [:]
+    @ObservationIgnored private let conversations: ConversationCache
     @ObservationIgnored private var noteStores: [String: NotesStore] = [:]
     @ObservationIgnored private var handbookStores: [String: HandbookStore] = [:]
 
@@ -141,6 +203,12 @@ final class Session {
         sidebar = SidebarStore(bots: bots, projects: projects, selected: selection)
         inbox = InboxStore(client: client, relay: relay, usage: usage)
         bots.usage = usage
+        let conversations = ConversationCache(
+            client: client, relay: relay, inbox: inbox, usage: usage)
+        self.conversations = conversations
+        menuBar = MenuBarStore(bots: bots, inbox: inbox) { bot in
+            conversations.store(for: bot.dmConversationID, botID: bot.id)
+        }
     }
 
     /// The org, from the core or from onboarding just now.
@@ -176,12 +244,7 @@ final class Session {
     /// project's, kept so its transcript and run survive selecting something
     /// else and coming back. `botID` is whose budget pauses it.
     func conversation(for conversationID: String, botID: String?) -> ConversationStore {
-        if let store = conversations[conversationID] { return store }
-        let store = ConversationStore(
-            client: client, relay: relay, conversationID: conversationID,
-            inbox: inbox, usage: usage, botID: botID)
-        conversations[conversationID] = store
-        return store
+        conversations.store(for: conversationID, botID: botID)
     }
 
     /// The notes store for `bot`, kept so the inspector does not refetch each
@@ -199,6 +262,35 @@ final class Session {
         let store = HandbookStore(
             client: client, relay: relay, botID: bot.id, botName: bot.name)
         handbookStores[bot.id] = store
+        return store
+    }
+}
+
+/// The session's conversation stores, one per conversation, which the window
+/// and the quick ask share.
+@MainActor
+private final class ConversationCache {
+    private let client: any HearthClient
+    private let relay: EventRelay
+    private let inbox: InboxStore
+    private let usage: UsageStore
+    private var stores: [String: ConversationStore] = [:]
+
+    init(client: any HearthClient, relay: EventRelay, inbox: InboxStore, usage: UsageStore) {
+        self.client = client
+        self.relay = relay
+        self.inbox = inbox
+        self.usage = usage
+    }
+
+    /// The store for `conversationID`, made the first time it is asked for;
+    /// `botID` is whose budget pauses it.
+    func store(for conversationID: String, botID: String?) -> ConversationStore {
+        if let store = stores[conversationID] { return store }
+        let store = ConversationStore(
+            client: client, relay: relay, conversationID: conversationID,
+            inbox: inbox, usage: usage, botID: botID)
+        stores[conversationID] = store
         return store
     }
 }

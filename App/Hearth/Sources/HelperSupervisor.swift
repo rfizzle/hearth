@@ -35,7 +35,9 @@ final class HelperSupervisor {
     @ObservationIgnored private let log = Logger(
         subsystem: "com.rfizzle.hearth", category: "helper")
 
-    /// Launches the helper unless one is already running.
+    /// Launches the helper unless one is already running. Calling it again is
+    /// safe and does nothing: the app calls it at launch and the main window
+    /// each time it is made, which the menu bar extra can do many times.
     func start() {
         guard process == nil, !stopping else { return }
         let token: String

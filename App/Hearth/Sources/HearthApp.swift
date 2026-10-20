@@ -3,7 +3,9 @@
 // that builds the stores over each helper. One main window, a Settings window
 // and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A,
 // View carries Show Inspector on ⌥⌘I, and File carries New Project… on ⇧⌘N in
-// place of the New Window item a window group would put there.
+// place of the New Window item a window group would put there. The menu bar
+// extra and the quick-ask window its global shortcut opens are scenes too; the
+// delegate starts the helper at launch and listens for the shortcut.
 // See docs/design.md#window-anatomy
 
 import AppKit
@@ -16,7 +18,7 @@ struct HearthApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        WindowGroup(id: "main") {
+        WindowGroup(id: AppModel.mainWindowID) {
             ContentView()
                 .environment(appDelegate.model)
                 .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
@@ -49,6 +51,8 @@ struct HearthApp: App {
         Settings {
             SettingsView().environment(appDelegate.model)
         }
+        MenuBarExtraScene(model: appDelegate.model)
+        QuickAskScene(model: appDelegate.model)
         ShortcutsDebugWindow()
     }
 }
@@ -82,7 +86,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         super.init()
     }
 
+    /// Starts the helper and follows it, so the menu bar extra has a session
+    /// whether or not the window opens, and listens for the quick ask.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        model.follow()
+        supervisor.start()
+        GlobalShortcut.quickAsk.onPress { [weak self] in self?.model.showQuickAsk() }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
+        GlobalShortcut.quickAsk.stopListening()
         supervisor.stop()
     }
 }

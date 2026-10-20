@@ -99,6 +99,9 @@ public enum Theme {
         public static let inspectorMin: CGFloat = 260
         public static let inspectorIdeal: CGFloat = 300
         public static let inspectorMax: CGFloat = 380
+        /// The menu bar extra's panel and the quick ask, a system menu's
+        /// width.
+        public static let menuExtraWidth: CGFloat = 320
     }
 
     /// Feedback that follows a click, a swap or a fade.

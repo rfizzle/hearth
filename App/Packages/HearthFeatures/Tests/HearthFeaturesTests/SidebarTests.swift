@@ -1,6 +1,6 @@
 // The sidebar: the Inbox row's count follows the open items, selecting the
-// Inbox, a bot or a project is one selection, and the Office holds the Chief
-// of Staff.
+// Inbox, a bot or a project is one selection, the Office holds the Chief of
+// Staff, and a conversation selects what holds it.
 
 import HearthKit
 import Testing
@@ -117,4 +117,18 @@ func makeSidebar(client: any HearthClient = PreviewClient()) -> SidebarStore {
     sidebar.selected = .project(Fixtures.projects[0].id)
     sidebar.selectOfficeIfNothingSelected()
     #expect(sidebar.selected == .project(Fixtures.projects[0].id))
+}
+
+@MainActor
+@Test func aConversationSelectsItsBotItsProjectOrTheInbox() async {
+    let sidebar = makeSidebar()
+    await sidebar.bots.load()
+    await sidebar.projects.load()
+    sidebar.show(conversationID: Fixtures.bot.dmConversationID)
+    #expect(sidebar.selected == .bot(Fixtures.bot.id))
+    let project = sidebar.projects.projects[0]
+    sidebar.show(conversationID: project.conversationID)
+    #expect(sidebar.selected == .project(project.id))
+    sidebar.show(conversationID: "conversation-nobody-knows")
+    #expect(sidebar.selected == .inbox)
 }

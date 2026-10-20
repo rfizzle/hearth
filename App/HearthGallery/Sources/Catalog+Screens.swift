@@ -26,6 +26,9 @@ extension Catalog {
                     conversationEmpty(), conversationAboutOpen(), conversationMidStream(),
                     conversationSummaryOpen(), conversationWaiting(),
                 ] + projectConversationStates),
+            GalleryPage(
+                package: package, name: "MenuBarExtra",
+                states: [menuBarFilled(), menuBarEmpty(), menuBarReplyStreaming()]),
         ]
     }
 
@@ -142,7 +145,8 @@ private typealias Page = Hearth_V1_ListMessagesResponse
 private typealias Account = Hearth_V1_ProviderAccount
 private typealias Key = Hearth_V1_IntegrationAccount
 
-/// A client that serves the fixtures but employs nobody, for the empty list.
+/// A client that serves the fixtures but employs nobody, so nothing waits on
+/// the owner either: the empty list and the quiet menu bar.
 private struct NoBotsClient: HearthClient {
     private let preview = PreviewClient()
 
@@ -211,9 +215,7 @@ private struct NoBotsClient: HearthClient {
     func setGrants(botID: String, _ grants: [Hearth_V1_Grant]) async throws -> [Hearth_V1_Grant] {
         try await preview.setGrants(botID: botID, grants)
     }
-    func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] {
-        try await preview.listInbox(includeClosed: includeClosed)
-    }
+    func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] { [] }
     func decide(
         itemID: String, _ decision: Hearth_V1_Decision, reason: String
     ) async throws -> Hearth_V1_DecideResponse {

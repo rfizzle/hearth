@@ -3,7 +3,8 @@
 // onboarding column until there is one, then cross-fades to the team. A
 // cross-fade is not motion, so Reduce Motion keeps it but the animation is
 // dropped there. The window is titled by what it shows: Welcome, the org, or
-// the selected bot; never the app's name.
+// the selected bot; never the app's name. The model builds the session; the
+// window hands it the way to open windows, for the global shortcut.
 // See docs/design.md#window-anatomy, docs/design.md#empty-states-and-first-run
 // and docs/design.md#motion
 
@@ -13,6 +14,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Group {
@@ -29,9 +31,7 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 760, minHeight: 480)
-        .task(id: model.supervisor.client.map(ObjectIdentifier.init)) {
-            model.helperChanged()
-        }
+        .onAppear { model.windowOpener = openWindow }
     }
 }
 
