@@ -1,6 +1,7 @@
 // What waits on the owner: the decision bar in its wide and narrow layouts,
-// the approval, question and failure cards in each state, and a conversation
-// whose run waits on the owner with the card in the thread.
+// the approval, question and failure cards in each state, the Inbox with
+// items, empty and as the sidebar's row, and a conversation whose run waits
+// on the owner with the card in the thread.
 
 import HearthDesign
 import HearthFeatures
@@ -34,7 +35,60 @@ extension Catalog {
                 states: GalleryState.each(FailureCard.PreviewState.self, width: 600) {
                     FailureCard(previewState: $0)
                 }),
+            GalleryPage(
+                package: "HearthFeatures", name: "InboxScreen",
+                states: [inboxWithItems(), inboxEmpty(), sidebarWithInbox()]),
         ]
+    }
+
+    /// PreviewClient's three open items.
+    static func inboxWithItems() -> GalleryState {
+        let client = PreviewClient()
+        let store = InboxStore(client: client, relay: EventRelay(client: client))
+        return GalleryState(
+            name: "items", width: 680,
+            view: AnyView(
+                InboxScreen(store: store, bots: [Fixtures.bot]).frame(height: 900)))
+    }
+
+    /// Every item closes after the screen's own fetch, as it would live.
+    static func inboxEmpty() -> GalleryState {
+        let client = PreviewClient()
+        let closes = Fixtures.inbox.map { item in
+            var closed = item
+            closed.state = .closed
+            return Hearth_V1_SubscribeResponse.with {
+                $0.event = .inboxChanged(.with { $0.item = closed })
+            }
+        }
+        let relay = EventRelay(subscribe: { _ in
+            AsyncThrowingStream { continuation in
+                let task = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    closes.forEach { continuation.yield($0) }
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        })
+        relay.start()
+        let store = InboxStore(client: client, relay: relay)
+        return GalleryState(
+            name: "empty", width: 680,
+            view: AnyView(InboxScreen(store: store, bots: [Fixtures.bot]).frame(height: 320)))
+    }
+
+    /// The sidebar with the Inbox row above the team, three items open and
+    /// the Inbox selected.
+    static func sidebarWithInbox() -> GalleryState {
+        let client = PreviewClient()
+        let relay = EventRelay(client: client)
+        let bots = BotListStore(client: client, relay: relay)
+        bots.selected = .inbox
+        let inbox = InboxStore(client: client, relay: relay)
+        return GalleryState(
+            name: "sidebar", width: Theme.Size.sidebarIdeal,
+            view: AnyView(
+                BotList(store: bots, inbox: inbox, onHire: {}).frame(height: 220)))
     }
 }
 

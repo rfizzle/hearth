@@ -115,6 +115,30 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
 }
 
 @MainActor
+@Test func grantsFollowTheirChangesAndAResyncRefetchesThem() async {
+    let store = await loadedStore()
+    var write = Fixtures.approval
+    write.call.name = "files.write"
+    #expect(store.canAlwaysAllow(write))
+    let locked = Fixtures.grants.map { grant -> Hearth_V1_Grant in
+        var grant = grant
+        grant.canAllow = false
+        return grant
+    }
+    await store.handle(
+        .with {
+            $0.event = .grantsChanged(
+                .with {
+                    $0.botID = Fixtures.bot.id
+                    $0.grants = locked
+                })
+        })
+    #expect(!store.canAlwaysAllow(write))
+    await store.handle(.with { $0.event = .resync(Hearth_V1_Resync()) })
+    #expect(store.canAlwaysAllow(write))
+}
+
+@MainActor
 @Test func anOpenChangeJoinsNewestFirstAndTheCountFollows() async {
     let store = await loadedStore()
     var newer = Fixtures.approval

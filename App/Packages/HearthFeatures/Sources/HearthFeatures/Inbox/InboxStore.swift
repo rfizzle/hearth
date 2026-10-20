@@ -167,6 +167,8 @@ public final class InboxStore {
         case .grantsChanged(let change):
             grants[change.botID] = change.grants
         case .resync:
+            // A grants change may be among the events the core no longer holds.
+            grants = [:]
             await load()
         default:
             break

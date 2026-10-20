@@ -7,9 +7,9 @@
 // streaming and parsed inline Markdown once it is complete; tables and code
 // blocks wait for a Markdown package. There is no streaming cursor: the status
 // line is the one working signal. The name and time read as one element; the
-// Avatar is hidden, since the name says who wrote it. An approval request the
-// owner has answered is a quiet line under the bot's turn saying what it
-// asked to do (an open one is its card, which the screen draws instead), and
+// Avatar is hidden, since the name says who wrote it. An approval request or a
+// question the owner has answered is a quiet line under the bot's turn saying
+// what it asked (an open one is its card, which the screen draws instead), and
 // the owner's decision is a notice like a system message.
 // See docs/design.md#the-transcript and docs/model.md#8-approvals
 
@@ -40,7 +40,7 @@ public struct MessageRow: View {
     public var body: some View {
         if message.kind == .system || message.kind == .approvalDecision {
             notice
-        } else if message.kind == .approvalRequest {
+        } else if message.kind == .approvalRequest || message.kind == .question {
             askedLine
         } else if isOwner {
             ownerBubble
@@ -128,7 +128,8 @@ public struct MessageRow: View {
 
     private var askedLine: some View {
         HStack(spacing: Theme.Spacing.sm) {
-            Image(systemName: "hand.raised").accessibilityHidden(true)
+            Image(systemName: message.kind == .question ? "questionmark.bubble" : "hand.raised")
+                .accessibilityHidden(true)
             Text(message.content)
                 .lineLimit(2)
         }
@@ -170,6 +171,7 @@ extension MessageRow {
         case withFile
         case system
         case askedApproval
+        case askedQuestion
         case decision
 
         var message: Hearth_V1_Message {
@@ -201,6 +203,13 @@ extension MessageRow {
                 return Fixtures.dmMessages[1]
             case .askedApproval:
                 return Fixtures.approvalRequest
+            case .askedQuestion:
+                var message = Fixtures.approvalRequest
+                message.id = Fixtures.question.messageID
+                message.kind = .question
+                message.tool = Hearth_V1_ToolCall()
+                message.content = Fixtures.question.question
+                return message
             case .decision:
                 return Fixtures.approvalDecision
             }
@@ -221,4 +230,5 @@ extension MessageRow {
 #Preview("With a file") { MessageRow(previewState: .withFile).padding() }
 #Preview("System") { MessageRow(previewState: .system).padding() }
 #Preview("Asked for approval") { MessageRow(previewState: .askedApproval).padding() }
+#Preview("Asked a question") { MessageRow(previewState: .askedQuestion).padding() }
 #Preview("Decision") { MessageRow(previewState: .decision).padding() }

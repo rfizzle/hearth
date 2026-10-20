@@ -1,7 +1,7 @@
-// BotListStore holds the bots as the core last reported them and which one is
-// selected. It fetches the list, applies the bot changes the relay delivers,
-// refetches on a resync, and decides nothing; the selection is what the sidebar highlights and the
-// conversation opens.
+// BotListStore holds the bots as the core last reported them and what the
+// sidebar has selected: the Inbox or a bot. It fetches the list, applies the
+// bot changes the relay delivers, refetches on a resync, and decides nothing;
+// the selection is what the sidebar highlights and the detail column opens.
 
 import HearthKit
 import Observation
@@ -10,10 +10,18 @@ import Observation
 @MainActor
 @Observable
 public final class BotListStore {
+    /// What the sidebar can select.
+    public enum Selection: Hashable, Sendable {
+        /// What waits on the owner.
+        case inbox
+        /// The bot with this id.
+        case bot(String)
+    }
+
     /// Every bot, in the order the core sent them; new ones come last.
     public private(set) var bots: [Hearth_V1_Bot] = []
-    /// The selected bot's id, if one is selected.
-    public var selection: String?
+    /// What the sidebar has selected, if anything.
+    public var selected: Selection?
     /// The last failed call's text, if one failed.
     public private(set) var error: String?
 
@@ -36,6 +44,16 @@ public final class BotListStore {
     /// Whether to offer hiring: the list has loaded and holds nobody.
     public var showsHireAffordance: Bool {
         loaded && bots.isEmpty
+    }
+
+    /// The selected bot's id, if a bot is selected; setting it selects that
+    /// bot, or nothing.
+    public var selection: String? {
+        get {
+            guard case .bot(let id) = selected else { return nil }
+            return id
+        }
+        set { selected = newValue.map(Selection.bot) }
     }
 
     /// The selected bot, if it is still in the list.

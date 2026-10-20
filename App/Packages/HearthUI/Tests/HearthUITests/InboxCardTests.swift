@@ -66,6 +66,7 @@ import Testing
 @MainActor
 @Test func anAnsweredRequestIsALineAndTheDecisionANotice() {
     #expect(MessageRow.PreviewState.askedApproval.message.kind == .approvalRequest)
+    #expect(MessageRow.PreviewState.askedQuestion.message.kind == .question)
     #expect(MessageRow.PreviewState.decision.message.kind == .approvalDecision)
     #expect(MessageRow(previewState: .decision).isOwner)
 }
