@@ -5,7 +5,8 @@
 //
 // The colour roles are text.primary and text.secondary; surface.primary,
 // surface.secondary and surface.card; and tone.positive, tone.attention and
-// tone.negative, each with a .fill to sit behind it. Text and surface colours
+// tone.negative, each with a .fill to sit behind it; and chart1 to chart6,
+// the series hues (Theme.chart(_:)). Text and surface colours
 // are hex pairs rather than the system's label colours because the contrast
 // check can measure a hex pair and cannot measure a system colour that carries
 // alpha. Anything the system already names (the accent, hairlines, the window
@@ -36,6 +37,13 @@ public enum ColorRole: String, CaseIterable, Sendable {
     case toneAttentionFill = "tone.attention.fill"
     case toneNegative = "tone.negative"
     case toneNegativeFill = "tone.negative.fill"
+    /// The six chart hues, by series order; each holds 3:1 against the card.
+    case chart1 = "chart.1"
+    case chart2 = "chart.2"
+    case chart3 = "chart.3"
+    case chart4 = "chart.4"
+    case chart5 = "chart.5"
+    case chart6 = "chart.6"
 }
 
 /// A status in plain terms; views pick a tone, never a colour.
@@ -138,6 +146,13 @@ public enum Theme {
         case .attention: color(.toneAttentionFill)
         case .negative: color(.toneNegativeFill)
         }
+    }
+
+    /// The chart hue for the series at `index`, 1 through 6; an index outside
+    /// that range is clamped. The same six hues are in the web page's palette.
+    public static func chart(_ index: Int) -> Color {
+        let roles: [ColorRole] = [.chart1, .chart2, .chart3, .chart4, .chart5, .chart6]
+        return color(roles[min(max(index, 1), roles.count) - 1])
     }
 
     /// The colour for `role`, resolving to its light or dark value.

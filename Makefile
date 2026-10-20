@@ -40,12 +40,15 @@ SWIFT_TEST_PACKAGES=$(APP_DIR)/Packages/HearthKit $(APP_DIR)/Packages/HearthDesi
 # Generated Swift is left as buf writes it, as generated Go is.
 SWIFT_SOURCES=$(shell find $(APP_DIR) -name '*.swift' -not -path '*/.build/*' -not -path '*/Gen/*')
 TOKENS_FILE=$(APP_DIR)/Packages/HearthDesign/Sources/HearthDesign/Resources/tokens.json
+TAILWIND_THEME=scripts/tailwind/theme.css
+CHART_PALETTE=internal/render/chart/palette.go
+TAILWIND_OUT=internal/render/html/deliverable.css
 DIST_DIR=$(CURDIR)/dist
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build gallery-open gallery-shot gallery-record ci-swift app-build app-sign notarize app-verify cache-dir
+.PHONY: all build proto proto-check proto-drift tokens-gen tailwind tailwind-checkfmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build gallery-open gallery-shot gallery-record ci-swift app-build app-sign notarize app-verify cache-dir
 
 all: help
 
@@ -163,7 +166,21 @@ swift-test: ## Build the app targets and run every Swift package's tests
 tokens-check: cache-dir ## Fail if a token pairing is below WCAG 2.2 AA contrast in light or dark
 	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/tokenscheck $(TOKENS_FILE)
 
-gallery-build: ## Build the gallery app: every component in every state
+tokens-gen: cache-dir ## Write the Tailwind theme and the chart palette from tokens.json
+	@$(HERMETIC_ENV) $(GOCMD) run ./scripts/tokens $(TOKENS_FILE) $(TAILWIND_THEME) $(CHART_PALETTE)
+
+# Both Tailwind targets need the network once, to download the pinned CLI into
+# .cache/tailwind, so they stay out of ci beside proto-drift. The committed CSS
+# is what the binary embeds.
+tailwind: tokens-gen ## Rebuild deliverable.css with the pinned Tailwind CLI (needs the network once)
+	@bash scripts/tailwind/build.sh
+
+tailwind-check: tokens-gen ## Fail if the committed theme, palette or deliverable.css differs from a fresh build (needs the network once)
+	@bash scripts/tailwind/build.sh $(CACHE_DIR)/deliverable.check.css
+	@cmp $(CACHE_DIR)/deliverable.check.css $(TAILWIND_OUT) || { echo "deliverable.css drifted. Run make tailwind and commit."; exit 1; }
+	@git diff --exit-code -- $(TAILWIND_THEME) $(CHART_PALETTE) || { echo "Generated theme drifted from tokens.json. Run make tokens-gen and commit."; exit 1; }
+
+gallery-build: ##Build the gallery app: every component in every state
 	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
 	@$(SWIFT) build --package-path $(APP_DIR) --product HearthGallery
 

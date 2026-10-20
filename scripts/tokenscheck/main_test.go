@@ -46,6 +46,23 @@ func TestCheck(t *testing.T) {
 				"pairings":[{"foreground":"fg","background":"bg"}]}`,
 		},
 		{
+			name: "graphics class passes at 3:1",
+			json: `{"colors":{"fg":{"light":"#949494","dark":"#949494"},"bg":{"light":"#FFFFFF","dark":"#000000"}},
+				"pairings":[{"foreground":"fg","background":"bg","class":"graphics"}]}`,
+		},
+		{
+			name: "text class fails at 3:1",
+			json: `{"colors":{"fg":{"light":"#949494","dark":"#949494"},"bg":{"light":"#FFFFFF","dark":"#000000"}},
+				"pairings":[{"foreground":"fg","background":"bg"}]}`,
+			wantErr: "fg on bg (light)",
+		},
+		{
+			name: "unknown class",
+			json: `{"colors":{"fg":{"light":"#000000","dark":"#FFFFFF"},"bg":{"light":"#FFFFFF","dark":"#000000"}},
+				"pairings":[{"foreground":"fg","background":"bg","class":"decor"}]}`,
+			wantErr: "unknown class",
+		},
+		{
 			name: "dark fails",
 			json: `{"colors":{"fg":{"light":"#000000","dark":"#333333"},"bg":{"light":"#FFFFFF","dark":"#000000"}},
 				"pairings":[{"foreground":"fg","background":"bg"}]}`,

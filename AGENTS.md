@@ -47,7 +47,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Static checks | `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
 | Regenerate the contract / lint it and check breaking changes (offline) | `make proto` / `make proto-check` |
-| Generated code matches the contract (network) | `make proto-drift` |
+| Generated code matches the contract / the Tailwind CSS (network) | `make proto-drift` / `make tailwind-check` |
 | Shared skills match their source | `make skills-check` |
 | Refresh shared skills from `../skills` | `make skills-sync` |
 | Contract / integration tests | `make test-contract` / `make test-integration` |
@@ -171,10 +171,10 @@ from `Hearth`.
   without it. Install: `go install golang.org/x/tools/cmd/goimports@latest`.
 - **`buf` must be on the `PATH`** for `make proto`, `make proto-check` and
   `make proto-drift`; they refuse to run without it. Install: `go install
-  github.com/bufbuild/buf/cmd/buf@v1.73.0`. The generators are remote
-  plugins and the BSR rate-limits anonymous generation, so drift is checked
-  outside `make ci`: after editing the proto, run `make proto && make
-  proto-drift`. `buf registry login` lifts the limit locally.
+  github.com/bufbuild/buf/cmd/buf@v1.73.0`. Remote plugins, rate-limited: run
+  `make proto && make proto-drift` after editing the proto, outside `make ci`.
+  `make tailwind-check` (also outside ci) downloads the pinned Tailwind CLI to
+  `.cache/tailwind`; `make tokens-gen` writes its theme and the chart palette.
 - **`make proto` regenerates two files per proto on each side** (twelve
   protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c

@@ -21,7 +21,7 @@ func everyColorRoleHasALightAndADarkHex(role: ColorRole) throws {
 }
 
 @Test func theTokenFileHoldsExactlyTheRoles() {
-    #expect(ColorRole.allCases.count == 11)
+    #expect(ColorRole.allCases.count == 17)
     #expect(Set(ColorRole.allCases.map(\.rawValue)) == Set(Theme.tokens.colors.keys))
 }
 
@@ -49,4 +49,11 @@ func everyToneHasAColourAndAFill(tone: Tone) {
     #expect(Theme.motion(Theme.quick, reduceMotion: true) == nil)
     #expect(Theme.motion(Theme.move, reduceMotion: false) == Theme.move)
     #expect(Theme.motion(Theme.quick, reduceMotion: false) == Theme.quick)
+}
+
+@Test func chartHuesClampToOneThroughSix() {
+    // Resolving is the test: an out-of-range index must not trap.
+    for index in [-3, 0, 1, 6, 7, 99] {
+        _ = Theme.chart(index)
+    }
 }

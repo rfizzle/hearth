@@ -1,12 +1,13 @@
 // Command tokenscheck fails when a colour pairing in the design tokens falls
-// below WCAG 2.2 AA contrast for body text (4.5:1) in light or dark
-// appearance, or names a colour the tokens do not define. It prints every
+// below its class's WCAG 2.2 minimum in light or dark appearance (text, the
+// default, 4.5:1; graphics, 3:1 for non-text marks such as chart hues), or names a colour the tokens do not define. It prints every
 // ratio it checks.
 //
 // Usage: tokenscheck <tokens.json>
 //
 // The file holds "colors", a map from role to {"light", "dark"} sRGB hex
-// values, and "pairings", a list of {"foreground", "background"} role names.
+// values, and "pairings", a list of {"foreground", "background", "class"}
+// role names; class is "text" when omitted.
 package main
 
 import (
@@ -19,8 +20,9 @@ import (
 	"strings"
 )
 
-// minContrast is WCAG 2.2 AA's minimum for normal-size text.
-const minContrast = 4.5
+// minimums are WCAG 2.2 AA's contrast floors by pairing class: normal-size
+// text (1.4.3) and non-text graphics (1.4.11).
+var minimums = map[string]float64{"text": 4.5, "graphics": 3}
 
 type colorPair struct {
 	Light string `json:"light"`
@@ -30,6 +32,7 @@ type colorPair struct {
 type pairing struct {
 	Foreground string `json:"foreground"`
 	Background string `json:"background"`
+	Class      string `json:"class"`
 }
 
 type tokens struct {
@@ -65,6 +68,15 @@ func check(data []byte, w io.Writer) error {
 	}
 	var failures []string
 	for _, p := range t.Pairings {
+		class := p.Class
+		if class == "" {
+			class = "text"
+		}
+		minContrast, okClass := minimums[class]
+		if !okClass {
+			failures = append(failures, fmt.Sprintf("%s on %s: unknown class %q", p.Foreground, p.Background, class))
+			continue
+		}
 		fg, okFG := t.Colors[p.Foreground]
 		bg, okBG := t.Colors[p.Background]
 		if !okFG || !okBG {
@@ -77,7 +89,7 @@ func check(data []byte, w io.Writer) error {
 				failures = append(failures, fmt.Sprintf("%s on %s (%s): %v", p.Foreground, p.Background, a.name, err))
 				continue
 			}
-			fmt.Fprintf(w, "%-20s on %-20s %-5s %5.2f:1\n", p.Foreground, p.Background, a.name, ratio)
+			fmt.Fprintf(w, "%-20s on %-20s %-5s %5.2f:1 %s\n", p.Foreground, p.Background, a.name, ratio, class)
 			if ratio < minContrast {
 				failures = append(failures, fmt.Sprintf("%s on %s (%s): %.2f:1 is below %.1f:1", p.Foreground, p.Background, a.name, ratio, minContrast))
 			}
