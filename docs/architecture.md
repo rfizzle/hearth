@@ -195,7 +195,7 @@ Rules:
 | `scripts/tokens` (planned) | Generates the chart hues and the Tailwind theme from the design tokens | new |
 | `scripts/tailwind` (planned) | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |
 | `internal/native` (planned) | Proxies to the app's NativeService, ExtractText first | new |
-| `internal/tools/files` | `files.read`, `files.write`, `files.delete` inside the folders a bot's grants name | new |
+| `internal/tools/files` | `files.read`, `files.write`, `files.render`, `files.delete` inside the folders a bot's grants name | new |
 | `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
 | `internal/provider/gateway` | A service reached by address: the table of known services, the check on an address, the list of its models, the check that a completion is one | new |

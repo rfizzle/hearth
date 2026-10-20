@@ -18,6 +18,10 @@ type Options struct {
 	// Recogniser reads the pictures in a document while the app is open; nil
 	// is the command-line helper, and a picture page is then a notice.
 	Recogniser document.Recogniser
+	// Reserved are the folders hearth keeps for itself, which no file call
+	// reaches whatever is granted: an image a rendered document names is
+	// refused there as a call's path is.
+	Reserved []string
 }
 
 // kindOf is what f, the file called name, is read as. Reading a text file

@@ -266,5 +266,5 @@ func (s *Service) registry(extra []tools.Definition) (*tools.Registry, error) {
 			searcher = found
 		}
 	}
-	return toolset.Registry(files.Options{Recogniser: s.d.Recogniser}, s.d.Fetcher.ForRun(), searcher, extra...)
+	return toolset.Registry(files.Options{Recogniser: s.d.Recogniser, Reserved: s.d.Reserved}, s.d.Fetcher.ForRun(), searcher, extra...)
 }

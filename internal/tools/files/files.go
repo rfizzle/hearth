@@ -22,7 +22,7 @@ import (
 // from the offset the notice names.
 const readCap = 64 << 10
 
-// Definitions is files.read, files.write and files.delete.
+// Definitions is files.read, files.write, files.render and files.delete.
 func Definitions(o Options) []tools.Definition {
 	return []tools.Definition{
 		{
@@ -59,6 +59,7 @@ func Definitions(o Options) []tools.Definition {
 			Execute:  write,
 			Describe: describeWrite,
 		},
+		o.renderDefinition(),
 		deleteDefinition(),
 	}
 }
@@ -171,31 +172,8 @@ func write(_ context.Context, call tools.Call) (tools.Result, error) {
 		return tools.Result{}, errors.New("files.write: content is required")
 	}
 	name := shown(call)
-	if err := os.MkdirAll(filepath.Dir(call.Path), 0o755); err != nil {
-		return tools.Result{}, failed("files.write", "create the folders above", name, err)
-	}
-	if err := stillInside(call, name); err != nil {
+	if err := writeFile("files.write", call.Folder, call.Path, name, []byte(*a.Content)); err != nil {
 		return tools.Result{}, err
-	}
-	if info, err := os.Lstat(call.Path); err == nil {
-		if err := regular(info, name); err != nil {
-			return tools.Result{}, fmt.Errorf("files.write: %w; nothing was written", err)
-		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return tools.Result{}, failed("files.write", "write", name, err)
-	}
-	// O_NOFOLLOW refuses a symlink at the file itself, the one element
-	// stillInside cannot hold steady between its check and this open.
-	f, err := os.OpenFile(call.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, 0o644)
-	if err != nil {
-		return tools.Result{}, failed("files.write", "write", name, err)
-	}
-	_, err = io.WriteString(f, *a.Content)
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return tools.Result{}, failed("files.write", "write", name, err)
 	}
 	return tools.Result{
 		Text:  fmt.Sprintf("Wrote %s to %s.", size(len(*a.Content)), name),
@@ -203,13 +181,57 @@ func write(_ context.Context, call tools.Call) (tools.Result, error) {
 	}, nil
 }
 
+// writeFile creates or replaces the file at path, inside folder, with data,
+// through openForWrite. name is the path as the model reads it.
+func writeFile(tool, folder, path, name string, data []byte) error {
+	f, err := openForWrite(tool, folder, path, name)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(data)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		return failed(tool, "write", name, err)
+	}
+	return nil
+}
+
+// openForWrite opens path, inside folder, to be written from the start: it
+// creates the folders above it, checks again that the path still leads
+// inside the folder, replaces only a regular file, and refuses a link at the
+// file itself. Every file a tool here writes is opened through it.
+func openForWrite(tool, folder, path, name string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, failed(tool, "create the folders above", name, err)
+	}
+	if err := stillInside(tool, folder, path, name); err != nil {
+		return nil, err
+	}
+	if info, err := os.Lstat(path); err == nil {
+		if err := regular(info, name); err != nil {
+			return nil, fmt.Errorf("%s: %w; nothing was written", tool, err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return nil, failed(tool, "write", name, err)
+	}
+	// O_NOFOLLOW refuses a symlink at the file itself, the one element
+	// stillInside cannot hold steady between its check and this open.
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, 0o644)
+	if err != nil {
+		return nil, failed(tool, "write", name, err)
+	}
+	return f, nil
+}
+
 // stillInside resolves the path again now that its folders exist, and
 // refuses it unless it is still the path the dispatcher checked: a folder
 // swapped for a symlink in between would otherwise take the write with it.
-func stillInside(call tools.Call, name string) error {
-	again, err := workspace.Resolve(call.Folder, call.Path)
-	if err != nil || again != call.Path {
-		return fmt.Errorf("files.write: %s no longer leads inside the folder; nothing was written", name)
+func stillInside(tool, folder, path, name string) error {
+	again, err := workspace.Resolve(folder, path)
+	if err != nil || again != path {
+		return fmt.Errorf("%s: %s no longer leads inside the folder; nothing was written", tool, name)
 	}
 	return nil
 }
