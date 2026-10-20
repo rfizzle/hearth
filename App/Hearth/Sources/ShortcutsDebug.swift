@@ -5,6 +5,7 @@
 
 #if DEBUG
 
+    import HearthDesign
     import HearthNative
     import SwiftUI
     import os
@@ -74,7 +75,7 @@
         @State private var model = ShortcutsDebugModel()
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                 HStack {
                     Picker("Shortcut", selection: $model.selection) {
                         Text("None").tag(String?.none)

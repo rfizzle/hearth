@@ -1,7 +1,7 @@
 # SwiftLint is the Swift ceiling until astimate reads Swift: the size and
 # complexity rules (cyclomatic_complexity, function_body_length,
-# type_body_length, file_length, nesting) run at their defaults, and one custom
-# rule keeps raw colours and font sizes inside HearthDesign.
+# type_body_length, file_length, nesting) run at their defaults, and two custom
+# rules keep raw colours, font sizes, spacing and radii inside HearthDesign.
 # Layout is swift format's job; SwiftLint rules that fight it are off.
 disabled_rules:
   - trailing_comma
@@ -17,5 +17,11 @@ custom_rules:
     name: "Raw style literal"
     message: "Use a HearthDesign token by role, not a raw colour or font size."
     regex: 'Color\(red:|Font\.system\(size:|\.foregroundColor\(\.(red|blue|green|yellow|orange|purple|pink|gray)\)'
+    excluded: ".*/HearthDesign/.*"
+    severity: error
+  raw_layout_literal:
+    name: "Raw layout literal"
+    message: "Use Theme.Spacing or Theme.Radius, not a number, for padding, spacing and corner radius."
+    regex: '\.padding\((\.[a-zA-Z]+, *)?[1-9]|spacing: *[1-9]|cornerRadius: *[1-9]'
     excluded: ".*/HearthDesign/.*"
     severity: error
