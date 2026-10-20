@@ -132,7 +132,7 @@ func TestAllowances_ByConversationAndCapability(t *testing.T) {
 	}
 }
 
-func TestReplaceGrants_KeepsTheOwnFolderAndReplacesTheRest(t *testing.T) {
+func TestReplaceGrants_TheOwnFolderKeepsItsRowsAndTakesTheModesAndTheRestIsReplaced(t *testing.T) {
 	db := newStore(t)
 	bot := hire(t, db, "Dana")
 	other := hire(t, db, "Sam")
@@ -145,7 +145,7 @@ func TestReplaceGrants_KeepsTheOwnFolderAndReplacesTheRest(t *testing.T) {
 
 	req := []org.Grant{
 		{Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: "/w/Shared"},
-		{Capability: org.FilesWrite, Mode: org.ModeNotGranted, Folder: bot.FolderPath}, // tries to drop the own folder
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: bot.FolderPath}, // a mode for the own folder sticks; delete is left out and keeps its row
 		{Capability: org.WebFetch, Mode: org.ModeAsk},
 		{Capability: org.AskOwner, Mode: org.ModeNotGranted}, // tries to drop the right to ask
 	}
@@ -167,6 +167,9 @@ func TestReplaceGrants_KeepsTheOwnFolderAndReplacesTheRest(t *testing.T) {
 	var wantOwn []org.Grant
 	for _, g := range before {
 		if g.Folder == bot.FolderPath {
+			if g.Capability == org.FilesWrite {
+				g.Mode = org.ModeAsk
+			}
 			wantOwn = append(wantOwn, g)
 		}
 	}
@@ -217,5 +220,42 @@ func TestMessages_RoundTripTheWidgetAndItsAnswer(t *testing.T) {
 	}
 	if msgs[1].Widget != `{"kind":"yes_no"}` || msgs[1].WidgetAnswer != `{"yes":true}` {
 		t.Fatalf("widget message = %+v", msgs[1])
+	}
+}
+
+func TestReplaceGrants_TheSheetsOneSetOfModesReachesTheOwnFolderToo(t *testing.T) {
+	db := newStore(t)
+	bot := hire(t, db, "Dana")
+	ctx := t.Context()
+	shared := "/w/Shared"
+	var req []org.Grant
+	for _, folder := range []string{bot.FolderPath, shared} {
+		req = append(req,
+			org.Grant{Capability: org.FilesRead, Mode: org.ModeAsk, Folder: folder},
+			org.Grant{Capability: org.FilesDelete, Mode: org.ModeNotGranted, Folder: folder})
+	}
+	if err := db.ReplaceGrants(ctx, bot.ID, req); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GrantsFor(ctx, bot.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	modes := map[[2]string]org.Mode{}
+	for _, g := range got {
+		modes[[2]string{string(g.Capability), g.Folder}] = g.Mode
+	}
+	want := map[[2]string]org.Mode{
+		{"files.read", bot.FolderPath}:   org.ModeAsk,
+		{"files.delete", bot.FolderPath}: org.ModeNotGranted,
+		{"files.read", shared}:           org.ModeAsk,
+		{"files.delete", shared}:         org.ModeNotGranted,
+		{"files.write", bot.FolderPath}:  org.ModeAllowed, // left out: its row stays as it was
+		{"ask_owner", ""}:                org.ModeAllowed,
+	}
+	for k, m := range want {
+		if got, ok := modes[k]; !ok || got != m {
+			t.Errorf("%v = %d (present %v), want %d", k, got, ok, m)
+		}
 	}
 }

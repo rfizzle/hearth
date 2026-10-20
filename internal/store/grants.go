@@ -19,9 +19,9 @@ func (db *DB) GrantsFor(ctx context.Context, botID string) ([]org.Grant, error) 
 }
 
 // ReplaceGrants makes grants the whole of what the bot with botID holds, in
-// one transaction. The rows for the bot's own folder are kept as they are
-// and any the request names for that folder are ignored, so an edit cannot
-// take a bot out of its own folder. The grant to ask the owner is kept the
+// one transaction. The rows for the bot's own folder are never removed: the
+// request sets their modes, and a capability it leaves out keeps its row as
+// it was, so an edit cannot take a bot out of its own folder. The grant to ask the owner is kept the
 // same way: the owner never edits it, and a bot without it cannot ask. It is
 // ErrNotFound when there is no such bot. The grants' BotID is not read; they
 // are stored for botID.
@@ -42,7 +42,14 @@ func (db *DB) ReplaceGrants(ctx context.Context, botID string, grants []org.Gran
 		return fmt.Errorf("replace grants: %w", err)
 	}
 	for _, g := range grants {
-		if g.Folder == own || g.Capability == org.AskOwner {
+		if g.Capability == org.AskOwner {
+			continue
+		}
+		if g.Folder == own {
+			if _, err := tx.ExecContext(ctx, `UPDATE grants SET mode = ? WHERE bot_id = ? AND capability = ? AND folder = ?`,
+				g.Mode, botID, g.Capability, own); err != nil {
+				return fmt.Errorf("replace grants: %w", err)
+			}
 			continue
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO grants (bot_id, capability, mode, folder) VALUES (?, ?, ?, ?)`,

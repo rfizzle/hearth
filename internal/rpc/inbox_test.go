@@ -399,3 +399,18 @@ func TestEvents_MessageDeletedConversationChangedAndGrantsChanged(t *testing.T) 
 		t.Errorf("conversation_changed = %v", evs[1])
 	}
 }
+
+func TestRetry_OnlyAFailedOrCancelledRunCanBeRetried(t *testing.T) {
+	r := newRig(t, answer("Hi."))
+	c := newClients(serve(t, r.opts), testToken)
+	bot := hireDana(t, c, r)
+	f := follow(t, c, r.bus)
+	sent := unary(t, c.conv.Send, &hearthv1.SendRequest{ConversationId: bot.GetDmConversationId(), Text: "hello"})
+	f.until(runEnded)
+	if _, err := c.conv.Retry(t.Context(), connect.NewRequest(&hearthv1.RetryRequest{RunId: sent.GetRun().GetId()})); code(err) != connect.CodeFailedPrecondition {
+		t.Errorf("Retry of a done run = %v, want failed_precondition", err)
+	}
+	if msgs := unary(t, c.conv.ListMessages, &hearthv1.ListMessagesRequest{ConversationId: bot.GetDmConversationId()}).GetMessages(); len(msgs) != 2 {
+		t.Errorf("the refused retry left %d messages, want 2", len(msgs))
+	}
+}

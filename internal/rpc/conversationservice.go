@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/org"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
@@ -55,8 +56,9 @@ func (s *conversationService) GetConversation(ctx context.Context, req *connect.
 	return reply(&hearthv1.GetConversationResponse{Conversation: conversationToProto(c)}, err)
 }
 
-// Retry runs the owner message behind the run again. The orchestrator takes
-// a conversation, so the run is only the way to name it.
+// Retry runs the owner message behind a failed or cancelled run again. A run
+// in any other state is a precondition failure, read from the run's row; the
+// orchestrator takes a conversation, so the run is also the way to name it.
 // See docs/model.md#9-failure-handling
 func (s *conversationService) Retry(ctx context.Context, req *connect.Request[hearthv1.RetryRequest]) (*connect.Response[hearthv1.RetryResponse], error) {
 	if err := need("run_id", req.Msg.GetRunId()); err != nil {
@@ -65,6 +67,9 @@ func (s *conversationService) Retry(ctx context.Context, req *connect.Request[he
 	was, err := s.opts.Store.Run(ctx, req.Msg.GetRunId())
 	if err != nil {
 		return nil, fail(err)
+	}
+	if was.State != org.RunFailed && was.State != org.RunCancelled {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("only a failed or cancelled run can be retried"))
 	}
 	run, err := s.opts.Orchestrator.Retry(ctx, was.ConversationID)
 	return reply(&hearthv1.RetryResponse{Run: runToProto(run)}, err)
