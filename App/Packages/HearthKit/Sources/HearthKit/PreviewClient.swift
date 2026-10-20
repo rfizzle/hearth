@@ -15,9 +15,13 @@ public struct PreviewClient: HearthClient {
     /// The latest run the DM reports, nil before its first message.
     public let latestRun: Hearth_V1_Run?
 
+    /// How the credential calls answer; without one they answer with nothing.
+    public let credentials: CredentialScript?
+
     /// A client whose DM reports `latestRun`.
-    public init(latestRun: Hearth_V1_Run? = nil) {
+    public init(latestRun: Hearth_V1_Run? = nil, credentials: CredentialScript? = nil) {
         self.latestRun = latestRun
+        self.credentials = credentials
     }
 
     private var directMessage: Hearth_V1_Conversation {
@@ -354,11 +358,11 @@ extension PreviewClient {
     public func syncCredentials(
         _ records: [Hearth_V1_Credential]
     ) async throws -> [Hearth_V1_Credential] {
-        []
+        credentials?.sync(records) ?? []
     }
 
     public func exportCredential(name: String) async throws -> Hearth_V1_Credential {
-        .with { $0.name = name }
+        credentials?.export(name) ?? .with { $0.name = name }
     }
 }
 

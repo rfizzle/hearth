@@ -10,6 +10,7 @@
 
 import HearthFeatures
 import HearthKit
+import HearthNative
 import Observation
 
 /// The app's current session and the one flag the menu and the window share.
@@ -30,13 +31,17 @@ final class AppModel {
     /// Whether the window tells the owner the helper restarted under it.
     private(set) var helperRestarted = false
 
+    @ObservationIgnored let credentials: CredentialSync
     @ObservationIgnored private var relay: EventRelay?
     @ObservationIgnored private var lostSession = false
     @ObservationIgnored private var builtGeneration: Int?
     @ObservationIgnored private var selection: String?
 
-    init(supervisor: HelperSupervisor) {
+    init(supervisor: HelperSupervisor, keychain: any KeychainStore = Keychain()) {
         self.supervisor = supervisor
+        credentials = CredentialSync(keychain: keychain) { [weak supervisor] in
+            supervisor?.report($0)
+        }
     }
 
     /// Dismisses the helper notice.
@@ -54,17 +59,22 @@ final class AppModel {
             lostSession = lostSession || session != nil
             session = nil
             relay?.stop()
+            credentials.helperGone()
             return
         }
         if (lostSession || session != nil) && supervisor.generation != builtGeneration {
             helperRestarted = true
         }
         lostSession = false
+        if supervisor.generation != builtGeneration {
+            credentials.helperStarted(client: client)
+        }
         builtGeneration = supervisor.generation
         let relay = self.relay ?? EventRelay(client: client)
         session = Session(client: client, relay: relay, selection: selection)
         if self.relay == nil {
             self.relay = relay
+            relay.register { [credentials] event in await credentials.handle(event) }
             relay.start()
         } else {
             relay.reset(client: client)

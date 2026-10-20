@@ -79,6 +79,13 @@ final class HelperSupervisor {
         Task { await self.connect(reading: stdout.fileHandleForReading, token: token) }
     }
 
+    /// Puts a sentence on the status line, for a failure that is not the
+    /// helper's own (the credential sync). It names no key and no value.
+    func report(_ message: String) {
+        status = message
+        log.error("\(message, privacy: .public)")
+    }
+
     /// Stops the helper for good: closes the lifeline and terminates it.
     func stop() {
         stopping = true

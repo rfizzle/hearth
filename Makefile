@@ -127,6 +127,9 @@ test: cache-dir ## Run the hermetic tier: no listener, daemon or network
 
 test-contract: cache-dir ## Run the tests behind the contract tag
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=contract -count=1 -v $(PROJECT_PACKAGES)
+	@if command -v $(SWIFT) >/dev/null 2>&1 && [ "$$(uname)" = Darwin ]; then \
+		HEARTH_CONTRACT=1 $(SWIFT) test --package-path $(APP_DIR)/Packages/HearthNative --filter KeychainContractTests; \
+	fi
 
 test-integration: cache-dir ## Run the tests behind the integration tag (may need the network or credentials)
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v $(PROJECT_PACKAGES)
@@ -146,11 +149,12 @@ swift-lint: ## Run SwiftLint: the size rules and the raw style literal rule
 	@command -v $(SWIFTLINT) >/dev/null 2>&1 || { echo "swiftlint not found (install: brew install swiftlint)"; exit 1; }
 	@cd $(APP_DIR) && $(SWIFTLINT) lint --strict --quiet --config .swiftlint.yml
 
-# The root package has no tests of its own (an app target), so it is built;
-# every local package runs its tests in its own .build.
+# The root package is built and runs the app target's tests; every local
+# package runs its tests in its own .build.
 swift-test: ## Build the app targets and run every Swift package's tests
 	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
 	@$(SWIFT) build --package-path $(APP_DIR)
+	@$(SWIFT) test --package-path $(APP_DIR)
 	@for p in $(SWIFT_TEST_PACKAGES); do \
 		echo "swift test $$p"; \
 		$(SWIFT) test --package-path $$p || exit 1; \

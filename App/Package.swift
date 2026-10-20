@@ -31,6 +31,15 @@ let package = Package(
             ],
             path: "Hearth/Sources"
         ),
+        .testTarget(
+            name: "HearthTests",
+            dependencies: [
+                "Hearth",
+                .product(name: "HearthKit", package: "HearthKit"),
+                .product(name: "HearthNative", package: "HearthNative"),
+            ],
+            path: "Hearth/Tests/HearthTests"
+        ),
         .executableTarget(
             name: "HearthGallery",
             dependencies: [
