@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/assembly"
+	"github.com/rfizzle/hearth/internal/orchestrate/after"
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/orchestrate/toolset"
 	"github.com/rfizzle/hearth/internal/org"
@@ -49,7 +50,16 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 	}
 	k.Finish(out, err)
 	if k.Run().State == org.RunDone {
-		s.after(context.WithoutCancel(ctx), k, bot, built)
+		s.afterwork.Run(context.WithoutCancel(ctx), s.afterInput(k), bot, built)
+	}
+}
+
+// afterInput is what the work after the run k is handed.
+func (s *Service) afterInput(k *record.Sink) after.Input {
+	return after.Input{
+		Store: s.d.Store, Bus: s.d.Bus, Log: s.d.Log, Streams: s.d.Streams, Models: s.d.Models, Scrub: s.d.Scrub,
+		Run: k.Run(), Usage: k.Usage,
+		Reserve: s.reserve, Release: func(convID string) { s.release(convID, "") },
 	}
 }
 

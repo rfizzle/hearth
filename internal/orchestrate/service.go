@@ -11,6 +11,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/assembly"
+	"github.com/rfizzle/hearth/internal/orchestrate/after"
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
@@ -100,14 +101,14 @@ type Deps struct {
 // Service starts and stops the runs that answer the owner's messages, one
 // run per conversation at a time.
 type Service struct {
-	d Deps
+	d         Deps
+	afterwork after.Worker
 
 	mu      sync.Mutex
 	working map[string]string             // conversation id -> its run's id
 	cancels map[string]context.CancelFunc // run id -> what stops it
 	spent   map[string]string             // run id -> why the budget stopped it
 	held    map[string]*held              // item id -> the answer waiting out its grace
-	summing map[string]bool               // conversation id -> its summary is being written
 
 	grace time.Duration      // answerGrace, shorter in a test
 	extra []tools.Definition // more tools, for a test
@@ -139,7 +140,7 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 		d.Log = log.Default()
 	}
 	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{}, spent: map[string]string{},
-		held: map[string]*held{}, summing: map[string]bool{}, grace: answerGrace}, nil
+		held: map[string]*held{}, grace: answerGrace}, nil
 }
 
 // Send stores text as the owner's message in the DM convID and starts the

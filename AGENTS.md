@@ -111,7 +111,7 @@ scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
 internal/             dependencies point down only; only rpc/, orchestrate/, assembly/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, handbook/, meter/, org/, project/, workspace/ and store/ exist so far
   rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), project, inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
-  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/ and toolset/ below it)
+  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/, toolset/ and after/ (tidy and summary after a run) below it)
   assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
