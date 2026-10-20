@@ -327,7 +327,7 @@ Minimal by policy; every dependency is a maintenance cost on a long-lived app. O
 | `connectrpc/connect-swift` + `apple/swift-protobuf` | Generated client for the core | yes |
 | `pointfreeco/swift-snapshot-testing` | Goldens | yes |
 | `sparkle-project/Sparkle` | Updates | yes |
-| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, adopted for deliverable text blocks only (D48); the transcript keeps the inline-only string |
+| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, adopted for deliverable text blocks only (D48), pinned to one release; the transcript keeps the inline-only string, and the image loader it brings is never handed an image |
 | Charts (Apple's) | The chart framework for a shaped deliverable's native charts | yes; part of the SDK |
 | `sindresorhus/KeyboardShortcuts` | User-configurable global hotkey | yes |
 | `EmergeTools/Pow` | Expressive transitions and change effects | no; evaluated for the motion pass and not needed: every transition hearth uses is one SwiftUI modifier, and the effects it adds are the gratuitous kind (`docs/design.md#motion`) |

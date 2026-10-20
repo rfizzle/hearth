@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "report",
+  "title": "Weekly digest",
+  "template": {"id": "weekly-digest", "name": "Weekly digest", "when": "A short recap of a week: what happened, the numbers that moved, what is next."},
+  "sections": [
+    {"heading": "This week", "columns": 1, "allow": ["text", "callout"], "hint": "Three to five sentences on what happened.", "widgets": [
+      {"kind": "text", "markdown": "Say what got done and what changed, in plain sentences."}
+    ]},
+    {"heading": "The numbers", "columns": 3, "allow": ["metric", "progress", "light"], "hint": "Up to six figures that moved; bind to a measure when one exists.", "widgets": [
+      {"kind": "metric", "label": "Spent this month", "value": 12.4, "format": "currency", "delta": {"value": -3.1, "good": true}},
+      {"kind": "progress", "label": "Tasks done", "done": 3, "total": 7, "caption": "3 of 7 tasks done"},
+      {"kind": "light", "label": "Newsletter", "tone": "attention", "word": "Waiting on you"}
+    ]},
+    {"heading": "Trend", "columns": 1, "allow": ["line", "bar", "table"], "hint": "One chart or table that shows the direction over recent weeks.", "widgets": [
+      {"kind": "line", "title": "Cost per week", "categories": ["W40", "W41", "W42", "W43"], "series": [{"name": "Spend", "values": [3.2, 4.1, 2.8, 5]}], "format": "currency"}
+    ]},
+    {"heading": "Next week", "columns": 1, "allow": ["list", "text"], "hint": "What is planned, as a short list.", "widgets": [
+      {"kind": "list", "style": "check", "items": [{"text": "Send the first issue"}, {"text": "Book the venue", "done": true}]}
+    ]}
+  ]
+}
