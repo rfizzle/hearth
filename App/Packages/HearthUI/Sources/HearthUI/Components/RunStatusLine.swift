@@ -4,8 +4,10 @@
 // negative tone. A finished or absent run shows nothing. The failure and the
 // wait each carry a symbol as well as their text, so neither relies on a
 // tint; the line reads as one element. An item open for the owner reads as
-// waiting whatever the run last reported, since a resync forgets the run.
-// See docs/design.md#the-transcript and docs/model.md#8-approvals
+// waiting whatever the run last reported. A stopped or failed line can carry
+// an action, a plain Retry beside the text, which the screen supplies.
+// See docs/design.md#the-transcript, docs/model.md#8-approvals and
+// docs/model.md#9-failure-handling
 
 import HearthDesign
 import HearthKit
@@ -16,33 +18,58 @@ public struct RunStatusLine: View {
     let run: Hearth_V1_Run?
     let botName: String
     let isWaiting: Bool
+    let action: Action?
 
-    /// A line for `run`; `isWaiting` while an item is open for the owner.
-    public init(run: Hearth_V1_Run?, botName: String, isWaiting: Bool = false) {
+    /// A button beside the line's text.
+    public struct Action {
+        let title: String
+        let perform: () -> Void
+
+        /// An action named `title` that runs `perform`.
+        public init(_ title: String, perform: @escaping () -> Void) {
+            self.title = title
+            self.perform = perform
+        }
+    }
+
+    /// A line for `run`; `isWaiting` while an item is open for the owner, and
+    /// `action` a button beside the text, absent when nil.
+    public init(
+        run: Hearth_V1_Run?, botName: String, isWaiting: Bool = false, action: Action? = nil
+    ) {
         self.run = run
         self.botName = botName
         self.isWaiting = isWaiting
+        self.action = action
     }
 
     public var body: some View {
         if let text = Self.text(run: run, botName: botName, isWaiting: isWaiting) {
-            HStack(spacing: Theme.Spacing.xs) {
-                switch Self.waits(run, isWaiting) ? .waitingOwner : run?.state {
-                case .waitingOwner:
-                    Image(systemName: "hand.raised")
-                case .queued, .working:
-                    ProgressView().controlSize(.small)
-                case .failed:
-                    Image(systemName: "exclamationmark.triangle")
-                default:
-                    EmptyView()
+            HStack(spacing: Theme.Spacing.sm) {
+                HStack(spacing: Theme.Spacing.xs) {
+                    switch Self.waits(run, isWaiting) ? .waitingOwner : run?.state {
+                    case .waitingOwner:
+                        Image(systemName: "hand.raised")
+                    case .queued, .working:
+                        ProgressView().controlSize(.small)
+                    case .failed:
+                        Image(systemName: "exclamationmark.triangle")
+                    default:
+                        EmptyView()
+                    }
+                    Text(text)
                 }
-                Text(text)
+                .foregroundStyle(Theme.color(Self.tone(run: run, isWaiting: isWaiting)))
+                .accessibilityElement(children: .combine)
+                if let action {
+                    Button(action.title, action: action.perform)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Theme.color(.textPrimary))
+                        .accessibilityHint("Runs \(botName)'s last request again")
+                }
             }
             .font(Theme.caption)
-            .foregroundStyle(Theme.color(Self.tone(run: run, isWaiting: isWaiting)))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
         }
     }
 
@@ -81,15 +108,18 @@ extension RunStatusLine {
         case waiting
         case stopped
         case failed
+        case failedWithRetry
         case done
 
         var run: Hearth_V1_Run {
-            var run = self == .failed ? Fixtures.failedRun : Fixtures.workingRun
+            var run =
+                self == .failed || self == .failedWithRetry
+                ? Fixtures.failedRun : Fixtures.workingRun
             switch self {
             case .waiting: run.state = .waitingOwner
             case .stopped: run.state = .cancelled
             case .done: run.state = .done
-            case .working, .failed: break
+            case .working, .failed, .failedWithRetry: break
             }
             return run
         }
@@ -97,7 +127,9 @@ extension RunStatusLine {
 
     /// A line showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
-        self.init(run: state.run, botName: Fixtures.bot.name)
+        self.init(
+            run: state.run, botName: Fixtures.bot.name,
+            action: state == .failedWithRetry ? Action("Retry", perform: {}) : nil)
     }
 }
 
@@ -105,4 +137,5 @@ extension RunStatusLine {
 #Preview("Waiting") { RunStatusLine(previewState: .waiting).padding() }
 #Preview("Stopped") { RunStatusLine(previewState: .stopped).padding() }
 #Preview("Failed") { RunStatusLine(previewState: .failed).padding() }
+#Preview("Failed with Retry") { RunStatusLine(previewState: .failedWithRetry).padding() }
 #Preview("Done") { RunStatusLine(previewState: .done).padding() }

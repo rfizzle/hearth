@@ -2,8 +2,10 @@
 // selected bot's conversation in the detail column, with Hire Someone… as an
 // icon-only toolbar item over the sidebar and the bot's folder as the one
 // item over the conversation. Nobody hired shows the invitation in the detail
-// column; nobody selected says to choose. The hire sheet is presented here.
-// See docs/design.md#window-anatomy
+// column; nobody selected says to choose. The hire sheet is presented here,
+// and the helper notice sits over the top of the detail column until the owner
+// dismisses it.
+// See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
 import HearthDesign
 import HearthFeatures
@@ -15,6 +17,7 @@ struct TeamView: View {
     let session: Session
     @Environment(AppModel.self) private var model
     @Environment(\.revealInFinder) private var revealInFinder
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         @Bindable var model = model
@@ -35,6 +38,15 @@ struct TeamView: View {
                 }
         } detail: {
             detail
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if model.helperRestarted {
+                        HelperBanner(onDismiss: model.dismissHelperNotice)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .animation(
+                    Theme.motion(Theme.quick, reduceMotion: reduceMotion),
+                    value: model.helperRestarted)
         }
         .navigationSplitViewStyle(.balanced)
         .sheet(isPresented: $model.isHiring) {

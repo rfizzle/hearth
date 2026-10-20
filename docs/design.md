@@ -109,7 +109,11 @@ Tool calls are collapsed rows indented under the bot's turn, one line saying wha
 was done; opening one shows its arguments and result. Files a bot made are chips
 with the Finder's own icon for their type. There is one signal that the bot is
 working, a status line with a pulsing dot (steady under Reduce Motion), and no
-streaming cursor.
+streaming cursor. A run that failed or was stopped puts a plain Retry beside
+its line; one click runs the last request again. When hearth's helper stops and
+starts again, a bar on the attention fill sits over the top of the conversation
+saying what stopped, with OK. It is not a modal, it stays until dismissed, and
+it does not apologise.
 
 A bot's question is a card with the question, the control it asked for (a
 choice, a date, a folder) and one prominent button to answer, so choosing is

@@ -27,6 +27,11 @@ extension Catalog {
                     RunStatusLine(previewState: $0)
                 }),
             GalleryPage(
+                package: package, name: "HelperBanner",
+                states: GalleryState.each(HelperBanner.PreviewState.self, width: 760) {
+                    HelperBanner(previewState: $0)
+                }),
+            GalleryPage(
                 package: package, name: "Composer",
                 states: GalleryState.each(Composer.PreviewState.self, width: 560) {
                     Composer(previewState: $0)

@@ -4,8 +4,9 @@
 // afresh and answers on a new port, so the relay is reset over the new client
 // and the stores are made again rather than re-pointed; the selection is
 // carried across. While no helper runs there is no session and the window says
-// so.
-// See docs/design.md#window-anatomy
+// so. A helper that comes back after one the window had a session over raises
+// the helper notice, which stays until the owner dismisses it.
+// See docs/design.md#window-anatomy, docs/model.md#9-failure-handling
 
 import HearthFeatures
 import HearthKit
@@ -20,12 +21,21 @@ final class AppModel {
     private(set) var session: Session?
     /// Whether the hire sheet is open; the toolbar and the Team menu set it.
     var isHiring = false
+    /// Whether the window tells the owner the helper restarted under it.
+    private(set) var helperRestarted = false
 
     @ObservationIgnored private var relay: EventRelay?
+    @ObservationIgnored private var lostSession = false
+    @ObservationIgnored private var builtGeneration: Int?
     @ObservationIgnored private var selection: String?
 
     init(supervisor: HelperSupervisor) {
         self.supervisor = supervisor
+    }
+
+    /// Dismisses the helper notice.
+    func dismissHelperNotice() {
+        helperRestarted = false
     }
 
     /// Builds the session for the supervisor's client, or drops it when the
@@ -34,10 +44,16 @@ final class AppModel {
         if let current = session?.bots.selection { selection = current }
         isHiring = false
         guard let client = supervisor.client else {
+            lostSession = lostSession || session != nil
             session = nil
             relay?.stop()
             return
         }
+        if (lostSession || session != nil) && supervisor.generation != builtGeneration {
+            helperRestarted = true
+        }
+        lostSession = false
+        builtGeneration = supervisor.generation
         let relay = self.relay ?? EventRelay(client: client)
         session = Session(client: client, relay: relay, selection: selection)
         if self.relay == nil {
