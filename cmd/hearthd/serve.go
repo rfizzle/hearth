@@ -39,7 +39,8 @@ func runServe(args []string) int {
 	logger := log.New(os.Stderr, "hearthd: ", log.LstdFlags)
 	usage := func() int {
 		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>] [--data-dir <folder>] [--native 127.0.0.1:<port>]")
-		fmt.Fprintln(os.Stderr, "  The launch token is the first line of stdin; the rest of stdin is the lifeline.")
+		fmt.Fprintln(os.Stderr, "  The launch token is the first line of stdin; with --native, the app's own token is the second;")
+		fmt.Fprintln(os.Stderr, "  the rest of stdin is the lifeline.")
 		fmt.Fprintln(os.Stderr, "  By hand from a terminal: hearthd serve --token <t>")
 		fs.PrintDefaults()
 		return 2
@@ -67,16 +68,14 @@ func runServe(args []string) int {
 	if tok == "" {
 		return usage()
 	}
-	// The app's native service is called with the same token in the other
-	// direction. A port is not a secret, so it comes on argv.
 	var recogniser func() document.Recogniser
 	if *nativeAddr != "" {
-		c, err := native.New(*nativeAddr, tok)
+		r, err := nativeRecogniser(*nativeAddr, stdin)
 		if err != nil {
 			logger.Print(err)
 			return usage()
 		}
-		recogniser = c.ForRun
+		recogniser = r
 	}
 
 	dir := *dataDir
@@ -167,6 +166,23 @@ func readToken(r *bufio.Reader) (string, error) {
 		err = nil
 	}
 	return strings.TrimRight(line, "\r\n"), err
+}
+
+// nativeRecogniser is the app's reader of pictures at addr, a loopback
+// address that comes on argv because a port is not a secret. Its bearer is
+// the next line of r: a token of the app's own for this direction, never the
+// launch token, so a process that takes the port after the app lets it go
+// learns nothing that controls the helper.
+func nativeRecogniser(addr string, r *bufio.Reader) (func() document.Recogniser, error) {
+	tok, err := readToken(r)
+	if err != nil || tok == "" {
+		return nil, errors.New("--native needs the app's native token as the second line of stdin")
+	}
+	c, err := native.New(addr, tok)
+	if err != nil {
+		return nil, err
+	}
+	return c.ForRun, nil
 }
 
 // lifeline returns a context cancelled when r reaches EOF or fails. The app

@@ -169,6 +169,16 @@ func TestRecogniseRefusals(t *testing.T) {
 	}
 }
 
+func TestRecogniseWhileTheAppIsBusyIsNoApp(t *testing.T) {
+	c, _ := app(t, func(w http.ResponseWriter, _ map[string]any) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = io.WriteString(w, `{"code":"unavailable","message":"busy with an earlier read"}`)
+	})
+	if _, err := c.Recognise(context.Background(), "/a/scan.png", []int{1}); !errors.Is(err, ErrNoApp) || !c.down.Load() {
+		t.Errorf("err = %v, down = %v; want ErrNoApp and the run marked down", err, c.down.Load())
+	}
+}
+
 func TestRecogniseWithNoAppIsDownForTheRun(t *testing.T) {
 	var dials atomic.Int32
 	refused := func(context.Context, string, string) (net.Conn, error) {

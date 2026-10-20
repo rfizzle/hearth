@@ -4,7 +4,8 @@
 // images.
 //
 // Responsibility: call the app's NativeService with the generated Connect
-// client in its JSON form, with the launch token as the bearer, and turn the
+// client in its JSON form, with the app's own token for this direction as the
+// bearer (never the launch token, which controls the helper), and turn the
 // answer into what document asks of a Recogniser. tools/files and document
 // never import the generated code; the client is handed to the orchestrator,
 // not to the contract handlers.
@@ -17,13 +18,13 @@
 //   - The app is a separate process: what it answers is data. Only the pages
 //     asked for are passed on, at most five labels each, and document cleans
 //     and caps the text as it does any page's.
-//   - A call that cannot connect marks the client down and returns ErrNoApp
-//     without asking again. ForRun hands each run a client of its own, so the
+//   - A call that cannot connect, or that the app answers as busy, marks the
+//     client down and returns ErrNoApp without asking again. ForRun hands each run a client of its own, so the
 //     mark lasts one run and the next run tries the app again.
 //   - Nothing the app answers is logged.
 //
 // Seams it is handed: the address from hearthd serve's --native flag and the
-// launch token the app sent on stdin.
+// native token the app sent on stdin after the launch token.
 // See docs/decisions.md#hearth--decisions
 //
 // It imports document, the generated contract, connect and the standard

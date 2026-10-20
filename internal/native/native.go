@@ -47,7 +47,7 @@ type Client struct {
 }
 
 // New is a client of the native service at addr, a loopback IP and port,
-// that sends token as its bearer. Any other address is refused, so the token
+// that sends token, the app's token for this direction, as its bearer. Any other address is refused, so the token
 // is only ever sent to this machine.
 func New(addr, token string) (*Client, error) {
 	return newClient(addr, token, (&net.Dialer{Timeout: DialTimeout}).DialContext, RequestTimeout)
@@ -169,10 +169,11 @@ func (c *Client) Recognise(ctx context.Context, path string, pages []int) ([]doc
 }
 
 // failed is err as the caller sees it: ErrNoApp, marking the client down,
-// when the call never connected; the error otherwise.
+// when the call never connected or the app said it is busy with an earlier
+// read it gave up waiting for; the error otherwise.
 func (c *Client) failed(err error) error {
 	var op *net.OpError
-	if errors.As(err, &op) && op.Op == "dial" {
+	if (errors.As(err, &op) && op.Op == "dial") || connect.CodeOf(err) == connect.CodeUnavailable {
 		c.down.Store(true)
 		return ErrNoApp
 	}

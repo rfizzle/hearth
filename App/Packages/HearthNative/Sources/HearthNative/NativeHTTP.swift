@@ -44,6 +44,10 @@ public struct NativeHTTPError: Error, Sendable, Equatable {
     static let notJSON = Self(
         status: 415, code: "invalid_argument", message: "the body must be application/json")
     static let failed = Self(status: 500, code: "internal", message: "the file could not be read")
+    static let busy = Self(
+        status: 503, code: "unavailable", message: "busy with an earlier read")
+    static let late = Self(
+        status: 504, code: "deadline_exceeded", message: "the read took too long")
 }
 
 /// What a buffer of received bytes holds so far.
@@ -205,7 +209,7 @@ public enum NativeHTTP {
         let reasons = [
             200: "OK", 400: "Bad Request", 401: "Unauthorized", 404: "Not Found",
             405: "Method Not Allowed", 413: "Content Too Large", 415: "Unsupported Media Type",
-            500: "Internal Server Error",
+            500: "Internal Server Error", 503: "Service Unavailable", 504: "Gateway Timeout",
         ]
         var head = "HTTP/1.1 \(status) \(reasons[status] ?? "Error")\r\n"
         head += "Content-Type: application/json\r\n"

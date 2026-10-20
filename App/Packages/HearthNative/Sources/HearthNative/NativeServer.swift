@@ -2,121 +2,23 @@
 // for what only Apple's frameworks do, today reading the text of picture
 // pages and images. It listens on 127.0.0.1 at a port the system picks, takes
 // connections from loopback only, and serves them one at a time, one request
-// each. Every request must carry the launch token the app gave the helper, as
-// a bearer, checked in constant time before anything else is looked at.
+// each. Every request must carry the native token, a token the app makes for
+// this direction alone and gives the helper on stdin after the launch token,
+// as a bearer, checked in constant time before the method or the route.
 //
-// The bounds, all here or in NativeHTTP: 8 KB of headers and 64 KB of body;
-// 5 s for a request to arrive and 40 s for a connection in all; ten pages and
-// 30 s of reading a call; a reply of at most 4 MB; four connections waiting,
-// and any more closed unanswered. Nothing is written; the log has a file's
-// name and how long it took, never its text.
+// The bounds, here, in NativeHTTP and in NativeService: 8 KB of headers and
+// 64 KB of body; 5 s for a request to arrive and 40 s for a connection in
+// all; ten pages a call; 28 s waiting for a read, which then runs on without
+// holding this loop, and only one such read at a time; a reply of at most
+// 4 MB; four connections waiting, and any more closed unanswered. Nothing is
+// written; the log has a file's name and how long it took, never its text.
 // See docs/decisions.md#hearth--decisions
 
 import Foundation
 import HearthKit
 import Network
-import SwiftProtobuf
 import Synchronization
 import os
-
-/// The pages an extractor read, and the instant it must stop reading by.
-public typealias ExtractedPages = [Hearth_V1_ExtractedPage]
-public typealias Deadline = ContinuousClock.Instant
-
-/// Reads the text of pages of a file the core names. TextExtractor is the
-/// real one; a test hands a fake.
-public protocol TextExtracting: Sendable {
-    /// The pages of the file at `path` that could be read before `deadline`,
-    /// in the order asked; `pages` are counted from 1, empty for the first
-    /// pages of the file.
-    func extract(path: String, pages: [Int], until deadline: Deadline) throws -> ExtractedPages
-}
-
-/// A path or file the extractor will not read, said in a fixed sentence.
-public struct ExtractRefusal: Error, Sendable, Equatable {
-    public let message: String
-    public init(_ message: String) { self.message = message }
-}
-
-/// The native service over complete requests, without the network: the
-/// token check, the routes, the JSON and the reply's size.
-public struct NativeService: Sendable {
-    /// Bumped when the native surface changes.
-    public static let version = Int32(HearthNative.version)
-    /// The most pages one call reads.
-    public static let maxPages = 10
-    /// The time one call may spend reading.
-    public static let extractTime: Duration = .seconds(30)
-    /// The largest reply; pages are dropped from the end until it fits.
-    public static let maxReply = 4 * 1024 * 1024
-
-    let token: String
-    let extractor: any TextExtracting
-    private let log = Logger(subsystem: "com.rfizzle.hearth", category: "native")
-
-    public init(token: String, extractor: any TextExtracting) {
-        self.token = token
-        self.extractor = extractor
-    }
-
-    /// The bytes to send back for what was received.
-    public func respond(to parsed: NativeParse) async -> Data {
-        switch parsed {
-        case .incomplete: return NativeHTTP.reply(.malformed)
-        case .refused(let error): return NativeHTTP.reply(error)
-        case .request(let request):
-            switch NativeHTTP.route(request, token: token) {
-            case .failure(let error): return NativeHTTP.reply(error)
-            case .success(.ping):
-                var ping = Hearth_V1_NativeServicePingResponse()
-                ping.version = Self.version
-                return encoded(ping)
-            case .success(.extractText): return await extract(request.body)
-            }
-        }
-    }
-
-    private func extract(_ body: Data) async -> Data {
-        guard let request = try? Hearth_V1_ExtractTextRequest(jsonUTF8Data: body),
-            request.pages.count <= Self.maxPages,
-            request.pages.allSatisfy({ (1...1_048_576).contains($0) })
-        else { return NativeHTTP.reply(.malformed) }
-        let clock = ContinuousClock()
-        let started = clock.now
-        let name = URL(filePath: request.path).lastPathComponent
-        do {
-            let pages = try extractor.extract(
-                path: request.path, pages: request.pages.map(Int.init),
-                until: started + Self.extractTime)
-            log.info("read \(pages.count) pages of \(name) in \(started.duration(to: clock.now))")
-            return fitted(pages)
-        } catch let refusal as ExtractRefusal {
-            log.info("refused \(name): \(refusal.message, privacy: .public)")
-            return NativeHTTP.reply(
-                NativeHTTPError(status: 400, code: "invalid_argument", message: refusal.message))
-        } catch {
-            log.error("could not read \(name)")
-            return NativeHTTP.reply(.failed)
-        }
-    }
-
-    /// The reply for `pages`, dropping pages from the end until it is at most
-    /// maxReply bytes. A page dropped is a page the core reports unread.
-    private func fitted(_ pages: ExtractedPages) -> Data {
-        var response = Hearth_V1_ExtractTextResponse()
-        response.pages = pages
-        while true {
-            let data = encoded(response)
-            if data.count <= Self.maxReply || response.pages.isEmpty { return data }
-            response.pages.removeLast()
-        }
-    }
-
-    private func encoded(_ message: some SwiftProtobuf.Message) -> Data {
-        guard let body = try? message.jsonUTF8Data() else { return NativeHTTP.reply(.failed) }
-        return NativeHTTP.reply(body)
-    }
-}
 
 /// The listener: loopback, an ephemeral port, connections served one at a
 /// time through NativeService.
@@ -135,15 +37,22 @@ public final class NativeServer: Sendable {
     private let arrivals: AsyncStream<NWConnection>.Continuation
     private let worker = Mutex<Task<Void, Never>?>(nil)
     private let active = ActiveConnection()
+    private let onFailure: @Sendable () -> Void
 
-    /// A server that answers requests carrying `token` with `extractor`. It
-    /// does not listen until start.
-    public init(token: String, extractor: any TextExtracting) throws {
+    /// A server that answers requests carrying `token`, the native token,
+    /// with `extractor`. It does not listen until start. `onFailure` is told
+    /// when the listener fails after it was ready, so the caller can stop
+    /// handing out its port.
+    public init(
+        token: String, extractor: any TextExtracting,
+        onFailure: @escaping @Sendable () -> Void = {}
+    ) throws {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: .any)
         parameters.acceptLocalOnly = true
         listener = try NWListener(using: parameters)
         service = NativeService(token: token, extractor: extractor)
+        self.onFailure = onFailure
         (waiting, arrivals) = AsyncStream.makeStream(
             of: NWConnection.self, bufferingPolicy: .bufferingOldest(Self.maxWaiting))
     }
@@ -164,12 +73,22 @@ public final class NativeServer: Sendable {
         }
         return try await withCheckedThrowingContinuation { continuation in
             let once = ResumeOnce(continuation)
-            listener.stateUpdateHandler = { [weak listener] state in
+            let ready = Flag()
+            listener.stateUpdateHandler = { [weak listener, onFailure] state in
                 switch state {
-                case .ready: once.resume(.success(listener?.port?.rawValue ?? 0))
+                case .ready:
+                    // A listener with no port is no listener.
+                    guard let port = listener?.port?.rawValue, port > 0 else {
+                        return once.resume(.failure(NWError.posix(.EADDRNOTAVAIL)))
+                    }
+                    ready.value.withLock { $0 = true }
+                    once.resume(.success(port))
                 // A listener that cannot bind now is treated as one that
                 // failed, so the helper is launched without it, not never.
-                case .failed(let error), .waiting(let error): once.resume(.failure(error))
+                // One that fails after it was ready is reported.
+                case .failed(let error), .waiting(let error):
+                    if ready.value.withLock({ $0 }) { onFailure() }
+                    once.resume(.failure(error))
                 case .cancelled: once.resume(.failure(CancellationError()))
                 default: break
                 }
@@ -265,4 +184,9 @@ private final class ResumeOnce: Sendable {
     func resume(_ result: Result<UInt16, any Error>) {
         continuation.withLock { $0.take() }?.resume(with: result)
     }
+}
+
+/// A flag a listener's state handler sets and reads.
+private final class Flag: Sendable {
+    let value = Mutex(false)
 }

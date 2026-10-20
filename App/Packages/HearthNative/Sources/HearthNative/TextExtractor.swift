@@ -5,9 +5,11 @@
 // is at least half sure of. It reads the file and writes nothing.
 //
 // The path comes from the core, which has already checked it against the
-// bot's grants; this side checks again that it is an absolute path to a
-// regular file (not a link) of at most 64 MB, and refuses a picture over 50
-// megapixels from its header, before any pixel is decoded.
+// bot's grants. This side opens it once, refusing a link as the last part, and
+// checks the open file itself: a regular file of at most 64 MB. It reads that
+// file into memory and parses only those bytes, so a file swapped in after the
+// check is never the one read. A picture over 50 megapixels is refused from
+// its header, before any pixel is decoded.
 // See docs/decisions.md#hearth--decisions
 
 import CoreGraphics
@@ -36,44 +38,52 @@ public struct TextExtractor: TextExtracting {
     public init() {}
 
     public func extract(path: String, pages: [Int], until end: Deadline) throws -> ExtractedPages {
-        let url = try Self.checked(path)
-        let handle = try FileHandle(forReadingFrom: url)
-        let head = try handle.read(upToCount: 5) ?? Data()
-        try? handle.close()
-        if head == Data("%PDF-".utf8) {
-            return try Self.pdfPages(url, pages: pages, until: end)
+        let data = try Self.read(path)
+        if data.prefix(5) == Data("%PDF-".utf8) {
+            guard let document = PDFDocument(data: data) else {
+                throw ExtractRefusal("the file could not be read as a PDF")
+            }
+            guard !document.isLocked else { throw ExtractRefusal("the PDF is password-protected") }
+            return Self.pdfPages(document, pages, end)
         }
         guard pages.isEmpty || pages == [1] else { return [] }
-        return [try Self.imagePage(url)]
+        return [try Self.imagePage(data)]
     }
 
-    /// The URL of `path` when it is an absolute, normalised path to a regular
-    /// file of at most maxFileBytes; a refusal otherwise.
-    static func checked(_ path: String) throws -> URL {
+    /// The bytes of the file at `path`: an absolute, normalised path whose
+    /// last part is not a link, opened once and checked as opened to be a
+    /// regular file of at most maxFileBytes; a refusal otherwise.
+    static func read(_ path: String) throws -> Data {
         let refused = ExtractRefusal("the path is not an absolute regular file Hearth can read")
         guard path.hasPrefix("/"), !path.contains("\0"), !path.contains("//"),
             !path.split(separator: "/").contains(where: { $0 == "." || $0 == ".." })
         else { throw refused }
-        // attributesOfItem does not follow a final link, so a link is refused.
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
-            attributes[.type] as? FileAttributeType == .typeRegular,
-            let size = attributes[.size] as? Int
-        else { throw refused }
-        guard size <= maxFileBytes else { throw ExtractRefusal("the file is over 64 MB") }
-        return URL(filePath: path)
+        // O_NOFOLLOW refuses a link; O_NONBLOCK keeps a pipe from holding the
+        // open, and fstat then refuses it as not a regular file.
+        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else { throw refused }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        var status = stat()
+        guard fstat(descriptor, &status) == 0, status.st_mode & S_IFMT == S_IFREG else {
+            throw refused
+        }
+        let tooLarge = ExtractRefusal("the file is over 64 MB")
+        guard status.st_size <= maxFileBytes else { throw tooLarge }
+        let data = try handle.read(upToCount: maxFileBytes + 1) ?? Data()
+        guard data.count <= maxFileBytes else { throw tooLarge }
+        return data
     }
 
-    static func pdfPages(_ url: URL, pages: [Int], until end: Deadline) throws -> ExtractedPages {
-        guard let document = PDFDocument(url: url) else {
-            throw ExtractRefusal("the file could not be read as a PDF")
-        }
-        guard !document.isLocked else { throw ExtractRefusal("the PDF is password-protected") }
-        let count = document.pageCount
-        let wanted = pages.isEmpty ? Array(1...max(1, min(count, NativeService.maxPages))) : pages
+    /// The text of `pages` of `doc`, read until `end`. A page outside the
+    /// document is left out; a document with no pages has none to read.
+    static func pdfPages(_ doc: PDFDocument, _ pages: [Int], _ end: Deadline) -> ExtractedPages {
+        let count = doc.pageCount
+        guard count > 0 else { return [] }
+        let wanted = pages.isEmpty ? Array(1...min(count, NativeService.maxPages)) : pages
         var out: ExtractedPages = []
         for number in wanted.prefix(NativeService.maxPages) {
-            guard ContinuousClock.now < end, !Task.isCancelled else { break }
-            guard (1...count).contains(number), let page = document.page(at: number - 1) else {
+            guard ContinuousClock.now < end else { break }
+            guard number >= 1, number <= count, let page = doc.page(at: number - 1) else {
                 continue
             }
             var result = Hearth_V1_ExtractedPage()
@@ -82,7 +92,8 @@ public struct TextExtractor: TextExtracting {
                 result.text = capped(text)
                 result.source = .textLayer
             } else if let image = draw(page) {
-                result.text = capped(try recognise(image).text)
+                guard let seen = try? recognise(image) else { continue }
+                result.text = capped(seen.text)
                 result.source = .recognised
             } else {
                 continue
@@ -92,9 +103,9 @@ public struct TextExtractor: TextExtracting {
         return out
     }
 
-    static func imagePage(_ url: URL) throws -> Hearth_V1_ExtractedPage {
+    static func imagePage(_ data: Data) throws -> Hearth_V1_ExtractedPage {
         let options = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, options),
+        guard let source = CGImageSourceCreateWithData(data as CFData, options),
             CGImageSourceGetCount(source) > 0,
             let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, options)
                 as? [CFString: Any],

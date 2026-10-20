@@ -14,9 +14,19 @@
 //
 // Before each launch the supervisor binds the native server, the app's own
 // loopback listener the core calls back into (to read pictures in documents),
-// with the same token as its bearer, and passes its port as --native. A port
-// is not a secret. If it cannot bind, the helper runs without it and says
-// pictures could not be read.
+// and passes its port as --native; a port is not a secret. Its bearer is a
+// second random token of its own, sent on stdin after the launch token, so a
+// process that takes the port after the app lets it go learns nothing that
+// controls the helper. If it cannot bind, the helper runs without it and
+// says pictures could not be read. If it fails later, the helper is
+// restarted with a new one; when the app quits, the listener is dropped only
+// after the helper has exited.
+//
+// The native server is off by default: text recognition parses files the
+// owner did not write, and it runs in the app's own process until it has a
+// sandboxed service of its own. It is bound only when the defaults key
+// native.recognition is true; otherwise the helper runs without --native and
+// says pictures could not be read.
 // See docs/architecture.md#5-security-model
 
 import Foundation
@@ -58,21 +68,24 @@ final class HelperSupervisor {
         }
         launching = true
         Task {
-            let port = await bindNative(token: token)
+            let native = Self.nativeEnabled() ? await bindNative() : nil
             launching = false
             guard process == nil, !stopping else { return dropNative() }
-            launch(token: token, nativePort: port)
+            launch(token: token, native: native)
         }
     }
 
-    /// Binds the native server for this launch's token and returns its port,
-    /// or nil when it could not bind, so the helper runs without it.
-    private func bindNative(token: String) async -> UInt16? {
+    /// Binds the native server with a token of its own and returns its port
+    /// and that token, or nil when it could not, so the helper runs without it.
+    private func bindNative() async -> (port: UInt16, token: String)? {
         dropNative()
         do {
-            let server = try NativeServer(token: token, extractor: TextExtractor())
+            let token = try Self.launchToken()
+            let server = try NativeServer(token: token, extractor: TextExtractor()) {
+                Task { @MainActor [weak self] in self?.nativeFailed() }
+            }
             native = server
-            return try await server.start()
+            return (try await server.start(), token)
         } catch {
             log.error(
                 "native server did not start: \(error.localizedDescription, privacy: .public)")
@@ -86,16 +99,38 @@ final class HelperSupervisor {
         native = nil
     }
 
-    private func launch(token: String, nativePort: UInt16?) {
+    /// The native listener failed after it was ready: the helper still holds
+    /// its port, so it is restarted, and the next launch binds a new one.
+    private func nativeFailed() {
+        log.error("native server failed; restarting the helper")
+        process?.terminate()
+    }
+
+    /// Whether the native server is bound: the defaults key
+    /// native.recognition, false unless set.
+    static func nativeEnabled(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: "native.recognition")
+    }
+
+    /// The helper's arguments: serve, the data folder when one is set, and the
+    /// native port when there is a native server.
+    static func arguments(dataDir: String?, nativePort: UInt16?) -> [String] {
+        var arguments = ["serve", "--listen", "127.0.0.1:0"]
+        if let dataDir { arguments += ["--data-dir", dataDir] }
+        if let nativePort { arguments += ["--native", "127.0.0.1:\(nativePort)"] }
+        return arguments
+    }
+
+    /// What the helper reads from stdin before the lifeline: the launch token,
+    /// then the native token when there is a native server, a line each.
+    static func handshake(token: String, nativeToken: String?) -> Data {
+        Data(([token] + (nativeToken.map { [$0] } ?? [])).map { $0 + "\n" }.joined().utf8)
+    }
+
+    private func launch(token: String, native: (port: UInt16, token: String)?) {
         let process = Process()
         process.executableURL = Self.helperURL()
-        process.arguments = ["serve", "--listen", "127.0.0.1:0"]
-        if let dataDir = Self.dataDir() {
-            process.arguments?.append(contentsOf: ["--data-dir", dataDir])
-        }
-        if let nativePort {
-            process.arguments?.append(contentsOf: ["--native", "127.0.0.1:\(nativePort)"])
-        }
+        process.arguments = Self.arguments(dataDir: Self.dataDir(), nativePort: native?.port)
         let stdin = Pipe()
         let stdout = Pipe()
         process.standardInput = stdin
@@ -115,7 +150,8 @@ final class HelperSupervisor {
         self.process = process
         self.lifeline = stdin.fileHandleForWriting
         do {
-            try stdin.fileHandleForWriting.write(contentsOf: Data((token + "\n").utf8))
+            try stdin.fileHandleForWriting.write(
+                contentsOf: Self.handshake(token: token, nativeToken: native?.token))
         } catch {
             status = "Could not send the launch token: \(error.localizedDescription)"
             process.terminate()
@@ -137,8 +173,10 @@ final class HelperSupervisor {
         stopping = true
         try? lifeline?.close()
         lifeline = nil
-        process?.terminate()
-        dropNative()
+        // The listener goes once the helper has exited, in helperExited, so
+        // its port is never free while the helper may still dial it.
+        guard let process else { return dropNative() }
+        process.terminate()
     }
 
     private func connect(reading stdout: FileHandle, token: String) async {

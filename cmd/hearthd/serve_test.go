@@ -71,6 +71,26 @@ func TestTokenLineThenLifeline(t *testing.T) {
 	<-ctx.Done()
 }
 
+func TestNativeTokenIsTheSecondLine(t *testing.T) {
+	br := bufio.NewReader(strings.NewReader("launch\nnative\nlifeline"))
+	if tok, err := readToken(br); err != nil || tok != "launch" {
+		t.Fatalf("readToken = %q, %v", tok, err)
+	}
+	rec, err := nativeRecogniser("127.0.0.1:4242", br)
+	if err != nil || rec == nil || rec() == nil {
+		t.Fatalf("nativeRecogniser: %v", err)
+	}
+	if rest, _ := io.ReadAll(br); string(rest) != "lifeline" {
+		t.Errorf("left %q for the lifeline, want only the rest", rest)
+	}
+	if _, err := nativeRecogniser("127.0.0.1:4242", bufio.NewReader(strings.NewReader(""))); err == nil {
+		t.Error("no native token was accepted")
+	}
+	if _, err := nativeRecogniser("10.0.0.1:4242", bufio.NewReader(strings.NewReader("native\n"))); err == nil {
+		t.Error("an address off loopback was accepted")
+	}
+}
+
 func TestReadToken(t *testing.T) {
 	tests := []struct {
 		name, in, want string

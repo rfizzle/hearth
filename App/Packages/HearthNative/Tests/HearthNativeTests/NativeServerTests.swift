@@ -6,6 +6,7 @@ import CoreGraphics
 import CoreText
 import Foundation
 import HearthKit
+import PDFKit
 import Synchronization
 import Testing
 
@@ -104,7 +105,7 @@ private func page(_ number: Int32, _ text: String) -> Hearth_V1_ExtractedPage {
     for path in [
         "relative.pdf", "/a/../b.pdf", "/a//b.pdf", "/a/./b.pdf", "/nonexistent/x.pdf", "/tmp",
     ] {
-        #expect(throws: ExtractRefusal.self) { try TextExtractor.checked(path) }
+        #expect(throws: ExtractRefusal.self) { try TextExtractor.read(path) }
     }
     let dir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -113,8 +114,51 @@ private func page(_ number: Int32, _ text: String) -> Hearth_V1_ExtractedPage {
     try Data("x".utf8).write(to: file)
     let link = dir.appending(path: "link.txt")
     try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
-    #expect(throws: ExtractRefusal.self) { try TextExtractor.checked(link.path) }
-    #expect(try TextExtractor.checked(file.path).path == file.path)
+    #expect(throws: ExtractRefusal.self) { try TextExtractor.read(link.path) }
+    #expect(try TextExtractor.read(file.path) == Data("x".utf8))
+}
+
+@Test func aPDFWithNoPagesReadsNothing() {
+    let empty = PDFDocument()
+    #expect(empty.pageCount == 0)
+    let far = ContinuousClock.now + .seconds(30)
+    #expect(TextExtractor.pdfPages(empty, [1, 3], far).isEmpty)
+    #expect(TextExtractor.pdfPages(empty, [], far).isEmpty)
+}
+
+/// Never returns until the test lets it go.
+private final class StuckExtractor: TextExtracting {
+    let gate = DispatchSemaphore(value: 0)
+    let calls = Mutex(0)
+
+    func extract(path: String, pages: [Int], until end: Deadline) throws -> ExtractedPages {
+        calls.withLock { $0 += 1 }
+        gate.wait()
+        return [page(1, "late")]
+    }
+}
+
+@Test func aReadThatNeverEndsIsAbandonedAndTheNextIsBusy() async throws {
+    let stuck = StuckExtractor()
+    let service = NativeService(token: token, extractor: stuck, replyAfter: .milliseconds(200))
+    let started = ContinuousClock.now
+    let (late, _) = split(await service.respond(to: post(.extractText, #"{"path":"/a"}"#)))
+    #expect(late == 504)
+    #expect(started.duration(to: .now) < .seconds(5))
+    let (busy, body) = split(await service.respond(to: post(.extractText, #"{"path":"/a"}"#)))
+    #expect(busy == 503)
+    let json = try JSONSerialization.jsonObject(with: body) as? [String: String]
+    #expect(json?["code"] == "unavailable")
+    #expect(stuck.calls.withLock { $0 } == 1)
+
+    stuck.gate.signal()
+    var status = 0
+    for _ in 0..<50 where status != 200 {
+        try await Task.sleep(for: .milliseconds(20))
+        stuck.gate.signal()
+        status = split(await service.respond(to: post(.extractText, #"{"path":"/a"}"#))).0
+    }
+    #expect(status == 200)
 }
 
 /// A one-page PDF whose page is only a picture of `text`: a scan.
