@@ -45,7 +45,7 @@ DIST_DIR=$(CURDIR)/dist
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build ci-swift app-build app-sign notarize app-verify cache-dir
+.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build gallery-open gallery-shot ci-swift app-build app-sign notarize app-verify cache-dir
 
 all: help
 
@@ -162,6 +162,32 @@ tokens-check: cache-dir ## Fail if a token pairing is below WCAG 2.2 AA contrast
 gallery-build: ## Build the gallery app: every component in every state
 	@command -v $(SWIFT) >/dev/null 2>&1 || { echo "swift not found (install Xcode)"; exit 1; }
 	@$(SWIFT) build --package-path $(APP_DIR) --product HearthGallery
+
+# GALLERY_ARGS reach the gallery as launch arguments: --page <Name>, --text
+# largest, --window-width <points>. The window is a fixed size by default, and
+# macOS is told not to restore the last one, so every capture frames the same.
+# A running gallery is quit first: `open` on a running app would only raise it.
+GALLERY_ARGS ?= $(if $(PAGE),--page $(PAGE)) -ApplePersistenceIgnoreState YES
+GALLERY_SHOT_DIR=$(CACHE_DIR)/gallery
+
+gallery-open: gallery-build ## Build, bundle and open the gallery (GALLERY_ARGS="--page Avatar")
+	@mkdir -p $(DIST_DIR)
+	@scripts/app/gallery.sh "$$($(SWIFT) build --package-path $(APP_DIR) --show-bin-path)" $(DIST_DIR)
+	@pkill -x HearthGallery || true
+	@sleep 1
+	@open $(DIST_DIR)/HearthGallery.app --args $(GALLERY_ARGS)
+
+gallery-shot: ## Capture a gallery page to .cache/gallery/<PAGE>.png (PAGE=MessageRow, needs Screen Recording)
+	@test -n "$(PAGE)" || { echo "PAGE is required, e.g. make gallery-shot PAGE=MessageRow"; exit 1; }
+	@$(MAKE) --no-print-directory gallery-open
+	@sleep 3
+	@mkdir -p $(GALLERY_SHOT_DIR)
+	@osascript -e 'tell application "HearthGallery" to activate'
+	@sleep 1
+	@$(SWIFT) scripts/app/windowid.swift "Hearth Gallery" > $(GALLERY_SHOT_DIR)/.windowid
+	@screencapture -x -o -l "$$(cat $(GALLERY_SHOT_DIR)/.windowid)" $(GALLERY_SHOT_DIR)/$(PAGE).png
+	@sips -Z 1600 $(GALLERY_SHOT_DIR)/$(PAGE).png >/dev/null
+	@echo "captured $(GALLERY_SHOT_DIR)/$(PAGE).png"
 
 ci-swift: swift-format-check swift-lint swift-test gallery-build ## Run every Swift check CI runs (macOS only)
 

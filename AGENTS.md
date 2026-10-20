@@ -46,8 +46,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Format | `make fmt` |
 | Static checks | `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
-| Regenerate the contract | `make proto` |
-| Contract lint and breaking changes (offline) | `make proto-check` |
+| Regenerate the contract / lint it and check breaking changes (offline) | `make proto` / `make proto-check` |
 | Generated code matches the contract (network) | `make proto-drift` |
 | Shared skills match their source | `make skills-check` |
 | Refresh shared skills from `../skills` | `make skills-sync` |
@@ -59,12 +58,13 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Install the opt-in pre-push hook | `make hooks` |
 | Sign in with ChatGPT, then try it (live, by hand) | `hearthd login chatgpt`, `hearthd say "hello"` |
 | Serve the contract by hand (data in `--data-dir`, default Application Support) | `hearthd serve --token <t> --data-dir <dir>` |
-| Swift gates | `make ci-swift` |
+| Swift gates / format Swift | `make ci-swift` / `make swift-fmt` |
+| Open the gallery (`GALLERY_ARGS="--page <Name>"`) | `make gallery-open` |
+| Capture a gallery page to `.cache/gallery/<Name>.png` | `make gallery-shot PAGE=<Name>` |
 | Build Hearth.app | `make app-build` |
 | Sign the bundle | `make app-sign` |
 | Notarise and staple | `make notarize` |
 | Check signatures | `make app-verify` |
-| Format Swift | `make swift-fmt` |
 | List every target | `make help` |
 
 Agents run `make ci`; the orchestrator runs `make prepush`, the same checks, at
@@ -176,16 +176,17 @@ from `Hearth`.
   outside `make ci`: after editing the proto, run `make proto && make
   proto-drift`. `buf registry login` lifts the limit locally.
 - **`make proto` regenerates two files per proto on each side** (seven
-  protos today). Generate once at the end of a contract change, because the
-  BSR rate-limits anonymous generation (`buf registry login` lifts it).
+  protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
-  user.email=...`, or set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
-  `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
+  user.email=...`, or set the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables.
 - **`make swift-test` builds each package in its own `.build`**; the first run
   compiles swift-protobuf more than once (minutes), later runs are cached.
 - **A package resource (`Bundle.module`) is a `.bundle` beside the
   executable.** `make app-build` copies them into `Contents/Resources`, or
   the app aborts at launch.
+- **A bare SwiftUI executable launched from the shim shows no window.** `open`
+  needs a bundle: `make gallery-open` assembles one, and `make gallery-shot`
+  captures its window by id (Screen Recording granted, path under `/Users`).
 - **`HEARTH_HELPER=./hearthd`** lets `swift run --package-path App Hearth`
   find the helper outside a bundle.
 - **There is no signing identity on a developer Mac, by design.** `make
