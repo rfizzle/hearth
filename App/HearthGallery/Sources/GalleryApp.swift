@@ -1,105 +1,116 @@
-// GalleryApp shows every component in every PreviewState, so a unit that
-// declares no states does not reach the gallery and the build says so.
+// GalleryApp is the review surface for the look: a sidebar of pages grouped
+// by package and, for the page chosen, one card per state with the light and
+// dark canvases side by side. Launch arguments make a capture scriptable:
+// --page <Name>, --text largest, --window-width and --window-height <points>.
 
 import HearthDesign
-import HearthUI
 import SwiftUI
+
+/// What the launch arguments ask for.
+struct LaunchOptions {
+    var page: String?
+    var largestText = false
+    var windowWidth: CGFloat = 1560
+    var windowHeight: CGFloat = 900
+
+    init(_ arguments: [String]) {
+        for (index, argument) in arguments.enumerated() {
+            let value = arguments.indices.contains(index + 1) ? arguments[index + 1] : nil
+            switch argument {
+            case "--page": page = value
+            case "--text": largestText = value == "largest"
+            case "--window-width":
+                windowWidth = value.flatMap(Double.init).map { CGFloat($0) } ?? windowWidth
+            case "--window-height":
+                windowHeight = value.flatMap(Double.init).map { CGFloat($0) } ?? windowHeight
+            default: break
+            }
+        }
+    }
+}
 
 @main
 struct GalleryApp: App {
+    private let options = LaunchOptions(ProcessInfo.processInfo.arguments)
+
     var body: some Scene {
         WindowGroup("Hearth Gallery") {
-            List {
-                Section("TranscriptText") {
-                    ForEach(TranscriptText.PreviewState.allCases, id: \.self) { state in
-                        LabeledContent(state.rawValue) {
-                            TranscriptText(text: state.text)
+            GalleryRoot(options: options)
+        }
+        .defaultSize(width: options.windowWidth, height: options.windowHeight)
+    }
+}
+
+private struct GalleryRoot: View {
+    @State private var selection: String?
+    @State private var largestText: Bool
+
+    private let pages = Catalog.pages
+
+    init(options: LaunchOptions) {
+        let named = Catalog.pages.first { $0.name.lowercased() == options.page?.lowercased() }
+        _selection = State(initialValue: (named ?? Catalog.pages.first)?.name)
+        _largestText = State(initialValue: options.largestText)
+    }
+
+    private var page: GalleryPage? {
+        pages.first { $0.name == selection }
+    }
+
+    private var packages: [String] {
+        var seen: [String] = []
+        for page in pages where !seen.contains(page.package) { seen.append(page.package) }
+        return seen
+    }
+
+    var body: some View {
+        NavigationSplitView {
+            List(selection: $selection) {
+                ForEach(packages, id: \.self) { package in
+                    Section(package) {
+                        ForEach(pages.filter { $0.package == package }) { page in
+                            Label(page.name, systemImage: Self.symbol(for: package))
+                                .badge(page.states.count)
+                                .tag(page.name)
                         }
                     }
                 }
-                // Onboarding: SignInPanel and IntegrationsPanel, light and dark.
-                ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
-                    Section("SignInPanel, \(scheme == .light ? "light" : "dark")") {
-                        ForEach(SignInPanel.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) {
-                                SignInPanel(previewState: state)
-                            }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("IntegrationsPanel, \(scheme == .light ? "light" : "dark")") {
-                        ForEach(IntegrationsPanel.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) {
-                                IntegrationsPanel(previewState: state)
-                            }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                }
-                // End onboarding.
-                // Hire: TemplateCard and TierPicker, light and dark.
-                ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
-                    Section("TemplateCard, \(scheme == .light ? "light" : "dark")") {
-                        ForEach(TemplateCard.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) {
-                                TemplateCard(previewState: state)
-                            }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("TierPicker, \(scheme == .light ? "light" : "dark")") {
-                        ForEach(TierPicker.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) {
-                                TierPicker(previewState: state)
-                            }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                }
-                // End hire.
-                // Conversation: Avatar, MessageRow, ToolCallRow, FileRow,
-                // RunStatusLine and Composer, light and dark.
-                ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
-                    let appearance = scheme == .light ? "light" : "dark"
-                    Section("Avatar, \(appearance)") {
-                        ForEach(Avatar.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { Avatar(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("MessageRow, \(appearance)") {
-                        ForEach(MessageRow.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { MessageRow(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("ToolCallRow, \(appearance)") {
-                        ForEach(ToolCallRow.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { ToolCallRow(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("FileRow, \(appearance)") {
-                        ForEach(FileRow.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { FileRow(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("RunStatusLine, \(appearance)") {
-                        ForEach(RunStatusLine.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { RunStatusLine(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                    Section("Composer, \(appearance)") {
-                        ForEach(Composer.PreviewState.allCases, id: \.self) { state in
-                            LabeledContent(state.rawValue) { Composer(previewState: state) }
-                        }
-                    }
-                    .environment(\.colorScheme, scheme)
-                }
-                // End conversation.
             }
+            .navigationSplitViewColumnWidth(
+                min: Theme.Size.sidebarMin, ideal: Theme.Size.sidebarIdeal,
+                max: Theme.Size.sidebarMax)
+        } detail: {
+            if let page {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.Spacing.xl) {
+                        ForEach(page.states) { StateCard(state: $0) }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentMargins(Theme.Spacing.xl)
+                .dynamicTypeSize(largestText ? .accessibility5 : .large)
+                .navigationTitle(page.name)
+                .navigationSubtitle(page.package)
+            } else {
+                ContentUnavailableView("Choose a page", systemImage: "sidebar.left")
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Picker("Text size", selection: $largestText) {
+                    Text("Default").tag(false)
+                    Text("Largest").tag(true)
+                }
+                .pickerStyle(.segmented)
+            }
+        }
+    }
+
+    private static func symbol(for package: String) -> String {
+        switch package {
+        case "HearthDesign": "paintpalette"
+        case "HearthUI": "rectangle.3.group"
+        default: "macwindow"
         }
     }
 }

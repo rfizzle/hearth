@@ -32,6 +32,8 @@ let package = Package(
         .executableTarget(
             name: "HearthGallery",
             dependencies: [
+                .product(name: "HearthFeatures", package: "HearthFeatures"),
+                .product(name: "HearthKit", package: "HearthKit"),
                 .product(name: "HearthUI", package: "HearthUI"),
                 .product(name: "HearthDesign", package: "HearthDesign"),
             ],
