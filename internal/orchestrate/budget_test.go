@@ -43,7 +43,7 @@ func metered(t *testing.T, steps ...step) (*fixture, *meter.Meter) {
 	m := meter.New(f.db, table, nil, nil, func(runID, reason string) { svc.StopForBudget(runID, reason) })
 	d := f.svc.d
 	d.Meter = m
-	d.Models = func(org.Tier) agent.Model { return agent.Model{Provider: "openai", Name: "known"} }
+	d.Models = func(org.Bot) agent.Model { return agent.Model{Provider: "openai", Name: "known"} }
 	var err error
 	if svc, err = Open(context.Background(), d); err != nil {
 		t.Fatal(err)

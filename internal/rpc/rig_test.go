@@ -115,9 +115,9 @@ func (f gatewayFunc) RoundTrip(r *http.Request) (*http.Response, error) { return
 
 // drafterOver is the drafter hearthd sets, over a stream source: a model that
 // cannot be opened or reached is unavailable, in the words the owner reads.
-func drafterOver(streams func(org.Tier) (agent.Stream, error), scrub agent.Scrub) Drafter {
+func drafterOver(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub) Drafter {
 	return func(ctx context.Context, r DraftRequest) (Draft, error) {
-		stream, err := streams(org.TierFast)
+		stream, err := streams(org.Bot{Tier: org.TierFast})
 		if err != nil {
 			return Draft{}, Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
 		}
@@ -150,7 +150,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 	sc := &script{steps: steps}
 	svc, err := orchestrate.Open(t.Context(), orchestrate.Deps{
 		Store:   db,
-		Streams: func(org.Tier) (agent.Stream, error) { return sc.stream, nil },
+		Streams: func(org.Bot) (agent.Stream, error) { return sc.stream, nil },
 		Bus:     bus,
 	})
 	if err != nil {
@@ -167,7 +167,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 			Accounts:        accounts,
 			Integrations:    &integration.Integrations{Keys: accounts.Keys},
 			Templates:       skill.Templates(),
-			Drafter:         drafterOver(func(org.Tier) (agent.Stream, error) { return sc.stream, nil }, nil),
+			Drafter:         drafterOver(func(org.Bot) (agent.Stream, error) { return sc.stream, nil }, nil),
 			Bus:             bus,
 			ReservedFolders: []string{filepath.Join(dir, "data")},
 			EnsureWorkspace: workspace.Ensure,

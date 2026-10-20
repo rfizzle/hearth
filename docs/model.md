@@ -127,7 +127,7 @@ Modes: `allowed`, `ask me` (approval each time, with "always allow" offered), `n
 
 **Provider account** (`ProviderAccount`). A signed-in account or stored key for one backend: ChatGPT plan (OAuth), Anthropic (key), Gemini (key), OpenRouter (key), Compatible endpoint (URL + optional key, how Ollama/LM Studio arrive), Apple on-device (no account). Stored in Keychain; the Go core receives credentials through the llm library's credential interface. Any OpenAI-compatible service, a company gateway or one such as Z.ai or Groq, is added with a name, an address, a key and a default model, becomes an account and a card of its own, and answers every tier until the owner maps tiers; its key, like every key, never leaves the core.
 
-**Quality tier** (`Tier`). Org-level mapping of Fast/Balanced/Best to (provider, model). Defaults are set when the first provider is signed in. The owner can change the mapping in Settings; a bot's Advanced panel can pin a specific model.
+**Quality tier** (`Tier`). Org-level mapping of Fast/Balanced/Best to (provider, model). Defaults are set when the first provider is signed in. The owner edits the mapping in Settings, and one bot's Advanced panel can pin a specific model. A bot runs on its pinned model, else its tier's row in the mapping, else the defaults; a row whose provider is signed out falls back to the defaults, but a pin is never swapped for another model and fails in plain words instead. Ollama and LM Studio are detected on this Mac, and the models they list can be picked like any other.
 
 ### Usage
 

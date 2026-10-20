@@ -17,13 +17,13 @@ import (
 )
 
 func TestDrafter_ANoModelIsUnavailableAndAReplyIsAProposal(t *testing.T) {
-	none := func(org.Tier) (agent.Stream, error) { return nil, errors.New("no account is signed in") }
+	none := func(org.Bot) (agent.Stream, error) { return nil, errors.New("no account is signed in") }
 	_, err := drafter(nil, none, nil)(t.Context(), rpc.DraftRequest{Description: "help", Tier: org.TierFast})
 	if !errors.Is(err, rpc.ErrUnavailable) || !strings.Contains(err.Error(), "no account is signed in") {
 		t.Errorf("err = %v, want unavailable in the owner's words", err)
 	}
 
-	say := func(org.Tier) (agent.Stream, error) {
+	say := func(org.Bot) (agent.Stream, error) {
 		return func(context.Context, []llm.Message, []llm.Tool, string) (<-chan llm.StreamEvent, error) {
 			ch := make(chan llm.StreamEvent, 2)
 			ch <- llm.StreamEvent{Token: `{"name":"Wren","role":"Analyst","job_description":"Read.","tier":"best"}`}

@@ -41,7 +41,8 @@ func (a *Accounts) SaveProfile(ctx context.Context, p Profile, key string) (Acco
 	}
 	key = strings.TrimSpace(key)
 	if p.ID != "" {
-		if _, err := a.loadProfile(p.ID); err != nil {
+		old, err := a.loadProfile(p.ID)
+		if err != nil || (key == "" && hostMoved(old.BaseURL, base)) {
 			return a.SetProfile(p, key)
 		}
 		if key == "" {
@@ -55,6 +56,13 @@ func (a *Accounts) SaveProfile(ctx context.Context, p Profile, key string) (Acco
 		return Account{}, err
 	}
 	return a.SetProfile(p, key)
+}
+
+// ListModels asks the service at base, with key if it takes one, for the ids
+// of its models, through the accounts' client. It is how a local runtime is
+// detected; the caller bounds the wait with ctx.
+func (a *Accounts) ListModels(ctx context.Context, base, key string) ([]string, error) {
+	return a.listModels(ctx, base, key)
 }
 
 // listModels asks base for its models with key and returns their ids, or

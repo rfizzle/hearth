@@ -40,12 +40,12 @@ const quitReason = "hearth was quit while this was running"
 // Deps is what the service is handed.
 type Deps struct {
 	Store *store.DB
-	// Streams opens the model the bot's tier resolves to.
-	Streams func(org.Tier) (agent.Stream, error)
-	// Models names the provider and model the tier resolves to, for the
+	// Streams opens the model the bot runs on: its override, else its tier.
+	Streams func(org.Bot) (agent.Stream, error)
+	// Models names the provider and model the bot runs on, for the
 	// usage each request is priced by; nil leaves them unnamed, and the
 	// requests unpriced.
-	Models func(org.Tier) agent.Model
+	Models func(org.Bot) agent.Model
 	// Meter records each request's usage and holds the budgets; nil meters
 	// nothing and pauses nothing. Its OnPause should be StopForBudget.
 	Meter *meter.Meter

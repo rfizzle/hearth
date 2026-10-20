@@ -100,7 +100,7 @@ func newFixture(t *testing.T, steps ...step) *fixture {
 		t.Fatal(err)
 	}
 	f := &fixture{db: db, bus: NewBus(), bot: bot, script: &script{steps: steps}}
-	streams := func(org.Tier) (agent.Stream, error) { return f.script.stream, nil }
+	streams := func(org.Bot) (agent.Stream, error) { return f.script.stream, nil }
 	if f.svc, err = Open(ctx, Deps{Store: db, Streams: streams, Bus: f.bus}); err != nil {
 		t.Fatal(err)
 	}

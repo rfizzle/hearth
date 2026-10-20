@@ -40,6 +40,7 @@ var knownServices = []KnownService{
 	{"mistral", "Mistral", "https://api.mistral.ai/v1", "https://console.mistral.ai/api-keys", "mistral-large-latest", "compatible"},
 	{"together", "Together", "https://api.together.xyz/v1", "https://api.together.ai/settings/api-keys", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "compatible"},
 	{"ollama", "Ollama (local)", "http://localhost:11434/v1", "https://ollama.com/download", "llama3.2", "local"},
+	{"lmstudio", "LM Studio (local)", "http://localhost:1234/v1", "https://lmstudio.ai", "local-model", "local"},
 	{"chatgpt", "ChatGPT", "https://chatgpt.com/backend-api/codex", "https://chatgpt.com", "", "builtin"},
 	{"anthropic", "Anthropic", "https://api.anthropic.com", "https://console.anthropic.com/settings/keys", "", "builtin"},
 	{"gemini", "Gemini", "https://generativelanguage.googleapis.com", "https://aistudio.google.com/apikey", "", "builtin"},

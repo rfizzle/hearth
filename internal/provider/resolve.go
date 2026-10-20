@@ -21,6 +21,15 @@ const (
 	Best
 )
 
+// Pick is one model on one provider, the answer to "which model": the
+// provider, the added service's id when it is Compatible, and the model.
+// The zero Pick means the defaults.
+type Pick struct {
+	Provider Provider
+	Profile  string
+	Model    string
+}
+
 // ErrNoAccount is what Resolve returns when nothing is signed in.
 var ErrNoAccount = errors.New("no account is signed in")
 
@@ -37,11 +46,20 @@ type Model struct {
 // preferred, the first one added, at its default model for every tier: it
 // is the one they chose to bring. Otherwise it is the first signed-in
 // provider's defaults: the cheap model for Fast, the main one for Balanced
-// and Best. A mapping the person edits arrives with the Tiers screen.
+// and Best. Resolve is the defaults; ResolveModel takes a model the person
+// chose.
 // See docs/model.md#providers-and-models
-func (a *Accounts) Resolve(tier Tier) (Model, error) {
+func (a *Accounts) Resolve(tier Tier) (Model, error) { return a.ResolveModel(tier, Pick{}) }
+
+// ResolveModel returns pick's model when pick names one, and what Resolve
+// returns for the tier when it is the zero Pick. A pick whose provider is
+// not signed in, or whose service was removed, is an error in plain words.
+func (a *Accounts) ResolveModel(tier Tier, pick Pick) (Model, error) {
 	if tier < Fast || tier > Best {
 		return Model{}, fmt.Errorf("unknown quality tier %d", tier)
+	}
+	if pick != (Pick{}) {
+		return a.pinned(pick)
 	}
 	var lastErr error
 	for _, p := range a.Profiles() {
@@ -72,6 +90,23 @@ func (a *Accounts) Resolve(tier Tier) (Model, error) {
 		return Model{}, lastErr
 	}
 	return Model{}, ErrNoAccount
+}
+
+// pinned builds the provider for a chosen model.
+func (a *Accounts) pinned(p Pick) (Model, error) {
+	if p.Provider == Compatible {
+		f, err := a.loadProfile(p.Profile)
+		if err != nil {
+			return Model{}, errors.New("the service that model is on was removed")
+		}
+		prov, err := a.buildProfile(Profile{ID: p.Profile, Name: f.Name, BaseURL: f.BaseURL, DefaultModel: p.Model})
+		return Model{Account: Compatible, Profile: p.Profile, Provider: prov, Name: p.Model}, err
+	}
+	prov, err := a.build(p.Provider)
+	if errors.Is(err, ErrNoAccount) {
+		return Model{}, fmt.Errorf("%s is not signed in", p.Provider)
+	}
+	return Model{Account: p.Provider, Provider: prov, Name: p.Model}, err
 }
 
 // build makes the llm provider for a signed-in account, or ErrNoAccount.

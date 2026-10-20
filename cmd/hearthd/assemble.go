@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/provider/models"
 	"github.com/rfizzle/hearth/internal/rpc"
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
@@ -113,9 +114,9 @@ func reservedFolders(dir string) []string {
 // drafter proposes a bot with the model the Fast tier resolves to. A model
 // that cannot be opened, or that fails, is unavailable to the app, in the
 // words the owner reads; a reply that cannot be read is not.
-func drafter(templates []org.RoleTemplate, streams func(org.Tier) (agent.Stream, error), scrub agent.Scrub) rpc.Drafter {
+func drafter(templates []org.RoleTemplate, streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub) rpc.Drafter {
 	return func(ctx context.Context, r rpc.DraftRequest) (rpc.Draft, error) {
-		stream, err := streams(org.TierFast)
+		stream, err := streams(org.Bot{Tier: org.TierFast})
 		if err != nil {
 			return rpc.Draft{}, rpc.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
 		}
@@ -131,19 +132,30 @@ func drafter(templates []org.RoleTemplate, streams func(org.Tier) (agent.Stream,
 }
 
 // withModels gives the orchestrator its models and its scrub from the
-// accounts: the stream for a bot's tier, and the function that redacts every
-// stored secret from what the model is sent. It is the one place the run
-// depends on how the accounts resolve and scrub.
+// accounts: the stream for a bot, by its override or its tier, and the
+// function that redacts every stored secret from what the model is sent. It
+// is the one place the run depends on how the accounts resolve and scrub.
 func withModels(d orchestrate.Deps, accounts *provider.Accounts) orchestrate.Deps {
-	d.Streams = func(t org.Tier) (agent.Stream, error) {
-		m, err := accounts.Resolve(provider.Tier(t))
+	// The mapping is read on each call, so an edit in Settings reaches the
+	// next run. A mapping that cannot be read leaves the defaults.
+	resolve := func(b org.Bot) (provider.Model, error) {
+		var rows []models.Row
+		if saved, err := d.Store.Tiers(context.Background()); err == nil {
+			for _, c := range saved {
+				rows = append(rows, models.Row{Tier: provider.Tier(c.Tier), Pick: provider.Pick{Provider: provider.Provider(c.Provider), Profile: c.Profile, Model: c.Model}})
+			}
+		}
+		return models.Resolve(accounts, models.Choice{Tier: provider.Tier(b.Tier), Override: b.ModelOverride}, rows)
+	}
+	d.Streams = func(b org.Bot) (agent.Stream, error) {
+		m, err := resolve(b)
 		if err != nil {
 			return nil, err
 		}
 		return provider.StreamFunc(m), nil
 	}
-	d.Models = func(t org.Tier) agent.Model {
-		m, err := accounts.Resolve(provider.Tier(t))
+	d.Models = func(b org.Bot) agent.Model {
+		m, err := resolve(b)
 		if err != nil {
 			return agent.Model{}
 		}

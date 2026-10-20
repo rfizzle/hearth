@@ -109,13 +109,13 @@ func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt 
 	for _, d := range disp.Tools() {
 		offered = append(offered, agent.Tool{Name: d.Name, Description: d.Description, Parameters: d.Parameters})
 	}
-	stream, err := s.d.Streams(bot.Tier)
+	stream, err := s.d.Streams(bot)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
 	var model agent.Model
 	if s.d.Models != nil {
-		model = s.d.Models(bot.Tier)
+		model = s.d.Models(bot)
 	}
 	return agent.Run(ctx, agent.Input{
 		Model: model,

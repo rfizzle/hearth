@@ -119,7 +119,8 @@ func (a *Accounts) profileAccount(p Profile) Account {
 }
 
 // SetProfile adds a service when p.ID is empty, minting its id, or changes
-// the one p.ID names. A change with an empty key keeps the stored key. The
+// the one p.ID names. A change with an empty key keeps the stored key, unless
+// the address moved to another host. The
 // key is required unless the service runs on this Mac, and a key is never
 // sent to another machine over plain http. It returns the account as List
 // reports it, and publishes it.
@@ -157,6 +158,9 @@ func (a *Accounts) SetProfile(p Profile, key string) (Account, error) {
 			return Account{}, err
 		}
 		f.Added = old.Added
+		if key == "" && !local && hostMoved(old.BaseURL, p.BaseURL) {
+			return Account{}, errors.New("the address changed; paste the key again")
+		}
 	}
 	if key == "" && !local {
 		if _, err := a.Keys.Load(profileKeyName(p.ID)); err != nil {
@@ -211,6 +215,14 @@ func (a *Accounts) ClearProfile(id string) error {
 		a.OnChange(Account{Provider: Compatible, State: SignedOut, Profile: id, DisplayName: f.Name, BaseURL: f.BaseURL, DefaultModel: f.DefaultModel})
 	}
 	return nil
+}
+
+// hostMoved reports whether two addresses are on different hosts, so a
+// stored key must not follow the service to the new one.
+func hostMoved(from, to string) bool {
+	a, errA := url.Parse(from)
+	b, errB := url.Parse(to)
+	return errA != nil || errB != nil || a.Host != b.Host
 }
 
 // mintProfileID is a fresh id: eight hex digits no stored profile uses.
