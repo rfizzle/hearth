@@ -103,6 +103,7 @@ func NewHandler(o Options) http.Handler {
 	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{opts: o}))
 	if o.Accounts != nil {
 		o.Accounts.OnChange = func(a provider.Account) { o.publish(AccountChanged{Account: a}) }
+		o.Accounts.OnCredentialChange = func(name string, deleted bool) { o.publish(CredentialChanged{Name: name, Deleted: deleted}) }
 	}
 	if o.Integrations != nil {
 		o.Integrations.OnChange = func(a integration.Account) { o.publish(IntegrationChanged{Integration: a}) }
@@ -125,7 +126,7 @@ type (
 	}
 	conversationService struct{ opts Options } // ConversationService: the threads and the owner's side of a run
 	providerService     struct {               // ProviderService: which model accounts are signed in
-		hearthv1connect.UnimplementedProviderServiceHandler // the tier and credential calls answer unimplemented until their handlers land
+		hearthv1connect.UnimplementedProviderServiceHandler // the tier calls answer unimplemented until their handlers land
 		opts                                                Options
 	}
 	integrationService struct{ opts Options } // IntegrationService: the optional services that are not model providers

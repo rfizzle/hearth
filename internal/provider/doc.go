@@ -11,11 +11,15 @@
 // table of services hearth knows the address of.
 //
 // Invariants the types do not hold:
-//   - Credentials live in owner-only files under the person's application
-//     support folder, a 0700 directory of 0600 files, and nowhere else. The
-//     core never prints a key or token, never returns one over an interface
-//     and never writes one into the database. An account reports the last
-//     four characters of a key, never the key.
+//   - Once the app has synced its Keychain (Sync), credentials live in
+//     keystore.MemoryKeys and nowhere else: no path writes one to disk. Only a core
+//     run by hand with no app keeps them in owner-only files under the
+//     person's application support folder, a 0700 directory of 0600 files,
+//     and those files are deleted by the second Sync that holds every name
+//     they held (D29). The core never prints a key or token, never writes
+//     one into the database or a log, and returns one over an interface in
+//     two places only: Sync's records to store and Export. An account
+//     reports the last four characters of a key, never the key.
 //   - The key store is shared by name with whoever else keeps a secret (a
 //     search service, say), so Scrub reads every name in it, not only the
 //     provider keys.
@@ -37,10 +41,11 @@
 //
 // Seams it is handed: the http client that reaches the authorization server,
 // the function that opens the browser, the directory the credentials live in,
-// the KeyStore, and OnChange, which hears every account change.
+// the keystore.Store, and OnChange, which hears every account change.
 //
-// The file store is a stopgap. The planned follow-on is a Keychain-backed
-// store behind the same KeyStore interface and the same token store seam in
-// llm, so the credentials leave the disk and the core holds them in memory.
+// The file stores are for a hand-run core. The app pushes its Keychain
+// records, and keystore.MemoryKeys serves as both the keystore.Store and llm's
+// credstore.Store behind routers that Sync switches, so holders of
+// Accounts.Keys need not be told.
 // See docs/architecture.md#2-responsibilities
 package provider

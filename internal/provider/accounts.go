@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/llm/chatgpt/credstore"
@@ -63,12 +64,17 @@ type Account struct {
 // and the contract handlers share one.
 type Accounts struct {
 	// Keys holds the API keys, and whatever the integrations store beside
-	// them. Open sets the file store.
-	Keys KeyStore
+	// them. Open sets a store that is the files until the first Sync and
+	// memory after.
+	Keys keystore.Store
 	// OnChange is told each time an account's state changes. Set it before
 	// the first call; it runs on whichever goroutine made the change and
 	// must not block.
 	OnChange func(Account)
+	// OnCredentialChange is told the name of each credential the memory
+	// store stored, replaced or removed after the app's Sync, and whether it
+	// was removed; never a value. Same rules as OnChange.
+	OnCredentialChange func(name string, deleted bool)
 
 	chat *chatgpt.Account
 	// client is the network the added services are reached through, as it
@@ -86,6 +92,16 @@ type Accounts struct {
 	// profileMu serialises adding, changing and removing a service, so an
 	// id is minted once.
 	profileMu sync.Mutex
+
+	// The credential hand-shake (sync.go). keys and store are the routers
+	// Keys and chat hold; mem is nil until the first Sync.
+	syncMu    sync.Mutex
+	keys      *keystore.Router
+	store     *keystore.ChatRouter
+	fileKeys  keystore.FileKeys
+	fileChat  credstore.FileStore
+	mem       *keystore.MemoryKeys
+	filesGone bool
 }
 
 // attempt is one browser sign-in in flight.
@@ -97,19 +113,29 @@ type attempt struct {
 }
 
 // Open opens the accounts kept in dir: the ChatGPT sign-in in dir/chatgpt
-// and the API keys, and the services added by address, in dir/keys. client
+// and the API keys, and the services added by address, in dir/keys. These
+// files serve a core run by hand; the first Sync moves the accounts to
+// memory (D29). client
 // reaches the authorization server and the added services; nil is the real
 // network.
 func Open(dir string, client *http.Client) (*Accounts, error) {
-	chat, err := chatgpt.Open(chatgpt.Options{Store: credstore.FileStore{Dir: filepath.Join(dir, "chatgpt")}, Client: client})
+	fileChat := credstore.FileStore{Dir: filepath.Join(dir, "chatgpt")}
+	fileKeys := keystore.FileKeys{Dir: filepath.Join(dir, "keys")}
+	store := keystore.NewChatRouter(fileChat)
+	chat, err := chatgpt.Open(chatgpt.Options{Store: store, Client: client})
 	if err != nil {
 		return nil, err
 	}
+	keys := keystore.NewRouter(fileKeys)
 	return &Accounts{
-		Keys:    FileKeys{Dir: filepath.Join(dir, "keys")},
-		chat:    chat,
-		client:  client,
-		failure: map[Provider]string{},
+		Keys:     keys,
+		chat:     chat,
+		client:   client,
+		failure:  map[Provider]string{},
+		keys:     keys,
+		store:    store,
+		fileKeys: fileKeys,
+		fileChat: fileChat,
 	}, nil
 }
 
@@ -149,7 +175,7 @@ func (a *Accounts) account(p Provider) Account {
 	}
 	if key, err := a.Keys.Load(string(p)); err == nil {
 		acct.State, acct.Label = SignedIn, lastFour(key)
-	} else if !errors.Is(err, ErrNoKey) {
+	} else if !errors.Is(err, keystore.ErrNoKey) {
 		acct.Failure = err.Error()
 	}
 	return acct

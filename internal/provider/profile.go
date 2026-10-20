@@ -13,9 +13,11 @@ import (
 	"strings"
 	"time"
 
+	openai "github.com/sashabaranov/go-openai"
+
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/compat"
-	openai "github.com/sashabaranov/go-openai"
 )
 
 // Compatible is llm's name for an OpenAI-compatible service. Every service
@@ -91,7 +93,7 @@ func (a *Accounts) Profiles() []Profile {
 }
 
 func (a *Accounts) loadProfile(id string) (profileFile, error) {
-	if err := checkName(profileMetaName(id)); err != nil {
+	if err := keystore.CheckName(profileMetaName(id)); err != nil {
 		return profileFile{}, ErrNoProfile
 	}
 	raw, err := a.Keys.Load(profileMetaName(id))
@@ -148,7 +150,7 @@ func (a *Accounts) SetProfile(p Profile, key string) (Account, error) {
 		}
 	} else {
 		old, err := a.loadProfile(p.ID)
-		if errors.Is(err, ErrNoKey) {
+		if errors.Is(err, keystore.ErrNoKey) {
 			return Account{}, ErrNoProfile
 		}
 		if err != nil {
@@ -193,7 +195,7 @@ func (a *Accounts) ClearProfile(id string) error {
 	a.profileMu.Lock()
 	defer a.profileMu.Unlock()
 	f, err := a.loadProfile(id)
-	if errors.Is(err, ErrNoKey) {
+	if errors.Is(err, keystore.ErrNoKey) {
 		return ErrNoProfile
 	}
 	if err != nil {
@@ -219,7 +221,7 @@ func (a *Accounts) mintProfileID() (string, error) {
 			return "", err
 		}
 		id := hex.EncodeToString(b)
-		if _, err := a.Keys.Load(profileMetaName(id)); errors.Is(err, ErrNoKey) {
+		if _, err := a.Keys.Load(profileMetaName(id)); errors.Is(err, keystore.ErrNoKey) {
 			return id, nil
 		}
 	}
@@ -258,7 +260,7 @@ func checkBaseURL(raw string) (base string, local bool, err error) {
 // sends through the accounts' client, nil being a plain one.
 func (a *Accounts) buildProfile(p Profile) (llm.Provider, error) {
 	key, err := a.Keys.Load(profileKeyName(p.ID))
-	if err != nil && !errors.Is(err, ErrNoKey) {
+	if err != nil && !errors.Is(err, keystore.ErrNoKey) {
 		return nil, err
 	}
 	cfg := openai.DefaultConfig(key)

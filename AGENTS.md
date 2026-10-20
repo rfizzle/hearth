@@ -109,7 +109,7 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, orchestrate/, draft/, provider/, integration/, agent/, framing/, skill/, tools/, org/, workspace/ and store/ exist so far
+internal/             dependencies point down only; only rpc/, orchestrate/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, org/, workspace/ and store/ exist so far
   rpc/                serves the org, bot (with grants), conversation (with retry), inbox, provider, integration and event services over the store, runs and accounts; the token check; widgetwire/ reads a stored control and answer into the contract; generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/ and toolset/ below it)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
@@ -123,7 +123,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, dra
   memory/ handbook/ meter/ native/ secret/
   org/                domain types, grant resolution, budget math (exists)
   workspace/          the Hearth folder's layout and path containment (exists)
-  store/              SQLite, migrations, repositories (exists)
+  store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```
 
@@ -152,9 +152,9 @@ from `Hearth`.
 - **Every tool call is checked against the calling bot's grants in the core**
   before dispatch, and act-tier tools go through the approval gate.
 - **Credentials never enter model context.** Tool results are scrubbed before
-  they are appended; the core never writes credentials anywhere but its
-  owner-only credential files, and never into the database, a log or model
-  context, until the Keychain store replaces the files.
+  they are appended; once the app has synced, the core holds credentials in
+  memory and writes them nowhere, and only a hand-run core keeps owner-only
+  credential files; never in the database, a log or model context (D29).
 - **`agent` never imports `store`, `tools` or `rpc`**; `store` alone imports
   the SQLite driver; `rpc` handlers hold no domain logic.
 - **Nothing in `docs/research/` is cited from code.**

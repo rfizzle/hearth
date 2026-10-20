@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/chatgpt"
 )
@@ -195,7 +196,7 @@ func TestStartLoginHonoursTheCallersContext(t *testing.T) {
 	r.l.Close()
 }
 
-// memKeys is a KeyStore in memory, the seam a test or the Keychain fills.
+// memKeys is a keystore.Store in memory, the seam a test or the Keychain fills.
 type memKeys struct {
 	mu sync.Mutex
 	m  map[string]string
@@ -206,7 +207,7 @@ func (k *memKeys) Load(n string) (string, error) {
 	defer k.mu.Unlock()
 	v, ok := k.m[n]
 	if !ok {
-		return "", ErrNoKey
+		return "", keystore.ErrNoKey
 	}
 	return v, nil
 }
@@ -271,7 +272,7 @@ func TestKeysListSetClear(t *testing.T) {
 	}
 
 	// The key is on disk, owner only, under its name, trimmed.
-	path := filepath.Join(accts.Keys.(FileKeys).Dir, "openrouter")
+	path := filepath.Join(accts.fileKeys.Dir, "openrouter")
 	data, err := os.ReadFile(path)
 	if err != nil || string(data) != "sk-or-v1-abcdef1234567890" {
 		t.Errorf("stored key = %q, %v", data, err)

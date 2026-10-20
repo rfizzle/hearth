@@ -19,6 +19,13 @@ type AccountChanged struct{ Account provider.Account }
 // IntegrationChanged is an integration's account in its new state.
 type IntegrationChanged struct{ Integration integration.Account }
 
+// CredentialChanged names a credential that was stored or removed. It has no
+// value field on purpose: the app fetches the record with ExportCredential.
+type CredentialChanged struct {
+	Name    string
+	Deleted bool
+}
+
 // BotChanged is a bot as it is now: new, or changed.
 type BotChanged struct{ Bot org.Bot }
 
@@ -62,6 +69,8 @@ func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearth
 	case IntegrationChanged:
 		changed := &hearthv1.IntegrationChanged{Integration: integrationAccountToProto(b.Integration)}
 		out.Event = &hearthv1.SubscribeResponse_IntegrationChanged{IntegrationChanged: changed}
+	case CredentialChanged:
+		out.Event = &hearthv1.SubscribeResponse_CredentialChanged{CredentialChanged: &hearthv1.CredentialChanged{Name: b.Name, Deleted: b.Deleted}}
 	case BotChanged:
 		out.Event = &hearthv1.SubscribeResponse_BotChanged{BotChanged: &hearthv1.BotChanged{Bot: botToProto(b.Bot)}}
 	default:

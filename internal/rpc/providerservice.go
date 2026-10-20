@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
@@ -76,6 +77,37 @@ func (s *providerService) account(p provider.Provider) *hearthv1.ProviderAccount
 		}
 	}
 	return nil
+}
+
+// SyncCredentials takes the records the app keeps in its Keychain and
+// returns the ones the core held in files that the app lacked. The request
+// carries values in and the reply carries values out (records_to_store); no
+// error text and no event does.
+// See docs/architecture.md#2-responsibilities
+func (s *providerService) SyncCredentials(_ context.Context, req *connect.Request[hearthv1.SyncCredentialsRequest]) (*connect.Response[hearthv1.SyncCredentialsResponse], error) {
+	in := make([]keystore.Credential, 0, len(req.Msg.GetRecords()))
+	for _, r := range req.Msg.GetRecords() {
+		in = append(in, keystore.Credential{Name: r.GetName(), Value: r.GetValue()})
+	}
+	out, err := s.opts.Accounts.Sync(in)
+	if err != nil {
+		return nil, invalid("%v", err)
+	}
+	return connect.NewResponse(&hearthv1.SyncCredentialsResponse{RecordsToStore: each(out, credentialToProto)}), nil
+}
+
+// ExportCredential is the one reply that carries a credential value outside
+// a sync: the record under one name, for the app to store after a
+// credential_changed event.
+func (s *providerService) ExportCredential(_ context.Context, req *connect.Request[hearthv1.ExportCredentialRequest]) (*connect.Response[hearthv1.ExportCredentialResponse], error) {
+	if err := need("name", req.Msg.GetName()); err != nil {
+		return nil, err
+	}
+	rec, err := s.opts.Accounts.Export(req.Msg.GetName())
+	if err != nil {
+		return nil, fail(err)
+	}
+	return connect.NewResponse(&hearthv1.ExportCredentialResponse{Record: credentialToProto(rec)}), nil
 }
 
 // ListKnownServices is the provider's table of services, for the app's

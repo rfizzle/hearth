@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rfizzle/hearth/internal/integration"
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
@@ -171,6 +172,12 @@ func toProto[E, N comparable](names map[E]N, n N) E {
 	}
 	var none E
 	return none
+}
+
+// credentialToProto is a record with its value. Only the sync and export
+// replies call it; no event body is built from it.
+func credentialToProto(c keystore.Credential) *hearthv1.Credential {
+	return &hearthv1.Credential{Name: c.Name, Value: c.Value}
 }
 
 // accountToProto carries a label and a failure, never a credential: the

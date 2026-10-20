@@ -11,6 +11,7 @@ import (
 
 	"github.com/rfizzle/llm"
 
+	"github.com/rfizzle/hearth/internal/keystore"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 
 	"github.com/rfizzle/hearth/internal/provider"
@@ -22,7 +23,7 @@ func newIntegrations(t *testing.T) (*Integrations, *[]Account) {
 	t.Helper()
 	var seen []Account
 	i := &Integrations{
-		Keys:     provider.FileKeys{Dir: filepath.Join(t.TempDir(), "keys")},
+		Keys:     keystore.FileKeys{Dir: filepath.Join(t.TempDir(), "keys")},
 		OnChange: func(a Account) { seen = append(seen, a) },
 	}
 	return i, &seen
@@ -128,7 +129,7 @@ func TestShortKeyHasNoLabel(t *testing.T) {
 }
 
 // failingKeys is a store whose writes fail.
-type failingKeys struct{ provider.KeyStore }
+type failingKeys struct{ keystore.Store }
 
 func (failingKeys) Save(string, string) error { return errors.New("disk full") }
 

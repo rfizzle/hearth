@@ -1,4 +1,4 @@
-package provider
+package keystore
 
 import (
 	"errors"
@@ -12,11 +12,11 @@ import (
 // ErrNoKey is what Load returns for a name that holds nothing.
 var ErrNoKey = errors.New("no key is stored under that name")
 
-// KeyStore keeps secrets by name. A name is a provider's ("anthropic") or an
+// Store keeps secrets by name. A name is a provider's ("anthropic") or an
 // integration's ("brave-search"), so one store serves both. The file store
 // below is the stopgap; the Keychain-backed store implements the same
 // interface later.
-type KeyStore interface {
+type Store interface {
 	// Load returns the secret, or ErrNoKey.
 	Load(name string) (string, error)
 	// Save stores the secret, replacing any earlier one.
@@ -33,18 +33,18 @@ type KeyStore interface {
 // never name a path.
 var nameRe = regexp.MustCompile(`^[a-z][a-z0-9-]{0,63}$`)
 
-func checkName(name string) error {
+func CheckName(name string) error {
 	if !nameRe.MatchString(name) {
 		return fmt.Errorf("%q is not a valid key name", name)
 	}
 	return nil
 }
 
-// FileKeys is the file KeyStore: one 0600 file per name in a 0700 directory.
+// FileKeys is the file Store: one 0600 file per name in a 0700 directory.
 type FileKeys struct{ Dir string }
 
 func (f FileKeys) path(name string) (string, error) {
-	if err := checkName(name); err != nil {
+	if err := CheckName(name); err != nil {
 		return "", err
 	}
 	return filepath.Join(f.Dir, name), nil

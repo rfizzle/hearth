@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/agentcore/secret"
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/llm"
 )
 
@@ -83,7 +84,7 @@ func (a *Accounts) build(p Provider) (llm.Provider, error) {
 		return llm.Resolve(string(p), llm.ResolveOpts{TokenSource: a.chat})
 	}
 	key, err := a.Keys.Load(string(p))
-	if errors.Is(err, ErrNoKey) {
+	if errors.Is(err, keystore.ErrNoKey) {
 		return nil, ErrNoAccount
 	}
 	if err != nil {

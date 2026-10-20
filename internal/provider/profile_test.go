@@ -96,7 +96,7 @@ func TestCustomProfileResolvesAndStreams(t *testing.T) {
 
 	// The key and the settings are owner-only files beside each other, and
 	// the settings hold no key.
-	keyDir := accts.Keys.(FileKeys).Dir
+	keyDir := accts.fileKeys.Dir
 	for _, name := range []string{"compat-" + acct.Profile, "compat-" + acct.Profile + "-profile"} {
 		info, err := os.Stat(filepath.Join(keyDir, name))
 		if err != nil || info.Mode().Perm() != 0o600 {

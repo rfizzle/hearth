@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/rfizzle/hearth/internal/integration"
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/provider"
@@ -25,7 +26,7 @@ func fail(err error) error {
 	switch {
 	case errors.As(err, &coded):
 		return err
-	case errors.Is(err, store.ErrNotFound), errors.Is(err, provider.ErrNoProfile):
+	case errors.Is(err, store.ErrNotFound), errors.Is(err, provider.ErrNoProfile), errors.Is(err, keystore.ErrNoKey):
 		code = connect.CodeNotFound
 	case errors.Is(err, store.ErrFolderTaken):
 		code = connect.CodeAlreadyExists

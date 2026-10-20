@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
@@ -76,7 +76,7 @@ func find(name Name) (spec, bool) {
 // Integrations is the person's integrations over one key store.
 type Integrations struct {
 	// Keys is the store shared with provider.Accounts.
-	Keys provider.KeyStore
+	Keys keystore.Store
 	// Client reaches the backends; nil is a plain client.
 	Client *http.Client
 	// OnChange is told each time an account changes. Set it before the first
