@@ -143,8 +143,11 @@ Rules:
 |---|---|---|
 | `internal/org` | Domain types, grant resolution, hierarchy rules, budget math | new |
 | `internal/org/widget` | The seven controls a bot may ask with, their limits, and the fixed words an answer reaches the bot in (decisions.md D28) | new |
+| `internal/org/memory` | Bot notes and handbook pages, their caps, and the pure rules for which pages a bot reads and how full the handbook is | new |
+| `internal/org/usage` | Usage records, the month's totals, budgets, and the rule that says how near a budget the spending is | new |
 | `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
+| `internal/store/migrate` | The ordered schema steps and the runner that applies the ones a file has not seen | new |
 | `internal/agent` | Turn loop, tool rounds, steering queue, repeat detection, retry, compaction | lifted from shhh `internal/agent` core + `retry.go` + `compact.go` |
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
@@ -155,7 +158,7 @@ Rules:
 | `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
 | `internal/meter` | Usage ledger, pricing, budgets | lifted from shhh |
 | `internal/memory` | Bot notes: bounded recall, consolidation, pins | new (D13; shhh's memory package stays in shhh) |
-| `internal/handbook` | Pages, scoping, context meter | new |
+| `internal/handbook` | Pages by scope, the refusal of a page that overfills a reader's context, the "Handbook" block a run carries | new |
 | `internal/secret` | Scrub tool results | lifted from shhh |
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
 | `internal/rpc` | Connect handlers, event stream, version handshake | new |

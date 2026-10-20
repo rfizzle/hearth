@@ -145,7 +145,7 @@ Modes: `allowed`, `ask me` (approval each time, with "always allow" offered), `n
 | Assignment | Task | |
 | Run | (not shown) | Appears only in Usage as "steps". |
 | Grant | Access | "What Dana can see and do". |
-| Handbook | Handbook | |
+| Handbook | Handbook | "24 KB, measured as bytes". |
 | BotNote | Notes | "What Dana remembers". |
 | Usage | Usage | Cost in the user's currency, tokens under a disclosure. |
 | Workspace | Hearth folder | Shown as a Finder-like path with a "Show in Finder" button everywhere files are mentioned. |
