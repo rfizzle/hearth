@@ -5,8 +5,8 @@ import (
 
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
-	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/rpc/books"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
@@ -26,9 +26,6 @@ type CredentialChanged struct {
 	Name    string
 	Deleted bool
 }
-
-// BotChanged is a bot as it is now: new, or changed.
-type BotChanged struct{ Bot org.Bot }
 
 // ConversationChanged is a conversation as it is now: its newest run, its
 // title or its summary changed. The orchestrator publishes it too.
@@ -72,10 +69,20 @@ func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearth
 		out.Event = &hearthv1.SubscribeResponse_IntegrationChanged{IntegrationChanged: changed}
 	case CredentialChanged:
 		out.Event = &hearthv1.SubscribeResponse_CredentialChanged{CredentialChanged: &hearthv1.CredentialChanged{Name: b.Name, Deleted: b.Deleted}}
-	case BotChanged:
+	case wire.BotChanged:
 		out.Event = &hearthv1.SubscribeResponse_BotChanged{BotChanged: &hearthv1.BotChanged{Bot: wire.BotToProto(b.Bot)}}
 	default:
-		return nil, false
+		return booksEvent(e)
 	}
 	return out, true
+}
+
+// booksEvent is the SubscribeResponse for a body books publishes, or for a
+// note the orchestrator does.
+func booksEvent(e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
+	out, ok := books.Event(e.Body)
+	if ok {
+		out.Sequence = e.Seq
+	}
+	return out, ok
 }

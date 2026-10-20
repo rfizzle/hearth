@@ -39,7 +39,7 @@ func (s *botService) CreateBot(ctx context.Context, req *connect.Request[hearthv
 	bot, grants, dm := org.NewBot(m.GetName(), m.GetRole(), m.GetJobDescription(), tier, o.WorkspacePath)
 	bot.Avatar = m.GetAvatar()
 	if bot, err = s.opts.Store.CreateBot(ctx, bot, grants, dm); err == nil {
-		s.opts.publish(BotChanged{Bot: bot})
+		s.opts.publish(wire.BotChanged{Bot: bot})
 	}
 	return wire.Reply(&hearthv1.CreateBotResponse{Bot: wire.BotToProto(bot)}, err)
 }

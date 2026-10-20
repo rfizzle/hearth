@@ -9,14 +9,17 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/draft"
+	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/provider/models"
 	"github.com/rfizzle/hearth/internal/rpc"
+	"github.com/rfizzle/hearth/internal/rpc/books"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
@@ -27,9 +30,9 @@ import (
 )
 
 // openCore opens everything the contract serves over the data folder: the
-// store, the accounts and the integrations over one key store, the fetcher
-// and the orchestrator. The bus's heartbeats run until ctx ends. The
-// returned function closes the store.
+// store, the accounts and the integrations over one key store, the fetcher,
+// the meter, the handbook and the orchestrator. The bus's heartbeats run
+// until ctx ends. The returned function closes the store.
 func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return rpc.Options{}, nil, err
@@ -60,15 +63,21 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 	if err != nil {
 		table = pricing.Snapshot()
 	}
-	// The meter stops a run through the service, which exists after it.
+	// The meter stops a run through the service, which exists after it, and
+	// its ticks read its own summary, so both are bound once it is made.
 	var svc *orchestrate.Service
-	meterOf := meter.New(db, table, nil,
+	var tick func(meter.Tick)
+	meterOf := meter.New(db, table, func(t meter.Tick) { tick(t) },
 		func(it inbox.Item) { bus.Publish(orchestrate.InboxChanged{Item: it}) },
 		func(runID, reason string) {
 			if svc != nil {
 				svc.StopForBudget(runID, reason)
 			}
 		})
+	tick = books.Ticks(meterOf, func(body any) { bus.Publish(body) })
+	pages := &handbook.Service{Store: db, OnChange: func(p memory.Page, deleted bool) {
+		bus.Publish(books.PageChanged{Page: p, Deleted: deleted})
+	}}
 	deps := withModels(orchestrate.Deps{
 		Store:   db,
 		Meter:   meterOf,
@@ -94,6 +103,8 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		Drafter:         drafter(skill.Templates(), deps.Streams, deps.Scrub),
 		Bus:             bus,
 		EnsureWorkspace: workspace.Ensure,
+		Handbook:        pages,
+		Meter:           meterOf,
 	}, func() { _ = db.Close() }, nil
 }
 

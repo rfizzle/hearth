@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/rpc/books"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
 	"github.com/rfizzle/hearth/internal/store"
@@ -69,6 +70,12 @@ type Options struct {
 	// EnsureWorkspace creates the Hearth folder at a path UpdateOrg is
 	// given, or says why it cannot; UpdateOrg refuses while it is unset.
 	EnsureWorkspace func(path string) error
+	// Handbook keeps the pages HandbookService serves; it tells the bus
+	// itself, with books.PageChanged.
+	Handbook books.Pages
+	// Meter is the usage ledger UsageService reads and sets; its ticks
+	// reach the bus through books.Ticks.
+	Meter books.Ledger
 }
 
 // publish tells the bus about a change a handler made; with no bus nobody
@@ -90,8 +97,8 @@ func (o Options) withDefaults() Options {
 }
 
 // NewHandler returns the HTTP handler for the hearth.v1 contract, behind the
-// launch-token check. It serves the spike service and the six services over
-// the domain in Options. It points the accounts' and the integrations' change
+// launch-token check. It serves the spike service and the nine services over
+// the domain in Options, the handbook and usage ones through books. It points the accounts' and the integrations' change
 // hooks at the bus, so a sign-in finishing or a key pasted reaches the app
 // whoever caused it; call it before either is used.
 // See docs/architecture.md#1-layering
@@ -100,7 +107,8 @@ func NewHandler(o Options) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle(hearthv1connect.NewHearthServiceHandler(&service{opts: o}))
 	mux.Handle(hearthv1connect.NewOrgServiceHandler(&orgService{opts: o}))
-	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{opts: o}))
+	deps := books.Deps{Store: o.Store, Accounts: o.Accounts, Pages: o.Handbook, Meter: o.Meter, Publish: o.publish}
+	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{Bots: books.Bots{Deps: deps}, opts: o}))
 	if o.Accounts != nil {
 		o.Accounts.OnChange = func(a provider.Account) { o.publish(AccountChanged{Account: a}) }
 		o.Accounts.OnCredentialChange = func(name string, deleted bool) { o.publish(CredentialChanged{Name: name, Deleted: deleted}) }
@@ -109,10 +117,12 @@ func NewHandler(o Options) http.Handler {
 		o.Integrations.OnChange = func(a integration.Account) { o.publish(IntegrationChanged{Integration: a}) }
 	}
 	mux.Handle(hearthv1connect.NewConversationServiceHandler(&conversationService{opts: o}))
-	mux.Handle(hearthv1connect.NewProviderServiceHandler(&providerService{opts: o}))
+	mux.Handle(hearthv1connect.NewProviderServiceHandler(&providerService{Models: books.Models{Deps: deps}, opts: o}))
 	mux.Handle(hearthv1connect.NewIntegrationServiceHandler(&integrationService{opts: o}))
 	mux.Handle(hearthv1connect.NewEventServiceHandler(&eventService{opts: o}))
 	mux.Handle(hearthv1connect.NewInboxServiceHandler(&inboxService{opts: o}))
+	mux.Handle(hearthv1connect.NewHandbookServiceHandler(books.Handbook{Deps: deps}))
+	mux.Handle(hearthv1connect.NewUsageServiceHandler(books.Usage{Deps: deps}))
 	return requireToken(o.Token, mux)
 }
 
@@ -120,14 +130,14 @@ func NewHandler(o Options) http.Handler {
 type (
 	service    struct{ opts Options } // the spike: Ping and StreamHello
 	orgService struct{ opts Options } // OrgService: the org's name and the Hearth folder
-	botService struct {               // BotService: the templates, hiring and listing bots
-		hearthv1connect.UnimplementedBotServiceHandler // the note and update calls answer unimplemented until their handlers land
-		opts                                           Options
+	botService struct {               // BotService: the templates, hiring, listing bots and their grants
+		books.Bots // the bot's settings and its notes
+		opts       Options
 	}
 	conversationService struct{ opts Options } // ConversationService: the threads and the owner's side of a run
-	providerService     struct {               // ProviderService: which model accounts are signed in
-		hearthv1connect.UnimplementedProviderServiceHandler // the tier calls answer unimplemented until their handlers land
-		opts                                                Options
+	providerService     struct {               // ProviderService: which model accounts are signed in, and their credentials
+		books.Models // the tiers and the models on offer
+		opts         Options
 	}
 	integrationService struct{ opts Options } // IntegrationService: the optional services that are not model providers
 	eventService       struct{ opts Options } // EventService: the one stream every change travels on

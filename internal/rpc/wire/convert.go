@@ -46,6 +46,7 @@ func BotToProto(b org.Bot) *hearthv1.Bot {
 		Avatar:           b.Avatar,
 		FolderPath:       b.FolderPath,
 		DmConversationId: b.DMConversationID,
+		ModelOverride:    b.ModelOverride,
 	}
 }
 

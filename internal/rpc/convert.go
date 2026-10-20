@@ -34,6 +34,9 @@ func conversationToProto(c org.Conversation) *hearthv1.Conversation {
 		BotId:     c.BotID,
 		Title:     c.Title,
 		UpdatedAt: wire.Timestamp(c.UpdatedAt),
+
+		Summary:           c.Summary,
+		SummaryThroughSeq: c.SummaryThroughSeq,
 	}
 	if c.LatestRun != nil {
 		out.LatestRun = runToProto(*c.LatestRun)
@@ -86,13 +89,6 @@ func runToProto(r org.Run) *hearthv1.Run {
 	}
 }
 
-// knownKinds is the contract's known-service kinds against provider's.
-var knownKinds = map[hearthv1.KnownServiceKind]provider.KnownKind{
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_BUILTIN:    provider.Builtin,
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_COMPATIBLE: provider.CompatibleService,
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_LOCAL:      provider.Local,
-}
-
 // integrationNames is the contract's integration enum against integration's
 // names.
 var integrationNames = map[hearthv1.Integration]integration.Name{
@@ -117,17 +113,6 @@ func accountToProto(a provider.Account) *hearthv1.ProviderAccount {
 		DisplayName:  a.DisplayName,
 		BaseUrl:      a.BaseURL,
 		DefaultModel: a.DefaultModel,
-	}
-}
-
-func knownServiceToProto(k provider.KnownService) *hearthv1.KnownService {
-	return &hearthv1.KnownService{
-		Id:           k.ID,
-		Name:         k.Name,
-		BaseUrl:      k.BaseURL,
-		HelpUrl:      k.HelpURL,
-		DefaultModel: k.DefaultModel,
-		Kind:         wire.ToProto(knownKinds, k.Kind),
 	}
 }
 

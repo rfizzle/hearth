@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/orchestrate"
@@ -37,6 +38,7 @@ func Fail(err error) error {
 		{connect.CodeInvalidArgument, []error{orchestrate.ErrMismatch, orchestrate.ErrAttachment, org.ErrReservedName, widget.ErrInvalid}},
 		{connect.CodeInvalidArgument, []error{inbox.ErrNoStanding, inbox.ErrBadFolder, inbox.ErrReservedFolder}},
 		{connect.CodeInvalidArgument, []error{integration.ErrEmptyKey, integration.ErrUnknown}},
+		{connect.CodeInvalidArgument, []error{handbook.ErrNoTitle, handbook.ErrFull, store.ErrBadScope}},
 		{connect.CodeUnavailable, []error{ErrUnavailable}},
 	}
 	for _, c := range codes {

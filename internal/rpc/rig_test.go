@@ -17,10 +17,14 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/draft"
+	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/integration"
+	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/rpc/books"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
@@ -86,6 +90,8 @@ type rig struct {
 	bus  *orchestrate.Bus
 	root string // the Hearth folder a test names
 	gw   *gateway
+	// meter is the ledger UsageService reads; a test records on it.
+	meter *meter.Meter
 }
 
 // gateway is every address an added service names, answering the models
@@ -157,10 +163,17 @@ func newRig(t *testing.T, steps ...step) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var tick func(meter.Tick)
+	ledger := meter.New(db, nil, func(t meter.Tick) { tick(t) }, nil, nil)
+	tick = books.Ticks(ledger, func(body any) { bus.Publish(body) })
+	pages := &handbook.Service{Store: db, OnChange: func(p memory.Page, deleted bool) {
+		bus.Publish(books.PageChanged{Page: p, Deleted: deleted})
+	}}
 	return &rig{
-		gw:   gw,
-		bus:  bus,
-		root: filepath.Join(dir, "Hearth"),
+		gw:    gw,
+		meter: ledger,
+		bus:   bus,
+		root:  filepath.Join(dir, "Hearth"),
 		opts: Options{
 			Token:           testToken,
 			Store:           db,
@@ -172,11 +185,13 @@ func newRig(t *testing.T, steps ...step) *rig {
 			Bus:             bus,
 			ReservedFolders: []string{filepath.Join(dir, "data")},
 			EnsureWorkspace: workspace.Ensure,
+			Handbook:        pages,
+			Meter:           ledger,
 		},
 	}
 }
 
-// clients are the seven services, over one transport.
+// clients are the nine services, over one transport.
 type clients struct {
 	org   hearthv1connect.OrgServiceClient
 	bot   hearthv1connect.BotServiceClient
@@ -185,6 +200,8 @@ type clients struct {
 	integ hearthv1connect.IntegrationServiceClient
 	event hearthv1connect.EventServiceClient
 	inbox hearthv1connect.InboxServiceClient
+	book  hearthv1connect.HandbookServiceClient
+	usage hearthv1connect.UsageServiceClient
 }
 
 func newClients(hc *http.Client, token string) clients {
@@ -198,6 +215,8 @@ func newClients(hc *http.Client, token string) clients {
 		integ: hearthv1connect.NewIntegrationServiceClient(hc, base, opt),
 		event: hearthv1connect.NewEventServiceClient(hc, base, opt),
 		inbox: hearthv1connect.NewInboxServiceClient(hc, base, opt),
+		book:  hearthv1connect.NewHandbookServiceClient(hc, base, opt),
+		usage: hearthv1connect.NewUsageServiceClient(hc, base, opt),
 	}
 }
 

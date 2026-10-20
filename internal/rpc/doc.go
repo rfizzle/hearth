@@ -5,8 +5,9 @@
 // domain values behind them. It serves the org, the bots, their templates
 // and their grants, the conversations with their newest run and a retry, the
 // Inbox of decisions and answers, the model accounts, the integrations and
-// the event stream, beside the Ping and StreamHello of the spike. Nothing
-// else.
+// the event stream, beside the Ping and StreamHello of the spike. The calls
+// about notes, a bot's settings, the handbook, usage and the tiers are
+// books', registered here. Nothing else.
 //
 // Invariants the types do not hold:
 //   - Handlers hold no domain logic. A handler with an if about the domain
@@ -33,5 +34,6 @@
 // list StreamHello cycles through and the interval between words; the store,
 // the orchestrator, the accounts, the integrations, the role templates, the
 // function that drafts a bot, the function that creates the Hearth folder,
-// and the event bus. See docs/architecture.md#1-layering
+// the event bus, the handbook's pages and the meter. See
+// docs/architecture.md#1-layering
 package rpc

@@ -7,12 +7,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/llm"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/usage"
 	"github.com/rfizzle/hearth/internal/rpc"
+	"github.com/rfizzle/hearth/internal/rpc/books"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/store"
 )
@@ -107,5 +111,42 @@ func TestOpenCore_TheOrgFolderIsMadeByTheWorkspacePackage(t *testing.T) {
 	}
 	if fi, err := os.Stat(filepath.Join(root, "Inbox")); err != nil || !fi.IsDir() {
 		t.Fatalf("the Hearth folder was not made: %v", err)
+	}
+}
+
+func TestOpenCore_AMeteredRequestTicksOnTheBusWithTheBudget(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, t.TempDir())
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if opts.Handbook == nil {
+		t.Error("the handbook is not set: HandbookService would fail every call")
+	}
+	if err := opts.Meter.SetBudgets(ctx, []usage.Budget{{Subject: "b1", Cents: 500}}); err != nil {
+		t.Fatal(err)
+	}
+	events, stop := opts.Bus.Subscribe(0)
+	defer stop()
+	if err := opts.Meter.(*meter.Meter).Record(ctx, usage.Record{BotID: "b1", Provider: "anthropic", Model: "unknown", Prompt: 10}); err != nil {
+		t.Fatal(err)
+	}
+	guard := time.After(5 * time.Second)
+	for {
+		select {
+		case e := <-events:
+			tick, ok := e.Body.(books.UsageTicked)
+			if !ok {
+				continue
+			}
+			if tick.Bot.BotID != "b1" || tick.Bot.Prompt != 10 || tick.Bot.Budget.Cents != 500 {
+				t.Errorf("tick = %+v, want b1's 10 tokens and its budget", tick)
+			}
+			return
+		case <-guard:
+			t.Fatal("no usage tick reached the bus")
+		}
 	}
 }

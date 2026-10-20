@@ -154,6 +154,8 @@ func TestOpenCore_ServesTheServicesOverTheDataFolder(t *testing.T) {
 		"/hearth.v1.BotService/ListTemplates",
 		"/hearth.v1.IntegrationService/ListIntegrations",
 		"/hearth.v1.ProviderService/ListAccounts",
+		"/hearth.v1.HandbookService/ListPages",
+		"/hearth.v1.UsageService/Summary",
 	} {
 		if rec := call("tok", procedure); rec.Code != http.StatusOK {
 			t.Errorf("%s = %d %s, want 200", procedure, rec.Code, rec.Body)

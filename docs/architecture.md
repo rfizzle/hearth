@@ -165,6 +165,7 @@ Rules:
 | `internal/secret` | Scrub tool results | lifted from shhh |
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
 | `internal/rpc` | Connect handlers, event stream, version handshake | new |
+| `internal/rpc/books` | The calls about what the org keeps on its bots: notes, a bot's settings, the handbook, usage and budgets, the tiers and the models on offer | new |
 | `internal/rpc/wire` | The translation the services share: the one place a domain error picks its code, the conversions more than one service needs, and the controls a question asks with | new |
 | `internal/framing` | The fixed instructions wrapped around job descriptions (Chief of Staff, lead, member) as embedded text with tests that they render | new |
 | `internal/assembly` | A run's context, built in a fixed order within byte caps (framing, handbook, notes, summary, window, the parked round, attachments); dropped files brought where the bot may read them; and the side runs after a run: the conversation's summary and tidying a bot's notes | new |
