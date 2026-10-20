@@ -1,6 +1,6 @@
 // Avatar is a small disc with initials, an SF Symbol or a single character
 // such as an emoji on it. It wraps a Text or an Image on a circle in the
-// secondary surface colour. The diameter scales with Dynamic Type. It is
+// secondary surface colour, regular or large. The diameter scales with Dynamic Type. It is
 // hidden from VoiceOver: an avatar always sits beside the name it stands for,
 // and reading both says the name twice.
 
@@ -18,12 +18,26 @@ public struct Avatar: View {
         case character(String)
     }
 
+    /// How big the disc is before Dynamic Type scales it.
+    public enum Size: String, CaseIterable, Sendable {
+        case regular
+        case large
+
+        var diameter: CGFloat {
+            switch self {
+            case .regular: Theme.Size.avatar
+            case .large: Theme.Size.avatarLarge
+            }
+        }
+    }
+
     let content: Content
 
-    @ScaledMetric(relativeTo: .body) private var diameter: CGFloat = 28
+    @ScaledMetric private var diameter: CGFloat
 
-    public init(_ content: Content) {
+    public init(_ content: Content, size: Size = .regular) {
         self.content = content
+        self._diameter = ScaledMetric(wrappedValue: size.diameter, relativeTo: .body)
     }
 
     public var body: some View {
@@ -60,23 +74,28 @@ extension Avatar {
         case initials
         case symbol
         case character
+        case large
 
         /// The content for this state.
         public var content: Content {
             switch self {
-            case .initials: .initials("Dana Reyes")
+            case .initials, .large: .initials("Dana Reyes")
             case .symbol: .symbol("magnifyingglass")
             case .character: .character("🦊")
             }
         }
+
+        /// The size for this state.
+        public var size: Size { self == .large ? .large : .regular }
     }
 
     /// An avatar showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
-        self.init(state.content)
+        self.init(state.content, size: state.size)
     }
 }
 
 #Preview("Initials") { Avatar(previewState: .initials).padding() }
 #Preview("Symbol") { Avatar(previewState: .symbol).padding() }
 #Preview("Character") { Avatar(previewState: .character).padding() }
+#Preview("Large") { Avatar(previewState: .large).padding() }

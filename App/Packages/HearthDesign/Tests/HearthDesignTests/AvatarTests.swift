@@ -18,5 +18,13 @@ func initialsComeFromTheFirstTwoWords(name: String, initials: String) {
     #expect(
         Avatar.PreviewState.allCases.map(\.content) == [
             .initials("Dana Reyes"), .symbol("magnifyingglass"), .character("🦊"),
+            .initials("Dana Reyes"),
         ])
+}
+
+@MainActor
+@Test func theLargeStateIsTheOnlyLargeOne() {
+    #expect(Avatar.PreviewState.allCases.filter { $0.size == .large } == [.large])
+    #expect(Avatar.Size.regular.diameter == Theme.Size.avatar)
+    #expect(Avatar.Size.large.diameter == Theme.Size.avatarLarge)
 }
