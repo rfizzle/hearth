@@ -256,9 +256,10 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID str
 	return tools.Dispatcher{Defs: reg, Grants: grants, Allowances: allowances, Root: root, Reserved: s.d.Reserved}, nil
 }
 
-// registry is every tool configured now: the file tools, asking the owner,
-// web.fetch when there is a fetcher, web.search when a search service has a
-// key, then extra, the tools of this run alone.
+// registry is every tool configured now: the file tools, with the app's
+// recogniser for this run when there is one, asking the owner, web.fetch when
+// there is a fetcher, web.search when a search service has a key, then extra,
+// the tools of this run alone.
 func (s *Service) registry(extra []tools.Definition) (*tools.Registry, error) {
 	var searcher web.Searcher
 	if s.d.Searcher != nil {
@@ -266,5 +267,9 @@ func (s *Service) registry(extra []tools.Definition) (*tools.Registry, error) {
 			searcher = found
 		}
 	}
-	return toolset.Registry(files.Options{Recogniser: s.d.Recogniser, Reserved: s.d.Reserved}, s.d.Fetcher.ForRun(), searcher, extra...)
+	opts := files.Options{Reserved: s.d.Reserved}
+	if s.d.Recogniser != nil {
+		opts.Recogniser = s.d.Recogniser()
+	}
+	return toolset.Registry(opts, s.d.Fetcher.ForRun(), searcher, extra...)
 }

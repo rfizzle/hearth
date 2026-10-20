@@ -187,7 +187,7 @@ func TestReadImages(t *testing.T) {
 		}
 	}
 	d, err := Read(context.Background(), fixture("tiny.png"), Options{Name: "shot.png", Recogniser: noRecogniser{}})
-	if err != nil || len(d.Notices) != 1 || d.Notices[0] != "[shot.png is a picture; its text could not be recognised yet.]" {
+	if err != nil || len(d.Notices) != 1 || d.Notices[0] != "[shot.png is a picture; its text could not be recognised.]" {
 		t.Errorf("with the app: %+v, %v", d, err)
 	}
 }

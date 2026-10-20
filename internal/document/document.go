@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/hearth/internal/document/picture"
 )
 
 // The caps of one read. They are the owner's numbers: a file the attachment
@@ -75,9 +77,12 @@ type Options struct {
 	Want int
 	// Limit is the wall time of the read; 0 is TimeLimit.
 	Limit time.Duration
-	// Recogniser reads picture pages; nil leaves them unread. It is not
-	// consulted yet.
+	// Recogniser reads picture pages and the text in an image; nil leaves
+	// them unread.
 	Recogniser Recogniser
+
+	// path is the file Read opened, which the Recogniser is handed.
+	path string
 }
 
 // Page is one page of a paged document.
@@ -110,20 +115,20 @@ type Document struct {
 	Next int
 }
 
-// Recognised is the text a Recogniser found on one page.
-type Recognised struct {
-	Page int
-	Text string
-	// FromTextLayer is a page the recogniser read from the text layer itself
-	// rather than by looking at it.
-	FromTextLayer bool
-}
+// Recognised is the text a Recogniser found on one page; see picture.
+type Recognised = picture.Recognised
 
-// Recogniser reads the pages that are pictures. The app provides one while it
-// is open; a nil Recogniser is the command-line helper.
-type Recogniser interface {
-	Recognise(ctx context.Context, path string, pages []int) ([]Recognised, error)
-}
+// Recogniser reads the pages that are pictures, the app while it is open; a
+// nil Recogniser is the command-line helper. Read hands it the absolute path
+// it opened, and whatever it returns is cleaned and capped here like any
+// other text of the file.
+type Recogniser = picture.Recogniser
+
+// ErrNoApp is a Recogniser that could not reach the app.
+var ErrNoApp = picture.ErrNoApp
+
+// Batch is the most pages one call to a Recogniser is asked to read.
+const Batch = picture.Batch
 
 // reader reads one kind from f, size bytes long. name is already safe to put
 // in a notice.
@@ -169,7 +174,7 @@ func Read(ctx context.Context, path string, o Options) (Document, error) {
 	}
 	limited, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
-	o.Limit = limit
+	o.Limit, o.path = limit, path
 	doc, err := row.read(limited, f, info.Size(), name, o)
 	if cerr := ctx.Err(); cerr != nil {
 		return Document{}, cerr // the run was cancelled, not the read's own minute

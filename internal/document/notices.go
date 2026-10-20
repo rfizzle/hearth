@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/document/picture"
 	"github.com/rfizzle/hearth/internal/document/sheet"
 )
 
@@ -21,28 +22,13 @@ func noticeNoPages(name string) string {
 	return fmt.Sprintf("[%s has no pages Hearth can read.]", name)
 }
 
-// noticePictures names the picture pages. Without the app they could not be
-// read at all; with one they were offered to it and not recognised.
-func noticePictures(pages []int, app bool) string {
-	if app {
-		if len(pages) == 1 {
-			return fmt.Sprintf("[Page %s is a picture with no text; it could not be recognised.]", pageList(pages))
-		}
-		return fmt.Sprintf("[Pages %s are pictures with no text; they could not be recognised.]", pageList(pages))
-	}
-	if len(pages) == 1 {
-		return fmt.Sprintf("[Page %s is a picture with no text. Hearth isn't open, so it could not be read.]", pageList(pages))
-	}
-	return fmt.Sprintf("[Pages %s are pictures with no text. Hearth isn't open, so they could not be read.]", pageList(pages))
-}
-
 // noticeUnreadOf is the notice for the parts of a document, called noun in the
 // singular, that could not be read.
 func noticeUnreadOf(parts []int, noun string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("[%s %s could not be read.]", capital(noun), pageList(parts))
+		return fmt.Sprintf("[%s %s could not be read.]", capital(noun), picture.PageList(parts))
 	}
-	return fmt.Sprintf("[%ss %s could not be read.]", capital(noun), pageList(parts))
+	return fmt.Sprintf("[%ss %s could not be read.]", capital(noun), picture.PageList(parts))
 }
 
 func capital(s string) string { return strings.ToUpper(s[:1]) + s[1:] }
@@ -67,28 +53,6 @@ func noticeTextCapOf(at, to int, noun string) string {
 // MaxPages of it, ending no later than page to.
 func PagesHint(from, to int) string {
 	return fmt.Sprintf("%d-%d", from, min(to, from+MaxPages-1))
-}
-
-// pageList is page numbers, ascending, as the owner reads them: runs
-// collapsed, "3 and 7", "1-3, 5 and 9".
-func pageList(pages []int) string {
-	var parts []string
-	for i := 0; i < len(pages); {
-		j := i
-		for j+1 < len(pages) && pages[j+1] == pages[j]+1 {
-			j++
-		}
-		if j > i {
-			parts = append(parts, strconv.Itoa(pages[i])+"-"+strconv.Itoa(pages[j]))
-		} else {
-			parts = append(parts, strconv.Itoa(pages[i]))
-		}
-		i = j + 1
-	}
-	if len(parts) == 1 {
-		return parts[0]
-	}
-	return strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
 }
 
 func noticeEmpty(name string) string {
@@ -207,15 +171,6 @@ func noticeSheetTextCap(name string) string {
 
 func noticeCellsCut(runes int) string {
 	return fmt.Sprintf("[Cells longer than %d characters were cut.]", runes)
-}
-
-// noticePicture says an image's text could not be read: with the app open it
-// was offered and not recognised, without it nothing could look.
-func noticePicture(name string, app bool) string {
-	if app {
-		return fmt.Sprintf("[%s is a picture; its text could not be recognised yet.]", name)
-	}
-	return fmt.Sprintf("[%s is a picture. Hearth isn't open, so its text could not be read.]", name)
 }
 
 func noticeNoSheets(name string) string {

@@ -133,7 +133,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, internal/deliverable, internal/measure, internal/render/chart, internal/render/html, internal/render/paper, internal/render/docx and internal/render/fonts exist; the rest of render and native are planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, internal/deliverable, internal/measure, internal/render/chart, internal/render/html, internal/render/paper, internal/render/docx, internal/render/fonts and internal/native exist; the rest of render is planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -194,7 +194,7 @@ Rules:
 | `internal/rpc/deliverables` | The handlers of `MeasureService` and `DeliverableService` | new |
 | `scripts/tokens` (planned) | Generates the chart hues and the Tailwind theme from the design tokens | new |
 | `scripts/tailwind` (planned) | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |
-| `internal/native` (planned) | Proxies to the app's NativeService, ExtractText first | new |
+| `internal/native` | Proxies to the app's NativeService, ExtractText first | new |
 | `internal/tools/files` | `files.read`, `files.write`, `files.render`, `files.delete` inside the folders a bot's grants name | new |
 | `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |

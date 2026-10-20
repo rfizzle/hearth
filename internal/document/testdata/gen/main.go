@@ -14,7 +14,9 @@
 // security handler of the PDF specification, section 7.6, written out here.
 // prev-loop.pdf is text3.pdf with a trailer that points at its own table.
 // long.pdf has twelve pages of about 8 KB of text each, deflated, so that a
-// read has more than one window of text to fill.
+// read has more than one window of text to fill. scans.pdf has 23 pages with
+// no text but pages 2 and 13, so its 21 picture pages are offered to the app
+// in three batches.
 //
 // notes.docx has a heading, a paragraph with bold, italic, a tab and a line
 // break, a bulleted and a numbered list, a table with a pipe in a cell, and a
@@ -90,6 +92,7 @@ func main() {
 		"text3.pdf":          plain,
 		"long.pdf":           textPDF(longPages(), nil, ""),
 		"scan.pdf":           scanPDF(),
+		"scans.pdf":          textPDF(scanPages(), nil, ""),
 		"truncated.pdf":      plain[:len(plain)*6/10],
 		"prev-loop.pdf":      selfPrev(plain),
 		"empty-password.pdf": encrypted(""),
@@ -173,6 +176,14 @@ func longPages() []string {
 	for i := range out {
 		out[i] = fmt.Sprintf("Long page %d. ", i+1) + strings.Repeat(fmt.Sprintf("Words on page %d go on. ", i+1), 340)
 	}
+	return out
+}
+
+// scanPages are 23 pages, all empty but pages 2 and 13.
+func scanPages() []string {
+	out := make([]string, 23)
+	out[1] = "Page two has a text layer that Hearth reads itself."
+	out[12] = "Page thirteen has a text layer that Hearth reads too."
 	return out
 }
 

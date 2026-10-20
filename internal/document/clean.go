@@ -3,7 +3,8 @@ package document
 import (
 	"strings"
 	"unicode"
-	"unicode/utf8"
+
+	"github.com/rfizzle/hearth/internal/document/picture"
 )
 
 // appVoice is how a line begins when it speaks as the app; the framing tells
@@ -33,22 +34,6 @@ func clean(s string) string {
 	return strings.Join(lines, "\n")
 }
 
-// IsPicturePage is the rule for a page whose text is not text: it has fewer
-// than 20 characters that are not white space, or more than a tenth of its
-// characters are U+FFFD or not printable (a font with no map to Unicode).
-// An empty page is a picture. It judges the text as the parser returned it,
-// before cleaning.
-func IsPicturePage(text string) bool {
-	var solid, total, bad int
-	for _, r := range text {
-		total++
-		switch {
-		case r == utf8.RuneError || (!unicode.IsPrint(r) && !unicode.IsSpace(r)):
-			bad++
-			solid++
-		case !unicode.IsSpace(r):
-			solid++
-		}
-	}
-	return solid < 20 || bad*10 > total
-}
+// IsPicturePage is the rule for a page whose text is not text; see
+// picture.IsPage.
+func IsPicturePage(text string) bool { return picture.IsPage(text) }

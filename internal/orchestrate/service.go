@@ -80,9 +80,11 @@ type Deps struct {
 	// a key set after launch counts from the next message; nil, or false,
 	// leaves web.search out.
 	Searcher func() (web.Searcher, bool)
-	// Recogniser reads the pictures in a document the app can see; nil, the
-	// helper on its own, leaves them as a notice.
-	Recogniser document.Recogniser
+	// Recogniser is asked once per run for what reads the pictures in a
+	// document while the app is open, so a run that finds the app gone says
+	// so once and the next run asks again; nil, the helper on its own, leaves
+	// them as a notice.
+	Recogniser func() document.Recogniser
 	Bus        *Bus
 	// Coordinator is the org-level bot that answers project conversations;
 	// false when there is none, or nil. hearthd hands the store's oldest

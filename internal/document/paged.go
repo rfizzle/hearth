@@ -64,7 +64,7 @@ func readPages(ctx context.Context, doc *Document, total int, name string, o Opt
 			pg.Text = clean(strings.TrimSpace(text))
 		}
 		doc.Pages = append(doc.Pages, pg)
-		fmt.Fprintf(&body, "%s\n%s\n\n", src.heading(n), partBody(pg, src))
+		writePart(&body, pg, src)
 		if body.Len() >= MaxText {
 			if n < to {
 				stopped = noticeTextCapOf(n, to, src.noun)
@@ -87,6 +87,22 @@ func readPages(ctx context.Context, doc *Document, total int, name string, o Opt
 		doc.Notices = append(doc.Notices, stopped)
 	}
 	return pictures, nil
+}
+
+// writePart writes part p under its heading, as the text of a paged
+// document holds it.
+func writePart(b *strings.Builder, p Page, src pages) {
+	fmt.Fprintf(b, "%s\n%s\n\n", src.heading(p.Number), partBody(p, src))
+}
+
+// joinPages is the text of a paged document from its parts, as readPages
+// writes it; a read rewrites it once the picture pages have their text.
+func joinPages(parts []Page, src pages) string {
+	var b strings.Builder
+	for _, p := range parts {
+		writePart(&b, p, src)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 // partBody is what a part shows under its heading.

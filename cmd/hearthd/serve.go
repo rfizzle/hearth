@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/document"
+	"github.com/rfizzle/hearth/internal/native"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc"
 )
@@ -28,6 +30,7 @@ func runServe(args []string) int {
 	socket := fs.String("socket", "", "Unix socket path to listen on instead of --listen")
 	dataDir := fs.String("data-dir", "", "folder for the database and credentials; default is the Hearth folder in Application Support")
 	token := fs.String("token", "", "launch token for hand-runs from a terminal; the app sends it on stdin, and stdin wins")
+	nativeAddr := fs.String("native", "", "loopback host:port of the app's native service; unset, pictures in documents are not read")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -35,7 +38,7 @@ func runServe(args []string) int {
 	fs.Visit(func(f *flag.Flag) { listenSet = listenSet || f.Name == "listen" })
 	logger := log.New(os.Stderr, "hearthd: ", log.LstdFlags)
 	usage := func() int {
-		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>] [--data-dir <folder>]")
+		fmt.Fprintln(os.Stderr, "usage: hearthd serve [--listen host:port | --socket <path>] [--data-dir <folder>] [--native 127.0.0.1:<port>]")
 		fmt.Fprintln(os.Stderr, "  The launch token is the first line of stdin; the rest of stdin is the lifeline.")
 		fmt.Fprintln(os.Stderr, "  By hand from a terminal: hearthd serve --token <t>")
 		fs.PrintDefaults()
@@ -64,6 +67,17 @@ func runServe(args []string) int {
 	if tok == "" {
 		return usage()
 	}
+	// The app's native service is called with the same token in the other
+	// direction. A port is not a secret, so it comes on argv.
+	var recogniser func() document.Recogniser
+	if *nativeAddr != "" {
+		c, err := native.New(*nativeAddr, tok)
+		if err != nil {
+			logger.Print(err)
+			return usage()
+		}
+		recogniser = c.ForRun
+	}
 
 	dir := *dataDir
 	if dir == "" {
@@ -87,7 +101,7 @@ func runServe(args []string) int {
 	defer stop()
 	ctx = lifeline(ctx, stdin)
 
-	opts, closeCore, err := openCore(ctx, dir)
+	opts, closeCore, err := openCore(ctx, dir, recogniser)
 	if err != nil {
 		logger.Print(err)
 		return 1

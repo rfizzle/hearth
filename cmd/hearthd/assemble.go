@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/document"
 	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/integration"
@@ -31,9 +32,11 @@ import (
 
 // openCore opens everything the contract serves over the data folder: the
 // store, the accounts and the integrations over one key store, the fetcher,
-// the meter, the handbook and the orchestrator. The bus's heartbeats run
-// until ctx ends. The returned function closes the store.
-func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) {
+// the meter, the handbook and the orchestrator, which is handed recogniser,
+// the app's reader of pictures for each run, or nil without the app. The
+// bus's heartbeats run until ctx ends. The returned function closes the
+// store.
+func openCore(ctx context.Context, dataDir string, recogniser func() document.Recogniser) (rpc.Options, func(), error) {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return rpc.Options{}, nil, err
 	}
@@ -96,7 +99,8 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 			s := integrations.Searcher()
 			return s, s != nil
 		},
-		Bus: bus, Reserved: reserved,
+		Recogniser: recogniser,
+		Bus:        bus, Reserved: reserved,
 		Coordinator: func(ctx context.Context) (org.Bot, bool) {
 			b, err := db.Coordinator(ctx)
 			return b, err == nil

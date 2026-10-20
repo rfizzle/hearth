@@ -44,9 +44,10 @@ var formatNames = map[string]string{"png": "a PNG", "jpeg": "a JPEG", "gif": "a 
 
 // readImage describes the picture: its format and its size in pixels, from
 // the header alone. A picture over MaxPixels is refused before any decoder
-// runs past its header, and the text in it is left to the app's Recogniser,
-// which is not consulted yet; the notice says which of the two cases this is.
-func readImage(_ context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
+// runs past its header. The text in it and what it shows are asked of the
+// app's Recogniser, as page 1; the notice says whether the app read it, found
+// no text, could not, or was not open.
+func readImage(ctx context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
 	if err := refusePages(o, name, "a picture"); err != nil {
 		return Document{}, err
 	}
@@ -62,9 +63,10 @@ func readImage(_ context.Context, f io.ReaderAt, size int64, name string, o Opti
 	if !ok {
 		kind = "a picture"
 	}
+	more, notice := recogniseImage(ctx, name, o)
 	return Document{
 		Kind:    Kind(format),
-		Text:    fmt.Sprintf("File %s is %s image, %d×%d.", name, kind, cfg.Width, cfg.Height),
-		Notices: []string{noticePicture(name, o.Recogniser != nil)},
+		Text:    fmt.Sprintf("File %s is %s image, %d×%d.", name, kind, cfg.Width, cfg.Height) + more,
+		Notices: []string{notice},
 	}, nil
 }

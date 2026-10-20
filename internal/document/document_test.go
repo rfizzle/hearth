@@ -174,7 +174,7 @@ func TestReadWithNoFreeSlotEndsWithTheNotice(t *testing.T) {
 	}
 }
 
-func TestReadNamesTheAppWhenOneIsSetButNotConsulted(t *testing.T) {
+func TestReadNamesTheAppWhenItAnswersNothing(t *testing.T) {
 	d, err := Read(context.Background(), fixture("scan.pdf"), Options{Recogniser: noRecogniser{}})
 	if err != nil || !hasNotice(d, "[Page 1 is a picture with no text; it could not be recognised.]") || hasNotice(d, "isn't open") {
 		t.Errorf("scan with a recogniser: %+v, %v", d, err)
@@ -316,20 +316,6 @@ func TestParseRange(t *testing.T) {
 	for _, in := range []string{"0", "-3", "3-", "5-2", "a-b", "1-2-3", "1,2", "99999999999999999999"} {
 		if _, err := ParseRange(in); err == nil {
 			t.Errorf("ParseRange(%q) accepted", in)
-		}
-	}
-}
-
-func TestPageList(t *testing.T) {
-	for _, tc := range []struct {
-		pages []int
-		want  string
-	}{
-		{[]int{3}, "3"}, {[]int{3, 7}, "3 and 7"}, {[]int{1, 2, 3}, "1-3"},
-		{[]int{1, 2, 3, 5, 9}, "1-3, 5 and 9"}, {[]int{4, 5}, "4-5"},
-	} {
-		if got := pageList(tc.pages); got != tc.want {
-			t.Errorf("pageList(%v) = %q, want %q", tc.pages, got, tc.want)
 		}
 	}
 }

@@ -129,7 +129,7 @@ func TestOpenCore_ServesTheServicesOverTheDataFolder(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "Hearth")
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, dir)
+	opts, closeCore, err := openCore(ctx, dir, nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}

@@ -68,7 +68,7 @@ func TestOpenCore_GivesOlderBotsTheRightToAsk(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, dir)
+	opts, closeCore, err := openCore(ctx, dir, nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}
@@ -99,7 +99,7 @@ func TestOpenCore_GivesAnOlderOrgItsChiefOfStaffOnce(t *testing.T) {
 
 	for range 2 {
 		ctx, cancel := context.WithCancel(context.Background())
-		opts, closeCore, err := openCore(ctx, dir)
+		opts, closeCore, err := openCore(ctx, dir, nil)
 		if err != nil {
 			cancel()
 			t.Fatalf("openCore: %v", err)
@@ -120,7 +120,7 @@ func TestOpenCore_GivesAnOlderOrgItsChiefOfStaffOnce(t *testing.T) {
 func TestOpenCore_HiresNobodyBeforeOnboarding(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, t.TempDir())
+	opts, closeCore, err := openCore(ctx, t.TempDir(), nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
 	dir := t.TempDir()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, dir)
+	opts, closeCore, err := openCore(ctx, dir, nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestOpenCore_TheTemplatesFolderIsReservedAndTheMeasuresAreWired(t *testing.
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, dir)
+	opts, closeCore, err := openCore(ctx, dir, nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestOpenCore_TheTemplatesFolderIsReservedAndTheMeasuresAreWired(t *testing.
 func TestOpenCore_TheOrgFolderIsMadeByTheWorkspacePackage(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, t.TempDir())
+	opts, closeCore, err := openCore(ctx, t.TempDir(), nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}
@@ -204,7 +204,7 @@ func TestOpenCore_TheOrgFolderIsMadeByTheWorkspacePackage(t *testing.T) {
 func TestOpenCore_AMeteredRequestTicksOnTheBusWithTheBudget(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	opts, closeCore, err := openCore(ctx, t.TempDir())
+	opts, closeCore, err := openCore(ctx, t.TempDir(), nil)
 	if err != nil {
 		t.Fatalf("openCore: %v", err)
 	}

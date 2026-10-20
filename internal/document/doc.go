@@ -26,9 +26,12 @@
 //   - Nothing from a document's content is written to a log, here or by a
 //     caller of this package.
 //   - A picture page (a scan, or a page whose text layer is garbage) is
-//     found by a fixed rule. The Recogniser that would read it is not
-//     consulted yet; with or without one, such a page is reported as a
-//     picture that could not be read.
+//     found by a fixed rule and offered to the Recogniser, the app while it
+//     is open, at most ten pages a call and within the read's minute. What
+//     it answers is text from outside this process: only the pages asked
+//     for are kept, and their text is cleaned and capped as any page's is.
+//     A page it does not answer, or every page when there is no app, is
+//     reported as a picture that could not be read.
 //
 // A kind is one row in kinds.go: its name, extensions, the check its first
 // bytes must pass, and its reader. A new kind is a new row and a sub-package. A Word or PowerPoint file is a
@@ -37,11 +40,12 @@
 // by sheet, in memory and under its own zip limits, up to 20 sheets of 10,000
 // cells, or the one sheet the call names; an RTF file by rtf, with a depth and
 // a size cap. A picture is described from its header alone (format and
-// pixels, never decoded) and one over 50 megapixels is refused; its text is
-// left to the Recogniser, which is not consulted yet, and the notice says
-// whether the app was open.
+// pixels, never decoded) and one over 50 megapixels is refused; its text and
+// what it shows are asked of the Recogniser, and the notice says whether the
+// app was open.
 //
 // See docs/decisions.md#hearth--decisions
 //
-// It imports pdftext, office, sheet, rtf, x/image/webp and the standard library.
+// It imports pdftext, office, sheet, rtf, picture, x/image/webp and the standard
+// library.
 package document

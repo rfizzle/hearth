@@ -38,19 +38,20 @@ func readPDF(ctx context.Context, f io.ReaderAt, size int64, name string, o Opti
 		doc.Notices = []string{noticeNoPages(name)}
 		return doc, nil
 	}
-	pictures, err := readPages(ctx, &doc, total, name, o, pages{
+	src := pages{
 		noun:    "page",
 		heading: func(n int) string { return fmt.Sprintf("[Page %d]", n) },
 		empty:   "[No text on this page.]",
 		failed:  "[This page could not be read.]",
 		get:     func(ctx context.Context, n, _ int) (string, error) { return r.Page(ctx, n) },
 		picture: IsPicturePage,
-	})
+	}
+	pictures, err := readPages(ctx, &doc, total, name, o, src)
 	if err != nil {
 		return doc, err
 	}
 	if len(pictures) > 0 {
-		doc.Notices = append([]string{noticePictures(pictures, o.Recogniser != nil)}, doc.Notices...)
+		doc.Notices = append(recognisePages(ctx, &doc, pictures, o, src), doc.Notices...)
 	}
 	return doc, nil
 }
