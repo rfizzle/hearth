@@ -59,3 +59,9 @@ func (s *providerService) account(p provider.Provider) *hearthv1.ProviderAccount
 	}
 	return nil
 }
+
+// ListKnownServices is declared by the contract before the table behind it
+// exists.
+func (s *providerService) ListKnownServices(context.Context, *connect.Request[hearthv1.ListKnownServicesRequest]) (*connect.Response[hearthv1.ListKnownServicesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, nil)
+}

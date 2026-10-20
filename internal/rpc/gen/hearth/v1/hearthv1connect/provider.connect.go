@@ -45,6 +45,9 @@ const (
 	// ProviderServiceStartChatGPTLoginProcedure is the fully-qualified name of the ProviderService's
 	// StartChatGPTLogin RPC.
 	ProviderServiceStartChatGPTLoginProcedure = "/hearth.v1.ProviderService/StartChatGPTLogin"
+	// ProviderServiceListKnownServicesProcedure is the fully-qualified name of the ProviderService's
+	// ListKnownServices RPC.
+	ProviderServiceListKnownServicesProcedure = "/hearth.v1.ProviderService/ListKnownServices"
 )
 
 // ProviderServiceClient is a client for the hearth.v1.ProviderService service.
@@ -56,6 +59,9 @@ type ProviderServiceClient interface {
 	// keeps the sign-in going; the result arrives as an account_changed
 	// event on EventService.Subscribe.
 	StartChatGPTLogin(context.Context, *connect.Request[v1.StartChatGPTLoginRequest]) (*connect.Response[v1.StartChatGPTLoginResponse], error)
+	// ListKnownServices is the services hearth knows the address of, the
+	// rows the app offers when the owner adds another service.
+	ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error)
 }
 
 // NewProviderServiceClient constructs a client for the hearth.v1.ProviderService service. By
@@ -93,6 +99,12 @@ func NewProviderServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(providerServiceMethods.ByName("StartChatGPTLogin")),
 			connect.WithClientOptions(opts...),
 		),
+		listKnownServices: connect.NewClient[v1.ListKnownServicesRequest, v1.ListKnownServicesResponse](
+			httpClient,
+			baseURL+ProviderServiceListKnownServicesProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("ListKnownServices")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -102,6 +114,7 @@ type providerServiceClient struct {
 	setAPIKey         *connect.Client[v1.SetAPIKeyRequest, v1.SetAPIKeyResponse]
 	clearCredential   *connect.Client[v1.ClearCredentialRequest, v1.ClearCredentialResponse]
 	startChatGPTLogin *connect.Client[v1.StartChatGPTLoginRequest, v1.StartChatGPTLoginResponse]
+	listKnownServices *connect.Client[v1.ListKnownServicesRequest, v1.ListKnownServicesResponse]
 }
 
 // ListAccounts calls hearth.v1.ProviderService.ListAccounts.
@@ -124,6 +137,11 @@ func (c *providerServiceClient) StartChatGPTLogin(ctx context.Context, req *conn
 	return c.startChatGPTLogin.CallUnary(ctx, req)
 }
 
+// ListKnownServices calls hearth.v1.ProviderService.ListKnownServices.
+func (c *providerServiceClient) ListKnownServices(ctx context.Context, req *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error) {
+	return c.listKnownServices.CallUnary(ctx, req)
+}
+
 // ProviderServiceHandler is an implementation of the hearth.v1.ProviderService service.
 type ProviderServiceHandler interface {
 	ListAccounts(context.Context, *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error)
@@ -133,6 +151,9 @@ type ProviderServiceHandler interface {
 	// keeps the sign-in going; the result arrives as an account_changed
 	// event on EventService.Subscribe.
 	StartChatGPTLogin(context.Context, *connect.Request[v1.StartChatGPTLoginRequest]) (*connect.Response[v1.StartChatGPTLoginResponse], error)
+	// ListKnownServices is the services hearth knows the address of, the
+	// rows the app offers when the owner adds another service.
+	ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error)
 }
 
 // NewProviderServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -166,6 +187,12 @@ func NewProviderServiceHandler(svc ProviderServiceHandler, opts ...connect.Handl
 		connect.WithSchema(providerServiceMethods.ByName("StartChatGPTLogin")),
 		connect.WithHandlerOptions(opts...),
 	)
+	providerServiceListKnownServicesHandler := connect.NewUnaryHandler(
+		ProviderServiceListKnownServicesProcedure,
+		svc.ListKnownServices,
+		connect.WithSchema(providerServiceMethods.ByName("ListKnownServices")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.ProviderService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProviderServiceListAccountsProcedure:
@@ -176,6 +203,8 @@ func NewProviderServiceHandler(svc ProviderServiceHandler, opts ...connect.Handl
 			providerServiceClearCredentialHandler.ServeHTTP(w, r)
 		case ProviderServiceStartChatGPTLoginProcedure:
 			providerServiceStartChatGPTLoginHandler.ServeHTTP(w, r)
+		case ProviderServiceListKnownServicesProcedure:
+			providerServiceListKnownServicesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -199,4 +228,8 @@ func (UnimplementedProviderServiceHandler) ClearCredential(context.Context, *con
 
 func (UnimplementedProviderServiceHandler) StartChatGPTLogin(context.Context, *connect.Request[v1.StartChatGPTLoginRequest]) (*connect.Response[v1.StartChatGPTLoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.StartChatGPTLogin is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.ListKnownServices is not implemented"))
 }

@@ -112,6 +112,54 @@ public nonisolated enum Hearth_V1_AccountState: SwiftProtobuf.Enum, Swift.CaseIt
 
 }
 
+public nonisolated enum Hearth_V1_KnownServiceKind: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+
+  /// One of the four providers with a card of its own; id is its name.
+  case builtin // = 1
+
+  /// An OpenAI-compatible service on the internet; it takes a key.
+  case compatible // = 2
+
+  /// An OpenAI-compatible runtime on this Mac; it takes no key.
+  case local // = 3
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .builtin
+    case 2: self = .compatible
+    case 3: self = .local
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .builtin: return 1
+    case .compatible: return 2
+    case .local: return 3
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Hearth_V1_KnownServiceKind] = [
+    .unspecified,
+    .builtin,
+    .compatible,
+    .local,
+  ]
+
+}
+
 public nonisolated struct Hearth_V1_ProviderAccount: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -127,6 +175,20 @@ public nonisolated struct Hearth_V1_ProviderAccount: Sendable {
 
   /// The failure of the last sign-in attempt, in plain words; empty otherwise.
   public var failure: String = String()
+
+  /// The fields below describe an OpenAI-compatible service the owner added,
+  /// and are empty for the built-in providers. profile is the stable id the
+  /// core minted when the service was added; one account per profile.
+  public var profile: String = String()
+
+  /// The name the owner gave the service, shown on its card.
+  public var displayName: String = String()
+
+  /// The address requests go to, ending before /chat/completions.
+  public var baseURL: String = String()
+
+  /// The model every quality tier asks this service for.
+  public var defaultModel: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -164,8 +226,17 @@ public nonisolated struct Hearth_V1_SetAPIKeyRequest: Sendable {
 
   public var key: String = String()
 
-  /// Only for PROVIDER_OPENAI_COMPATIBLE; empty otherwise.
+  /// The fields below are only for PROVIDER_OPENAI_COMPATIBLE and are empty
+  /// otherwise. An empty profile adds a service and the core mints its id;
+  /// a profile changes that service, and an empty key then keeps the stored
+  /// one.
   public var baseURL: String = String()
+
+  public var profile: String = String()
+
+  public var displayName: String = String()
+
+  public var defaultModel: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -199,6 +270,10 @@ public nonisolated struct Hearth_V1_ClearCredentialRequest: Sendable {
   // methods supported on all messages.
 
   public var provider: Hearth_V1_Provider = .unspecified
+
+  /// Which OpenAI-compatible service to remove; only for
+  /// PROVIDER_OPENAI_COMPATIBLE.
+  public var profile: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -237,6 +312,54 @@ public nonisolated struct Hearth_V1_StartChatGPTLoginResponse: Sendable {
   public init() {}
 }
 
+public nonisolated struct Hearth_V1_ListKnownServicesRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_ListKnownServicesResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var services: [Hearth_V1_KnownService] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// KnownService is a prefill for adding a service: everything but the key.
+public nonisolated struct Hearth_V1_KnownService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var id: String = String()
+
+  public var name: String = String()
+
+  public var baseURL: String = String()
+
+  /// Where the owner gets a key, or the runtime for a local one.
+  public var helpURL: String = String()
+
+  /// A model the service serves, offered as the default; empty for a
+  /// built-in, which has its own.
+  public var defaultModel: String = String()
+
+  public var kind: Hearth_V1_KnownServiceKind = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "hearth.v1"
@@ -249,9 +372,13 @@ nonisolated extension Hearth_V1_AccountState: SwiftProtobuf._ProtoNameProviding 
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ACCOUNT_STATE_UNSPECIFIED\0\u{1}ACCOUNT_STATE_SIGNED_OUT\0\u{1}ACCOUNT_STATE_SIGNING_IN\0\u{1}ACCOUNT_STATE_SIGNED_IN\0")
 }
 
+nonisolated extension Hearth_V1_KnownServiceKind: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0KNOWN_SERVICE_KIND_UNSPECIFIED\0\u{1}KNOWN_SERVICE_KIND_BUILTIN\0\u{1}KNOWN_SERVICE_KIND_COMPATIBLE\0\u{1}KNOWN_SERVICE_KIND_LOCAL\0")
+}
+
 nonisolated extension Hearth_V1_ProviderAccount: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ProviderAccount"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0\u{1}state\0\u{1}label\0\u{1}failure\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0\u{1}state\0\u{1}label\0\u{1}failure\0\u{1}profile\0\u{3}display_name\0\u{3}base_url\0\u{3}default_model\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -263,6 +390,10 @@ nonisolated extension Hearth_V1_ProviderAccount: SwiftProtobuf.Message, SwiftPro
       case 2: try { try decoder.decodeSingularEnumField(value: &self.state) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self.label) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self.failure) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.profile) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.displayName) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self.baseURL) }()
+      case 8: try { try decoder.decodeSingularStringField(value: &self.defaultModel) }()
       default: break
       }
     }
@@ -281,6 +412,18 @@ nonisolated extension Hearth_V1_ProviderAccount: SwiftProtobuf.Message, SwiftPro
     if !self.failure.isEmpty {
       try visitor.visitSingularStringField(value: self.failure, fieldNumber: 4)
     }
+    if !self.profile.isEmpty {
+      try visitor.visitSingularStringField(value: self.profile, fieldNumber: 5)
+    }
+    if !self.displayName.isEmpty {
+      try visitor.visitSingularStringField(value: self.displayName, fieldNumber: 6)
+    }
+    if !self.baseURL.isEmpty {
+      try visitor.visitSingularStringField(value: self.baseURL, fieldNumber: 7)
+    }
+    if !self.defaultModel.isEmpty {
+      try visitor.visitSingularStringField(value: self.defaultModel, fieldNumber: 8)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -289,6 +432,10 @@ nonisolated extension Hearth_V1_ProviderAccount: SwiftProtobuf.Message, SwiftPro
     if lhs.state != rhs.state {return false}
     if lhs.label != rhs.label {return false}
     if lhs.failure != rhs.failure {return false}
+    if lhs.profile != rhs.profile {return false}
+    if lhs.displayName != rhs.displayName {return false}
+    if lhs.baseURL != rhs.baseURL {return false}
+    if lhs.defaultModel != rhs.defaultModel {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -345,7 +492,7 @@ nonisolated extension Hearth_V1_ListAccountsResponse: SwiftProtobuf.Message, Swi
 
 nonisolated extension Hearth_V1_SetAPIKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetAPIKeyRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0\u{1}key\0\u{3}base_url\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0\u{1}key\0\u{3}base_url\0\u{1}profile\0\u{3}display_name\0\u{3}default_model\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -356,6 +503,9 @@ nonisolated extension Hearth_V1_SetAPIKeyRequest: SwiftProtobuf.Message, SwiftPr
       case 1: try { try decoder.decodeSingularEnumField(value: &self.provider) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.key) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self.baseURL) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.profile) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.displayName) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.defaultModel) }()
       default: break
       }
     }
@@ -371,6 +521,15 @@ nonisolated extension Hearth_V1_SetAPIKeyRequest: SwiftProtobuf.Message, SwiftPr
     if !self.baseURL.isEmpty {
       try visitor.visitSingularStringField(value: self.baseURL, fieldNumber: 3)
     }
+    if !self.profile.isEmpty {
+      try visitor.visitSingularStringField(value: self.profile, fieldNumber: 4)
+    }
+    if !self.displayName.isEmpty {
+      try visitor.visitSingularStringField(value: self.displayName, fieldNumber: 5)
+    }
+    if !self.defaultModel.isEmpty {
+      try visitor.visitSingularStringField(value: self.defaultModel, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -378,6 +537,9 @@ nonisolated extension Hearth_V1_SetAPIKeyRequest: SwiftProtobuf.Message, SwiftPr
     if lhs.provider != rhs.provider {return false}
     if lhs.key != rhs.key {return false}
     if lhs.baseURL != rhs.baseURL {return false}
+    if lhs.profile != rhs.profile {return false}
+    if lhs.displayName != rhs.displayName {return false}
+    if lhs.defaultModel != rhs.defaultModel {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -419,7 +581,7 @@ nonisolated extension Hearth_V1_SetAPIKeyResponse: SwiftProtobuf.Message, SwiftP
 
 nonisolated extension Hearth_V1_ClearCredentialRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ClearCredentialRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}provider\0\u{1}profile\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -428,6 +590,7 @@ nonisolated extension Hearth_V1_ClearCredentialRequest: SwiftProtobuf.Message, S
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularEnumField(value: &self.provider) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.profile) }()
       default: break
       }
     }
@@ -437,11 +600,15 @@ nonisolated extension Hearth_V1_ClearCredentialRequest: SwiftProtobuf.Message, S
     if self.provider != .unspecified {
       try visitor.visitSingularEnumField(value: self.provider, fieldNumber: 1)
     }
+    if !self.profile.isEmpty {
+      try visitor.visitSingularStringField(value: self.profile, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Hearth_V1_ClearCredentialRequest, rhs: Hearth_V1_ClearCredentialRequest) -> Bool {
     if lhs.provider != rhs.provider {return false}
+    if lhs.profile != rhs.profile {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -510,6 +677,110 @@ nonisolated extension Hearth_V1_StartChatGPTLoginResponse: SwiftProtobuf.Message
 
   public static func ==(lhs: Hearth_V1_StartChatGPTLoginResponse, rhs: Hearth_V1_StartChatGPTLoginResponse) -> Bool {
     if lhs.authorizeURL != rhs.authorizeURL {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_ListKnownServicesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListKnownServicesRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_ListKnownServicesRequest, rhs: Hearth_V1_ListKnownServicesRequest) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_ListKnownServicesResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListKnownServicesResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}services\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.services) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.services.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.services, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_ListKnownServicesResponse, rhs: Hearth_V1_ListKnownServicesResponse) -> Bool {
+    if lhs.services != rhs.services {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_KnownService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KnownService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{3}base_url\0\u{3}help_url\0\u{3}default_model\0\u{1}kind\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.baseURL) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.helpURL) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.defaultModel) }()
+      case 6: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    if !self.baseURL.isEmpty {
+      try visitor.visitSingularStringField(value: self.baseURL, fieldNumber: 3)
+    }
+    if !self.helpURL.isEmpty {
+      try visitor.visitSingularStringField(value: self.helpURL, fieldNumber: 4)
+    }
+    if !self.defaultModel.isEmpty {
+      try visitor.visitSingularStringField(value: self.defaultModel, fieldNumber: 5)
+    }
+    if self.kind != .unspecified {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 6)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_KnownService, rhs: Hearth_V1_KnownService) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.baseURL != rhs.baseURL {return false}
+    if lhs.helpURL != rhs.helpURL {return false}
+    if lhs.defaultModel != rhs.defaultModel {return false}
+    if lhs.kind != rhs.kind {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

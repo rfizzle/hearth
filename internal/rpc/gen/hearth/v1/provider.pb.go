@@ -131,6 +131,61 @@ func (AccountState) EnumDescriptor() ([]byte, []int) {
 	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{1}
 }
 
+type KnownServiceKind int32
+
+const (
+	KnownServiceKind_KNOWN_SERVICE_KIND_UNSPECIFIED KnownServiceKind = 0
+	// One of the four providers with a card of its own; id is its name.
+	KnownServiceKind_KNOWN_SERVICE_KIND_BUILTIN KnownServiceKind = 1
+	// An OpenAI-compatible service on the internet; it takes a key.
+	KnownServiceKind_KNOWN_SERVICE_KIND_COMPATIBLE KnownServiceKind = 2
+	// An OpenAI-compatible runtime on this Mac; it takes no key.
+	KnownServiceKind_KNOWN_SERVICE_KIND_LOCAL KnownServiceKind = 3
+)
+
+// Enum value maps for KnownServiceKind.
+var (
+	KnownServiceKind_name = map[int32]string{
+		0: "KNOWN_SERVICE_KIND_UNSPECIFIED",
+		1: "KNOWN_SERVICE_KIND_BUILTIN",
+		2: "KNOWN_SERVICE_KIND_COMPATIBLE",
+		3: "KNOWN_SERVICE_KIND_LOCAL",
+	}
+	KnownServiceKind_value = map[string]int32{
+		"KNOWN_SERVICE_KIND_UNSPECIFIED": 0,
+		"KNOWN_SERVICE_KIND_BUILTIN":     1,
+		"KNOWN_SERVICE_KIND_COMPATIBLE":  2,
+		"KNOWN_SERVICE_KIND_LOCAL":       3,
+	}
+)
+
+func (x KnownServiceKind) Enum() *KnownServiceKind {
+	p := new(KnownServiceKind)
+	*p = x
+	return p
+}
+
+func (x KnownServiceKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (KnownServiceKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_hearth_v1_provider_proto_enumTypes[2].Descriptor()
+}
+
+func (KnownServiceKind) Type() protoreflect.EnumType {
+	return &file_hearth_v1_provider_proto_enumTypes[2]
+}
+
+func (x KnownServiceKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use KnownServiceKind.Descriptor instead.
+func (KnownServiceKind) EnumDescriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{2}
+}
+
 type ProviderAccount struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Provider Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
@@ -139,7 +194,17 @@ type ProviderAccount struct {
 	// credential itself.
 	Label string `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
 	// The failure of the last sign-in attempt, in plain words; empty otherwise.
-	Failure       string `protobuf:"bytes,4,opt,name=failure,proto3" json:"failure,omitempty"`
+	Failure string `protobuf:"bytes,4,opt,name=failure,proto3" json:"failure,omitempty"`
+	// The fields below describe an OpenAI-compatible service the owner added,
+	// and are empty for the built-in providers. profile is the stable id the
+	// core minted when the service was added; one account per profile.
+	Profile string `protobuf:"bytes,5,opt,name=profile,proto3" json:"profile,omitempty"`
+	// The name the owner gave the service, shown on its card.
+	DisplayName string `protobuf:"bytes,6,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// The address requests go to, ending before /chat/completions.
+	BaseUrl string `protobuf:"bytes,7,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	// The model every quality tier asks this service for.
+	DefaultModel  string `protobuf:"bytes,8,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,6 +263,34 @@ func (x *ProviderAccount) GetLabel() string {
 func (x *ProviderAccount) GetFailure() string {
 	if x != nil {
 		return x.Failure
+	}
+	return ""
+}
+
+func (x *ProviderAccount) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *ProviderAccount) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *ProviderAccount) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *ProviderAccount) GetDefaultModel() string {
+	if x != nil {
+		return x.DefaultModel
 	}
 	return ""
 }
@@ -286,8 +379,14 @@ type SetAPIKeyRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Provider Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
 	Key      string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	// Only for PROVIDER_OPENAI_COMPATIBLE; empty otherwise.
+	// The fields below are only for PROVIDER_OPENAI_COMPATIBLE and are empty
+	// otherwise. An empty profile adds a service and the core mints its id;
+	// a profile changes that service, and an empty key then keeps the stored
+	// one.
 	BaseUrl       string `protobuf:"bytes,3,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	Profile       string `protobuf:"bytes,4,opt,name=profile,proto3" json:"profile,omitempty"`
+	DisplayName   string `protobuf:"bytes,5,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	DefaultModel  string `protobuf:"bytes,6,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -343,6 +442,27 @@ func (x *SetAPIKeyRequest) GetBaseUrl() string {
 	return ""
 }
 
+func (x *SetAPIKeyRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *SetAPIKeyRequest) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *SetAPIKeyRequest) GetDefaultModel() string {
+	if x != nil {
+		return x.DefaultModel
+	}
+	return ""
+}
+
 type SetAPIKeyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Account       *ProviderAccount       `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
@@ -388,8 +508,11 @@ func (x *SetAPIKeyResponse) GetAccount() *ProviderAccount {
 }
 
 type ClearCredentialRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Provider      Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Provider Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
+	// Which OpenAI-compatible service to remove; only for
+	// PROVIDER_OPENAI_COMPATIBLE.
+	Profile       string `protobuf:"bytes,2,opt,name=profile,proto3" json:"profile,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -429,6 +552,13 @@ func (x *ClearCredentialRequest) GetProvider() Provider {
 		return x.Provider
 	}
 	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *ClearCredentialRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
 }
 
 type ClearCredentialResponse struct {
@@ -547,31 +677,217 @@ func (x *StartChatGPTLoginResponse) GetAuthorizeUrl() string {
 	return ""
 }
 
+type ListKnownServicesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKnownServicesRequest) Reset() {
+	*x = ListKnownServicesRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKnownServicesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKnownServicesRequest) ProtoMessage() {}
+
+func (x *ListKnownServicesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKnownServicesRequest.ProtoReflect.Descriptor instead.
+func (*ListKnownServicesRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{9}
+}
+
+type ListKnownServicesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Services      []*KnownService        `protobuf:"bytes,1,rep,name=services,proto3" json:"services,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKnownServicesResponse) Reset() {
+	*x = ListKnownServicesResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKnownServicesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKnownServicesResponse) ProtoMessage() {}
+
+func (x *ListKnownServicesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKnownServicesResponse.ProtoReflect.Descriptor instead.
+func (*ListKnownServicesResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListKnownServicesResponse) GetServices() []*KnownService {
+	if x != nil {
+		return x.Services
+	}
+	return nil
+}
+
+// KnownService is a prefill for adding a service: everything but the key.
+type KnownService struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Id      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name    string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	BaseUrl string                 `protobuf:"bytes,3,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	// Where the owner gets a key, or the runtime for a local one.
+	HelpUrl string `protobuf:"bytes,4,opt,name=help_url,json=helpUrl,proto3" json:"help_url,omitempty"`
+	// A model the service serves, offered as the default; empty for a
+	// built-in, which has its own.
+	DefaultModel  string           `protobuf:"bytes,5,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
+	Kind          KnownServiceKind `protobuf:"varint,6,opt,name=kind,proto3,enum=hearth.v1.KnownServiceKind" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KnownService) Reset() {
+	*x = KnownService{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KnownService) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KnownService) ProtoMessage() {}
+
+func (x *KnownService) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KnownService.ProtoReflect.Descriptor instead.
+func (*KnownService) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *KnownService) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *KnownService) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *KnownService) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *KnownService) GetHelpUrl() string {
+	if x != nil {
+		return x.HelpUrl
+	}
+	return ""
+}
+
+func (x *KnownService) GetDefaultModel() string {
+	if x != nil {
+		return x.DefaultModel
+	}
+	return ""
+}
+
+func (x *KnownService) GetKind() KnownServiceKind {
+	if x != nil {
+		return x.Kind
+	}
+	return KnownServiceKind_KNOWN_SERVICE_KIND_UNSPECIFIED
+}
+
 var File_hearth_v1_provider_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_provider_proto_rawDesc = "" +
 	"\n" +
-	"\x18hearth/v1/provider.proto\x12\thearth.v1\"\xa1\x01\n" +
+	"\x18hearth/v1/provider.proto\x12\thearth.v1\"\x9e\x02\n" +
 	"\x0fProviderAccount\x12/\n" +
 	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12-\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x17.hearth.v1.AccountStateR\x05state\x12\x14\n" +
 	"\x05label\x18\x03 \x01(\tR\x05label\x12\x18\n" +
-	"\afailure\x18\x04 \x01(\tR\afailure\"\x15\n" +
+	"\afailure\x18\x04 \x01(\tR\afailure\x12\x18\n" +
+	"\aprofile\x18\x05 \x01(\tR\aprofile\x12!\n" +
+	"\fdisplay_name\x18\x06 \x01(\tR\vdisplayName\x12\x19\n" +
+	"\bbase_url\x18\a \x01(\tR\abaseUrl\x12#\n" +
+	"\rdefault_model\x18\b \x01(\tR\fdefaultModel\"\x15\n" +
 	"\x13ListAccountsRequest\"N\n" +
 	"\x14ListAccountsResponse\x126\n" +
-	"\baccounts\x18\x01 \x03(\v2\x1a.hearth.v1.ProviderAccountR\baccounts\"p\n" +
+	"\baccounts\x18\x01 \x03(\v2\x1a.hearth.v1.ProviderAccountR\baccounts\"\xd2\x01\n" +
 	"\x10SetAPIKeyRequest\x12/\n" +
 	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x19\n" +
-	"\bbase_url\x18\x03 \x01(\tR\abaseUrl\"I\n" +
+	"\bbase_url\x18\x03 \x01(\tR\abaseUrl\x12\x18\n" +
+	"\aprofile\x18\x04 \x01(\tR\aprofile\x12!\n" +
+	"\fdisplay_name\x18\x05 \x01(\tR\vdisplayName\x12#\n" +
+	"\rdefault_model\x18\x06 \x01(\tR\fdefaultModel\"I\n" +
 	"\x11SetAPIKeyResponse\x124\n" +
-	"\aaccount\x18\x01 \x01(\v2\x1a.hearth.v1.ProviderAccountR\aaccount\"I\n" +
+	"\aaccount\x18\x01 \x01(\v2\x1a.hearth.v1.ProviderAccountR\aaccount\"c\n" +
 	"\x16ClearCredentialRequest\x12/\n" +
-	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\"\x19\n" +
+	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12\x18\n" +
+	"\aprofile\x18\x02 \x01(\tR\aprofile\"\x19\n" +
 	"\x17ClearCredentialResponse\"\x1a\n" +
 	"\x18StartChatGPTLoginRequest\"@\n" +
 	"\x19StartChatGPTLoginResponse\x12#\n" +
-	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl*\xa0\x01\n" +
+	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\"\x1a\n" +
+	"\x18ListKnownServicesRequest\"P\n" +
+	"\x19ListKnownServicesResponse\x123\n" +
+	"\bservices\x18\x01 \x03(\v2\x17.hearth.v1.KnownServiceR\bservices\"\xbe\x01\n" +
+	"\fKnownService\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
+	"\bbase_url\x18\x03 \x01(\tR\abaseUrl\x12\x19\n" +
+	"\bhelp_url\x18\x04 \x01(\tR\ahelpUrl\x12#\n" +
+	"\rdefault_model\x18\x05 \x01(\tR\fdefaultModel\x12/\n" +
+	"\x04kind\x18\x06 \x01(\x0e2\x1b.hearth.v1.KnownServiceKindR\x04kind*\xa0\x01\n" +
 	"\bProvider\x12\x18\n" +
 	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10PROVIDER_CHATGPT\x10\x01\x12\x16\n" +
@@ -583,12 +899,18 @@ const file_hearth_v1_provider_proto_rawDesc = "" +
 	"\x19ACCOUNT_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ACCOUNT_STATE_SIGNED_OUT\x10\x01\x12\x1c\n" +
 	"\x18ACCOUNT_STATE_SIGNING_IN\x10\x02\x12\x1b\n" +
-	"\x17ACCOUNT_STATE_SIGNED_IN\x10\x032\xec\x02\n" +
+	"\x17ACCOUNT_STATE_SIGNED_IN\x10\x03*\x97\x01\n" +
+	"\x10KnownServiceKind\x12\"\n" +
+	"\x1eKNOWN_SERVICE_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aKNOWN_SERVICE_KIND_BUILTIN\x10\x01\x12!\n" +
+	"\x1dKNOWN_SERVICE_KIND_COMPATIBLE\x10\x02\x12\x1c\n" +
+	"\x18KNOWN_SERVICE_KIND_LOCAL\x10\x032\xce\x03\n" +
 	"\x0fProviderService\x12Q\n" +
 	"\fListAccounts\x12\x1e.hearth.v1.ListAccountsRequest\x1a\x1f.hearth.v1.ListAccountsResponse\"\x00\x12H\n" +
 	"\tSetAPIKey\x12\x1b.hearth.v1.SetAPIKeyRequest\x1a\x1c.hearth.v1.SetAPIKeyResponse\"\x00\x12Z\n" +
 	"\x0fClearCredential\x12!.hearth.v1.ClearCredentialRequest\x1a\".hearth.v1.ClearCredentialResponse\"\x00\x12`\n" +
-	"\x11StartChatGPTLogin\x12#.hearth.v1.StartChatGPTLoginRequest\x1a$.hearth.v1.StartChatGPTLoginResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
+	"\x11StartChatGPTLogin\x12#.hearth.v1.StartChatGPTLoginRequest\x1a$.hearth.v1.StartChatGPTLoginResponse\"\x00\x12`\n" +
+	"\x11ListKnownServices\x12#.hearth.v1.ListKnownServicesRequest\x1a$.hearth.v1.ListKnownServicesResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
 
 var (
 	file_hearth_v1_provider_proto_rawDescOnce sync.Once
@@ -602,41 +924,49 @@ func file_hearth_v1_provider_proto_rawDescGZIP() []byte {
 	return file_hearth_v1_provider_proto_rawDescData
 }
 
-var file_hearth_v1_provider_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hearth_v1_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_hearth_v1_provider_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_hearth_v1_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_hearth_v1_provider_proto_goTypes = []any{
 	(Provider)(0),                     // 0: hearth.v1.Provider
 	(AccountState)(0),                 // 1: hearth.v1.AccountState
-	(*ProviderAccount)(nil),           // 2: hearth.v1.ProviderAccount
-	(*ListAccountsRequest)(nil),       // 3: hearth.v1.ListAccountsRequest
-	(*ListAccountsResponse)(nil),      // 4: hearth.v1.ListAccountsResponse
-	(*SetAPIKeyRequest)(nil),          // 5: hearth.v1.SetAPIKeyRequest
-	(*SetAPIKeyResponse)(nil),         // 6: hearth.v1.SetAPIKeyResponse
-	(*ClearCredentialRequest)(nil),    // 7: hearth.v1.ClearCredentialRequest
-	(*ClearCredentialResponse)(nil),   // 8: hearth.v1.ClearCredentialResponse
-	(*StartChatGPTLoginRequest)(nil),  // 9: hearth.v1.StartChatGPTLoginRequest
-	(*StartChatGPTLoginResponse)(nil), // 10: hearth.v1.StartChatGPTLoginResponse
+	(KnownServiceKind)(0),             // 2: hearth.v1.KnownServiceKind
+	(*ProviderAccount)(nil),           // 3: hearth.v1.ProviderAccount
+	(*ListAccountsRequest)(nil),       // 4: hearth.v1.ListAccountsRequest
+	(*ListAccountsResponse)(nil),      // 5: hearth.v1.ListAccountsResponse
+	(*SetAPIKeyRequest)(nil),          // 6: hearth.v1.SetAPIKeyRequest
+	(*SetAPIKeyResponse)(nil),         // 7: hearth.v1.SetAPIKeyResponse
+	(*ClearCredentialRequest)(nil),    // 8: hearth.v1.ClearCredentialRequest
+	(*ClearCredentialResponse)(nil),   // 9: hearth.v1.ClearCredentialResponse
+	(*StartChatGPTLoginRequest)(nil),  // 10: hearth.v1.StartChatGPTLoginRequest
+	(*StartChatGPTLoginResponse)(nil), // 11: hearth.v1.StartChatGPTLoginResponse
+	(*ListKnownServicesRequest)(nil),  // 12: hearth.v1.ListKnownServicesRequest
+	(*ListKnownServicesResponse)(nil), // 13: hearth.v1.ListKnownServicesResponse
+	(*KnownService)(nil),              // 14: hearth.v1.KnownService
 }
 var file_hearth_v1_provider_proto_depIdxs = []int32{
 	0,  // 0: hearth.v1.ProviderAccount.provider:type_name -> hearth.v1.Provider
 	1,  // 1: hearth.v1.ProviderAccount.state:type_name -> hearth.v1.AccountState
-	2,  // 2: hearth.v1.ListAccountsResponse.accounts:type_name -> hearth.v1.ProviderAccount
+	3,  // 2: hearth.v1.ListAccountsResponse.accounts:type_name -> hearth.v1.ProviderAccount
 	0,  // 3: hearth.v1.SetAPIKeyRequest.provider:type_name -> hearth.v1.Provider
-	2,  // 4: hearth.v1.SetAPIKeyResponse.account:type_name -> hearth.v1.ProviderAccount
+	3,  // 4: hearth.v1.SetAPIKeyResponse.account:type_name -> hearth.v1.ProviderAccount
 	0,  // 5: hearth.v1.ClearCredentialRequest.provider:type_name -> hearth.v1.Provider
-	3,  // 6: hearth.v1.ProviderService.ListAccounts:input_type -> hearth.v1.ListAccountsRequest
-	5,  // 7: hearth.v1.ProviderService.SetAPIKey:input_type -> hearth.v1.SetAPIKeyRequest
-	7,  // 8: hearth.v1.ProviderService.ClearCredential:input_type -> hearth.v1.ClearCredentialRequest
-	9,  // 9: hearth.v1.ProviderService.StartChatGPTLogin:input_type -> hearth.v1.StartChatGPTLoginRequest
-	4,  // 10: hearth.v1.ProviderService.ListAccounts:output_type -> hearth.v1.ListAccountsResponse
-	6,  // 11: hearth.v1.ProviderService.SetAPIKey:output_type -> hearth.v1.SetAPIKeyResponse
-	8,  // 12: hearth.v1.ProviderService.ClearCredential:output_type -> hearth.v1.ClearCredentialResponse
-	10, // 13: hearth.v1.ProviderService.StartChatGPTLogin:output_type -> hearth.v1.StartChatGPTLoginResponse
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 6: hearth.v1.ListKnownServicesResponse.services:type_name -> hearth.v1.KnownService
+	2,  // 7: hearth.v1.KnownService.kind:type_name -> hearth.v1.KnownServiceKind
+	4,  // 8: hearth.v1.ProviderService.ListAccounts:input_type -> hearth.v1.ListAccountsRequest
+	6,  // 9: hearth.v1.ProviderService.SetAPIKey:input_type -> hearth.v1.SetAPIKeyRequest
+	8,  // 10: hearth.v1.ProviderService.ClearCredential:input_type -> hearth.v1.ClearCredentialRequest
+	10, // 11: hearth.v1.ProviderService.StartChatGPTLogin:input_type -> hearth.v1.StartChatGPTLoginRequest
+	12, // 12: hearth.v1.ProviderService.ListKnownServices:input_type -> hearth.v1.ListKnownServicesRequest
+	5,  // 13: hearth.v1.ProviderService.ListAccounts:output_type -> hearth.v1.ListAccountsResponse
+	7,  // 14: hearth.v1.ProviderService.SetAPIKey:output_type -> hearth.v1.SetAPIKeyResponse
+	9,  // 15: hearth.v1.ProviderService.ClearCredential:output_type -> hearth.v1.ClearCredentialResponse
+	11, // 16: hearth.v1.ProviderService.StartChatGPTLogin:output_type -> hearth.v1.StartChatGPTLoginResponse
+	13, // 17: hearth.v1.ProviderService.ListKnownServices:output_type -> hearth.v1.ListKnownServicesResponse
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_provider_proto_init() }
@@ -649,8 +979,8 @@ func file_hearth_v1_provider_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_provider_proto_rawDesc), len(file_hearth_v1_provider_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   9,
+			NumEnums:      3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

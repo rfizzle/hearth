@@ -10,8 +10,9 @@ import Foundation
 import SwiftProtobuf
 
 /// ProviderService is sign-in: which providers have a credential, storing
-/// or clearing an API key, and starting the ChatGPT browser sign-in. The
-/// core never returns a credential.
+/// or clearing an API key, adding an OpenAI-compatible service under a name,
+/// and starting the ChatGPT browser sign-in. The core never returns a
+/// credential.
 public protocol Hearth_V1_ProviderServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
@@ -28,6 +29,11 @@ public protocol Hearth_V1_ProviderServiceClientInterface: Sendable {
     /// event on EventService.Subscribe.
     @available(iOS 13, *)
     func `startChatGptlogin`(request: Hearth_V1_StartChatGPTLoginRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_StartChatGPTLoginResponse>
+
+    /// ListKnownServices is the services hearth knows the address of, the
+    /// rows the app offers when the owner adds another service.
+    @available(iOS 13, *)
+    func `listKnownServices`(request: Hearth_V1_ListKnownServicesRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListKnownServicesResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_ProviderServiceClientInterface`.
@@ -58,12 +64,18 @@ public final class Hearth_V1_ProviderServiceClient: Hearth_V1_ProviderServiceCli
         return await self.client.unary(path: "/hearth.v1.ProviderService/StartChatGPTLogin", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `listKnownServices`(request: Hearth_V1_ListKnownServicesRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ListKnownServicesResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/ListKnownServices", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listAccounts = Connect.MethodSpec(name: "ListAccounts", service: "hearth.v1.ProviderService", type: .unary)
             public static let setApikey = Connect.MethodSpec(name: "SetAPIKey", service: "hearth.v1.ProviderService", type: .unary)
             public static let clearCredential = Connect.MethodSpec(name: "ClearCredential", service: "hearth.v1.ProviderService", type: .unary)
             public static let startChatGptlogin = Connect.MethodSpec(name: "StartChatGPTLogin", service: "hearth.v1.ProviderService", type: .unary)
+            public static let listKnownServices = Connect.MethodSpec(name: "ListKnownServices", service: "hearth.v1.ProviderService", type: .unary)
         }
     }
 }
