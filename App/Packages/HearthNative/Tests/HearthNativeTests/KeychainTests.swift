@@ -35,10 +35,10 @@ struct FakeKeychainTests {
     "Keychain contract",
     .enabled(if: ProcessInfo.processInfo.environment["HEARTH_CONTRACT"] == "1"))
 struct KeychainContractTests {
-    /// The file keychain, since a test process has no keychain access group.
+    /// Through the default store, which falls back to the login keychain in a
+    /// process without a keychain access group, as `swift test` is.
     @Test func theRealKeychainRoundTrips() throws {
-        let keychain = Keychain(
-            service: "is.hearth.test.\(UUID().uuidString)", dataProtection: false)
+        let keychain = Keychain(service: "is.hearth.test.\(UUID().uuidString)")
         defer { try? keychain.delete("contract-record") }
         try keychain.save("contract-record", Data("fixture-value-1".utf8))
         try keychain.save("contract-record", Data("fixture-value-2".utf8))
@@ -49,18 +49,10 @@ struct KeychainContractTests {
         #expect(try keychain.list().isEmpty)
     }
 
-    /// The data protection keychain either works (a signed build with an
-    /// access group) or says why it cannot (-34018); it never fails otherwise.
-    @Test func theDataProtectionKeychainWorksOrIsRefusedForTheEntitlement() {
+    /// The probe lands on one of the two stores, and the same one every time.
+    @Test func theProbeLandsOnOneStoreAndKeepsIt() throws {
         let keychain = Keychain(service: "is.hearth.test.\(UUID().uuidString)")
-        defer { try? keychain.delete("contract-record") }
-        do {
-            try keychain.save("contract-record", Data("fixture-value-1".utf8))
-            #expect(throws: Never.self) { try keychain.load("contract-record") }
-        } catch let error as KeychainError {
-            #expect(error.status == errSecMissingEntitlement)
-        } catch {
-            Issue.record("unexpected error type")
-        }
+        let first = try keychain.usesDataProtection
+        #expect(try keychain.usesDataProtection == first)
     }
 }

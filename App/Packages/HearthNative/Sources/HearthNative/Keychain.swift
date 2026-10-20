@@ -8,6 +8,7 @@
 
 import Foundation
 import Security
+import os
 import Synchronization
 
 /// Where credential records are kept: the live Keychain, or a fake in tests.
@@ -39,26 +40,63 @@ public struct KeychainError: Error, LocalizedError, Equatable {
 }
 
 /// The real Keychain, over the Security framework.
-public struct Keychain: KeychainStore {
+///
+/// The data protection keychain needs the app to be signed with a keychain
+/// access group; an ad-hoc build, which is the one the owner runs from a
+/// developer Mac, is refused with errSecMissingEntitlement (-34018). So the
+/// first call probes once, and a refused probe moves every later call to the
+/// login keychain, with the same service, account and accessibility. The
+/// choice is made once per process.
+public final class Keychain: KeychainStore {
     private let service: String
-    private let dataProtection: Bool
+    private let choice = Mutex<Bool?>(nil)
+    private let log = Logger(subsystem: "com.rfizzle.hearth", category: "keychain")
 
     /// Items live under `service`, the app's bundle id unless a test gives its
-    /// own so it never touches the owner's records. The data protection
-    /// keychain is the default; it needs the app to be signed with a keychain
-    /// access group, so a process without one (a test, an ad-hoc build) is
-    /// refused with errSecMissingEntitlement (-34018). Only a test turns it
-    /// off, to exercise the calls themselves in the file keychain.
-    public init(
-        service: String = Bundle.main.bundleIdentifier ?? "com.rfizzle.hearth",
-        dataProtection: Bool = true
-    ) {
+    /// own so it never touches the owner's records.
+    public init(service: String = Bundle.main.bundleIdentifier ?? "com.rfizzle.hearth") {
         self.service = service
-        self.dataProtection = dataProtection
+    }
+
+    /// Whether items are in the data protection keychain (true) or the login
+    /// keychain (false). Probes on first use; throws only when the probe fails
+    /// for a reason other than the missing entitlement.
+    public var usesDataProtection: Bool {
+        get throws {
+            try choice.withLock { chosen in
+                if let chosen { return chosen }
+                // A read answers "not found" without checking the entitlement, so
+                // the probe writes an empty item and removes it at once.
+                var query = baseAttributes()
+                query[kSecUseDataProtectionKeychain as String] = true
+                query[kSecAttrAccount as String] = "hearth-probe"
+                query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+                var status = SecItemAdd(query as CFDictionary, nil)
+                if status == errSecSuccess || status == errSecDuplicateItem {
+                    query[kSecAttrAccessible as String] = nil
+                    SecItemDelete(query as CFDictionary)
+                    status = errSecSuccess
+                }
+                let protected: Bool
+                switch status {
+                case errSecSuccess:
+                    protected = true
+                case errSecMissingEntitlement:
+                    protected = false
+                default:
+                    throw KeychainError(action: "reach the Keychain", status: status)
+                }
+                chosen = protected
+                log.info(
+                    "keychain store chosen: \(protected ? "data protection" : "login", privacy: .public)"
+                )
+                return protected
+            }
+        }
     }
 
     public func list() throws -> [String] {
-        var query = base()
+        var query = try base()
         query[kSecMatchLimit as String] = kSecMatchLimitAll
         query[kSecReturnAttributes as String] = true
         var result: CFTypeRef?
@@ -72,7 +110,7 @@ public struct Keychain: KeychainStore {
     }
 
     public func load(_ name: String) throws -> Data? {
-        var query = base(name)
+        var query = try base(name)
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         query[kSecReturnData as String] = true
         var result: CFTypeRef?
@@ -89,9 +127,9 @@ public struct Keychain: KeychainStore {
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         ]
-        var status = SecItemUpdate(base(name) as CFDictionary, attributes as CFDictionary)
+        var status = SecItemUpdate(try base(name) as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound {
-            status = SecItemAdd(base(name).merging(attributes) { $1 } as CFDictionary, nil)
+            status = SecItemAdd(try base(name).merging(attributes) { $1 } as CFDictionary, nil)
         }
         guard status == errSecSuccess else {
             throw KeychainError(action: "save a key", status: status)
@@ -99,21 +137,25 @@ public struct Keychain: KeychainStore {
     }
 
     public func delete(_ name: String) throws {
-        let status = SecItemDelete(base(name) as CFDictionary)
+        let status = SecItemDelete(try base(name) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError(action: "remove a saved key", status: status)
         }
     }
 
     /// The attributes every query carries; `name` narrows it to one record.
-    private func base(_ name: String? = nil) -> [String: Any] {
-        var query: [String: Any] = [
+    private func base(_ name: String? = nil) throws -> [String: Any] {
+        var query = baseAttributes()
+        if try usesDataProtection { query[kSecUseDataProtectionKeychain as String] = true }
+        if let name { query[kSecAttrAccount as String] = name }
+        return query
+    }
+
+    private func baseAttributes() -> [String: Any] {
+        [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
         ]
-        if dataProtection { query[kSecUseDataProtectionKeychain as String] = true }
-        if let name { query[kSecAttrAccount as String] = name }
-        return query
     }
 }
 
