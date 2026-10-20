@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -98,5 +99,25 @@ func TestRemember_ReportsAStoreFailure(t *testing.T) {
 	f := &fake{fail: errors.New("disk full")}
 	if _, err := call(t, Definition(f.store()), `{"text":"x"}`); err == nil || !strings.Contains(err.Error(), "disk full") {
 		t.Fatalf("err = %v, want the store's failure", err)
+	}
+}
+
+func TestRemember_DropsInvisibleCharacters(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"bidi override", "a\u202eb", "ab"},
+		{"zero-width space", "a\u200bb", "ab"},
+		{"tag character", "a\U000E0041b", "ab"},
+		{"variation selector", "a\ufe00b", "ab"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
+	} {
+		f := &fake{}
+		args, _ := json.Marshal(map[string]string{"text": tc.in})
+		if _, err := call(t, Definition(f.store()), string(args)); err != nil || len(f.notes) != 1 || f.notes[0].Text != tc.want {
+			t.Errorf("%s: notes = %+v, %v, want %q", tc.name, f.notes, err, tc.want)
+		}
+	}
+	f := &fake{}
+	if _, err := call(t, Definition(f.store()), `{"text":"\u200b\u202e"}`); err == nil || len(f.notes) != 0 {
+		t.Errorf("a note of invisible characters alone: %v, %+v, want a refusal", err, f.notes)
 	}
 }

@@ -1,6 +1,7 @@
 package staff
 
 import (
+	"cmp"
 	"context"
 
 	"connectrpc.com/connect"
@@ -9,6 +10,7 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
@@ -29,14 +31,14 @@ func (s *botService) CreateBot(ctx context.Context, req *connect.Request[hearthv
 	if err := wire.Need("name", m.GetName(), "job_description", m.GetJobDescription()); err != nil {
 		return nil, err
 	}
-	if err := org.CheckName(m.GetName()); err != nil {
+	if err := cmp.Or(wire.PlainName(m.GetName()), org.CheckName(m.GetName())); err != nil {
 		return nil, wire.Fail(err)
 	}
 	o, err := s.opts.Store.Org(ctx)
 	if err != nil {
 		return nil, wire.Fail(err)
 	}
-	bot, grants, dm := org.NewBot(m.GetName(), m.GetRole(), m.GetJobDescription(), tier, o.WorkspacePath)
+	bot, grants, dm := org.NewBot(m.GetName(), memory.OneLine(memory.Plain(m.GetRole())), memory.Plain(m.GetJobDescription()), tier, o.WorkspacePath)
 	bot.Avatar = m.GetAvatar()
 	for _, t := range s.opts.Templates {
 		if t.ID == m.GetTemplateId() {

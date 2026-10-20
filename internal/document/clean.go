@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/hearth/internal/document/picture"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
 
 // appVoice is how a line begins when it speaks as the app; the framing tells
@@ -19,6 +20,7 @@ const appVoice = "(hearth)"
 func clean(s string) string {
 	s = strings.ToValidUTF8(s, "�")
 	s = strings.NewReplacer("\r\n", "\n", "\r", "\n", " ", "\n", " ", "\n").Replace(s)
+	s = memory.Plain(s)
 	s = strings.Map(func(r rune) rune {
 		if r != '\n' && r != '\t' && unicode.IsControl(r) {
 			return -1

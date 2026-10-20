@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/org/widget"
 	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/provider"
@@ -66,6 +67,16 @@ func Reply[T any](msg *T, err error) (*connect.Response[T], error) {
 // a value the contract cannot carry into it.
 func Invalid(format string, a ...any) error {
 	return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf(format, a...))
+}
+
+// PlainName is nil when name holds no invisible character (memory.Plain would
+// drop one). A name is refused rather than renamed, since a person who typed
+// it would be surprised by a different one.
+func PlainName(name string) error {
+	if memory.Plain(name) != name {
+		return Invalid("the name has an invisible character, such as a zero-width space or a text direction mark; retype it as plain text")
+	}
+	return nil
 }
 
 // Need is invalid_argument naming the first field that is empty, from

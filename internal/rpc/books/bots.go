@@ -46,10 +46,13 @@ func edit(bot org.Bot, m *hearthv1.UpdateBotRequest) (org.Bot, error) {
 	if err != nil {
 		return bot, err
 	}
+	if err := wire.PlainName(strings.TrimSpace(m.GetName())); err != nil {
+		return bot, err
+	}
 	bot.Name = keep(m.GetName(), bot.Name)
-	bot.Role = keep(m.GetRole(), bot.Role)
+	bot.Role = keep(memory.OneLine(memory.Plain(m.GetRole())), bot.Role)
 	bot.Tier = tier
-	bot.JobDescription = keep(m.GetJobDescription(), bot.JobDescription)
+	bot.JobDescription = keep(memory.Plain(m.GetJobDescription()), bot.JobDescription)
 	bot.Avatar = keep(m.GetAvatar(), bot.Avatar)
 	if bot.ModelOverride = keep(m.GetModelOverride(), bot.ModelOverride); m.GetClearModelOverride() {
 		bot.ModelOverride = ""
@@ -84,6 +87,9 @@ func (s Bots) EditNote(ctx context.Context, req *connect.Request[hearthv1.EditNo
 	text := req.Msg.GetText()
 	if err := cmp.Or(wire.Need("text", text), wire.Words("the note", text)); err != nil {
 		return nil, wire.Fail(err)
+	}
+	if text = memory.Plain(text); strings.TrimSpace(text) == "" {
+		return nil, wire.Invalid("the note holds only invisible characters; write it as plain text")
 	}
 	note, err := s.change(ctx, req.Msg.GetId(), func(id string) (memory.Note, error) { return s.Store.EditNote(ctx, id, text) })
 	return wire.Reply(&hearthv1.EditNoteResponse{Note: note}, err)

@@ -171,3 +171,22 @@ func TestRender_APageCannotOpenASectionOfItsOwn(t *testing.T) {
 		}
 	}
 }
+
+func TestPut_DropsInvisibleCharacters(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"bidi override", "a\u202eb", "ab"},
+		{"zero-width space", "a\u200bb", "ab"},
+		{"tag character", "a\U000E0041b", "ab"},
+		{"variation selector", "a\ufe00b", "ab"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
+	} {
+		s := &Service{Store: &fakeStore{}}
+		p, err := s.Put(t.Context(), everyone(tc.in, tc.in))
+		if err != nil || p.Title != tc.want || p.Markdown != tc.want {
+			t.Errorf("%s: page = %+v, %v, want %q", tc.name, p, err, tc.want)
+		}
+	}
+	if _, err := (&Service{Store: &fakeStore{}}).Put(t.Context(), everyone("\u200b", "x")); !errors.Is(err, ErrNoTitle) {
+		t.Errorf("a title of invisible characters alone: %v, want ErrNoTitle", err)
+	}
+}

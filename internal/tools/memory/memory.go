@@ -68,6 +68,7 @@ func validate(raw json.RawMessage) error {
 	if err := json.Unmarshal(raw, &a); err != nil {
 		return errors.New("the arguments are not a JSON object with a text")
 	}
+	a.Text = memory.Plain(a.Text)
 	if strings.TrimSpace(a.Text) == "" {
 		return errors.New("text is required; write what to remember")
 	}
@@ -84,7 +85,7 @@ func (s Store) execute(ctx context.Context, call tools.Call) (tools.Result, erro
 	var a args
 	_ = json.Unmarshal(call.Args, &a) // validated above
 	err := s.Add(ctx, memory.Note{
-		BotID: s.BotID, Text: strings.TrimSpace(a.Text),
+		BotID: s.BotID, Text: strings.TrimSpace(memory.Plain(a.Text)),
 		ConversationID: s.ConversationID, MessageID: s.MessageID,
 	})
 	if err != nil {
@@ -101,5 +102,5 @@ func (s Store) execute(ctx context.Context, call tools.Call) (tools.Result, erro
 func describe(raw json.RawMessage) string {
 	var a args
 	_ = json.Unmarshal(raw, &a) // a describer never fails
-	return "Remember: " + strings.TrimSpace(a.Text)
+	return "Remember: " + strings.TrimSpace(memory.OneLine(memory.Plain(a.Text)))
 }

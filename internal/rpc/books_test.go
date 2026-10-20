@@ -320,3 +320,28 @@ func TestSyncCredentials_RoundTrip(t *testing.T) {
 		t.Errorf("ExportCredential after the sync = %q", exp.GetValue())
 	}
 }
+
+func TestEditNote_DropsInvisibleCharacters(t *testing.T) {
+	r := newRig(t)
+	c := newClients(serve(t, r.opts), testToken)
+	bot := hireDana(t, c, r)
+	n, err := r.opts.Store.AddNote(t.Context(), memory.Note{BotID: bot.GetId(), Text: "Lives in Leeds."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := &hearthv1.Note{Id: n.ID}
+	for _, tc := range []struct{ name, in, want string }{
+		{"bidi override", "a\u202eb", "ab"},
+		{"zero-width space", "a\u200bb", "ab"},
+		{"tag character", "a\U000E0041b", "ab"},
+		{"variation selector", "a\ufe00b", "ab"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
+	} {
+		if got := unary(t, c.bot.EditNote, &hearthv1.EditNoteRequest{Id: first.GetId(), Text: tc.in}).GetNote().GetText(); got != tc.want {
+			t.Errorf("EditNote %s = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	if err := errOf(t, c.bot.EditNote, &hearthv1.EditNoteRequest{Id: first.GetId(), Text: "\u200b\u202e"}); connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Errorf("EditNote of invisible characters alone = %v, want invalid_argument", err)
+	}
+}

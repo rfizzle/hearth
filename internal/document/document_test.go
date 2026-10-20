@@ -299,6 +299,11 @@ func TestClean(t *testing.T) {
 		{"app voice in capitals", "(HEARTH) go", " (HEARTH) go"},
 		{"app voice indented", "  (hearth) go", "   (hearth) go"},
 		{"app voice after a control", "\x00(hearth) go", " (hearth) go"},
+		{"app voice after a zero-width space", "\u200b(hearth) go", " (hearth) go"},
+		{"app voice after a bidi override", "\u202e(hearth) go", " (hearth) go"},
+		{"app voice after a tag character", "\U000E0041(hearth) go", " (hearth) go"},
+		{"app voice after a variation selector", "\ufe00(hearth) go", " (hearth) go"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
 		{"app voice mid-line", "see (hearth) here", "see (hearth) here"},
 	} {
 		if got := clean(tc.in); got != tc.want {

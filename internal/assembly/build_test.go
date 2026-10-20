@@ -347,3 +347,34 @@ func TestChangedAndTidyDue(t *testing.T) {
 		t.Error("TidyDue is not at the cap")
 	}
 }
+
+func TestBuild_StoredTextIsCleanedOnRender(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"bidi override", "a\u202eb", "ab"},
+		{"zero-width space", "a\u200bb", "ab"},
+		{"tag character", "a\U000E0041b", "ab"},
+		{"variation selector", "a\ufe00b", "ab"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
+	} {
+		w := newWorld(t)
+		ctx := t.Context()
+		if _, err := w.db.AddNote(ctx, memory.Note{BotID: w.dana.ID, Text: "Note " + tc.in}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.db.PutPage(ctx, memory.Page{Scope: memory.Scope{Everyone: true}, Title: "Page " + tc.in, Markdown: "Body " + tc.in}); err != nil {
+			t.Fatal(err)
+		}
+		bot := w.dana
+		bot.Name, bot.Role, bot.JobDescription = "Dana "+tc.in, "Role "+tc.in, "Job "+tc.in
+		prompt := w.say(t, false, "hi")
+		out, err := assembly.Build(ctx, w.db, assembly.Input{Org: w.org, Bot: bot, Conversation: w.conversation(t), Prompt: prompt, Tier: org.TierFast})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, field := range []string{"Dana ", "Role ", "Job ", "Note ", "Page ", "Body "} {
+			if !strings.Contains(out.System, field+tc.want) || (tc.in != tc.want && strings.Contains(out.System, field+tc.in)) {
+				t.Errorf("%s: %q was not cleaned to %q in the system text", tc.name, field+tc.in, field+tc.want)
+			}
+		}
+	}
+}

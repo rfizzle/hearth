@@ -52,6 +52,7 @@ func (s *Service) List(ctx context.Context, botID string) ([]memory.Page, Meter,
 // of that id. It refuses an empty title and a page that takes the view of any
 // bot it reaches over the cap.
 func (s *Service) Put(ctx context.Context, p memory.Page) (memory.Page, error) {
+	p.Title, p.Markdown = memory.Plain(p.Title), memory.Plain(p.Markdown)
 	if strings.TrimSpace(p.Title) == "" {
 		return memory.Page{}, ErrNoTitle
 	}

@@ -101,8 +101,8 @@ func Build(ctx context.Context, db *store.DB, in Input) (Output, error) {
 	// Owner-supplied text: the org's name and the bot's name, role and job
 	// description, in the places framing's dm.md gives them.
 	fin := framing.Input{
-		OrgName: in.Org.Name, BotName: in.Bot.Name, Role: in.Bot.Role,
-		JobDescription: in.Bot.JobDescription, FolderPath: in.Bot.FolderPath,
+		OrgName: in.Org.Name, BotName: memory.OneLine(memory.Plain(in.Bot.Name)), Role: memory.OneLine(memory.Plain(in.Bot.Role)),
+		JobDescription: memory.Plain(in.Bot.JobDescription), FolderPath: in.Bot.FolderPath,
 	}
 	if p := in.Project; p != nil {
 		fin.Project = &framing.ProjectInput{
@@ -263,7 +263,11 @@ func withSummary(hist []agent.Message, summary string) ([]agent.Message, int) {
 func handbookBlock(pages []memory.Page) string {
 	// Owner-supplied text, which may be pasted from a web page: the pages'
 	// titles and Markdown, under the "## Handbook" heading.
-	b := handbook.Render(pages)
+	clean := slices.Clone(pages)
+	for i := range clean {
+		clean[i].Title, clean[i].Markdown = memory.Plain(clean[i].Title), memory.Plain(clean[i].Markdown)
+	}
+	b := handbook.Render(clean)
 	const notice = "\n(The handbook was cut here: it is over its size.)\n"
 	if len(b) <= handbookCap {
 		return b
@@ -320,7 +324,7 @@ func notesBlock(notes []memory.Note) string {
 	for i, n := range ordered {
 		// Bot-written text, which the owner may edit: each note on one line
 		// under "## Your notes".
-		line := "- " + n.CreatedAt.Format("2006-01-02") + ": " + memory.OneLine(n.Text) + "\n"
+		line := "- " + n.CreatedAt.Format("2006-01-02") + ": " + memory.OneLine(memory.Plain(n.Text)) + "\n"
 		if b.Len()+len(line) > notesCap-room {
 			fmt.Fprintf(&b, "(and %d older notes)\n", len(ordered)-i)
 			break

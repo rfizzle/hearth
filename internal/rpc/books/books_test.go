@@ -90,3 +90,23 @@ func TestEdit_KeepsWhatIsBlank(t *testing.T) {
 		t.Errorf("clear_model_override kept %q", got.ModelOverride)
 	}
 }
+
+func TestEdit_StripsInvisibleCharactersAndRefusesAName(t *testing.T) {
+	stored := org.Bot{Name: "Dana", Role: "Analyst", JobDescription: "Finds things out."}
+	for _, tc := range []struct{ name, in, want string }{
+		{"bidi override", "a\u202eb", "ab"},
+		{"zero-width space", "a\u200bb", "ab"},
+		{"tag character", "a\U000E0041b", "ab"},
+		{"variation selector", "a\ufe00b", "ab"},
+		{"emoji presentation kept", "ok \u2764\ufe0f", "ok \u2764\ufe0f"},
+	} {
+		got, err := edit(stored, &hearthv1.UpdateBotRequest{Role: tc.in, JobDescription: tc.in, Tier: hearthv1.Tier_TIER_FAST})
+		if err != nil || got.Role != tc.want || got.JobDescription != tc.want {
+			t.Errorf("%s: role %q, job %q, %v, want %q", tc.name, got.Role, got.JobDescription, err, tc.want)
+		}
+		_, err = edit(stored, &hearthv1.UpdateBotRequest{Name: tc.in, Tier: hearthv1.Tier_TIER_FAST})
+		if refused := tc.in != tc.want; refused != (connect.CodeOf(err) == connect.CodeInvalidArgument) {
+			t.Errorf("%s: name %q gave %v, want refused = %v", tc.name, tc.in, err, refused)
+		}
+	}
+}
