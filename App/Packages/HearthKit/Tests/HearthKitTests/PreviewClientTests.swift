@@ -119,7 +119,12 @@ import Testing
     #expect(try await check("2026-10-19") == [Fixtures.pastDate])
     #expect(try await check("2026-10-20").isEmpty)
     #expect(try await check("").isEmpty)
-    #expect(try await client.checkBot(.with { $0.name = "Wren" }).isEmpty)
+    let thin = Hearth_V1_CheckBotRequest.with { $0.jobDescription = "Research." }
+    #expect(try await client.checkBot(thin) == Fixtures.draft.concerns)
+    let full = Hearth_V1_CheckBotRequest.with { $0.jobDescription = Fixtures.draft.jobDescription }
+    #expect(try await client.checkBot(full).isEmpty)
+    let silent = PreviewClient(modelUnavailable: true)
+    await #expect(throws: (any Error).self) { try await silent.draftBot(.init()) }
 }
 
 @Test func signInAnswersWithoutTheCredential() async throws {

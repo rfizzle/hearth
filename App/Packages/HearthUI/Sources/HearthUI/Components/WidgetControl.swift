@@ -194,7 +194,7 @@ private struct FreeTextControl: View {
             Text(prompt)
                 .font(Theme.body)
                 .foregroundStyle(Theme.color(.textSecondary))
-                .padding(.leading, Theme.Spacing.xs)
+                .padding(.leading, Theme.Spacing.sm)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }

@@ -3,7 +3,9 @@
 // over the question card's control for it, so a project reads in the
 // project header's order: the name, the "done when" sentence, the Brief
 // disclosure (open) over its three editors, then the optional target date as
-// a switch with a date picker. Each of the core's concerns sits under the
+// a switch with a date picker; a hire's reads like a row of the team list, a
+// live avatar beside the name and the role, then the job description, the
+// quality as a choice of three and the avatar text. Each of the core's concerns sits under the
 // field it names and leaves under the quick fade when it is settled, while
 // the card's height moves; one that names no field sits at the card's end.
 // The card is one VoiceOver container named "Your project". The core's
@@ -18,23 +20,32 @@ import HearthKit
 import HearthUI
 import SwiftUI
 
-/// A run of the card: a field alone, or a disclosure row over several.
+/// A run of the card: a field alone, a disclosure row over several, or the
+/// fields drawn beside the live avatar.
 enum CardSection: Identifiable {
     case field(SetupScript.Field)
     case group(String, [SetupScript.Field])
+    case identity([SetupScript.Field])
 
     var id: String {
         switch self {
         case .field(let field): field.id
         case .group(let name, _): "group-" + name
+        case .identity: "identity"
         }
     }
 
     /// The script's fields in card order, a group's fields gathered where
     /// its first one stands.
-    static func sections(_ fields: [SetupScript.Field]) -> [CardSection] {
+    static func sections(_ fields: [SetupScript.Field], paired: [String] = []) -> [CardSection] {
         var sections: [CardSection] = []
         for field in fields {
+            if paired.contains(field.id) {
+                if !sections.contains(where: { $0.id == "identity" }) {
+                    sections.append(.identity(fields.filter { paired.contains($0.id) }))
+                }
+                continue
+            }
             guard let group = field.group else {
                 sections.append(.field(field))
                 continue
@@ -55,8 +66,12 @@ extension SetupSheet {
                 .accessibilityAddTraits(.isHeader)
             CardSurface {
                 VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                    ForEach(CardSection.sections(store.script.fields)) { section in
+                    ForEach(
+                        CardSection.sections(
+                            store.script.fields, paired: store.script.pairedWithAvatar)
+                    ) { section in
                         switch section {
+                        case .identity(let fields): identity(fields)
                         case .field(let field): cell(field)
                         case .group(let name, let fields): group(name, fields)
                         }
@@ -73,6 +88,20 @@ extension SetupSheet {
             refusal
         }
         .padding(.horizontal, Theme.Spacing.xl)
+    }
+
+    /// The avatar the bot would have, live, beside the fields that name it.
+    private func identity(_ fields: [SetupScript.Field]) -> some View {
+        HStack(alignment: .top, spacing: Theme.Spacing.md) {
+            Avatar(
+                name: store.drafts["name"]?.text ?? "",
+                avatar: store.drafts["avatar"]?.text ?? "", size: .large
+            )
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                ForEach(fields) { cell($0) }
+            }
+        }
     }
 
     private func group(_ name: String, _ fields: [SetupScript.Field]) -> some View {
@@ -195,11 +224,20 @@ extension SetupSheet {
         }
     }
 
-    /// A field in the form: a text field beside its label, or an editor
-    /// under it.
+    /// Whether the form draws `field` under its label: an editor or a choice.
+    private func isStacked(_ field: SetupScript.Field) -> Bool {
+        switch field.widget.kind {
+        case .freeText(let spec): spec.multiline
+        case .singleChoice: true
+        default: false
+        }
+    }
+
+    /// A field in the form: a text field beside its label, or an editor or
+    /// a choice under it.
     @ViewBuilder
     private func formRow(_ field: SetupScript.Field) -> some View {
-        if case .freeText(let spec) = field.widget.kind, spec.multiline {
+        if isStacked(field) {
             VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 Text(field.label)
                 WidgetControl(widget: field.widget, draft: draft(field.id), label: field.label)

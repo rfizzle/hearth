@@ -13,6 +13,13 @@ extension Avatar {
         self.init(Self.content(name: bot.name, avatar: bot.avatar), size: size)
     }
 
+    /// The avatar a bot called `name` would have with `avatar` text, as the
+    /// hire card shows it before the bot exists.
+    public init(name: String, avatar: String, size: Size = .regular) {
+        let avatar = avatar.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.init(Self.content(name: name, avatar: avatar), size: size)
+    }
+
     /// The owner's avatar.
     public static var owner: Avatar {
         Avatar(.symbol("person.fill"))

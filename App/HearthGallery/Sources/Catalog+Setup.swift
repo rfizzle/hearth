@@ -1,8 +1,9 @@
 // Setup: the concern row with a suggestion, without one and at its longest,
-// and the guided project sheet at each step: the opener, the opener without a
+// the guided project sheet at each step (the opener, the opener without a
 // model, a question ("done when"), the card with the draft's concerns and with
 // them settled, the form, the form editing a project, and the opener with no
-// Chief of Staff. Each sheet runs its own store over PreviewClient and keeps
+// Chief of Staff) and the hire sheet (the opener with its role chips, the
+// card, the card without a model, the form). Each sheet runs its own store over PreviewClient and keeps
 // its form preference under a key of its own, so the gallery never changes
 // the app's. The Motion page's two setup rows are here too.
 
@@ -49,9 +50,27 @@ extension Catalog {
                     },
                     setupSheet("editing", editing: Fixtures.projects[0], height: 860) { _ in },
                     setupSheet("no Chief of Staff", chief: nil, height: 560) { _ in },
+                    setupSheet("hire opener with role chips", script: .hire, height: 560) { _ in },
+                    setupSheet("hire card", script: .hire, height: 1020) {
+                        $0.paragraph = hireParagraph
+                        await $0.draft()
+                    },
+                    setupSheet("hire card without a concern", script: .hire, height: 960) {
+                        $0.paragraph = hireParagraph
+                        await $0.draft()
+                        for concern in $0.concerns { $0.keep(concern) }
+                    },
+                    setupSheet("hire form", script: .hire, height: 900) {
+                        $0.paragraph = hireParagraph
+                        await $0.draft()
+                        $0.showForm()
+                    },
                 ]),
         ]
     }
+
+    private static let hireParagraph =
+        "I need someone to read up on our competitors and tell me what they are doing."
 
     private static let paragraph =
         "I want to start a newsletter for the studio. About 400 people are on the old mailing "
@@ -59,11 +78,12 @@ extension Catalog {
 
     /// A sheet whose store `prepare` walks to the state shown.
     private static func setupSheet(
-        _ name: String, canDraft: Bool = true, editing: Hearth_V1_Project? = nil,
-        chief: Hearth_V1_Bot? = Fixtures.chiefOfStaff, height: CGFloat,
+        _ name: String, script: SetupScript = .project, canDraft: Bool = true,
+        editing: Hearth_V1_Project? = nil, chief: Hearth_V1_Bot? = Fixtures.chiefOfStaff,
+        height: CGFloat,
         prepare: @escaping @MainActor (SetupStore) async -> Void
     ) -> GalleryState {
-        let store = setupStore(canDraft: canDraft, editing: editing, key: name)
+        let store = setupStore(script: script, canDraft: canDraft, editing: editing, key: name)
         Task { await prepare(store) }
         return GalleryState(
             name: name, width: Theme.Size.sheetWidth,
@@ -73,14 +93,15 @@ extension Catalog {
     }
 
     private static func setupStore(
-        canDraft: Bool = true, editing: Hearth_V1_Project? = nil, key: String
+        script: SetupScript = .project, canDraft: Bool = true,
+        editing: Hearth_V1_Project? = nil, key: String
     ) -> SetupStore {
         let client = PreviewClient()
         let projects = ProjectsStore(client: client, relay: EventRelay(client: client))
         let preference = "gallery.setup." + key
         UserDefaults.standard.removeObject(forKey: preference)
         return SetupStore(
-            script: .project, client: client, projects: projects, canDraft: canDraft,
+            script: script, client: client, projects: projects, canDraft: canDraft,
             editing: editing, preferenceKey: preference)
     }
 

@@ -19,8 +19,6 @@ extension Catalog {
                     onboarding(.nameAndFolder, name: "name and folder"),
                 ]),
             GalleryPage(
-                package: package, name: "HireSheet", states: [hireWithDraft(), hireWithTemplate()]),
-            GalleryPage(
                 package: package, name: "ConversationScreen",
                 states: [
                     conversationEmpty(), conversationAboutOpen(), conversationMidStream(),
@@ -48,32 +46,6 @@ extension Catalog {
         return GalleryState(
             name: name, width: 760,
             view: AnyView(OnboardingScreen(store: store).frame(height: 600)))
-    }
-
-    private static func hireWithTemplate() -> GalleryState {
-        let store = HireStore(client: PreviewClient())
-        Task {
-            await store.load()
-            if let template = store.templates.first { store.pick(template) }
-        }
-        return GalleryState(
-            name: "template picked", width: 560,
-            view: AnyView(HireSheet(store: store, onHired: { _ in }, onCancel: {})))
-    }
-
-    /// A template picked and "Improve this" answered: the owner's text and the
-    /// suggestion side by side, with a working-style chip chosen.
-    private static func hireWithDraft() -> GalleryState {
-        let store = HireStore(client: PreviewClient())
-        Task {
-            await store.load()
-            if let template = store.templates.first { store.pick(template) }
-            await store.improve()
-            store.choose(.cautious)
-        }
-        return GalleryState(
-            name: "draft shown", width: 560,
-            view: AnyView(HireSheet(store: store, onHired: { _ in }, onCancel: {})))
     }
 
     /// The reply has opened and two words have arrived; the stream stays open.

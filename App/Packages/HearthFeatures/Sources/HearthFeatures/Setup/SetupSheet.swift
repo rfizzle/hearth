@@ -5,7 +5,8 @@
 // sheet's heading in title type and its second line. The opener's box is the
 // question card's editor with the script's example as its placeholder;
 // Return there presses Draft and Shift-Return starts a line, the composer's
-// rule, because the box is a message to a person. An asking step is the
+// rule, because the box is a message to a person. The hire script's opener
+// has a chip for each role template under the box. An asking step is the
 // question card's control for one field with an example under it. The card
 // (SetupSheet+Card) holds every field. The quiet line saying why there is no
 // draft sits under the box and arrives without animation. "Just show me the
@@ -25,7 +26,7 @@ import HearthKit
 import HearthUI
 import SwiftUI
 
-/// The guided sheet that sets up a project, or the form that edits one.
+/// The guided sheet that sets up a project or a hire, or the form that edits a project.
 public struct SetupSheet: View {
     let store: SetupStore
     let chief: Hearth_V1_Bot?
@@ -69,6 +70,7 @@ public struct SetupSheet: View {
         .safeAreaBar(edge: .bottom) { buttons }
         .frame(width: Theme.Size.sheetWidth)
         .presentationSizing(.form)
+        .task { await store.load() }
     }
 
     /// The step change: the layout move, or under Reduce Motion the quick
@@ -119,6 +121,7 @@ public struct SetupSheet: View {
             question(opener.question, opener.secondLine)
             WidgetControl(widget: openerWidget, draft: paragraph, label: opener.question)
                 .submitOnReturn { Task { await primary() } }
+            starters
             if let error = store.error {
                 Text(error)
                     .font(Theme.body)
@@ -134,6 +137,26 @@ public struct SetupSheet: View {
             formLink
         }
         .padding(.horizontal, Theme.Spacing.xl)
+    }
+
+    /// The hire opener's chips, one per role template: a press puts the
+    /// role's description in the box and never opens anything.
+    @ViewBuilder
+    private var starters: some View {
+        if !store.templates.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Theme.Spacing.sm) { chips }
+                VStack(alignment: .leading, spacing: Theme.Spacing.sm) { chips }
+            }
+        }
+    }
+
+    private var chips: some View {
+        ForEach(store.templates, id: \.id) { template in
+            SuggestionChip(template.role, hint: "Puts this role\u{2019}s description in the box") {
+                store.pick(template)
+            }
+        }
     }
 
     /// The opener's box: the question card's editor, at the core's bound for

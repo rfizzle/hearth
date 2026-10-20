@@ -20,7 +20,7 @@ public struct PreviewClient: HearthClient {
     /// How the credential calls answer; without one they answer with nothing.
     public let credentials: CredentialScript?
 
-    /// Whether a project draft answers as the core does with no model signed
+    /// Whether a project or a bot draft answers as the core does with no model signed
     /// in: `unavailable`, in its words.
     public let modelUnavailable: Bool
 
@@ -34,6 +34,8 @@ public struct PreviewClient: HearthClient {
         self.modelUnavailable = modelUnavailable
     }
 
+    /// The bot requests this client has been given, for tests.
+    public let botRequests = PreviewBotRequests()
     let projectList = ProjectList()
     let templateList = TemplateList()
 
@@ -70,23 +72,6 @@ public struct PreviewClient: HearthClient {
 
     public func listTemplates() async throws -> [Hearth_V1_RoleTemplate] {
         Fixtures.templates
-    }
-
-    public func createBot(_ request: Hearth_V1_CreateBotRequest) async throws -> Hearth_V1_Bot {
-        var bot = Fixtures.bot
-        bot.name = request.name
-        bot.role = request.role
-        bot.jobDescription = request.jobDescription
-        bot.tier = request.tier
-        bot.avatar = request.avatar
-        bot.folderPath = Fixtures.workspacePath + "/" + request.name
-        return bot
-    }
-
-    public func draftBot(
-        _ request: Hearth_V1_DraftBotRequest
-    ) async throws -> Hearth_V1_DraftBotResponse {
-        Fixtures.draft
     }
 
     public func listBots() async throws -> [Hearth_V1_Bot] {

@@ -8,9 +8,12 @@ extension PreviewClient {
         projectList.all().filter { includeArchived || $0.state != .archived }
     }
 
-    /// The core's hire rules are not repeated in the preview: no concerns.
+    /// The thin-job-description rule in the core's words, for fewer than
+    /// eight words; the core's other hire rules are not repeated in the preview.
     public func checkBot(_ request: Hearth_V1_CheckBotRequest) async throws -> [Hearth_V1_Concern] {
-        []
+        botRequests.record(request)
+        let words = request.jobDescription.split(whereSeparator: \.isWhitespace).count
+        return words < 8 ? Fixtures.draft.concerns : []
     }
 
     public func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse {

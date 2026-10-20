@@ -2,7 +2,8 @@
 // app ships: the opening question with a worked example, which field the
 // owner's paragraph fills when no draft is made, and every field in card
 // order with its label, its question, a second line, an example and the
-// question card's control for it. The model never chooses the structure: the
+// question card's control for it. Two ship, `.project` here and `.hire` in
+// SetupScript+Hire. The model never chooses the structure: the
 // sheet asks the opener, then each required field the draft left empty, one
 // at a time, then shows the card. Field ids are the contract's own field
 // names, so a concern from the core finds its field by string. The checks on
@@ -17,6 +18,7 @@ public struct SetupScript: Sendable {
     /// What the sheet sets up.
     public enum Kind: String, Sendable {
         case project
+        case hire
     }
 
     /// The first question, answered in the owner's own words.
@@ -81,6 +83,10 @@ public struct SetupScript: Sendable {
     public let fields: [Field]
     /// The defaults key that remembers "Just show me the form".
     public let preferenceKey: String
+    /// Whether the opener offers the shipped role templates as chips.
+    public let offersStarters: Bool
+    /// The ids of the fields the card draws beside a live avatar, if any.
+    public let pairedWithAvatar: [String]
 
     /// The field with `id`, if the script has one.
     public func field(_ id: String) -> Field? {
@@ -138,12 +144,12 @@ extension SetupScript {
                 secondLine: "Leave it off if there is no date.", example: "2026-11-30",
                 widget: .day),
         ],
-        preferenceKey: "setup.project.form")
+        preferenceKey: "setup.project.form", offersStarters: false, pairedWithAvatar: [])
 }
 
 extension Hearth_V1_Widget {
     /// A required one-line text field of at most `limit` characters.
-    fileprivate static func line(_ limit: Int32) -> Self {
+    static func line(_ limit: Int32) -> Self {
         .with {
             $0.required = true
             $0.freeText = .with {
@@ -152,8 +158,18 @@ extension Hearth_V1_Widget {
         }
     }
 
+    /// An optional one-line text field of at most `limit` characters.
+    static func optionalLine(_ limit: Int32, placeholder: String) -> Self {
+        .with {
+            $0.freeText = .with {
+                $0.maxLength = limit
+                $0.placeholder = placeholder
+            }
+        }
+    }
+
     /// A required editor of at most `limit` characters.
-    fileprivate static func lines(_ limit: Int32) -> Self {
+    static func lines(_ limit: Int32) -> Self {
         .with {
             $0.required = true
             $0.freeText = .with {
@@ -164,5 +180,5 @@ extension Hearth_V1_Widget {
     }
 
     /// An optional calendar day.
-    fileprivate static let day = Self.with { $0.date = .init() }
+    static let day = Self.with { $0.date = .init() }
 }

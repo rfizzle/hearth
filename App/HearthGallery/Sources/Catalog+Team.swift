@@ -1,4 +1,4 @@
-// The pieces of the hire sheet, and the team in the sidebar.
+// The quality picker, and the team in the sidebar.
 
 import HearthDesign
 import HearthFeatures
@@ -7,19 +7,14 @@ import HearthUI
 import SwiftUI
 
 extension Catalog {
-    static var hire: [GalleryPage] {
+    static var team: [GalleryPage] {
         let package = "HearthUI"
         return [
-            GalleryPage(
-                package: package, name: "TemplateCard",
-                states: GalleryState.each(TemplateCard.PreviewState.self, width: 240) {
-                    TemplateCard(previewState: $0)
-                }),
             GalleryPage(
                 package: package, name: "TierPicker",
                 states: GalleryState.each(TierPicker.PreviewState.self, width: 480) {
                     TierPicker(previewState: $0)
-                }),
+                })
         ]
     }
 

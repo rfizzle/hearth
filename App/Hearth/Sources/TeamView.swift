@@ -9,13 +9,13 @@
 // it says so instead. A project the Chief of Staff proposed is a card in the
 // conversation it was proposed in, and creating it selects it. A project's
 // toolbar has its folder and a menu to edit, mark done or archive it.
-// Nobody on the team shows the invitation in the
-// detail column; nothing selected says to choose. The hire, Access and setup
-// sheets are presented here (a new project is the Chief of Staff's guided
-// setup, an edit its form), and the helper notice sits over the top of the
-// detail column until the owner dismisses it. A new project is selected once
-// created. When the window first shows the team with nothing selected, the
-// Chief of Staff is.
+// Nobody on the team shows the invitation in the detail column; nothing
+// selected says to choose. The Access and setup sheets are presented here (a
+// hire and a new project are the Chief of Staff's guided setup, a project's
+// edit its form), and the helper notice sits over the top of the detail column
+// until the owner dismisses it. A new project or bot is selected once created.
+// When the window first shows the team with nothing selected, the Chief of
+// Staff is.
 // See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
 import HearthDesign
@@ -76,7 +76,7 @@ struct TeamView: View {
         }
         .task { await session.usage.load() }
         .sheet(isPresented: $model.isHiring) {
-            HireSheetHost(session: session)
+            SetupSheetHost(session: session, script: .hire, editing: nil)
         }
         .sheet(isPresented: isChangingAccess) {
             if let bot = accessBot { AccessSheetHost(session: session, bot: bot) }
@@ -222,9 +222,9 @@ extension TeamView {
     }
 }
 
-/// One presentation of a setup sheet, new or editing, over a store of its own
-/// each time, asked by the Chief of Staff; a new project is selected once the
-/// core has made it. Until the accounts have loaded the sheet assumes a model
+/// One presentation of a setup sheet, a hire, a new project or an edit, over a
+/// store of its own each time, asked by the Chief of Staff; a new project or
+/// bot is selected once the core has made it. Until the accounts have loaded the sheet assumes a model
 /// may draft, and the core's `unavailable` says otherwise.
 private struct SetupSheetHost: View {
     let session: Session
@@ -245,8 +245,11 @@ private struct SetupSheetHost: View {
         SetupSheet(
             store: store, chief: session.coordinator,
             onDone: { outcome in
-                if editing == nil, case .project(let project) = outcome {
-                    session.sidebar.selected = .project(project.id)
+                switch outcome {
+                case .project(let project):
+                    if editing == nil { session.sidebar.selected = .project(project.id) }
+                case .bot(let bot):
+                    session.sidebar.selected = .bot(bot.id)
                 }
                 close()
             },
@@ -262,30 +265,9 @@ private struct SetupSheetHost: View {
     }
 
     private func close() {
+        model.isHiring = false
         model.isCreatingProject = false
         model.editingProjectID = nil
-    }
-}
-
-/// One presentation of the hire sheet, with a form of its own each time.
-private struct HireSheetHost: View {
-    let session: Session
-    @Environment(AppModel.self) private var model
-    @State private var store: HireStore
-
-    init(session: Session) {
-        self.session = session
-        _store = State(initialValue: HireStore(client: session.client))
-    }
-
-    var body: some View {
-        HireSheet(
-            store: store,
-            onHired: { bot in
-                session.sidebar.selected = .bot(bot.id)
-                model.isHiring = false
-            },
-            onCancel: { model.isHiring = false })
     }
 }
 

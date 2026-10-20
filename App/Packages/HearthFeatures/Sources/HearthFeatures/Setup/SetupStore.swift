@@ -11,8 +11,10 @@
 // field, keeping one or editing the field puts it away; none of them blocks
 // Create. "Just show me the form" swaps to the grouped form and is remembered
 // in the defaults under the script's key, the one `@AppStorage` reads; editing
-// a project always opens the form. The store decides nothing about the
-// project: the draft, the concerns and the refusal are the core's, and the
+// a project always opens the form. A hire is the same walk: its role chips
+// (SetupStore+Requests) fill the box and carry a template id, and its
+// requests are HireRequest's. The store decides nothing about the
+// project or the hire: the draft, the concerns and the refusal are the core's, and the
 // one check made here is the sheet's, that each required field holds
 // something within its control's limits.
 // See docs/model.md#owner-interaction and docs/design.md#forms-sheets-and-settings
@@ -41,6 +43,7 @@ public final class SetupStore {
     /// What the sheet made.
     public enum Outcome: Equatable, Sendable {
         case project(Hearth_V1_Project)
+        case bot(Hearth_V1_Bot)
     }
 
     /// The script the sheet follows.
@@ -55,8 +58,12 @@ public final class SetupStore {
     public var drafts: [String: WidgetDraft] = [:] {
         didSet { putAwayEdited(from: oldValue) }
     }
+    /// The role templates the core offers, the hire opener's chips.
+    public internal(set) var templates: [Hearth_V1_RoleTemplate] = []
+    /// The template whose chip filled the box, which the draft and the hire carry.
+    public internal(set) var templateID: String?
     /// The core's concerns still waiting on the owner, at most three.
-    public private(set) var concerns: [Hearth_V1_Concern] = []
+    public internal(set) var concerns: [Hearth_V1_Concern] = []
     /// Whether a model may be signed in; false starts the sheet without one.
     public var canDraft: Bool
     /// The core's words for why it could not draft, once it has said so.
@@ -64,15 +71,19 @@ public final class SetupStore {
     /// A failed draft's words other than `unavailable`, shown under the box.
     public private(set) var error: String?
     /// Whether a draft or a check is in flight.
-    public private(set) var isBusy = false
+    public internal(set) var isBusy = false
     /// What Create or Save made, once it has.
-    public private(set) var outcome: Outcome?
+    public internal(set) var outcome: Outcome?
 
+    /// What an untouched card holds, which is not the owner's typing.
+    private let initialDrafts: [String: WidgetDraft]
+    /// The core's refusal of a hire, in its words.
+    var hireError: String?
     /// The fields asked after the opener, in order.
     private var asked: [String] = []
     /// Whether the card has asked the core's rules once.
     private var checked = false
-    private let client: any HearthClient
+    let client: any HearthClient
     private let projects: ProjectsStore
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let preferenceKey: String
@@ -94,13 +105,17 @@ public final class SetupStore {
         self.defaults = defaults
         let key = preferenceKey ?? script.preferenceKey
         self.preferenceKey = key
+        let starting: [String: WidgetDraft]
         if let editing {
-            drafts = ProjectRequest.drafts(
+            starting = ProjectRequest.drafts(
                 name: editing.name, brief: editing.brief, targetDate: editing.targetDate)
             step = .form
         } else {
+            starting = script.kind == .hire ? HireRequest.initialDrafts() : [:]
             step = defaults.bool(forKey: key) ? .form : .opener
         }
+        initialDrafts = starting
+        drafts = starting
     }
 
     /// Whether the sheet goes on without a model.
@@ -157,7 +172,7 @@ public final class SetupStore {
 
     /// The core's refusal of Create or Save, in its words.
     public var saveError: String? {
-        projects.saveError
+        script.kind == .hire ? hireError : projects.saveError
     }
 
     /// Whether the primary button is on: the opener has words, the field
@@ -210,10 +225,8 @@ public final class SetupStore {
         } else {
             isBusy = true
             do {
-                let description = ProjectRequest.trimmed(paragraph)
-                let reply = try await client.draftProject(description: description)
+                try await requestDraft(ProjectRequest.trimmed(paragraph))
                 isBusy = false
-                take(reply)
             } catch let failure where HearthClientError.isUnavailable(failure) {
                 isBusy = false
                 draftFailure = failure.localizedDescription
@@ -286,7 +299,9 @@ public final class SetupStore {
         defaults.removeObject(forKey: preferenceKey)
         asked = []
         let typed = script.fields.contains {
-            !(drafts[$0.id] ?? WidgetDraft()).isEmpty(for: $0.widget)
+            let draft = drafts[$0.id] ?? WidgetDraft()
+            return draft != (initialDrafts[$0.id] ?? WidgetDraft())
+                && !draft.isEmpty(for: $0.widget)
         }
         if typed { await showCard() } else { step = .opener }
     }
@@ -296,6 +311,7 @@ public final class SetupStore {
     @discardableResult
     public func create() async -> Outcome? {
         guard script.fields.allSatisfy(isAnswered) else { return nil }
+        if script.kind == .hire { return await hire() }
         let saved =
             if let editing {
                 await projects.update(ProjectRequest.update(id: editing.id, drafts))
@@ -333,7 +349,7 @@ public final class SetupStore {
         isBusy = true
         defer { isBusy = false }
         // A failed check leaves the card as it is: concerns are a help, not a gate.
-        if let found = try? await client.checkProject(ProjectRequest.check(drafts)), step == .card {
+        if let found = try? await check(), step == .card {
             concerns = Array(found.prefix(Self.maxConcerns))
         }
     }

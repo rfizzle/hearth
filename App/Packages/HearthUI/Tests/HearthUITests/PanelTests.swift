@@ -47,11 +47,6 @@ import Testing
     #expect(IntegrationsPanel.PreviewState.notConfigured.integrations.allSatisfy { !$0.configured })
 }
 
-@Test func templateCardHasThreePreviewStates() {
-    #expect(TemplateCard.PreviewState.allCases.count == 3)
-    #expect(TemplateCard.PreviewState.describe.role == "Describe the job")
-}
-
 @Test func tierPickerHasAStatePerTier() {
     #expect(TierPicker.PreviewState.allCases.map(\.tier) == [.fast, .balanced, .best])
 }
