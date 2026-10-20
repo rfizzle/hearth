@@ -9,7 +9,7 @@
 // than the text token so sidebar vibrancy applies over the glass pane. With
 // nobody hired the sidebar shows only the header; the invitation to hire is
 // TeamEmptyView, which the window shows in the detail column. A new bot slides
-// into the list.
+// into the list. A bot's context menu offers Access… when the window gives it.
 // See docs/design.md#window-anatomy, docs/design.md#motion and
 // docs/model.md#owner-interaction
 
@@ -22,14 +22,20 @@ import SwiftUI
 public struct BotList: View {
     let store: BotListStore
     let inbox: InboxStore?
+    let onAccess: ((Hearth_V1_Bot) -> Void)?
     let onHire: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The sidebar over `store`, with the Inbox's row when `inbox` is given.
-    public init(store: BotListStore, inbox: InboxStore? = nil, onHire: @escaping () -> Void) {
+    /// A bot's context menu offers Access… when `onAccess` is given.
+    public init(
+        store: BotListStore, inbox: InboxStore? = nil,
+        onAccess: ((Hearth_V1_Bot) -> Void)? = nil, onHire: @escaping () -> Void
+    ) {
         self.store = store
         self.inbox = inbox
+        self.onAccess = onAccess
         self.onHire = onHire
     }
 
@@ -46,6 +52,11 @@ public struct BotList: View {
                 ForEach(store.bots, id: \.id) { bot in
                     BotRow(bot: bot, activity: store.activity(of: bot))
                         .tag(BotListStore.Selection.bot(bot.id))
+                        .contextMenu {
+                            if let onAccess {
+                                Button("Access…", systemImage: "lock.open") { onAccess(bot) }
+                            }
+                        }
                 }
             }
         }

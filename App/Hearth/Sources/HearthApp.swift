@@ -1,7 +1,7 @@
 // HearthApp is the app's entry point and its wiring: the app delegate owns the
 // helper supervisor so the helper is stopped when the app quits, and the model
 // that builds the stores over each helper. One main window, a Settings window
-// and the Debug menu; the Team menu carries Hire Someone… on ⌘N, so the New
+// and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A, so the New
 // Window item a window group would put there is removed.
 // See docs/design.md#window-anatomy
 
@@ -19,6 +19,12 @@ struct HearthApp: App {
             ContentView()
                 .environment(appDelegate.model)
                 .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
+                .environment(
+                    \.pickFolder,
+                    PickFolderAction { folders, files, start in
+                        await FolderPicker.pickPath(folders: folders, files: files, start: start)
+                    }
+                )
                 .task { appDelegate.supervisor.start() }
         }
         .defaultSize(width: 1040, height: 700)
@@ -44,6 +50,9 @@ struct TeamCommands: Commands {
             Button("Hire Someone…") { model.isHiring = true }
                 .keyboardShortcut("n")
                 .disabled(model.session?.phase != .team)
+            Button("Access…") { model.accessBotID = model.session?.bots.selection }
+                .keyboardShortcut("a", modifiers: [.command, .option])
+                .disabled(model.session?.phase != .team || model.session?.bots.selectedBot == nil)
         }
     }
 }

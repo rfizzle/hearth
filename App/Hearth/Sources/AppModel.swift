@@ -21,6 +21,9 @@ final class AppModel {
     private(set) var session: Session?
     /// Whether the hire sheet is open; the toolbar and the Team menu set it.
     var isHiring = false
+    /// The bot whose Access sheet is open; the toolbar, the Team menu and a
+    /// bot's context menu set it.
+    var accessBotID: String?
     /// Whether the window tells the owner the helper restarted under it.
     private(set) var helperRestarted = false
 
@@ -43,6 +46,7 @@ final class AppModel {
     func helperChanged() {
         if let current = session?.bots.selection { selection = current }
         isHiring = false
+        accessBotID = nil
         guard let client = supervisor.client else {
             lostSession = lostSession || session != nil
             session = nil
@@ -82,11 +86,14 @@ final class Session {
     let accounts: AccountsStore
     let onboarding: OnboardingStore
     let bots: BotListStore
+    /// What waits on the owner: one store for the session, which the sidebar
+    /// row, the Inbox screen, the threads and the menu bar read.
+    let inbox: InboxStore
 
     private var fetchedOrg: Hearth_V1_Org?
     private var failure: String?
     private var checked = false
-    @ObservationIgnored private let relay: EventRelay
+    @ObservationIgnored let relay: EventRelay
     @ObservationIgnored private var conversations: [String: ConversationStore] = [:]
 
     init(client: any HearthClient, relay: EventRelay, selection: String?) {
@@ -95,6 +102,7 @@ final class Session {
         accounts = AccountsStore(client: client, relay: relay)
         onboarding = OnboardingStore(client: client, accounts: accounts)
         bots = BotListStore(client: client, relay: relay)
+        inbox = InboxStore(client: client, relay: relay)
         bots.selection = selection
     }
 
@@ -125,7 +133,8 @@ final class Session {
     func conversation(for bot: Hearth_V1_Bot) -> ConversationStore {
         if let store = conversations[bot.dmConversationID] { return store }
         let store = ConversationStore(
-            client: client, relay: relay, conversationID: bot.dmConversationID)
+            client: client, relay: relay, conversationID: bot.dmConversationID,
+            inbox: inbox)
         conversations[bot.dmConversationID] = store
         return store
     }

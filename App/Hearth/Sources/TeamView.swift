@@ -1,9 +1,10 @@
 // TeamView is the window once the org exists: the bots in the sidebar and the
 // selected bot's conversation in the detail column, with Hire Someone… as an
 // icon-only toolbar item over the sidebar and the bot's folder as the one
-// item over the conversation. Nobody hired shows the invitation in the detail
-// column; nobody selected says to choose. The hire sheet is presented here,
-// and the helper notice sits over the top of the detail column until the owner
+// item beside Access… over the conversation. The Inbox row opens the Inbox
+// in the detail column. Nobody hired shows the invitation in the detail
+// column; nobody selected says to choose. The hire sheet and the Access sheet are
+// presented here, and the helper notice sits over the top of the detail column until the owner
 // dismisses it.
 // See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
@@ -22,20 +23,24 @@ struct TeamView: View {
     var body: some View {
         @Bindable var model = model
         NavigationSplitView {
-            BotList(store: session.bots, onHire: { model.isHiring = true })
-                .navigationSplitViewColumnWidth(
-                    min: Theme.Size.sidebarMin, ideal: Theme.Size.sidebarIdeal,
-                    max: Theme.Size.sidebarMax
-                )
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Hire Someone…", systemImage: "person.badge.plus") {
-                            model.isHiring = true
-                        }
-                        .labelStyle(.iconOnly)
-                        .help("Hire someone")
+            BotList(
+                store: session.bots, inbox: session.inbox,
+                onAccess: { model.accessBotID = $0.id },
+                onHire: { model.isHiring = true }
+            )
+            .navigationSplitViewColumnWidth(
+                min: Theme.Size.sidebarMin, ideal: Theme.Size.sidebarIdeal,
+                max: Theme.Size.sidebarMax
+            )
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Hire Someone…", systemImage: "person.badge.plus") {
+                        model.isHiring = true
                     }
+                    .labelStyle(.iconOnly)
+                    .help("Hire someone")
                 }
+            }
         } detail: {
             detail
                 .safeAreaInset(edge: .top, spacing: 0) {
@@ -52,15 +57,38 @@ struct TeamView: View {
         .sheet(isPresented: $model.isHiring) {
             HireSheetHost(session: session)
         }
+        .sheet(isPresented: isChangingAccess) {
+            if let bot = accessBot { AccessSheetHost(session: session, bot: bot) }
+        }
+    }
+
+    /// Whether the Access sheet is open for a bot still on the team.
+    private var isChangingAccess: Binding<Bool> {
+        Binding(
+            get: { accessBot != nil },
+            set: { if !$0 { model.accessBotID = nil } })
+    }
+
+    private var accessBot: Hearth_V1_Bot? {
+        session.bots.bots.first { $0.id == model.accessBotID }
     }
 
     @ViewBuilder
     private var detail: some View {
-        if let bot = session.bots.selectedBot {
+        if session.bots.selected == .inbox {
+            InboxScreen(store: session.inbox, bots: session.bots.bots)
+        } else if let bot = session.bots.selectedBot {
             ConversationScreen(store: session.conversation(for: bot), bot: bot)
                 .id(bot.id)
                 .navigationSubtitle(bot.role)
                 .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Access…", systemImage: "lock.open") {
+                            model.accessBotID = bot.id
+                        }
+                        .labelStyle(.iconOnly)
+                        .help("What \(bot.name) can see and do")
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button("Show Folder in Finder", systemImage: "folder") {
                             revealInFinder(bot.folderPath)
@@ -101,5 +129,23 @@ private struct HireSheetHost: View {
                 model.isHiring = false
             },
             onCancel: { model.isHiring = false })
+    }
+}
+
+/// One presentation of the Access sheet, over a grants store made for it.
+private struct AccessSheetHost: View {
+    let bot: Hearth_V1_Bot
+    @Environment(AppModel.self) private var model
+    @State private var store: GrantsStore
+
+    init(session: Session, bot: Hearth_V1_Bot) {
+        self.bot = bot
+        _store = State(
+            initialValue: GrantsStore(
+                client: session.client, relay: session.relay, botID: bot.id))
+    }
+
+    var body: some View {
+        AccessSheet(store: store, botName: bot.name, onDone: { model.accessBotID = nil })
     }
 }

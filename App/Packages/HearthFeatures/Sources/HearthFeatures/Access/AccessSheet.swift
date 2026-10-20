@@ -134,7 +134,7 @@ extension Hearth_V1_Capability {
         switch self {
         case .filesRead: "Open and read files in the folders below."
         case .filesWrite: "Create and edit files in the folders below."
-        case .filesDelete: "Move files in the folders below to the Trash."
+        case .filesDelete: "Delete files in the folders below."
         case .webFetch: "Open a web page and read it."
         case .webSearch: "Search the web for an answer."
         default: ""

@@ -96,7 +96,7 @@ extension AccessRow {
         if state == .cannotAllow {
             self.init(
                 symbol: "trash", title: "Delete files",
-                summary: "Move files in the folders below to the Trash.", canAllow: false,
+                summary: "Delete files in the folders below.", canAllow: false,
                 mode: .constant(state.mode))
         } else {
             self.init(
