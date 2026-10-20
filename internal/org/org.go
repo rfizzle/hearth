@@ -130,17 +130,21 @@ const InboxFolder = "Inbox"
 // named for it would own all of them.
 const projectsFolder = "Projects"
 
+// templatesFolder is the folder the owner's deliverable templates sit in. A
+// bot named for it would own them.
+const templatesFolder = "Templates"
+
 // ErrReservedName refuses a bot whose folder would be one the Hearth folder
-// keeps for itself: the Inbox or Projects.
-var ErrReservedName = errors.New("that name is taken by a Hearth folder (the Inbox, where dropped files go, or Projects); choose another")
+// keeps for itself: the Inbox, Projects or Templates.
+var ErrReservedName = errors.New("that name is taken by a Hearth folder (the Inbox, where dropped files go, Projects or Templates); choose another")
 
 // CheckName is ErrReservedName for a bot name whose folder would be the
-// Inbox or Projects, in any case, since the Mac's disk does not tell the two
+// Inbox, Projects or Templates, in any case, since the Mac's disk does not tell the two
 // apart.
 // See docs/model.md#access.
 func CheckName(name string) error {
 	folder := FolderName(name)
-	if strings.EqualFold(folder, InboxFolder) || strings.EqualFold(folder, projectsFolder) {
+	if strings.EqualFold(folder, InboxFolder) || strings.EqualFold(folder, projectsFolder) || strings.EqualFold(folder, templatesFolder) {
 		return fmt.Errorf("%q: %w", name, ErrReservedName)
 	}
 	return nil

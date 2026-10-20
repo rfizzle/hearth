@@ -43,6 +43,12 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 	if err != nil {
 		return rpc.Options{}, nil, err
 	}
+	// The owner's templates are the owner's alone. The Hearth folder is
+	// known once the org is named, so a folder named in this launch is
+	// reserved from the next.
+	if o, found, err := db.FindOrg(ctx); err == nil && found && o.WorkspacePath != "" {
+		reserved = append(reserved, templatesFolders(o.WorkspacePath)...)
+	}
 	accounts, err := provider.Open(dataDir, nil)
 	if err != nil {
 		_ = db.Close()
@@ -113,6 +119,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		EnsureWorkspace: workspace.Ensure,
 		Handbook:        pages,
 		Meter:           meterOf,
+		Deliverables:    deliverableDeps(db, measures(db, svc, meterOf, pages)),
 	}, func() { _ = db.Close() }, nil
 }
 

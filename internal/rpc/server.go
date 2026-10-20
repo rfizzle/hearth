@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc/accounts"
 	"github.com/rfizzle/hearth/internal/rpc/books"
+	"github.com/rfizzle/hearth/internal/rpc/deliverables"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
 	"github.com/rfizzle/hearth/internal/rpc/staff"
 	"github.com/rfizzle/hearth/internal/store"
@@ -78,6 +79,9 @@ type Options struct {
 	// Meter is the usage ledger UsageService reads and sets; its ticks
 	// reach the bus through books.Ticks.
 	Meter books.Ledger
+	// Deliverables backs MeasureService and DeliverableService: where the
+	// figures are read from and where the Hearth folder is.
+	Deliverables deliverables.Deps
 }
 
 // publish tells the bus about a change a handler made; with no bus nobody
@@ -99,10 +103,11 @@ func (o Options) withDefaults() Options {
 }
 
 // NewHandler returns the HTTP handler for the hearth.v1 contract, behind the
-// launch-token check. It serves the spike service and the nine services over
-// the domain in Options: the org, bot, conversation, inbox and event ones
+// launch-token check. It serves the spike service and the services over the
+// domain in Options: the org, bot, conversation, inbox and event ones
 // through staff, the provider and integration ones through accounts, the
-// handbook and usage ones through books. It points the accounts' and the
+// handbook and usage ones through books, the measure and template ones
+// through deliverables. It points the accounts' and the
 // integrations' change hooks at the bus, so a sign-in finishing or a key
 // pasted reaches the app whoever caused it; call it before either is used.
 // See docs/architecture.md#1-layering
@@ -119,5 +124,6 @@ func NewHandler(o Options) http.Handler {
 	accounts.Register(mux, accounts.Deps{Accounts: o.Accounts, Integrations: o.Integrations, Books: deps, Publish: o.publish})
 	mux.Handle(hearthv1connect.NewHandbookServiceHandler(books.Handbook{Deps: deps}))
 	mux.Handle(hearthv1connect.NewUsageServiceHandler(books.Usage{Deps: deps}))
+	deliverables.Register(mux, o.Deliverables)
 	return requireToken(o.Token, mux)
 }

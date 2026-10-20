@@ -227,6 +227,8 @@ type clients struct {
 	book  hearthv1connect.HandbookServiceClient
 	usage hearthv1connect.UsageServiceClient
 	proj  hearthv1connect.ProjectServiceClient
+	meas  hearthv1connect.MeasureServiceClient
+	deliv hearthv1connect.DeliverableServiceClient
 }
 
 func newClients(hc *http.Client, token string) clients {
@@ -243,6 +245,8 @@ func newClients(hc *http.Client, token string) clients {
 		book:  hearthv1connect.NewHandbookServiceClient(hc, base, opt),
 		usage: hearthv1connect.NewUsageServiceClient(hc, base, opt),
 		proj:  hearthv1connect.NewProjectServiceClient(hc, base, opt),
+		meas:  hearthv1connect.NewMeasureServiceClient(hc, base, opt),
+		deliv: hearthv1connect.NewDeliverableServiceClient(hc, base, opt),
 	}
 }
 

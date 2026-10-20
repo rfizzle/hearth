@@ -154,12 +154,12 @@ func TestEnumValuesAreStable(t *testing.T) {
 }
 
 func TestCheckName(t *testing.T) {
-	for _, name := range []string{"Inbox", "inbox", " INBOX ", ".Inbox", "Projects", "projects", " PROJECTS ", ".Projects"} {
+	for _, name := range []string{"Inbox", "inbox", " INBOX ", ".Inbox", "Projects", "projects", " PROJECTS ", ".Projects", "Templates", " templates ", ".TEMPLATES"} {
 		if err := CheckName(name); !errors.Is(err, ErrReservedName) {
 			t.Errorf("CheckName(%q) = %v, want ErrReservedName", name, err)
 		}
 	}
-	for _, name := range []string{"Dana", "Inbox Bot", "Inboxer", "Project", "Projects Lead"} {
+	for _, name := range []string{"Dana", "Inbox Bot", "Inboxer", "Project", "Projects Lead", "Template"} {
 		if err := CheckName(name); err != nil {
 			t.Errorf("CheckName(%q) = %v, want nil", name, err)
 		}

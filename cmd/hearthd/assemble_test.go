@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/rfizzle/llm"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/measure"
 	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/usage"
@@ -142,6 +144,40 @@ func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
 	}
 	if got := reservedFolders(filepath.Join(dir, "x", "..")); got[0] != dir {
 		t.Errorf("reservedFolders = %v, want the cleaned path", got)
+	}
+}
+
+func TestOpenCore_TheTemplatesFolderIsReservedAndTheMeasuresAreWired(t *testing.T) {
+	dir := t.TempDir()
+	root := filepath.Join(dir, "Hearth")
+	db, err := store.Open(filepath.Join(dir, "hearth.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.PutOrg(t.Context(), org.Org{Name: "Acme", WorkspacePath: root}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, dir)
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if !slices.Contains(opts.ReservedFolders, filepath.Join(root, "Templates")) {
+		t.Errorf("ReservedFolders = %v, want the Templates folder of the Hearth folder", opts.ReservedFolders)
+	}
+	if got := opts.Deliverables.Root(); got != root {
+		t.Errorf("Root = %q, want %q", got, root)
+	}
+	ids := []measure.ID{{Family: "team.size"}, {Family: "inbox.open"}, {Family: "usage.cost", Subject: "org", Period: "2026-10"}}
+	vals, err := opts.Deliverables.Measures.Read(ctx, ids)
+	if err != nil || len(vals) != 3 || vals[0].Missing != "" || vals[2].Missing != "" {
+		t.Errorf("Read = %+v, %v, want the core's own figures", vals, err)
 	}
 }
 

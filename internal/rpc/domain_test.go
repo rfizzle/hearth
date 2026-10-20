@@ -432,6 +432,26 @@ func TestEveryRPCWithoutTheTokenIsUnauthenticated(t *testing.T) {
 				_, err := c.proj.ArchiveProject(ctx, connect.NewRequest(&hearthv1.ArchiveProjectRequest{}))
 				return err
 			},
+			"ListMeasures": func() error {
+				_, err := c.meas.ListMeasures(ctx, connect.NewRequest(&hearthv1.ListMeasuresRequest{}))
+				return err
+			},
+			"ReadMeasures": func() error {
+				_, err := c.meas.ReadMeasures(ctx, connect.NewRequest(&hearthv1.ReadMeasuresRequest{}))
+				return err
+			},
+			"ListDeliverableTemplates": func() error {
+				_, err := c.deliv.ListDeliverableTemplates(ctx, connect.NewRequest(&hearthv1.ListDeliverableTemplatesRequest{}))
+				return err
+			},
+			"SaveDeliverableTemplate": func() error {
+				_, err := c.deliv.SaveDeliverableTemplate(ctx, connect.NewRequest(&hearthv1.SaveDeliverableTemplateRequest{}))
+				return err
+			},
+			"DeleteDeliverableTemplate": func() error {
+				_, err := c.deliv.DeleteDeliverableTemplate(ctx, connect.NewRequest(&hearthv1.DeleteDeliverableTemplateRequest{}))
+				return err
+			},
 			"Subscribe": func() error {
 				s, err := c.event.Subscribe(ctx, connect.NewRequest(&hearthv1.SubscribeRequest{}))
 				if err != nil {

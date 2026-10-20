@@ -109,7 +109,7 @@ cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
 internal/             dependencies point down only
-  rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), project, inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
+  rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), project, inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; deliverables/ serves the office's figures by id and the templates of shaped deliverables; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/, toolset/ and after/ (tidy and summary after a run) below it)
   assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
@@ -119,7 +119,7 @@ internal/             dependencies point down only
   tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal); document/ reads a file as text, PDF, Word, PowerPoint, CSV, Excel and RTF, and an image's kind and size (exists, below tools); render/chart is the chart layout and its SVG (exists); the rest of render/, deliverables/ and native/ (planned)
     memory/ files/    remember appends a note for the calling bot; files.read, files.write and files.delete work inside a granted folder (exist)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
-  deliverable/        the spec of a shaped deliverable, its ten widgets, the refusals in words and the canonical JSON; template/ is the five shipped and the owner's (exists)
+  deliverable/        the spec of a shaped deliverable, its ten widgets, the refusals in words and the canonical JSON; template/ is the five shipped and the owner's; measure/ is the office's figures read by id, aliases resolved at write time (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
   org/                domain types, grant resolution, budget math (exists); intro/ is a bot's introduction card and the rule that assembles one; project/ is a project's types, the moves its state allows, and the rule that derives its status from its tasks
   workspace/          the Hearth folder's layout and path containment, a bot's and a project's folder (exists)
@@ -175,7 +175,7 @@ from `Hearth`.
   `make proto && make proto-drift` after editing the proto, outside `make ci`.
   `make tailwind-check` (also outside ci) downloads the pinned Tailwind CLI to
   `.cache/tailwind`; `make tokens-gen` writes its theme and the chart palette.
-- **`make proto` regenerates two files per proto on each side** (twelve
+- **`make proto` regenerates two files per proto on each side** (fourteen
   protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables.
