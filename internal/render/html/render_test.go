@@ -302,6 +302,7 @@ func TestWebAddress(t *testing.T) {
 		"JavaScript:x": false, " https://example.com": false, "java\tscript:x": false, "https://exa mple.com": false,
 		"https://example.com\n": false, "data:text/html,x": false, "file:///etc/passwd": false, "//example.com": false,
 		"/relative": false, "https://example.com/\u0085": false, "": false,
+		"ma\u0130lto:javascript:alert(1)": false, "HTTPS://example.com": true,
 	} {
 		if got := webAddress(in); got != want {
 			t.Errorf("webAddress(%q) = %v, want %v", in, got, want)

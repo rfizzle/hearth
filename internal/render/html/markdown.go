@@ -164,7 +164,14 @@ func webAddress(dest string) bool {
 	if strings.ContainsFunc(dest, func(r rune) bool { return r <= ' ' || (r >= 0x7f && r <= 0x9f) }) {
 		return false
 	}
-	lower := strings.ToLower(dest)
+	// ASCII-only folding: Unicode case rules map U+0130 to "i", which would
+	// let a non-ASCII scheme pass a check meant for ASCII schemes only.
+	lower := strings.Map(func(r rune) rune {
+		if r >= 'A' && r <= 'Z' {
+			return r + ('a' - 'A')
+		}
+		return r
+	}, dest)
 	for _, scheme := range []string{"https://", "http://", "mailto:"} {
 		if rest, ok := strings.CutPrefix(lower, scheme); ok {
 			return rest != "" && !strings.HasPrefix(rest, "/")
