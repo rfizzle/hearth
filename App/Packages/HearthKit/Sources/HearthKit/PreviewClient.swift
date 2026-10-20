@@ -81,7 +81,9 @@ public struct PreviewClient: HearthClient {
         }
     }
 
-    public func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
+    public func send(
+        conversationID: String, text: String, attachmentPaths: [String]
+    ) async throws -> Hearth_V1_SendResponse {
         var response = Fixtures.sendResponse
         response.message.conversationID = conversationID
         response.message.content = text
@@ -90,6 +92,68 @@ public struct PreviewClient: HearthClient {
     }
 
     public func cancel(runID: String) async throws {}
+
+    public func getConversation(id: String) async throws -> Hearth_V1_Conversation {
+        var conversation = Fixtures.dmConversation
+        conversation.id = id
+        return conversation
+    }
+
+    public func retry(runID: String) async throws -> Hearth_V1_Run {
+        var run = Fixtures.failedRun
+        run.id = "run-retry"
+        run.state = .queued
+        run.failure = ""
+        return run
+    }
+
+    public func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
+        Fixtures.grants
+    }
+
+    public func setGrants(
+        botID: String, _ grants: [Hearth_V1_Grant]
+    ) async throws -> [Hearth_V1_Grant] {
+        grants
+    }
+
+    public func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] {
+        Fixtures.inbox.filter { includeClosed || $0.state == .open }
+    }
+
+    public func decide(
+        itemID: String, _ decision: Hearth_V1_Decision, reason: String
+    ) async throws -> Hearth_V1_DecideResponse {
+        var item = Fixtures.inbox.first { $0.id == itemID } ?? Fixtures.approval
+        item.state = .closed
+        item.decision = decision
+        item.outcome = decision == .deny ? "Denied" : "Allowed"
+        return .with {
+            $0.item = item
+            $0.run = Fixtures.workingRun
+        }
+    }
+
+    public func answer(
+        itemID: String, _ text: String, value: Hearth_V1_WidgetAnswer?
+    ) async throws -> Hearth_V1_AnswerResponse {
+        var item = Fixtures.inbox.first { $0.id == itemID } ?? Fixtures.question
+        item.state = .closed
+        item.answer = text
+        if let value { item.answerValue = value }
+        item.outcome = "Answered"
+        return .with {
+            $0.item = item
+            $0.run = Fixtures.workingRun
+        }
+    }
+
+    public func acknowledge(itemID: String) async throws -> Hearth_V1_InboxItem {
+        var item = Fixtures.inbox.first { $0.id == itemID } ?? Fixtures.failure
+        item.state = .closed
+        item.outcome = "Acknowledged"
+        return item
+    }
 
     public func listAccounts() async throws -> [Hearth_V1_ProviderAccount] {
         Fixtures.accounts

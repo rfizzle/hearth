@@ -48,3 +48,45 @@ import Testing
     }
     #expect(deltas == Fixtures.replyDeltas)
 }
+
+@Test func theInboxHoldsAnApprovalAQuestionAndAFailure() {
+    let items = Fixtures.inbox
+    #expect(items.map(\.kind) == [.approval, .question, .failure])
+    #expect(items.allSatisfy { $0.state == .open && !$0.title.isEmpty })
+    #expect(Fixtures.approval.call.name == "files.delete")
+    #expect(Fixtures.approval.effect.contains("brief.md"))
+    #expect(Fixtures.question.suggestedAnswers.count == 2)
+    #expect(Fixtures.failure.effect == Fixtures.failedRun.failure)
+}
+
+@Test func theGrantsAreTheFiveCapabilitiesWithTheOwnFolderMarked() {
+    let grants = Fixtures.grants
+    #expect(
+        grants.map(\.capability)
+            == [.filesRead, .filesWrite, .filesDelete, .webFetch, .webSearch])
+    #expect(
+        grants.filter(\.ownFolder).map(\.folder)
+            == Array(repeating: Fixtures.bot.folderPath, count: 3))
+    #expect(grants.first { $0.capability == .filesDelete }?.canAllow == false)
+}
+
+@Test func theParkEventsWaitThenResumeInTheCoresOrder() {
+    let events = Fixtures.parkEvents.compactMap(\.event)
+    #expect(Fixtures.parkEvents.map(\.sequence) == Array(1...UInt64(events.count)))
+
+    guard case .runChanged(let waiting) = events[0], case .messageUpserted(let request) = events[1],
+        case .inboxChanged(let opened) = events[2], case .inboxChanged(let closed) = events[3],
+        case .messageUpserted(let decision) = events[4],
+        case .messageUpserted(let result) = events[5], case .runChanged(let resumed) = events[6]
+    else {
+        Issue.record("events out of order: \(events)")
+        return
+    }
+    #expect(waiting.run.state == .waitingOwner)
+    #expect(request.message.kind == .approvalRequest)
+    #expect(opened.item.state == .open && opened.item.messageID == request.message.id)
+    #expect(closed.item.state == .closed && closed.item.decision == .allowOnce)
+    #expect(decision.message.kind == .approvalDecision)
+    #expect(result.message.kind == .toolResult)
+    #expect(resumed.run.state == .working)
+}

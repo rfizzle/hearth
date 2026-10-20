@@ -38,10 +38,39 @@ private struct EmptyOrgClient: HearthClient {
         try await base.listMessages(
             conversationID: conversationID, beforeSeq: beforeSeq, limit: limit)
     }
-    func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
-        try await base.send(conversationID: conversationID, text: text)
+    func send(
+        conversationID: String, text: String, attachmentPaths: [String]
+    ) async throws -> Hearth_V1_SendResponse {
+        try await base.send(
+            conversationID: conversationID, text: text, attachmentPaths: attachmentPaths)
     }
     func cancel(runID: String) async throws { try await base.cancel(runID: runID) }
+    func getConversation(id: String) async throws -> Hearth_V1_Conversation {
+        try await base.getConversation(id: id)
+    }
+    func retry(runID: String) async throws -> Hearth_V1_Run { try await base.retry(runID: runID) }
+    func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
+        try await base.listGrants(botID: botID)
+    }
+    func setGrants(botID: String, _ grants: [Hearth_V1_Grant]) async throws -> [Hearth_V1_Grant] {
+        try await base.setGrants(botID: botID, grants)
+    }
+    func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] {
+        try await base.listInbox(includeClosed: includeClosed)
+    }
+    func decide(
+        itemID: String, _ decision: Hearth_V1_Decision, reason: String
+    ) async throws -> Hearth_V1_DecideResponse {
+        try await base.decide(itemID: itemID, decision, reason: reason)
+    }
+    func answer(
+        itemID: String, _ text: String, value: Hearth_V1_WidgetAnswer?
+    ) async throws -> Hearth_V1_AnswerResponse {
+        try await base.answer(itemID: itemID, text, value: value)
+    }
+    func acknowledge(itemID: String) async throws -> Hearth_V1_InboxItem {
+        try await base.acknowledge(itemID: itemID)
+    }
     func listAccounts() async throws -> [Hearth_V1_ProviderAccount] {
         try await base.listAccounts()
     }

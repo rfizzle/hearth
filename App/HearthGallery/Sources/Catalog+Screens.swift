@@ -146,10 +146,41 @@ private struct NoBotsClient: HearthClient {
         try await preview.listMessages(
             conversationID: conversationID, beforeSeq: beforeSeq, limit: limit)
     }
-    func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
-        try await preview.send(conversationID: conversationID, text: text)
+    func send(
+        conversationID: String, text: String, attachmentPaths: [String]
+    ) async throws -> Hearth_V1_SendResponse {
+        try await preview.send(
+            conversationID: conversationID, text: text, attachmentPaths: attachmentPaths)
     }
     func cancel(runID: String) async throws { try await preview.cancel(runID: runID) }
+    func getConversation(id: String) async throws -> Hearth_V1_Conversation {
+        try await preview.getConversation(id: id)
+    }
+    func retry(runID: String) async throws -> Hearth_V1_Run {
+        try await preview.retry(runID: runID)
+    }
+    func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
+        try await preview.listGrants(botID: botID)
+    }
+    func setGrants(botID: String, _ grants: [Hearth_V1_Grant]) async throws -> [Hearth_V1_Grant] {
+        try await preview.setGrants(botID: botID, grants)
+    }
+    func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] {
+        try await preview.listInbox(includeClosed: includeClosed)
+    }
+    func decide(
+        itemID: String, _ decision: Hearth_V1_Decision, reason: String
+    ) async throws -> Hearth_V1_DecideResponse {
+        try await preview.decide(itemID: itemID, decision, reason: reason)
+    }
+    func answer(
+        itemID: String, _ text: String, value: Hearth_V1_WidgetAnswer?
+    ) async throws -> Hearth_V1_AnswerResponse {
+        try await preview.answer(itemID: itemID, text, value: value)
+    }
+    func acknowledge(itemID: String) async throws -> Hearth_V1_InboxItem {
+        try await preview.acknowledge(itemID: itemID)
+    }
     func listAccounts() async throws -> [Hearth_V1_ProviderAccount] {
         try await preview.listAccounts()
     }

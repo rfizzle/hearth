@@ -34,10 +34,33 @@ public protocol HearthClient: Sendable {
     func listMessages(conversationID: String, beforeSeq: Int64, limit: Int32) async throws
         -> Hearth_V1_ListMessagesResponse
     /// Stores the owner's message and starts one run; the reply arrives on
-    /// `subscribe`.
-    func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse
+    /// `subscribe`. `attachmentPaths` are absolute paths the app resolved; the
+    /// core ignores them until attachments arrive.
+    func send(conversationID: String, text: String, attachmentPaths: [String]) async throws
+        -> Hearth_V1_SendResponse
     /// Stops a run, keeping what the bot had written so far.
     func cancel(runID: String) async throws
+    /// One conversation with its latest run, so a screen opened mid-run shows it.
+    func getConversation(id: String) async throws -> Hearth_V1_Conversation
+    /// Runs the owner message behind a failed or cancelled run again, as a new
+    /// run; refused while a run in the conversation is working or waiting.
+    func retry(runID: String) async throws -> Hearth_V1_Run
+
+    /// What the bot may do, one row per capability and per folder.
+    func listGrants(botID: String) async throws -> [Hearth_V1_Grant]
+    /// Replaces the bot's grants whole; the core answers with what it kept.
+    func setGrants(botID: String, _ grants: [Hearth_V1_Grant]) async throws -> [Hearth_V1_Grant]
+
+    /// What waits on the owner; closed items only when asked for.
+    func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem]
+    /// Answers an approval with one of the four decisions; the run resumes.
+    func decide(itemID: String, _ decision: Hearth_V1_Decision, reason: String) async throws
+        -> Hearth_V1_DecideResponse
+    /// Replies to a question, in words or through its control; the run resumes.
+    func answer(itemID: String, _ text: String, value: Hearth_V1_WidgetAnswer?) async throws
+        -> Hearth_V1_AnswerResponse
+    /// Closes an item that needs no decision, such as a failure.
+    func acknowledge(itemID: String) async throws -> Hearth_V1_InboxItem
 
     /// Every provider and whether it has a credential; never the credential.
     func listAccounts() async throws -> [Hearth_V1_ProviderAccount]
@@ -74,6 +97,18 @@ public protocol HearthClient: Sendable {
     func subscribe(after sequence: UInt64) -> AsyncThrowingStream<
         Hearth_V1_SubscribeResponse, Error
     >
+}
+
+extension HearthClient {
+    /// Sends the owner's words with nothing attached.
+    public func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
+        try await send(conversationID: conversationID, text: text, attachmentPaths: [])
+    }
+
+    /// Replies to a question in prose.
+    public func answer(itemID: String, _ text: String) async throws -> Hearth_V1_AnswerResponse {
+        try await answer(itemID: itemID, text, value: nil)
+    }
 }
 
 /// A reply from the core the client cannot use.

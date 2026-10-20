@@ -90,3 +90,40 @@ import Testing
     #expect(account.displayName == "Acme gateway")
     #expect(account.label == "5678")
 }
+
+@Test func listInboxServesTheFixtureItemsAndTheDecisionsCloseThem() async throws {
+    let client = PreviewClient()
+    #expect(try await client.listInbox(includeClosed: false) == Fixtures.inbox)
+
+    let decided = try await client.decide(itemID: Fixtures.approval.id, .deny, reason: "")
+    #expect(decided.item.state == .closed && decided.item.decision == .deny)
+    #expect(decided.item.outcome == "Denied")
+
+    let answered = try await client.answer(itemID: Fixtures.question.id, "Both kinds")
+    #expect(answered.item.state == .closed && answered.item.answer == "Both kinds")
+
+    let acknowledged = try await client.acknowledge(itemID: Fixtures.failure.id)
+    #expect(acknowledged.state == .closed)
+}
+
+@Test func listGrantsServesTheFixtureGrantsAndSetGrantsEchoesThem() async throws {
+    let client = PreviewClient()
+    #expect(try await client.listGrants(botID: Fixtures.bot.id) == Fixtures.grants)
+    #expect(try await client.setGrants(botID: Fixtures.bot.id, []) == [])
+}
+
+@Test func theCurrentRunAndRetryAreServed() async throws {
+    let client = PreviewClient()
+    let conversation = try await client.getConversation(id: Fixtures.dmConversation.id)
+    #expect(conversation.id == Fixtures.dmConversation.id)
+    let run = try await client.retry(runID: Fixtures.failedRun.id)
+    #expect(run.state == .queued && run.failure.isEmpty)
+}
+
+@Test func sendTakesAttachmentsAndDefaultsToNone() async throws {
+    let client = PreviewClient()
+    let plain = try await client.send(conversationID: "c", text: "Hello")
+    let attached = try await client.send(
+        conversationID: "c", text: "Hello", attachmentPaths: ["/tmp/a.pdf"])
+    #expect(plain.message.content == "Hello" && attached.message.content == "Hello")
+}

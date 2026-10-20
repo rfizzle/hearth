@@ -13,6 +13,7 @@ public final class LiveClient: HearthClient {
     private let org: Hearth_V1_OrgServiceClient
     private let bots: Hearth_V1_BotServiceClient
     private let conversations: Hearth_V1_ConversationServiceClient
+    private let inbox: Hearth_V1_InboxServiceClient
     private let providers: Hearth_V1_ProviderServiceClient
     private let integrations: Hearth_V1_IntegrationServiceClient
     private let events: Hearth_V1_EventServiceClient
@@ -34,6 +35,7 @@ public final class LiveClient: HearthClient {
         self.org = Hearth_V1_OrgServiceClient(client: protocolClient)
         self.bots = Hearth_V1_BotServiceClient(client: protocolClient)
         self.conversations = Hearth_V1_ConversationServiceClient(client: protocolClient)
+        self.inbox = Hearth_V1_InboxServiceClient(client: protocolClient)
         self.providers = Hearth_V1_ProviderServiceClient(client: protocolClient)
         self.integrations = Hearth_V1_IntegrationServiceClient(client: protocolClient)
         self.events = Hearth_V1_EventServiceClient(client: protocolClient)
@@ -100,10 +102,13 @@ public final class LiveClient: HearthClient {
         return try await conversations.listMessages(request: request).value()
     }
 
-    public func send(conversationID: String, text: String) async throws -> Hearth_V1_SendResponse {
+    public func send(
+        conversationID: String, text: String, attachmentPaths: [String]
+    ) async throws -> Hearth_V1_SendResponse {
         let request = Hearth_V1_SendRequest.with {
             $0.conversationID = conversationID
             $0.text = text
+            $0.attachmentPaths = attachmentPaths
         }
         return try await conversations.send(request: request).value()
     }
@@ -111,6 +116,63 @@ public final class LiveClient: HearthClient {
     public func cancel(runID: String) async throws {
         let request = Hearth_V1_CancelRequest.with { $0.runID = runID }
         _ = try await conversations.cancel(request: request).value()
+    }
+
+    public func getConversation(id: String) async throws -> Hearth_V1_Conversation {
+        let request = Hearth_V1_GetConversationRequest.with { $0.id = id }
+        return try await conversations.getConversation(request: request).value().conversation
+    }
+
+    public func retry(runID: String) async throws -> Hearth_V1_Run {
+        let request = Hearth_V1_RetryRequest.with { $0.runID = runID }
+        return try await conversations.retry(request: request).value().run
+    }
+
+    public func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
+        let request = Hearth_V1_ListGrantsRequest.with { $0.botID = botID }
+        return try await bots.listGrants(request: request).value().grants
+    }
+
+    public func setGrants(
+        botID: String, _ grants: [Hearth_V1_Grant]
+    ) async throws -> [Hearth_V1_Grant] {
+        let request = Hearth_V1_SetGrantsRequest.with {
+            $0.botID = botID
+            $0.grants = grants
+        }
+        return try await bots.setGrants(request: request).value().grants
+    }
+
+    public func listInbox(includeClosed: Bool) async throws -> [Hearth_V1_InboxItem] {
+        let request = Hearth_V1_ListInboxRequest.with { $0.includeClosed = includeClosed }
+        return try await inbox.listInbox(request: request).value().items
+    }
+
+    public func decide(
+        itemID: String, _ decision: Hearth_V1_Decision, reason: String
+    ) async throws -> Hearth_V1_DecideResponse {
+        let request = Hearth_V1_DecideRequest.with {
+            $0.itemID = itemID
+            $0.decision = decision
+            $0.reason = reason
+        }
+        return try await inbox.decide(request: request).value()
+    }
+
+    public func answer(
+        itemID: String, _ text: String, value: Hearth_V1_WidgetAnswer?
+    ) async throws -> Hearth_V1_AnswerResponse {
+        let request = Hearth_V1_AnswerRequest.with {
+            $0.itemID = itemID
+            $0.answer = text
+            if let value { $0.value = value }
+        }
+        return try await inbox.answer(request: request).value()
+    }
+
+    public func acknowledge(itemID: String) async throws -> Hearth_V1_InboxItem {
+        let request = Hearth_V1_AcknowledgeRequest.with { $0.itemID = itemID }
+        return try await inbox.acknowledge(request: request).value().item
     }
 
     public func listAccounts() async throws -> [Hearth_V1_ProviderAccount] {
