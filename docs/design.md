@@ -17,8 +17,7 @@ and no snapshot goldens before the owner approves the look (D26 in `decisions.md
 Liquid Glass is the system's material for the layer that floats above content: the sidebar, the
 toolbar, sheets and menus. Hearth gets it by using the system's windows, toolbars and sheets and
 drawing nothing behind them. Custom glass appears in one place, the composer bar floating over the
-transcript, the one control that sits over content; there is no glass primitive, the composer
-applies it itself. Content (messages, cards, rows) is flat.
+transcript, which applies it itself. Content (messages, cards, rows) is flat.
 
 ## Type
 
@@ -50,6 +49,9 @@ names a colour only for what it draws itself.
 - **Checked.** Every foreground and background used together is listed in the token file, and the
   build fails when one falls under 4.5 to 1 (WCAG 2.2 AA) in light or dark. The owner's message
   uses the secondary surface, not the accent, so the person's accent never decides readability.
+- **Six chart hues.** A shaped deliverable is cards in a grid on the content layer; its charts use
+  six fixed hues, each checked at 3 to 1 against the card in light and dark and named in a legend.
+  A dashboard prints landscape and a report portrait.
 
 ## Spacing and shape
 
@@ -59,8 +61,7 @@ a number that fits none is a reason to change the scale, not to skip it.
 
 Shared measures: the avatar (28 pt, 44 pt large), the status dot, a project's progress pie (16 pt),
 the file icon, a 24 pt minimum target, a readable column of 640 pt for the transcript, 480 pt for a
-message bubble and a form, 560 pt for a sheet, a sidebar of 200 to 320 pt and an inspector of 260
-to 380 pt. Long text never runs the width of a wide window.
+message bubble and a form, 560 pt for a sheet, a sidebar of 200 to 320 pt, an inspector of 260 to 380.
 
 ## Window anatomy
 
@@ -94,13 +95,13 @@ opening one shows its arguments and result. Files a bot made are chips with the 
 for their type. There is one signal that the bot is working, a status line with a pulsing dot
 (steady under Reduce Motion), and no streaming cursor. A run that failed or was stopped puts a
 plain Retry beside its line. When hearth's helper stops and starts again, a bar on the attention
-fill sits over the top of the conversation saying what stopped, with OK. It is not a modal, it
-stays until dismissed, and it does not apologise.
+fill sits over the top of the conversation saying what stopped, with OK; it stays until dismissed
+and does not apologise.
 
 Files go both ways. A file dropped on the composer waits there as a chip with a small remove
 button; a folder is declined in a line under the chips. Any file chip opens in Quick Look on Space
-and from its context menu. A summary of the earlier part of a conversation is a quiet row above the
-oldest message, "Earlier in this conversation", that opens to show it.
+and from its context menu. A summary of earlier turns is a quiet row above the oldest message,
+"Earlier in this conversation", that opens to show it.
 
 A bot's question is a card with the question, the control it asked for (a choice, a date, a
 folder) and one prominent button to answer. An answered card goes quiet: no stroke, no buttons,
@@ -113,8 +114,7 @@ of buttons: Cancel on the left bound to Escape, and the one prominent button bou
 two prominent buttons. Hiring is a sheet at a fixed width and no fixed height. Settings is the
 standard settings window (Command-comma) with a tab per pane: Accounts, Models, Web Search, Usage.
 Models is a row per tier, Fast, Balanced and Best, each with a menu of the models it may use; a
-model for one bot is pinned under a collapsed Advanced at the foot of its Access sheet, and
-nowhere else. Nothing in it is specific to first run.
+model for one bot is pinned under a collapsed Advanced in its Access sheet, nowhere else.
 
 ## Empty states and first run
 
@@ -133,20 +133,18 @@ Optional setup, such as web search, waits, collapsed, until after the first conv
 
 ## Motion
 
-Two durations, named by what they are for: quick (0.2 s,
-ease-out) for feedback that follows a click, a swap or a fade; move (0.35 s, a spring with no
-bounce) for a layout change, a height growing or a row sliding in. Nothing else is written inline.
+Two durations, named by what they are for: quick (0.2 s, ease-out) for feedback that follows a
+click, a swap or a fade; move (0.35 s, a spring with no bounce) for a layout change, a height
+growing or a row sliding in. Nothing else is written inline.
 
 What animates is a change the person asked for. Content that arrives on its own (streamed text,
 events from the core, a status flipping) appears, so the transcript never jitters.
 
 Reduce Motion: every animation passes through one helper that returns nothing under the setting. A
 change still happens, at once, or as a cross-fade where a jump would lose the person's place.
-Repeating effects, such as the working dot, stop; their labels stay. The system's motion stays the
-system's: glass, sheets, scroll edges, selection and hover.
+Repeating effects, such as the working dot, stop; their labels stay.
 
 The transitions in use, one each: a disclosure grows with its body fading in; a revealed field
-slides down from the top; a state pill or a swapped button blur-replaces in place; a step change
-cross-fades while the column's height moves; the owner's sent message rises in; a new team member
-slides into the sidebar; an empty state fades out; a symbol that changes meaning (send, stop)
-replaces itself. Nothing travels between two places.
+slides down; a pill or swapped button blur-replaces in place; a step change cross-fades while the
+column's height moves; the owner's sent message rises in; a new team member slides into the
+sidebar; an empty state fades out; a symbol that changes meaning replaces itself. Nothing travels.

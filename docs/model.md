@@ -96,6 +96,8 @@ A project is done when the owner marks it done. When every task has finished the
 
 **Run** (`Run`). One bot taking a turn: a model call loop with tool calls until the bot yields a message, a question, an assignment wait, or hits a limit. Runs are the unit of cost accounting and cancellation. A task is a sequence of runs by the assignee, interleaved with waits.
 
+**Shaped deliverable.** A dashboard or a report a bot fills as a spec and hearth renders: a fixed catalogue of ten widgets (metric, line, bar, pie, table, list, progress, light, callout, text), five templates the owner can add to (the owner's live in `Templates/`, which no bot may touch), and three files beside each other: the spec, a web page and a PDF. A bot writes one with the `deliverables.write` tool under the `files.write` grant, which refuses a malformed spec in words before anything is written. A figure on a dashboard is bound to the office's own measures by id (a project's tasks and light, usage, the Inbox, notes, the handbook meter, a project's files, the team's size), filled by the core when the file is written and kept live in the app with no model involved. Prose inside it is Markdown with no HTML, no images and web links only; everything else is data. In the app it is cards in a grid, drawn natively from the spec and never from the web page; "Open in Browser" on its chip and in its window has the system open the file. A dashboard prints landscape and a report portrait, and charts use six fixed hues checked at 3 to 1 (`design.md`). Decisions D42 to D48.
+
 **Recurring task** (`Schedule`). A task brief plus a calendar rule (daily/weekly/monthly at a time, or "every N hours while I'm working"). Fires while the app or its menu bar extra is running; missed fires are listed, not auto-run, unless the owner says "catch up".
 
 ### Owner interaction
@@ -119,6 +121,7 @@ Hearth/
   Handbook/            (exported copy of handbook pages, read-only mirror)
   Inbox/               (files the owner drops in without a home)
   Projects/<Project name>/   (a project's deliverables; team folders keep team-owned work)
+  Templates/           (the owner's deliverable templates; no bot may touch it)
   <Team name>/         (deliverables, one subfolder per task when more than one file)
   <Bot name>/          (an org-level bot's deliverables; the Chief of Staff's folder is one of these)
   Chief of Staff/      (for example: the Chief of Staff's org-level deliverables)
@@ -133,7 +136,7 @@ The app watches the folder; files the owner adds are visible to bots with the fo
 | Capability | What it allows | Default for new bots |
 |---|---|---|
 | `files.read(<folder>)` | Read files under a folder (Workspace subfolders, or any folder the owner picks via the open panel, stored as a security-scoped bookmark), as text, including PDF, Word, Excel, PowerPoint, CSV and RTF; an image's text while the app is open | own team's Workspace subfolder; an org-level bot's own folder; and the Hearth folder's Inbox |
-| `files.write(<folder>)` | Create/replace files, and render a Markdown file to PDF or Word beside it | own team's Workspace subfolder; an org-level bot's own folder |
+| `files.write(<folder>)` | Create/replace files, render a Markdown file to PDF or Word beside it, and write a shaped deliverable from a spec | own team's Workspace subfolder; an org-level bot's own folder |
 | `files.delete(<folder>)` | Delete files | ask me |
 | `web.fetch` | Fetch a URL (read-only, no cookies) | allowed |
 | `web.search` | Web search through a search service whose key the owner has pasted (Brave Search first); with no key the tool does not exist | allowed |
@@ -177,6 +180,7 @@ Cost is an estimate in US dollars from llm's price table, not a bill: a model th
 | Handbook | Handbook | "24 KB, measured as bytes". |
 | BotNote | Notes | "What Dana remembers". |
 | Usage | Usage | Cost in the user's currency, tokens under a disclosure. |
+| Deliverable | Report, Dashboard | The kind as the owner sees it. |
 | Workspace | Hearth folder | Shown as a Finder-like path with a "Show in Finder" button everywhere files are mentioned. |
 
 

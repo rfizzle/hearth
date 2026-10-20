@@ -42,6 +42,7 @@ Hearth.app
 | Tool registry | core | shhh's `Definition{Tool, Execute, Receipt}` shape. Two tiers only: read and act; act tools consult the approval gate. |
 | Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search (offered only while a search key is stored), assign, ask_owner, remember. |
 | Document reading and rendering | core | pure Go; the app only for text recognition through the native service |
+| Shaped deliverables and measures | core renders, app shows | One spec, two renderers; measures by id through `MeasureService` (planned). |
 | Native tools (planned) | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
 | Credentials | app (Keychain) → core (memory) | The app reads its Keychain records and pushes them with `SyncCredentials` on connect; the core holds them in memory and writes none to disk. A changed record reaches the app as a `credential_changed` event (name only) and an `ExportCredential` call. The core hands back the records its own files held that the app lacked; a later sync that holds every one of those names deletes `keys/` and `chatgpt/`. A core started by hand with no app keeps owner-only files in those folders (D29). |
 | ChatGPT plan tokens | core, in memory, over llm's `credstore.Store` | llm's `chatgpt.Open` takes a `Store`; the core gives it `provider.MemoryKeys`, which keeps the record under `chatgpt` and the host id under `chatgpt-host` and fires the change on every save, token refresh included. The app's Keychain is the durable copy. The file store serves a hand-run core only (D29). |
@@ -76,6 +77,8 @@ OrgService        ExportOrg, ImportOrg
 BotService        Delete
 TeamService       List, Create, Update, Delete
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
+MeasureService (planned): ListMeasures, ReadMeasures (a closed registry of measure ids; the app re-reads on events it already receives)
+DeliverableService (planned): ListDeliverableTemplates, SaveDeliverableTemplate, DeleteDeliverableTemplate
 NativeService (planned; served by the app, called by the core): Ping, ExtractText, Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
@@ -130,7 +133,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, render and native are planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, render, measure, deliverable and native are planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -180,6 +183,16 @@ Rules:
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
 | `internal/document` (planned) | Reads the common document kinds as text: kind by header, the caps, the notices and the picture-page rule; pure Go | new |
 | `internal/render` (planned) | Renders a Markdown file to PDF or Word, deterministically, for `files.render` | new |
+| `internal/deliverable` (planned) | The spec of a shaped deliverable, the closed catalogue of ten widgets, the refusals in words, the canonical form; stdlib only | new |
+| `internal/deliverable/template` (planned) | The five shipped templates and the owner's from `Templates/`; the positional check | new |
+| `internal/measure` (planned) | The closed registry of measure ids and one read over the store, the meter and the project rule | new |
+| `internal/render/chart` (planned) | One deterministic chart layout feeding the SVG and the PDF; the six hues | new |
+| `internal/render/html` (planned) | A spec to a self-contained web page, no script, with a content-security-policy | new |
+| `internal/render/paper` (planned) | A spec to a PDF through the Markdown engine, vector charts, reproducible | new |
+| `internal/tools/deliverables` (planned) | `deliverables.write`: validates before the gate, fills measures, writes the spec, the page and the PDF beside each other | new |
+| `internal/rpc/deliverables` (planned) | The handlers of `MeasureService` and `DeliverableService` | new |
+| `scripts/tokens` (planned) | Generates the chart hues and the Tailwind theme from the design tokens | new |
+| `scripts/tailwind` (planned) | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |
 | `internal/native` (planned) | Proxies to the app's NativeService, ExtractText first | new |
 | `internal/tools/files` | `files.read`, `files.write`, `files.delete` inside the folders a bot's grants name | new |
 | `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
@@ -314,7 +327,8 @@ Minimal by policy; every dependency is a maintenance cost on a long-lived app. O
 | `connectrpc/connect-swift` + `apple/swift-protobuf` | Generated client for the core | yes |
 | `pointfreeco/swift-snapshot-testing` | Goldens | yes |
 | `sparkle-project/Sparkle` | Updates | yes |
-| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, unless `AttributedString(markdown:)` plus a small table renderer proves enough |
+| `gonzalezreal/swift-markdown-ui` | Markdown rendering with tables and code blocks | yes, adopted for deliverable text blocks only (D48); the transcript keeps the inline-only string |
+| Charts (Apple's) | The chart framework for a shaped deliverable's native charts | yes; part of the SDK |
 | `sindresorhus/KeyboardShortcuts` | User-configurable global hotkey | yes |
 | `EmergeTools/Pow` | Expressive transitions and change effects | no; evaluated for the motion pass and not needed: every transition hearth uses is one SwiftUI modifier, and the effects it adds are the gratuitous kind (`docs/design.md#motion`) |
 | `nalexn/ViewInspector` | View-tree unit tests | no by default; store tests plus snapshots cover it, and it tracks SwiftUI internals |
