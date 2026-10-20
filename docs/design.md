@@ -82,7 +82,9 @@ sidebar of 200 to 320 pt. Long text never runs the width of a wide window.
 One main window with two columns: the team in the sidebar, the conversation
 beside it. The window is titled by what is selected, never by the app's name.
 An inspector opens at the trailing edge (260 to 380 pt, ⌥⌘I): collapsible
-sections about the selected bot, Notes first; a note is pinned or edited in place.
+sections about the selected bot, Notes first, then the Handbook and Usage; a note is
+pinned or edited in place. Usage headlines the month's cost in dollars, with
+tokens under a disclosure, a quiet budget bar, and Paused with Resume.
 
 - **Sidebar.** "Your team": one row per bot with its mark, name and role. The
   system gives it its glass and vibrancy.
@@ -126,7 +128,7 @@ Forms are the system's grouped form. A sheet has a heading, a lead sentence, the
 form, and a row of buttons: Cancel on the left bound to Escape, and the one
 prominent button bound to Return, never two prominent buttons. Hiring is a sheet
 at a fixed width and no fixed height. Settings is the standard settings window
-opened with Command-comma, with a tab per pane. Nothing in it is specific to
+opened with Command-comma, with a tab per pane (Accounts, Web Search, Usage). Nothing in it is specific to
 first run.
 
 ## Empty states and first run

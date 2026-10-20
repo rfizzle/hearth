@@ -1,5 +1,6 @@
 // What the inspector shows beside a conversation: the note row in each state
-// and the inspector itself with notes and with none.
+// the usage summary and its budget field, and the inspector itself with notes
+// and with none.
 
 import HearthDesign
 import HearthFeatures
@@ -26,6 +27,16 @@ extension Catalog {
                     ContextMeter(previewState: $0).padding(.horizontal, Theme.Spacing.lg)
                 }),
             GalleryPage(
+                package: "HearthUI", name: "UsageSummary",
+                states: GalleryState.each(UsageSummary.PreviewState.self, width: 300) {
+                    UsageSummary(previewState: $0).padding(.horizontal, Theme.Spacing.lg)
+                }),
+            GalleryPage(
+                package: "HearthUI", name: "BudgetField",
+                states: GalleryState.each(BudgetField.PreviewState.self, width: 280) {
+                    BudgetField(previewState: $0)
+                }),
+            GalleryPage(
                 package: "HearthFeatures", name: "HandbookPageSheet",
                 states: handbookSheetStates()),
             GalleryPage(
@@ -42,6 +53,12 @@ extension Catalog {
             botName: Fixtures.bot.name)
     }
 
+    /// The usage store for the Dana fixture: October, Dana at 92% of her budget.
+    static func usageStore() -> UsageStore {
+        let client = PreviewClient()
+        return UsageStore(client: client, relay: EventRelay(client: client))
+    }
+
     /// PreviewClient's five notes and two pages, the first note pinned.
     static func inspectorWithNotes() -> GalleryState {
         let client = PreviewClient()
@@ -50,7 +67,11 @@ extension Catalog {
         return GalleryState(
             name: "notes", width: Theme.Size.inspectorIdeal,
             view: AnyView(
-                InspectorView(notes: store, handbook: handbookStore()).frame(height: 640)))
+                InspectorView(
+                    notes: store, handbook: handbookStore(), usage: usageStore(),
+                    botName: Fixtures.bot.name
+                )
+                .frame(height: 760)))
     }
 
     /// A bot with nothing remembered and no pages.
@@ -61,8 +82,11 @@ extension Catalog {
         return GalleryState(
             name: "empty", width: Theme.Size.inspectorIdeal,
             view: AnyView(
-                InspectorView(notes: store, handbook: handbookStore(botID: "nobody"))
-                    .frame(height: 300)))
+                InspectorView(
+                    notes: store, handbook: handbookStore(botID: "nobody"),
+                    usage: usageStore(), botName: "Nobody"
+                )
+                .frame(height: 420)))
     }
 
     /// A new page, an existing page, and a save the core refuses.

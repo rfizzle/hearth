@@ -1,8 +1,8 @@
 // InboxItemCard picks the card for an Inbox item and wires its buttons to the
 // store: an ApprovalCard with the four decisions, a PromptCard with the
 // question's control and the reply (and Change while the core still takes a
-// new answer), a FailureCard with Retry and OK (OK alone for a budget until
-// resuming is a call). The Inbox screen and the conversation draw the same
+// new answer), a FailureCard with Retry and OK (a pause has Resume and OK, a
+// warning OK alone). The Inbox screen and the conversation draw the same
 // card through it, so an item looks and acts alike in both places.
 // See docs/model.md#owner-interaction
 
@@ -17,6 +17,13 @@ struct InboxItemCard: View {
     let bot: Hearth_V1_Bot
     /// Whether the card's main button answers to Return.
     let isDefault: Bool
+
+    /// The card's prominent button: Retry for a failure, Resume for a pause.
+    private var onRetry: (() -> Void)? {
+        if item.kind == .failure { return { Task { await store.retry(item) } } }
+        if store.canResume(item) { return { Task { await store.resume(item) } } }
+        return nil
+    }
 
     var body: some View {
         let state = store.state(of: item)
@@ -38,7 +45,7 @@ struct InboxItemCard: View {
         default:
             FailureCard(
                 item: item, bot: bot, state: state, isDefault: isDefault,
-                onRetry: item.kind == .failure ? { Task { await store.retry(item) } } : nil,
+                onRetry: onRetry,
                 onDismiss: { Task { await store.acknowledge(item) } })
         }
     }

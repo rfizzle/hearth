@@ -152,7 +152,8 @@ public struct OnboardingScreen: View {
                 onClear: { provider in Task { await accounts.clear(provider) } },
                 onSaveService: { request in Task { await accounts.saveService(request) } },
                 onRemoveService: { profile in Task { await accounts.removeService(profile) } },
-                onCloseService: { accounts.dismissServiceError() })
+                onCloseService: { accounts.dismissServiceError() },
+                onListModels: { address, key in await accounts.serviceModels(address, key: key) })
             DisclosureGroup("Add web search (optional)", isExpanded: $isWebSearchOpen) {
                 IntegrationsPanel(
                     integrations: accounts.integrations, failure: accounts.integrationError,

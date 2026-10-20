@@ -41,6 +41,10 @@ public final class BotListStore {
         }
     }
 
+    /// Where paused comes from: the core has no paused status for a bot, only
+    /// the usage summary's flag. Set by the window's session.
+    @ObservationIgnored public weak var usage: UsageStore?
+
     private var loaded = false
     private var runs: [String: Hearth_V1_Run] = [:]
     private let client: any HearthClient
@@ -86,11 +90,17 @@ public final class BotListStore {
         case .queued, .working: return .working
         default: break
         }
+        if usage?.isPaused(bot.id) == true { return .paused }
         return switch bot.status {
         case .working: .working
         case .paused: .paused
         default: nil
         }
+    }
+
+    /// Whether `botID` is paused this month; the sidebar's row shows it.
+    public func isPaused(_ botID: String) -> Bool {
+        usage?.isPaused(botID) ?? false
     }
 
     /// Fetches the list from the core, then each bot's latest run.

@@ -31,20 +31,23 @@ public struct ServicePicker: View {
     @Binding var stage: Stage?
     let onChooseBuiltin: (Hearth_V1_KnownService) -> Void
     let onSave: (Hearth_V1_SetAPIKeyRequest) -> Void
+    let onListModels: ModelLister?
 
     @State private var query = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A picker titled `title` over `services`. A builtin row is handed to
     /// `onChooseBuiltin`, since its own card signs it in; any other row, or
-    /// the custom gateway, opens the fields.
+    /// the custom gateway, opens the fields. `onListModels`, when given, reads
+    /// the models a typed address and key serve, nil when it could not.
     public init(
         title: String,
         services: [Hearth_V1_KnownService],
         failure: String?,
         stage: Binding<Stage?>,
         onChooseBuiltin: @escaping (Hearth_V1_KnownService) -> Void,
-        onSave: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void
+        onSave: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void,
+        onListModels: ModelLister? = nil
     ) {
         self.title = title
         self.services = services
@@ -52,6 +55,7 @@ public struct ServicePicker: View {
         self._stage = stage
         self.onChooseBuiltin = onChooseBuiltin
         self.onSave = onSave
+        self.onListModels = onListModels
     }
 
     nonisolated static let searchThreshold = 8
@@ -92,7 +96,7 @@ public struct ServicePicker: View {
         case .fields(let service):
             ServiceFields(
                 service: service, failure: failure,
-                onCancel: { setStage(nil) }, onSave: onSave
+                onCancel: { setStage(nil) }, onSave: onSave, onListModels: onListModels
             )
             .id(service?.id ?? Self.customName)
         }
@@ -164,6 +168,7 @@ struct ServiceFields: View {
     let failure: String?
     let onCancel: () -> Void
     let onSave: (Hearth_V1_SetAPIKeyRequest) -> Void
+    let onListModels: ModelLister?
 
     private enum Field { case name, address, key, model }
 
@@ -171,17 +176,23 @@ struct ServiceFields: View {
     @State private var address: String
     @State private var key = ""
     @State private var model: String
+    /// The ids the service listed for the address and key typed; nil until
+    /// they are read, and again when they could not be.
+    @State private var models: [String]?
+    @State private var isListing = false
     @FocusState private var focus: Field?
 
     init(
         service: Hearth_V1_KnownService?, failure: String?,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void
+        onSave: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void,
+        onListModels: ModelLister? = nil
     ) {
         self.service = service
         self.failure = failure
         self.onCancel = onCancel
         self.onSave = onSave
+        self.onListModels = onListModels
         _name = State(initialValue: service?.name ?? "")
         _address = State(initialValue: service?.baseURL ?? "")
         _model = State(initialValue: service?.defaultModel ?? "")
@@ -207,12 +218,27 @@ struct ServiceFields: View {
                 .focused($focus, equals: .key)
             }
             labelled("Model") {
-                TextField("Model", text: $model, prompt: Text("gpt-4o"))
-                    .focused($focus, equals: .model)
+                HStack(spacing: Theme.Spacing.sm) {
+                    if let models {
+                        ModelPicker(models: models, selection: $model)
+                    } else {
+                        TextField("Model", text: $model, prompt: Text("gpt-4o"))
+                            .focused($focus, equals: .model)
+                    }
+                    if isListing {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel("Reading the service's models")
+                    }
+                }
             }
-            Text("The model your team uses, as the service names it.")
-                .font(Theme.caption)
-                .foregroundStyle(Theme.color(.textSecondary))
+            Text(
+                models == nil
+                    ? "The model your team uses, as the service names it."
+                    : "The models this service offers."
+            )
+            .font(Theme.caption)
+            .foregroundStyle(Theme.color(.textSecondary))
             if let service, service.kind == .compatible, let help = URL(string: service.helpURL) {
                 Link("Where do I get a key?", destination: help)
                     .font(Theme.callout)
@@ -231,7 +257,29 @@ struct ServiceFields: View {
         .textFieldStyle(.roundedBorder)
         .onSubmit(save)
         .task { focus = service == nil ? .name : (isLocal ? .model : .key) }
+        .task(id: Lookup(address: address, key: key)) { await listModels() }
         .transition(.opacity)
+    }
+
+    /// What the model list depends on.
+    private struct Lookup: Equatable {
+        let address: String
+        let key: String
+    }
+
+    /// Reads the service's models once the address and key are typed and the
+    /// typing has paused; a list that could not be read leaves the typed id.
+    private func listModels() async {
+        models = nil
+        isListing = false
+        let address = address.trimmingCharacters(in: .whitespaces)
+        guard let onListModels, !address.isEmpty, !key.isEmpty || isLocal else { return }
+        do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+        isListing = true
+        let listed = await onListModels(address, key)
+        guard !Task.isCancelled else { return }
+        isListing = false
+        models = listed?.isEmpty == false ? listed : nil
     }
 
     /// Save waits for what every service needs; whether a key is needed is
@@ -266,6 +314,10 @@ struct ServiceFields: View {
     }
 }
 
+/// Reads the models a service serves from its address and key; nil when it
+/// could not.
+public typealias ModelLister = @Sendable (String, String) async -> [String]?
+
 extension ServicePicker {
     /// The states the gallery and previews show.
     public enum PreviewState: String, CaseIterable, Sendable {
@@ -292,7 +344,8 @@ extension ServicePicker {
         self.init(
             title: "Another service", services: Fixtures.knownServices,
             failure: state == .failed ? PreviewState.failureText : nil,
-            stage: .constant(state.stage), onChooseBuiltin: { _ in }, onSave: { _ in })
+            stage: .constant(state.stage), onChooseBuiltin: { _ in }, onSave: { _ in },
+            onListModels: { _, _ in Fixtures.ollamaModels })
     }
 }
 

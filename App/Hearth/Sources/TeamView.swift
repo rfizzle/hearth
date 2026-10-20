@@ -55,6 +55,7 @@ struct TeamView: View {
                     value: model.helperRestarted)
         }
         .navigationSplitViewStyle(.balanced)
+        .task { await session.usage.load() }
         .sheet(isPresented: $model.isHiring) {
             HireSheetHost(session: session)
         }
@@ -85,7 +86,8 @@ struct TeamView: View {
                 .navigationSubtitle(bot.role)
                 .inspector(isPresented: $model.showsInspector) {
                     InspectorView(
-                        notes: session.notes(for: bot), handbook: session.handbook(for: bot)
+                        notes: session.notes(for: bot), handbook: session.handbook(for: bot),
+                        usage: session.usage, botName: bot.name
                     )
                     .inspectorColumnWidth(
                         min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,

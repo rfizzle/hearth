@@ -36,6 +36,7 @@ public struct SignInPanel: View {
     let onSaveService: (Hearth_V1_SetAPIKeyRequest) -> Void
     let onRemoveService: (String) -> Void
     let onCloseService: () -> Void
+    let onListModels: ModelLister?
 
     @State private var editing: Hearth_V1_Provider?
     @State private var adding: ServicePicker.Stage?
@@ -62,8 +63,10 @@ public struct SignInPanel: View {
         onClear: @escaping (Hearth_V1_Provider) -> Void,
         onSaveService: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void,
         onRemoveService: @escaping (String) -> Void,
-        onCloseService: @escaping () -> Void
+        onCloseService: @escaping () -> Void,
+        onListModels: ModelLister? = nil
     ) {
+        self.onListModels = onListModels
         self.accounts = accounts
         self.knownServices = knownServices
         self.loginURL = loginURL
@@ -99,7 +102,7 @@ public struct SignInPanel: View {
             ServicePicker(
                 title: featured.isEmpty ? "Add a service" : "Another service",
                 services: offered, failure: serviceFailure, stage: addingStage,
-                onChooseBuiltin: choose, onSave: onSaveService)
+                onChooseBuiltin: choose, onSave: onSaveService, onListModels: onListModels)
             if let failure, editing == nil, !accounts.contains(where: { !$0.failure.isEmpty }) {
                 FailureLabel(text: failure)
             }
@@ -259,7 +262,8 @@ extension SignInPanel {
             accounts: state.accounts, knownServices: Fixtures.knownServices, loginURL: nil,
             failure: state.failure, featured: state == .settings ? [] : [.chatgpt, .openrouter],
             onSignInWithChatGPT: {}, onSetKey: { _, _ in }, onClear: { _ in },
-            onSaveService: { _ in }, onRemoveService: { _ in }, onCloseService: {})
+            onSaveService: { _ in }, onRemoveService: { _ in }, onCloseService: {},
+            onListModels: { _, _ in Fixtures.ollamaModels })
         _editing = State(initialValue: state.editing)
         _adding = State(initialValue: state.adding)
     }

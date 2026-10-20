@@ -1,5 +1,6 @@
 // SettingsView is the Settings window: Accounts and Web Search panes, each the
-// same stack of cards onboarding shows, over the session's one AccountsStore.
+// same stack of cards onboarding shows, over the session's one AccountsStore,
+// and the Usage pane over its UsageStore.
 // Accounts shows the configured cards and "Add a service", whose list holds
 // the rest. With no helper there is nothing to show yet.
 // See docs/design.md#forms-sheets-and-settings
@@ -14,12 +15,15 @@ struct SettingsView: View {
 
     var body: some View {
         Group {
-            if let accounts = model.session?.accounts {
+            if let session = model.session {
+                let accounts = session.accounts
                 TabView {
                     pane { SignInPanel(accounts: accounts) }
                         .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
                     pane { IntegrationsPanel(accounts: accounts) }
                         .tabItem { Label("Web Search", systemImage: "magnifyingglass") }
+                    pane { UsagePane(usage: session.usage, bots: session.bots) }
+                        .tabItem { Label("Usage", systemImage: "chart.bar") }
                 }
                 .task { await accounts.load() }
             } else {
@@ -47,7 +51,8 @@ extension SignInPanel {
             onClear: { provider in Task { await accounts.clear(provider) } },
             onSaveService: { request in Task { await accounts.saveService(request) } },
             onRemoveService: { profile in Task { await accounts.removeService(profile) } },
-            onCloseService: { accounts.dismissServiceError() })
+            onCloseService: { accounts.dismissServiceError() },
+            onListModels: { address, key in await accounts.serviceModels(address, key: key) })
     }
 }
 

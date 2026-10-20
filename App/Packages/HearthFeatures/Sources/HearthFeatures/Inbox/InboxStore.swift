@@ -54,13 +54,18 @@ public final class InboxStore {
     private var grants: [String: [Hearth_V1_Grant]] = [:]
 
     private let client: any HearthClient
+    /// The usage a Resume answers into, so the sidebar and the composer see
+    /// the bot work again at once.
+    private let usage: UsageStore?
     @ObservationIgnored private let relay: EventRelay
     @ObservationIgnored private var registration: EventRelay.Registration?
 
-    /// A store over `client`, fed by `relay`.
-    public init(client: any HearthClient, relay: EventRelay) {
+    /// A store over `client`, fed by `relay`; `usage` hears the summary a
+    /// Resume brings back.
+    public init(client: any HearthClient, relay: EventRelay, usage: UsageStore? = nil) {
         self.client = client
         self.relay = relay
+        self.usage = usage
         registration = relay.register { [weak self] event in await self?.handle(event) }
     }
 
@@ -167,6 +172,26 @@ public final class InboxStore {
     /// Closes the notice `item`.
     public func acknowledge(_ item: Hearth_V1_InboxItem) async {
         await call(item) { try await self.client.acknowledge(itemID: item.id) }
+    }
+
+    /// Whether `item` is the pause notice, which Resume answers: the core
+    /// starts its effect with "Paused: ". The 80% warning is only noted.
+    public func canResume(_ item: Hearth_V1_InboxItem) -> Bool {
+        item.kind == .budget && item.effect.hasPrefix("Paused: ")
+    }
+
+    /// Lets the paused bot behind `item` (the whole team, when the item names
+    /// no bot) work again; the core closes the item.
+    public func resume(_ item: Hearth_V1_InboxItem) async {
+        guard canResume(item) else { return }
+        await call(item) {
+            let summary = try await self.client.resume(botID: item.botID)
+            self.usage?.apply(summary)
+            var resumed = item
+            resumed.state = .closed
+            resumed.outcome = "Resumed"
+            return resumed
+        }
     }
 
     /// Runs the failed run behind `item` again; the core closes the item.

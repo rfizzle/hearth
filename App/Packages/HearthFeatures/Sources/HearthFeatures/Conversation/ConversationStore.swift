@@ -46,6 +46,10 @@ public final class ConversationStore {
     public let conversationID: String
     /// What waits on the owner, joined to the thread; nil draws no cards.
     public let inbox: InboxStore?
+    /// Where paused is read from, with `botID`; nil never pauses.
+    public let usage: UsageStore?
+    /// The bot whose conversation this is, for the pause.
+    public let botID: String?
     /// The loaded messages, ascending by seq.
     public private(set) var messages: [Hearth_V1_Message] = []
     /// Whether the core holds messages older than the first loaded.
@@ -66,8 +70,11 @@ public final class ConversationStore {
     /// page.
     public init(
         client: any HearthClient, relay: EventRelay, conversationID: String,
-        inbox: InboxStore? = nil, pageSize: Int32 = 0
+        inbox: InboxStore? = nil, usage: UsageStore? = nil, botID: String? = nil,
+        pageSize: Int32 = 0
     ) {
+        self.usage = usage
+        self.botID = botID
         self.client = client
         self.relay = relay
         self.conversationID = conversationID
@@ -103,6 +110,17 @@ public final class ConversationStore {
     /// waits for the owner, or nil when it does not.
     public func waitingPrompt(botName: String) -> String? {
         isWaiting ? "Answer \(botName) above first" : nil
+    }
+
+    /// Whether the bot is paused this month, by its budget or the team's.
+    public var isPaused: Bool {
+        botID.map { usage?.isPaused($0) ?? false } ?? false
+    }
+
+    /// What the composer says in place of a message while the bot is paused,
+    /// or nil when it is not: Send is off until the owner resumes.
+    public func pausedPrompt(botName: String) -> String? {
+        isPaused ? "\(botName) is paused" : nil
     }
 
     /// The transcript as rows: each tool call carries its result, matched by

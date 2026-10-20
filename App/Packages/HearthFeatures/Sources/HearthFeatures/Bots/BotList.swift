@@ -140,7 +140,9 @@ private struct BotRow: View {
             case .waiting:
                 StatusDot(.attention, label: "Waiting")
             case .paused:
-                StatusDot(.attention, label: "Paused")
+                Image(systemName: "pause.circle")
+                    .foregroundStyle(Theme.color(Tone.attention))
+                    .accessibilityLabel("Paused")
             case nil:
                 EmptyView()
             }

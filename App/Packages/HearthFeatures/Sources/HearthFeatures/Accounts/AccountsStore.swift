@@ -124,6 +124,17 @@ public final class AccountsStore {
         }
     }
 
+    /// The model ids the service at `address` serves for `key`, so the card
+    /// can offer them before Save; nil when the list could not be read, and
+    /// the card then takes a typed id.
+    public func serviceModels(_ address: String, key: String) async -> [String]? {
+        try? await client.listServiceModels(
+            .with {
+                $0.baseURL = address
+                $0.key = key
+            })
+    }
+
     /// Forgets the last add-a-service failure, when the owner closes the card.
     public func dismissServiceError() {
         serviceError = nil

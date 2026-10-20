@@ -1,9 +1,9 @@
 // FailureCard is a notice that needs no decision: a run that failed, or, as
-// the budget variant, a bot paused at its budget. The same header as every
+// the budget variant, a bot that has used 80% of its budget or is paused at it. The same header as every
 // Inbox card, the core's plain-words reason in callout type with a symbol and
 // the negative tone (the attention tone for a budget), then OK, which
-// acknowledges it, and the prominent Retry (Resume for a budget) when the
-// screen offers one. While the core answers the buttons are disabled with a
+// acknowledges it, and the prominent Retry (Resume for a pause) when the
+// screen offers one; a budget warning has OK alone. While the core answers the buttons are disabled with a
 // small spinner; once it has, the outcome replaces them as a Pill. The tone
 // always travels with the words and the symbol. It composes CardSurface,
 // Avatar, Pill and Buttons; the card is one VoiceOver container named by the
@@ -102,19 +102,26 @@ extension FailureCard {
         case deciding
         case closed
         case budget
+        case budgetWarning
 
         var item: Hearth_V1_InboxItem {
-            guard self == .budget else { return Fixtures.failure }
+            guard self == .budget || self == .budgetWarning else { return Fixtures.failure }
             var item = Fixtures.failure
             item.kind = .budget
-            item.title = "Dana reached her budget"
-            item.effect = "Dana has used this month's budget and is paused."
+            if self == .budget {
+                item.title = "Dana paused: this month's $20 is spent"
+                item.effect =
+                    "Paused: Dana used all of this month's $20. Resume to carry on this month, or raise the budget."
+            } else {
+                item.title = "Dana has used 80% of this month's $20"
+                item.effect = "Dana has used 80% of this month's $20."
+            }
             return item
         }
 
         var state: InboxCardState {
             switch self {
-            case .open, .budget: .open
+            case .open, .budget, .budgetWarning: .open
             case .deciding: .deciding
             case .closed: .closed("Acknowledged", .neutral)
             }
@@ -124,8 +131,8 @@ extension FailureCard {
     /// A card showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
-            item: state.item, bot: Fixtures.bot, state: state.state, onRetry: {},
-            onDismiss: {})
+            item: state.item, bot: Fixtures.bot, state: state.state,
+            onRetry: state == .budgetWarning ? nil : {}, onDismiss: {})
     }
 }
 
@@ -133,3 +140,6 @@ extension FailureCard {
 #Preview("Deciding") { FailureCard(previewState: .deciding).frame(width: 600).padding() }
 #Preview("Closed") { FailureCard(previewState: .closed).frame(width: 600).padding() }
 #Preview("Budget") { FailureCard(previewState: .budget).frame(width: 600).padding() }
+#Preview("Budget warning") {
+    FailureCard(previewState: .budgetWarning).frame(width: 600).padding()
+}

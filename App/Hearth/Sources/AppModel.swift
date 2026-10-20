@@ -102,6 +102,9 @@ final class Session {
     /// What waits on the owner: one store for the session, which the sidebar
     /// row, the Inbox screen, the threads and the menu bar read.
     let inbox: InboxStore
+    /// What the bots cost: one store for the session, which the inspector,
+    /// the Usage pane, the budget cards and the paused marks read.
+    let usage: UsageStore
 
     private var fetchedOrg: Hearth_V1_Org?
     private var failure: String?
@@ -116,8 +119,10 @@ final class Session {
         self.relay = relay
         accounts = AccountsStore(client: client, relay: relay)
         onboarding = OnboardingStore(client: client, accounts: accounts)
+        usage = UsageStore(client: client, relay: relay)
         bots = BotListStore(client: client, relay: relay)
-        inbox = InboxStore(client: client, relay: relay)
+        inbox = InboxStore(client: client, relay: relay, usage: usage)
+        bots.usage = usage
         bots.selection = selection
     }
 
@@ -149,7 +154,7 @@ final class Session {
         if let store = conversations[bot.dmConversationID] { return store }
         let store = ConversationStore(
             client: client, relay: relay, conversationID: bot.dmConversationID,
-            inbox: inbox)
+            inbox: inbox, usage: usage, botID: bot.id)
         conversations[bot.dmConversationID] = store
         return store
     }

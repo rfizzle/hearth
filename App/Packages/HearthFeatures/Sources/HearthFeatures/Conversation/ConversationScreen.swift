@@ -144,7 +144,8 @@ public struct ConversationScreen: View {
             Composer(
                 label: "Message \(bot.name)",
                 isWorking: store.isWorking && !store.isWaiting,
-                waitingPrompt: store.waitingPrompt(botName: bot.name),
+                waitingPrompt: store.waitingPrompt(botName: bot.name)
+                    ?? store.pausedPrompt(botName: bot.name),
                 onSend: { text in await store.send(text) },
                 onStop: { Task { await store.cancel() } })
         }
