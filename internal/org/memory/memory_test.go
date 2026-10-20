@@ -44,6 +44,22 @@ func TestPlain(t *testing.T) {
 		{"a ZWJ emoji sequence is kept", "👩\u200d💻", "👩\u200d💻"},
 		{"a newline and a tab are kept", "a\n\tb", "a\n\tb"},
 		{"a line separator is not format or control", "a\u2028b", "a\u2028b"},
+		{"a selector smuggled after a letter is dropped when doubled", "a\ufe0f\ufe0fb", "a\ufe0fb"},
+		{"a selector at the start", "\ufe00a", "a"},
+		{"each variation selector of the first block", "a\ufe00b\ufe01c\ufe0dd", "abcd"},
+		{"a selector of the supplement", "a\U000E0100b\U000E01EFc", "abc"},
+		{"one emoji presentation selector is kept", "\u2764\ufe0f", "\u2764\ufe0f"},
+		{"one text presentation selector is kept", "\u2764\ufe0e", "\u2764\ufe0e"},
+		{"a keycap sequence is kept", "1\ufe0f\u20e3", "1\ufe0f\u20e3"},
+		{"a presentation selector after a space is dropped", " \ufe0f", " "},
+		{"a presentation selector after a line break is dropped", "\n\ufe0f", "\n"},
+		{"a combining grapheme joiner", "a\u034fb", "ab"},
+		{"the hangul fillers", "a\u115f\u1160b", "ab"},
+		{"a khmer inherent vowel", "a\u17b4\u17b5b", "ab"},
+		{"the mongolian selectors", "a\u180b\u180c\u180d\u180fb", "ab"},
+		{"the hangul filler letters", "a\u3164\uffa0b", "ab"},
+		{"the unassigned tag block", "a\U000E0080b\U000E0FFFc", "abc"},
+		{"a selector after a dropped rune is dropped", "a\u200b\ufe0f", "a"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := Plain(tc.in); got != tc.want {

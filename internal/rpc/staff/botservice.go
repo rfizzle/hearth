@@ -104,7 +104,7 @@ func (s *botService) CheckBot(ctx context.Context, req *connect.Request[hearthv1
 // then the model's, if any, behind the same cap.
 func (s *botService) check(ctx context.Context, name, role, jobDescription string, model []concern.Concern) ([]concern.Concern, error) {
 	bots, err := s.opts.Store.Bots(ctx)
-	return concern.Cap(concern.Bot(name, role, jobDescription, bots), model), err
+	return concern.Cap(concern.ForBot, concern.Bot(name, role, jobDescription, bots), model), err
 }
 
 // ListGrants is what the bot may do, one row per capability and per folder.

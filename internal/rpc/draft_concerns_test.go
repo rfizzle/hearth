@@ -38,7 +38,7 @@ func TestDraftBot_ModelConcernsJoinBehindTheRulesAndTheCap(t *testing.T) {
 	r := newRig(t, answer(`{"name": "Wren", "role": "Scheduler", "job_description": "Keeps the calendar tidy and books every meeting I ask for.", `,
 		`"concerns": [{"field": "name", "concern": "Easy to confuse.", "suggestion": "Wren B."}, `,
 		`{"field": "nope", "concern": "Unknown.", "suggestion": ""}, `,
-		`{"field": "working_style", "concern": "Missing.", "suggestion": "Brief"}]}`))
+		`{"field": "role", "concern": "Vague.", "suggestion": "Scheduler"}, {"field": "goal", "concern": "A project field.", "suggestion": ""}, {"field": "working_style", "concern": "Not on the sheet.", "suggestion": "Brief"}]}`))
 	c := newClients(serve(t, r.opts), testToken)
 	unary(t, c.org.UpdateOrg, &hearthv1.UpdateOrgRequest{Name: "Acme", WorkspacePath: r.root})
 	got := unary(t, c.bot.DraftBot, &hearthv1.DraftBotRequest{Description: "help", Tier: hearthv1.Tier_TIER_FAST})
@@ -46,8 +46,8 @@ func TestDraftBot_ModelConcernsJoinBehindTheRulesAndTheCap(t *testing.T) {
 	for _, cn := range got.GetConcerns() {
 		fields = append(fields, cn.GetField())
 	}
-	if !slices.Equal(fields, []string{"name", "working_style"}) {
-		t.Errorf("DraftBot concerns on %v, want the model's name and working_style", fields)
+	if !slices.Equal(fields, []string{"name", "role"}) {
+		t.Errorf("DraftBot concerns on %v, want the model's name and role, not the fields the hire sheet lacks", fields)
 	}
 	if got.GetName() != "Wren" {
 		t.Errorf("a model concern changed the name to %q", got.GetName())

@@ -188,7 +188,7 @@ func TestCap(t *testing.T) {
 		{name: "nothing in, nothing out", want: []string{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := fields(concern.Cap(tc.rules, tc.model)); !reflect.DeepEqual(got, tc.want) {
+			if got := fields(concern.Cap(concern.ForProject, tc.rules, tc.model)); !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("Cap fields = %v, want %v", got, tc.want)
 			}
 		})
@@ -197,7 +197,7 @@ func TestCap(t *testing.T) {
 
 func TestCap_WordsAreOneLineAndSuggestionsAreCutAndClean(t *testing.T) {
 	long := strings.Repeat("é", 200)
-	got := concern.Cap(nil, []concern.Concern{
+	got := concern.Cap(concern.ForProject, nil, []concern.Concern{
 		{Field: "name", Concern: "Too\nlong.", Suggestion: "  " + strings.Repeat("n", 100) + "\n  "},
 		{Field: "goal", Concern: "Be clearer.", Suggestion: "Line one.\nLine\x00 two."},
 		{Field: "done_when", Concern: "Vague.", Suggestion: "One\nline " + long},
@@ -214,7 +214,7 @@ func TestCap_WordsAreOneLineAndSuggestionsAreCutAndClean(t *testing.T) {
 	if strings.Contains(got[2].Suggestion, "\n") || got[2].Suggestion != "One line "+long {
 		t.Errorf("done_when suggestion = %q, want one line, under its 4,000 bound", got[2].Suggestion)
 	}
-	huge := concern.Cap(nil, []concern.Concern{{Field: "context", Concern: "x", Suggestion: strings.Repeat("é", 5000)}})
+	huge := concern.Cap(concern.ForProject, nil, []concern.Concern{{Field: "context", Concern: "x", Suggestion: strings.Repeat("é", 5000)}})
 	if n := utf8.RuneCountInString(huge[0].Suggestion); n != 4000 {
 		t.Errorf("a context suggestion of 5,000 runes is %d, want it cut to 4,000", n)
 	}
@@ -222,7 +222,7 @@ func TestCap_WordsAreOneLineAndSuggestionsAreCutAndClean(t *testing.T) {
 
 func TestCap_InvisibleCharactersAreDropped(t *testing.T) {
 	const invisible = "\u202e\u2066\u2069\u200b\ufeff\U000E0041\x00\u0085"
-	got := concern.Cap(nil, []concern.Concern{
+	got := concern.Cap(concern.ForProject, nil, []concern.Concern{
 		{Field: "name", Concern: "Too" + invisible + " long.", Suggestion: "Lau" + invisible + "nch"},
 		{Field: "goal", Concern: "Clearer.", Suggestion: "One.\n\tTwo " + invisible + "👩\u200d💻."},
 	})
@@ -236,20 +236,20 @@ func TestCap_InvisibleCharactersAreDropped(t *testing.T) {
 		t.Errorf("goal suggestion = %q, want %q (a ZWJ kept, a line break kept, the tab a space)", got[1].Suggestion, want)
 	}
 	// Words made only of invisible characters are empty, so the concern is dropped.
-	if got := concern.Cap(nil, []concern.Concern{{Field: "goal", Concern: "\u200b\ufeff"}}); len(got) != 0 {
+	if got := concern.Cap(concern.ForProject, nil, []concern.Concern{{Field: "goal", Concern: "\u200b\ufeff"}}); len(got) != 0 {
 		t.Errorf("Cap = %+v, want a concern of invisible words dropped", got)
 	}
 }
 
 func TestCap_ATargetDateSuggestionMustBeADay(t *testing.T) {
-	got := concern.Cap(nil, []concern.Concern{
+	got := concern.Cap(concern.ForProject, nil, []concern.Concern{
 		{Field: "target_date", Concern: "Soon.", Suggestion: "next Friday"},
 		{Field: "goal", Concern: "x"},
 	})
 	if got[0].Suggestion != "" {
 		t.Errorf("a suggestion that is not a day = %q, want none", got[0].Suggestion)
 	}
-	got = concern.Cap(nil, []concern.Concern{{Field: "target_date", Concern: "Soon.", Suggestion: "2026-12-01"}})
+	got = concern.Cap(concern.ForProject, nil, []concern.Concern{{Field: "target_date", Concern: "Soon.", Suggestion: "2026-12-01"}})
 	if got[0].Suggestion != "2026-12-01" {
 		t.Errorf("a day = %q, want it kept", got[0].Suggestion)
 	}

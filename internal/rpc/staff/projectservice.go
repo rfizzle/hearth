@@ -55,7 +55,7 @@ func (s *projectService) DraftProject(ctx context.Context, req *connect.Request[
 	d, err := s.opts.ProjectDrafter(ctx, description)
 	var concerns []concern.Concern
 	if err == nil {
-		concerns = concern.Cap(concern.Project(d.Name, d.Brief, d.TargetDate, time.Now()), d.Concerns)
+		concerns = concern.Cap(concern.ForProject, concern.Project(d.Name, d.Brief, d.TargetDate, time.Now()), d.Concerns)
 	}
 	return wire.Reply(&hearthv1.DraftProjectResponse{
 		Name: d.Name, Brief: briefToProto(d.Brief), TargetDate: d.TargetDate,
@@ -69,7 +69,7 @@ func (s *projectService) DraftProject(ctx context.Context, req *connect.Request[
 func (s *projectService) CheckProject(_ context.Context, req *connect.Request[hearthv1.CheckProjectRequest]) (*connect.Response[hearthv1.CheckProjectResponse], error) {
 	m := req.Msg
 	rules := concern.Project(m.GetName(), briefFromProto(m.GetBrief()), m.GetTargetDate(), time.Now())
-	return wire.Reply(&hearthv1.CheckProjectResponse{Concerns: wire.Each(concern.Cap(rules, nil), wire.ConcernToProto)}, nil)
+	return wire.Reply(&hearthv1.CheckProjectResponse{Concerns: wire.Each(concern.Cap(concern.ForProject, rules, nil), wire.ConcernToProto)}, nil)
 }
 
 // CreateProject makes an active project, or confirms the proposal named by

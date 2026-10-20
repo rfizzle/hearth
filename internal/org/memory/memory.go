@@ -81,20 +81,38 @@ func Meter(pages []Page) (used, limit int64) {
 // model without showing: every format character (Unicode category Cf: the
 // bidirectional overrides and isolates, the zero-width spaces and joiners,
 // the byte order mark, the tag characters) except the zero-width joiner
-// U+200D, which emoji sequences need, and every control character (category
-// Cc) except the line break and the tab. They are dropped, not replaced, so
-// a word split by one rejoins. Text from a model, or typed by the owner, is
-// passed through it before it is stored or put in a later prompt.
+// U+200D, which emoji sequences need; every control character (category Cc)
+// except the line break and the tab; every variation selector (U+FE00 to
+// U+FE0F and U+E0100 to U+E01EF, which can carry a hidden byte each) except a
+// single U+FE0E or U+FE0F straight after a visible rune that is not itself a
+// selector, which chooses text or emoji presentation; and the other default
+// ignorable code points (U+034F, U+115F, U+1160, U+17B4, U+17B5, U+180B to
+// U+180D, U+180F, U+3164, U+FFA0 and the unassigned tag block
+// U+E0080 to U+E0FFF). They are dropped, not replaced, so a word split by one
+// rejoins. Text from a model, or typed by the owner, is passed through it
+// before it is stored or put in a later prompt.
 func Plain(s string) string {
-	return strings.Map(func(r rune) rune {
+	var b strings.Builder
+	var prev rune // the rune before, as kept; zero at the start or after a dropped one
+	for _, r := range s {
+		keep := r
 		switch {
 		case r == '\n' || r == '\t' || r == zeroWidthJoiner:
-			return r
-		case unicode.In(r, unicode.Cf, unicode.Cc):
-			return -1
+		case r == '\ufe0e' || r == '\ufe0f':
+			if prev <= ' ' || unicode.Is(unicode.Variation_Selector, prev) {
+				keep = -1
+			}
+		case unicode.In(r, unicode.Cf, unicode.Cc, unicode.Variation_Selector, unicode.Other_Default_Ignorable_Code_Point):
+			keep = -1
 		}
-		return r
-	}, s)
+		if keep < 0 {
+			prev = 0
+			continue
+		}
+		b.WriteRune(keep)
+		prev = keep
+	}
+	return b.String()
 }
 
 const zeroWidthJoiner = '\u200d'

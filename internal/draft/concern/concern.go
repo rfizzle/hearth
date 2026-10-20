@@ -31,10 +31,27 @@ type Concern struct {
 	Suggestion string // a replacement for the field, or empty when there is none
 }
 
+// Kind is what a draft is for, which decides the fields a concern may be
+// about: only the fields the guided sheet has a row for.
+type Kind int
+
+const (
+	ForProject Kind = iota // name, goal, context, done_looks_like, done_when, target_date
+	ForBot                 // name, role, job_description
+)
+
+// kindFields are the fields of each kind. A concern on any other field of
+// the union in bounds, or on none, is dropped: the sheet has no row for it and
+// "Use this" would change nothing the request sends.
+var kindFields = map[Kind]map[string]bool{
+	ForProject: {"name": true, "goal": true, "context": true, "done_looks_like": true, "done_when": true, "target_date": true},
+	ForBot:     {"name": true, "role": true, "job_description": true},
+}
+
 // bounds holds every field a concern may be about, with the longest its
 // suggestion may be. A field not here is unknown.
 var bounds = map[string]int{
-	"name": maxShort, "role": maxShort, "working_style": maxShort,
+	"name": maxShort, "role": maxShort,
 	"goal": maxLong, "context": maxLong, "done_looks_like": maxLong, "done_when": maxLong,
 	"job_description": maxLong, "target_date": len(dateLayout),
 }
@@ -42,18 +59,18 @@ var bounds = map[string]int{
 // oneLine are the fields that hold a single line; a suggestion for any other
 // may keep its line breaks.
 var oneLine = map[string]bool{
-	"name": true, "role": true, "working_style": true, "done_when": true, "target_date": true,
+	"name": true, "role": true, "done_when": true, "target_date": true,
 }
 
 // Cap is the concerns to serve: the rules' first, in the order given, then
 // the model's in the slots that remain, at most Max in all. A model concern
-// is dropped when its field is unknown, when its field already has a concern
+// is dropped when its field is not one of kind's fields, when its field already has a concern
 // from a rule or from an earlier model concern, or when its words are empty
 // or, after being made one line, over MaxConcern characters. Its suggestion
 // is made one line for a one-line field, stripped of control and invisible
 // characters (memory.Plain), and cut to the field's bound; a suggestion for target_date that is not a day is
 // removed.
-func Cap(rules, model []Concern) []Concern {
+func Cap(kind Kind, rules, model []Concern) []Concern {
 	var out []Concern
 	taken := map[string]bool{}
 	for _, r := range rules {
@@ -67,7 +84,7 @@ func Cap(rules, model []Concern) []Concern {
 			break
 		}
 		bound, known := bounds[m.Field]
-		if !known || taken[m.Field] {
+		if !known || !kindFields[kind][m.Field] || taken[m.Field] {
 			continue
 		}
 		words := strings.TrimSpace(memory.OneLine(memory.Plain(m.Concern)))
