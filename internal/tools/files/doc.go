@@ -1,7 +1,9 @@
 // Package files is the three file tools a bot works with: files.read,
 // files.write and files.delete, inside the folders its grants name.
 //
-// Responsibility: read a text file a page at a time; create or replace a
+// Responsibility: read a file as text a window at a time, a document (PDF so
+// far) through the document package, with the pages it was asked for and the
+// notices it returned; create or replace a
 // file, creating the folders above it, and hand the written file back for the
 // owner to open; and delete one file once the owner has allowed it.
 //
@@ -18,5 +20,8 @@
 //     path still names, reached through the granted folder as a root. It is
 //     deleted, not moved to the Trash.
 //
-// It imports tools, org and workspace.
+// A document is data: what the document package returns is the result, and
+// nothing from its content is logged here.
+//
+// It imports tools, org, document and workspace.
 package files

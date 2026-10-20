@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/tools"
+	"github.com/rfizzle/hearth/internal/tools/files"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
@@ -66,7 +67,7 @@ func TestRegistry(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := Registry(tc.fetcher, tc.searcher, extra)
+			r, err := Registry(files.Options{}, tc.fetcher, tc.searcher, extra)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -75,7 +76,7 @@ func TestRegistry(t *testing.T) {
 			}
 		})
 	}
-	if _, err := Registry(nil, nil, extra, extra); err == nil {
+	if _, err := Registry(files.Options{}, nil, nil, extra, extra); err == nil {
 		t.Fatal("a tool defined twice was accepted")
 	}
 }

@@ -33,7 +33,7 @@ func newBot(t *testing.T, grants ...org.Capability) bot {
 			t.Fatal(err)
 		}
 	}
-	reg, err := tools.NewRegistry(Definitions()...)
+	reg, err := tools.NewRegistry(Definitions(Options{})...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func TestWrite(t *testing.T) {
 // dispatcher checked before a symlink took the path's place.
 func TestWrite_ALinkThatAppearsAfterTheCheck(t *testing.T) {
 	b := newBot(t)
-	write := Definitions()[1].Execute
+	write := Definitions(Options{})[1].Execute
 	args := json.RawMessage(`{"path":"x","content":"secret"}`)
 	if err := os.Symlink(filepath.Join(b.outside, "leak.md"), filepath.Join(b.folder, "leak.md")); err != nil {
 		t.Fatal(err)
@@ -224,7 +224,7 @@ func TestWrite_ALinkThatAppearsAfterTheCheck(t *testing.T) {
 }
 
 func TestDescribe(t *testing.T) {
-	defs := Definitions()
+	defs := Definitions(Options{})
 	read, write := defs[0].Describe, defs[1].Describe
 	cases := []struct {
 		got, want string

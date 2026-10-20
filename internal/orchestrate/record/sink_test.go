@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools"
+	"github.com/rfizzle/hearth/internal/tools/files"
 )
 
 // fixture is a host over a temp-dir store with one hired bot, and a record
@@ -190,7 +191,7 @@ func TestSink_EquipSummarisesTheCallsTheDispatcherPlaces(t *testing.T) {
 	if err := os.MkdirAll(f.bot.FolderPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	reg, err := toolset.Registry(nil, nil)
+	reg, err := toolset.Registry(files.Options{}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

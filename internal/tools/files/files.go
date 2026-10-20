@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"unicode/utf8"
 
+	"github.com/rfizzle/hearth/internal/document"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/workspace"
@@ -22,21 +23,22 @@ import (
 const readCap = 64 << 10
 
 // Definitions is files.read, files.write and files.delete.
-func Definitions() []tools.Definition {
+func Definitions(o Options) []tools.Definition {
 	return []tools.Definition{
 		{
 			Name: string(org.FilesRead),
-			Description: "Read a text file in your folder. Paths are relative to your folder. " +
+			Description: "Read a file in your folder as text: plain text and Markdown, and PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) and RTF; " +
+				"an image gives its kind and size, and its text when Hearth is open. Paths are relative to your folder. " +
 				"Use it to look at a file before you change it, or to pick up work saved earlier. " +
-				"It returns up to 64 KB at a time; when the file is longer, the result ends with the offset to pass to read on. " +
-				"It reads text only, not images, PDFs or other binary files.",
+				"It returns up to 64 KB at a time; a longer file ends with the offset or the pages to pass to read on.",
 			Parameters: json.RawMessage(`{"type":"object","properties":{` +
-				`"path":{"type":"string","description":"The file, relative to your folder, for example brief.md or notes/sources.md."},` +
-				`"offset":{"type":"integer","description":"The byte to start at. Leave it out to read from the start; pass the offset a previous result named to read on."}` +
+				`"path":{"type":"string","description":"The file, relative to your folder, for example brief.md, notes/sources.md or report.pdf."},` +
+				`"offset":{"type":"integer","description":"The byte to start at. Leave it out to read from the start; pass the offset a previous result named to read on."},` +
+				`"pages":{"type":"string","description":"For a PDF or a deck: the pages to read, such as \"4-12\" or \"7\". At most 100 pages are read at a time; leave it out to start at page 1."}` +
 				`},"required":["path"]}`),
 			Capability: org.FilesRead,
 			Tier:       tools.TierRead,
-			Execute:    read,
+			Execute:    o.read,
 			Describe:   describeRead,
 		},
 		{
@@ -63,6 +65,7 @@ func Definitions() []tools.Definition {
 type readArgs struct {
 	Path   string `json:"path"`
 	Offset int64  `json:"offset"`
+	Pages  string `json:"pages"`
 }
 
 type writeArgs struct {
@@ -70,10 +73,10 @@ type writeArgs struct {
 	Content *string `json:"content"`
 }
 
-func read(_ context.Context, call tools.Call) (tools.Result, error) {
+func (o Options) read(ctx context.Context, call tools.Call) (tools.Result, error) {
 	var a readArgs
 	if err := json.Unmarshal(call.Args, &a); err != nil || a.Offset < 0 {
-		return tools.Result{}, errors.New("files.read: offset must be a whole number of bytes, 0 or more")
+		return tools.Result{}, errors.New(`files.read: offset must be a whole number of bytes, 0 or more, and pages text such as "4-12"`)
 	}
 	name := shown(call)
 	info, err := os.Lstat(call.Path)
@@ -88,6 +91,16 @@ func read(_ context.Context, call tools.Call) (tools.Result, error) {
 		return tools.Result{}, failed("files.read", "open", name, err)
 	}
 	defer f.Close()
+	kind, err := kindOf(f, name)
+	if err != nil {
+		return tools.Result{}, err
+	}
+	if kind != document.KindText {
+		return o.readDocument(ctx, call, a, name)
+	}
+	if a.Pages != "" {
+		return tools.Result{}, errors.New("files.read: pages applies to PDF and PowerPoint files only")
+	}
 	size := info.Size()
 	if a.Offset > size {
 		return tools.Result{}, fmt.Errorf("files.read: offset %d is past the end of %s (%d bytes)", a.Offset, name, size)
@@ -239,6 +252,9 @@ func failed(tool, op, name string, err error) error {
 func describeRead(args json.RawMessage) string {
 	var a readArgs
 	_ = json.Unmarshal(args, &a) // a describer never fails; an unreadable call shows a bare verb
+	if a.Pages != "" {
+		return fmt.Sprintf("Read %s, pages %s", a.Path, a.Pages)
+	}
 	if a.Offset > 0 {
 		return fmt.Sprintf("Read %s from byte %d", a.Path, a.Offset)
 	}

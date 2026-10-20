@@ -42,7 +42,7 @@ func newDeleter(t *testing.T) deleter {
 			t.Fatal(err)
 		}
 	}
-	reg, err := tools.NewRegistry(Definitions()...)
+	reg, err := tools.NewRegistry(Definitions(Options{})...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestDeleteDefinition(t *testing.T) {
 			t.Errorf("description is missing %q", want)
 		}
 	}
-	reg, err := tools.NewRegistry(Definitions()...)
+	reg, err := tools.NewRegistry(Definitions(Options{})...)
 	if err != nil {
 		t.Fatal(err)
 	}

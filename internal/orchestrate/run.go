@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/tools"
+	"github.com/rfizzle/hearth/internal/tools/files"
 	"github.com/rfizzle/hearth/internal/tools/web"
 	"github.com/rfizzle/hearth/internal/workspace"
 )
@@ -265,5 +266,5 @@ func (s *Service) registry(extra []tools.Definition) (*tools.Registry, error) {
 			searcher = found
 		}
 	}
-	return toolset.Registry(s.d.Fetcher.ForRun(), searcher, extra...)
+	return toolset.Registry(files.Options{Recogniser: s.d.Recogniser}, s.d.Fetcher.ForRun(), searcher, extra...)
 }

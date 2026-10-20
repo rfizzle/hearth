@@ -32,9 +32,9 @@ import (
 
 // Registry is every tool configured now: the file tools, asking the owner,
 // web.fetch when there is a fetcher and web.search when there is a
-// searcher, then extra.
-func Registry(fetcher *web.Fetcher, searcher web.Searcher, extra ...tools.Definition) (*tools.Registry, error) {
-	defs := append(files.Definitions(), ask.Definition())
+// searcher, then extra. docs says how documents are read.
+func Registry(docs files.Options, fetcher *web.Fetcher, searcher web.Searcher, extra ...tools.Definition) (*tools.Registry, error) {
+	defs := append(files.Definitions(docs), ask.Definition())
 	defs = append(defs, web.Definitions(fetcher, searcher)...)
 	return tools.NewRegistry(append(defs, extra...)...)
 }
