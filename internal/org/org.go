@@ -46,6 +46,10 @@ type Bot struct {
 	FolderPath       string
 	DMConversationID string
 	CreatedAt        time.Time
+
+	// ModelOverride names a model that wins over the one the tier maps to;
+	// empty when the bot follows its tier.
+	ModelOverride string
 }
 
 // RoleTemplate is a starting point for hiring: a role, a summary of it, the

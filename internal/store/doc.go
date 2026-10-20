@@ -1,6 +1,7 @@
 // Package store keeps the org in one SQLite file: the org itself, its bots
 // and their grants, the conversations, their messages, the runs, the Inbox
-// items waiting for the owner and the allowances a decision leaves.
+// items waiting for the owner, the allowances a decision leaves, and what the
+// bots remember, read and cost: notes, handbook pages, usage, budgets and tiers.
 //
 // Responsibility: open the file, bring its schema up to date, and read and
 // write org values. Every other package reads and writes the org through

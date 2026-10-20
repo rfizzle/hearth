@@ -28,7 +28,7 @@ func (db *DB) Messages(ctx context.Context, convID string, beforeSeq int64, limi
 	}
 	limit = min(limit, maxPage)
 	query := `SELECT id, conversation_id, seq, author_bot_id, kind, content, tool_calls, tool_call_id, files,
-		COALESCE(run_id, ''), streaming, created_at, widget_spec, widget_answer
+		COALESCE(run_id, ''), streaming, created_at, widget_spec, widget_answer, attachments
 		FROM messages WHERE conversation_id = ?`
 	args := []any{convID}
 	if beforeSeq > 0 {
@@ -53,7 +53,7 @@ func (db *DB) Messages(ctx context.Context, convID string, beforeSeq int64, limi
 // assigning the next seq, and returns it as stored. It is ErrNotFound when
 // the conversation does not exist.
 func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, error) {
-	calls, files, err := encodeParts(m)
+	parts, err := encodeParts(m)
 	if err != nil {
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
@@ -82,11 +82,11 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO messages
 		(id, conversation_id, seq, author_bot_id, kind, content, tool_calls, tool_call_id, files, run_id, streaming, created_at,
-		widget_spec, widget_answer)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.ID, m.ConversationID, m.Seq, m.AuthorBotID, m.Kind, m.Content, calls, m.ToolCallID, files,
+		widget_spec, widget_answer, attachments)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		m.ID, m.ConversationID, m.Seq, m.AuthorBotID, m.Kind, m.Content, parts.calls, m.ToolCallID, parts.files,
 		nullString(m.RunID), m.Streaming, millis(m.CreatedAt),
-		nullString(m.Widget), nullString(m.WidgetAnswer)); err != nil {
+		nullString(m.Widget), nullString(m.WidgetAnswer), parts.attachments); err != nil {
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -100,27 +100,20 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 // still streaming. Its place in the thread, author, kind and run do not
 // change. It is ErrNotFound when no message has m.ID.
 func (db *DB) UpdateMessage(ctx context.Context, m org.Message) error {
-	calls, files, err := encodeParts(m)
+	parts, err := encodeParts(m)
 	if err != nil {
 		return fmt.Errorf("update message: %w", err)
 	}
 	return db.update(ctx, "message "+m.ID, `UPDATE messages
 		SET content = ?, tool_calls = ?, tool_call_id = ?, files = ?, streaming = ?,
-		widget_spec = ?, widget_answer = ? WHERE id = ?`,
-		m.Content, calls, m.ToolCallID, files, m.Streaming, nullString(m.Widget), nullString(m.WidgetAnswer), m.ID)
+		widget_spec = ?, widget_answer = ?, attachments = ? WHERE id = ?`,
+		m.Content, parts.calls, m.ToolCallID, parts.files, m.Streaming, nullString(m.Widget), nullString(m.WidgetAnswer), parts.attachments, m.ID)
 }
 
 // DeleteMessage removes the message with id. It is ErrNotFound when there is
 // none.
 func (db *DB) DeleteMessage(ctx context.Context, id string) error {
-	res, err := db.sql.ExecContext(ctx, `DELETE FROM messages WHERE id = ?`, id)
-	if err != nil {
-		return fmt.Errorf("delete message %s: %w", id, err)
-	}
-	if n, err := res.RowsAffected(); err != nil || n == 0 {
-		return fmt.Errorf("delete message %s: %w", id, orNotFound(err))
-	}
-	return nil
+	return db.deleteByID(ctx, "message", "messages", id)
 }
 
 // CloseStreamingMessages ends every message still streaming: one with no
@@ -130,41 +123,73 @@ func (db *DB) DeleteMessage(ctx context.Context, id string) error {
 // closed and how many it deleted.
 // See docs/model.md#9-failure-handling.
 func (db *DB) CloseStreamingMessages(ctx context.Context) (closed, deleted int64, err error) {
-	tx, err := db.sql.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, 0, fmt.Errorf("close streaming messages: %w", err)
-	}
-	defer tx.Rollback()
-	for _, q := range []struct {
-		n   *int64
-		sql string
+	err = db.inTx(ctx, "close streaming messages", func(tx *sql.Tx) error {
+		for _, q := range []struct {
+			n   *int64
+			sql string
+		}{
+			{&deleted, `DELETE FROM messages WHERE streaming = 1 AND content = ''`},
+			{&closed, `UPDATE messages SET streaming = 0 WHERE streaming = 1`},
+		} {
+			res, err := tx.ExecContext(ctx, q.sql)
+			if err != nil {
+				return err
+			}
+			if *q.n, err = res.RowsAffected(); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return closed, deleted, err
+}
+
+// jsonParts are the columns of a message that hold JSON, NULL when empty.
+type jsonParts struct{ calls, files, attachments sql.NullString }
+
+// encodeParts is m's tool calls, files and attachments as JSON.
+func encodeParts(m org.Message) (p jsonParts, err error) {
+	for i, enc := range []struct {
+		to *sql.NullString
+		v  any
+		n  int
 	}{
-		{&deleted, `DELETE FROM messages WHERE streaming = 1 AND content = ''`},
-		{&closed, `UPDATE messages SET streaming = 0 WHERE streaming = 1`},
+		{&p.calls, m.ToolCalls, len(m.ToolCalls)},
+		{&p.files, m.Files, len(m.Files)},
+		{&p.attachments, m.Attachments, len(m.Attachments)},
 	} {
-		res, err := tx.ExecContext(ctx, q.sql)
+		if enc.n == 0 {
+			continue
+		}
+		b, err := json.Marshal(enc.v)
 		if err != nil {
-			return 0, 0, fmt.Errorf("close streaming messages: %w", err)
+			return jsonParts{}, fmt.Errorf("part %d: %w", i, err)
 		}
-		if *q.n, err = res.RowsAffected(); err != nil {
-			return 0, 0, fmt.Errorf("close streaming messages: %w", err)
-		}
+		*enc.to = sql.NullString{String: string(b), Valid: true}
 	}
-	if err := tx.Commit(); err != nil {
-		return 0, 0, fmt.Errorf("close streaming messages: %w", err)
-	}
-	return closed, deleted, nil
+	return p, nil
 }
 
-// encodeParts is m's tool calls and files as JSON, NULL when there are none.
-func encodeParts(m org.Message) (calls, files sql.NullString, err error) {
-	if calls, err = encodeJSON(m.ToolCalls, len(m.ToolCalls)); err != nil {
-		return calls, files, err
+func scanMessage(row scanner) (org.Message, error) {
+	var m org.Message
+	var p jsonParts
+	var widget, answer sql.NullString
+	var created sql.NullInt64
+	if err := row.Scan(&m.ID, &m.ConversationID, &m.Seq, &m.AuthorBotID, &m.Kind, &m.Content, &p.calls,
+		&m.ToolCallID, &p.files, &m.RunID, &m.Streaming, &created, &widget, &answer, &p.attachments); err != nil {
+		return org.Message{}, err
 	}
-	files, err = encodeJSON(m.Files, len(m.Files))
-	return calls, files, err
+	m.CreatedAt = fromMillis(created)
+	m.Widget, m.WidgetAnswer = widget.String, answer.String
+	err := decodeFields("message "+m.ID, jsonField{p.calls, &m.ToolCalls, "tool calls"},
+		jsonField{p.files, &m.Files, "files"}, jsonField{p.attachments, &m.Attachments, "attachments"})
+	if err != nil {
+		return org.Message{}, err
+	}
+	return m, nil
 }
 
+// encodeJSON is v as JSON, or NULL when n, its length, is zero.
 func encodeJSON(v any, n int) (sql.NullString, error) {
 	if n == 0 {
 		return sql.NullString{}, nil
@@ -174,27 +199,4 @@ func encodeJSON(v any, n int) (sql.NullString, error) {
 		return sql.NullString{}, err
 	}
 	return sql.NullString{String: string(b), Valid: true}, nil
-}
-
-func scanMessage(row scanner) (org.Message, error) {
-	var m org.Message
-	var calls, files, widget, answer sql.NullString
-	var created sql.NullInt64
-	if err := row.Scan(&m.ID, &m.ConversationID, &m.Seq, &m.AuthorBotID, &m.Kind, &m.Content, &calls,
-		&m.ToolCallID, &files, &m.RunID, &m.Streaming, &created, &widget, &answer); err != nil {
-		return org.Message{}, err
-	}
-	m.CreatedAt = fromMillis(created)
-	m.Widget, m.WidgetAnswer = widget.String, answer.String
-	if calls.Valid {
-		if err := json.Unmarshal([]byte(calls.String), &m.ToolCalls); err != nil {
-			return org.Message{}, fmt.Errorf("message %s tool calls: %w", m.ID, err)
-		}
-	}
-	if files.Valid {
-		if err := json.Unmarshal([]byte(files.String), &m.Files); err != nil {
-			return org.Message{}, fmt.Errorf("message %s files: %w", m.ID, err)
-		}
-	}
-	return m, nil
 }

@@ -5,10 +5,12 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/store/migrate"
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
 
@@ -41,7 +43,7 @@ func Open(path string) (*DB, error) {
 	// per connection, so a pool would only add connections to configure.
 	conn.SetMaxOpenConns(1)
 	db := &DB{sql: conn, now: time.Now}
-	if err := db.migrate(); err != nil {
+	if err := migrate.Up(context.Background(), conn); err != nil {
 		conn.Close()
 		return nil, err
 	}
@@ -121,6 +123,57 @@ func (db *DB) update(ctx context.Context, what, query string, args ...any) error
 	}
 	if n, err := res.RowsAffected(); err != nil || n == 0 {
 		return fmt.Errorf("update %s: %w", what, orNotFound(err))
+	}
+	return nil
+}
+
+// deleteByID removes the row of table with id, and is ErrNotFound when there
+// is none. what names the row in an error.
+func (db *DB) deleteByID(ctx context.Context, what, table, id string) error {
+	res, err := db.sql.ExecContext(ctx, "DELETE FROM "+table+" WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete %s %s: %w", what, id, err)
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return fmt.Errorf("delete %s %s: %w", what, id, orNotFound(err))
+	}
+	return nil
+}
+
+// inTx runs fn in one transaction and commits it when fn succeeds. what
+// names the operation in an error.
+func (db *DB) inTx(ctx context.Context, what string, fn func(*sql.Tx) error) error {
+	tx, err := db.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("%s: %w", what, err)
+	}
+	defer tx.Rollback()
+	if err = fn(tx); err == nil {
+		err = tx.Commit()
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", what, err)
+	}
+	return nil
+}
+
+// jsonField is a nullable JSON column and where its value goes.
+type jsonField struct {
+	raw  sql.NullString
+	into any
+	what string
+}
+
+// decodeFields reads each field that is not NULL. owner names the row in an
+// error.
+func decodeFields(owner string, fields ...jsonField) error {
+	for _, f := range fields {
+		if !f.raw.Valid {
+			continue
+		}
+		if err := json.Unmarshal([]byte(f.raw.String), f.into); err != nil {
+			return fmt.Errorf("%s %s: %w", owner, f.what, err)
+		}
 	}
 	return nil
 }

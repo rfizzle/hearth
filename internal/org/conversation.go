@@ -19,6 +19,11 @@ type Conversation struct {
 	LatestRun *Run
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	// Summary stands for the messages up to SummaryThroughSeq, which the
+	// prompt no longer carries whole.
+	Summary           string
+	SummaryThroughSeq int64
 }
 
 // MessageKind is what a message in a thread is.
@@ -52,6 +57,7 @@ type Message struct {
 	ToolCalls      []ToolCall
 	ToolCallID     string
 	Files          []FileRef
+	Attachments    []FileRef
 	RunID          string
 	Streaming      bool
 	Widget         string

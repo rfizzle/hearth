@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
@@ -27,38 +28,29 @@ func (db *DB) GrantsFor(ctx context.Context, botID string) ([]org.Grant, error) 
 // are stored for botID.
 // See docs/model.md#access.
 func (db *DB) ReplaceGrants(ctx context.Context, botID string, grants []org.Grant) error {
-	tx, err := db.sql.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("replace grants: %w", err)
-	}
-	defer tx.Rollback()
-
-	var own string
-	if err := tx.QueryRowContext(ctx, `SELECT folder_path FROM bots WHERE id = ?`, botID).Scan(&own); err != nil {
-		return fmt.Errorf("replace grants: bot %s: %w", botID, notFound(err))
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM grants WHERE bot_id = ? AND folder <> ? AND capability <> ?`,
-		botID, own, org.AskOwner); err != nil {
-		return fmt.Errorf("replace grants: %w", err)
-	}
-	for _, g := range grants {
-		if g.Capability == org.AskOwner {
-			continue
+	return db.inTx(ctx, "replace grants", func(tx *sql.Tx) error {
+		var own string
+		if err := tx.QueryRowContext(ctx, `SELECT folder_path FROM bots WHERE id = ?`, botID).Scan(&own); err != nil {
+			return fmt.Errorf("bot %s: %w", botID, notFound(err))
 		}
-		if g.Folder == own {
-			if _, err := tx.ExecContext(ctx, `UPDATE grants SET mode = ? WHERE bot_id = ? AND capability = ? AND folder = ?`,
-				g.Mode, botID, g.Capability, own); err != nil {
-				return fmt.Errorf("replace grants: %w", err)
+		if _, err := tx.ExecContext(ctx, `DELETE FROM grants WHERE bot_id = ? AND folder <> ? AND capability <> ?`,
+			botID, own, org.AskOwner); err != nil {
+			return err
+		}
+		for _, g := range grants {
+			if g.Capability == org.AskOwner {
+				continue
 			}
-			continue
+			q, args := `INSERT INTO grants (bot_id, capability, mode, folder) VALUES (?, ?, ?, ?)`,
+				[]any{botID, g.Capability, g.Mode, g.Folder}
+			if g.Folder == own {
+				q, args = `UPDATE grants SET mode = ? WHERE bot_id = ? AND capability = ? AND folder = ?`,
+					[]any{g.Mode, botID, g.Capability, own}
+			}
+			if _, err := tx.ExecContext(ctx, q, args...); err != nil {
+				return err
+			}
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO grants (bot_id, capability, mode, folder) VALUES (?, ?, ?, ?)`,
-			botID, g.Capability, g.Mode, g.Folder); err != nil {
-			return fmt.Errorf("replace grants: %w", err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("replace grants: %w", err)
-	}
-	return nil
+		return nil
+	})
 }

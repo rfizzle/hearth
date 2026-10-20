@@ -84,7 +84,7 @@ func checkFolderFree(ctx context.Context, tx *sql.Tx, folder string) error {
 // botColumns reads a bot with the id of its DM, which lives on the
 // conversation rather than the bot.
 const botColumns = `SELECT b.id, b.name, b.role, b.job_description, b.tier, b.status, b.avatar, b.folder_path,
-	b.created_at, COALESCE((SELECT c.id FROM conversations c WHERE c.bot_id = b.id AND c.kind = ?
+	b.created_at, b.model_override, COALESCE((SELECT c.id FROM conversations c WHERE c.bot_id = b.id AND c.kind = ?
 		ORDER BY c.created_at LIMIT 1), '')
 	FROM bots b`
 
@@ -102,11 +102,24 @@ func (db *DB) Bot(ctx context.Context, id string) (org.Bot, error) {
 	return b, nil
 }
 
+// UpdateBot sets what the owner may edit on the bot with bot.ID: its name,
+// role, job description, tier, avatar and model override. Its folder,
+// status and grants do not change here. It returns the bot as stored, or
+// ErrNotFound.
+func (db *DB) UpdateBot(ctx context.Context, bot org.Bot) (org.Bot, error) {
+	if err := db.update(ctx, "bot "+bot.ID, `UPDATE bots
+		SET name = ?, role = ?, job_description = ?, tier = ?, avatar = ?, model_override = ? WHERE id = ?`,
+		bot.Name, bot.Role, bot.JobDescription, bot.Tier, bot.Avatar, bot.ModelOverride, bot.ID); err != nil {
+		return org.Bot{}, err
+	}
+	return db.Bot(ctx, bot.ID)
+}
+
 func scanBot(row scanner) (org.Bot, error) {
 	var b org.Bot
 	var created sql.NullInt64
 	err := row.Scan(&b.ID, &b.Name, &b.Role, &b.JobDescription, &b.Tier, &b.Status, &b.Avatar, &b.FolderPath,
-		&created, &b.DMConversationID)
+		&created, &b.ModelOverride, &b.DMConversationID)
 	b.CreatedAt = fromMillis(created)
 	return b, err
 }

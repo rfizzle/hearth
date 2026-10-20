@@ -18,6 +18,7 @@ func (db *DB) Conversations(ctx context.Context, botID string) ([]org.Conversati
 // conversationSelect reads a conversation and its newest run; a caller adds
 // the WHERE.
 const conversationSelect = `SELECT c.id, c.kind, COALESCE(c.bot_id, ''), c.title, c.created_at, c.updated_at,
+		c.summary, c.summary_through_seq,
 		r.id, r.conversation_id, r.bot_id, r.state, r.steps, r.failure, r.started_at, r.ended_at
 		FROM conversations c
 		LEFT JOIN runs r ON r.rowid = (SELECT MAX(rowid) FROM runs WHERE conversation_id = c.id)`
@@ -34,6 +35,14 @@ func (db *DB) Conversation(ctx context.Context, id string) (org.Conversation, er
 	return rows[0], nil
 }
 
+// PutSummary stores text as the summary of the conversation, standing for
+// its messages up to throughSeq. It is ErrNotFound when there is no such
+// conversation.
+func (db *DB) PutSummary(ctx context.Context, conversationID, text string, throughSeq int64) error {
+	return db.update(ctx, "conversation "+conversationID,
+		`UPDATE conversations SET summary = ?, summary_through_seq = ? WHERE id = ?`, text, throughSeq, conversationID)
+}
+
 func scanConversation(row scanner) (org.Conversation, error) {
 	var c org.Conversation
 	var created, updated, started, ended sql.NullInt64
@@ -43,6 +52,7 @@ func scanConversation(row scanner) (org.Conversation, error) {
 		failure       sql.NullString
 	}
 	err := row.Scan(&c.ID, &c.Kind, &c.BotID, &c.Title, &created, &updated,
+		&c.Summary, &c.SummaryThroughSeq,
 		&run.id, &run.conv, &run.bot, &run.state, &run.steps, &run.failure, &started, &ended)
 	c.CreatedAt, c.UpdatedAt = fromMillis(created), fromMillis(updated)
 	if run.id.Valid {

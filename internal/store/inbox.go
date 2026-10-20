@@ -137,17 +137,10 @@ func scanItem(row scanner) (inbox.Item, error) {
 	if call.Valid {
 		it.Call = new(org.ToolCall)
 	}
-	for _, f := range []struct {
-		raw  sql.NullString
-		into any
-		what string
-	}{{call, it.Call, "call"}, {suggested, &it.Suggested, "suggested answers"}} {
-		if !f.raw.Valid {
-			continue
-		}
-		if err := json.Unmarshal([]byte(f.raw.String), f.into); err != nil {
-			return inbox.Item{}, fmt.Errorf("item %s %s: %w", it.ID, f.what, err)
-		}
+	err := decodeFields("item "+it.ID, jsonField{call, it.Call, "call"},
+		jsonField{suggested, &it.Suggested, "suggested answers"})
+	if err != nil {
+		return inbox.Item{}, err
 	}
 	return it, nil
 }
