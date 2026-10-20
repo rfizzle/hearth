@@ -1,4 +1,4 @@
-package orchestrate
+package bus
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 )
 
 const (
@@ -52,6 +53,17 @@ type RunChanged struct {
 	Run org.Run
 }
 
+// InboxChanged is an Inbox item created or closed.
+type InboxChanged struct {
+	Item inbox.Item
+}
+
+// GrantsChanged is every grant a bot holds after a decision changed them.
+type GrantsChanged struct {
+	BotID  string
+	Grants []org.Grant
+}
+
 // Resync tells a subscriber that events it asked for are no longer kept: it
 // refetches what it shows and continues from this event's sequence.
 type Resync struct{}
@@ -61,7 +73,7 @@ type Resync struct{}
 type Heartbeat struct{}
 
 // Bus numbers events and hands them to every subscriber, keeping the latest
-// for one that reconnects. The zero value is not ready; use NewBus.
+// for one that reconnects. The zero value is not ready; use New.
 type Bus struct {
 	mu   sync.Mutex
 	seq  uint64
@@ -69,8 +81,8 @@ type Bus struct {
 	subs map[chan Event]struct{}
 }
 
-// NewBus is an empty bus whose first event is sequence 1.
-func NewBus() *Bus {
+// New is an empty bus whose first event is sequence 1.
+func New() *Bus {
 	return &Bus{subs: map[chan Event]struct{}{}}
 }
 

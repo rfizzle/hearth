@@ -10,14 +10,22 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/orchestrate/park"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/store"
+	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
 // ErrBusy refuses a message to a conversation whose bot is still answering
 // the last one.
 var ErrBusy = errors.New("the bot is still working on the last message")
+
+// ErrWaiting refuses a message to a conversation whose bot is waiting for
+// the owner to decide or answer.
+// See docs/model.md#8-approvals.
+var ErrWaiting = errors.New("answer what the bot asked first")
 
 // quitReason is the failure a run left working by an earlier launch ends
 // with.
@@ -38,6 +46,9 @@ type Deps struct {
 	// leaves web.search out.
 	Searcher func() (web.Searcher, bool)
 	Bus      *Bus
+	// Resume is how a run that continues a parked one is handed the round
+	// it parked in.
+	Resume park.Resume
 	// Caps are the limits every run ends at; zero takes the defaults.
 	Caps org.Caps
 	// Log is where a run that panicked is reported, with its stack; nil is
@@ -55,6 +66,8 @@ type Service struct {
 	mu      sync.Mutex
 	working map[string]string             // conversation id -> its run's id
 	cancels map[string]context.CancelFunc // run id -> what stops it
+
+	extra []tools.Definition // more tools, for a test
 }
 
 // Open is a service over d. Runs an earlier launch left queued or working
@@ -95,7 +108,7 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 	if err != nil {
 		return org.Run{}, org.Message{}, err
 	}
-	if err := s.reserve(convID); err != nil {
+	if err := s.reserveIdle(ctx, convID); err != nil {
 		return org.Run{}, org.Message{}, err
 	}
 	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: convID, Kind: org.MessageText, Content: text})
@@ -110,7 +123,7 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 		s.release(convID, "")
 		return org.Run{}, org.Message{}, err
 	}
-	go s.run(runCtx, bot, r, m)
+	go s.run(runCtx, bot, r, ask{msg: m})
 	return r, m, nil
 }
 
@@ -123,7 +136,7 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 	if err != nil {
 		return org.Run{}, err
 	}
-	if err := s.reserve(convID); err != nil {
+	if err := s.reserveIdle(ctx, convID); err != nil {
 		return org.Run{}, err
 	}
 	prompt, err := s.lastOwnerMessage(ctx, convID)
@@ -136,7 +149,7 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 		s.release(convID, "")
 		return org.Run{}, err
 	}
-	go s.run(runCtx, bot, r, prompt)
+	go s.run(runCtx, bot, r, ask{msg: prompt})
 	return r, nil
 }
 
@@ -149,6 +162,43 @@ func (s *Service) reserve(convID string) error {
 	}
 	s.working[convID] = ""
 	return nil
+}
+
+// reserveIdle claims the conversation for a run the owner asked for, or is
+// ErrBusy, or ErrWaiting while the bot waits on them: the open item is
+// answered first, and the run it resumes is the next to start.
+// See docs/model.md#8-approvals.
+func (s *Service) reserveIdle(ctx context.Context, convID string) error {
+	if err := s.reserve(convID); err != nil {
+		return err
+	}
+	it, open, err := s.d.Store.OpenItemFor(ctx, convID)
+	if err == nil && open {
+		err = s.stale(ctx, it)
+	}
+	if err != nil {
+		s.release(convID, "")
+	}
+	return err
+}
+
+// stale closes it when the run it was opened for no longer waits on it, as
+// when the core stopped between storing the item and the run, and is
+// ErrWaiting when the run still waits: an item nothing can settle must not
+// hold the conversation for good.
+func (s *Service) stale(ctx context.Context, it inbox.Item) error {
+	r, err := s.d.Store.Run(ctx, it.RunID)
+	if err == nil && r.State == org.RunWaitingOwner {
+		return ErrWaiting
+	}
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return err
+	}
+	if err := s.d.Store.CloseInboxItem(ctx, it.ID, 0, "", "Closed: the run had ended"); err != nil {
+		return err
+	}
+	_, err = s.closed(ctx, it.ID)
+	return err
 }
 
 // start stores the queued run that answers prompt and registers what stops
@@ -208,15 +258,16 @@ func (s *Service) release(convID, runID string) {
 }
 
 // Cancel stops the run runID, keeping what it had written so far, and
-// reports whether a run was working to stop.
+// reports whether a run was working or waiting to stop. A run waiting for
+// the owner ends cancelled, and the item it waited on closes.
 func (s *Service) Cancel(runID string) bool {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	cancel, ok := s.cancels[runID]
 	if ok {
 		cancel()
 	}
-	return ok
+	s.mu.Unlock()
+	return ok || s.cancelWaiting(context.Background(), runID)
 }
 
 // dmBot is the bot whose DM convID is.

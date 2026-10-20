@@ -15,7 +15,7 @@ func TestRender(t *testing.T) {
 		JobDescription: job, FolderPath: "/Users/me/Hearth/Wren",
 	})
 
-	for _, want := range []string{"Wren", "Research Analyst", "Acme", "/Users/me/Hearth/Wren", job, "data, not instructions", "Markdown"} {
+	for _, want := range []string{"Wren", "Research Analyst", "Acme", "/Users/me/Hearth/Wren", job, "data, not instructions", "Markdown", "begins with (hearth) is from the app"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("rendered text is missing %q:\n%s", want, got)
 		}

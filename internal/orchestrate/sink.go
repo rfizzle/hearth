@@ -14,6 +14,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 )
 
 // sink stores and publishes what one run's turn does as it does it. The bot's
@@ -32,7 +33,8 @@ type sink struct {
 	describe map[string]func(json.RawMessage) string
 	err      error // the first write that failed
 	stop     context.CancelFunc
-	panicked any // the first panic, nil if none
+	panicked any         // the first panic, nil if none
+	opened   *inbox.Item // the item a parked run opened, published by finish
 }
 
 var _ agent.Sink = (*sink)(nil)
@@ -104,6 +106,11 @@ func (k *sink) ToolCall(id, name string, args json.RawMessage) {
 // ToolResult stores what the call returned, the call it answers and the
 // files it wrote.
 func (k *sink) ToolResult(id string, r agent.Result, err error, _ time.Duration) {
+	if errors.Is(err, agent.ErrParked) {
+		// The call has not run. Its result is written when the owner
+		// decides, and a call the run did not park on is owed none.
+		return
+	}
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	m := org.Message{Kind: org.MessageToolResult, Content: r.Text, ToolCallID: id}
@@ -136,9 +143,10 @@ func (k *sink) Retry(int, int, time.Duration) {
 }
 
 // finish closes what the turn left open and ends the run: done, cancelled
-// with what streamed kept, or failed with the reason in plain words in the
-// run and in the thread. A provider failure, a cap or a run that could not
-// start all end it failed.
+// with what streamed kept, waiting on the owner with the request in the
+// thread and the Inbox, or failed with the reason in plain words in the run
+// and in the thread. A provider failure, a cap or a run that could not start
+// all end it failed.
 // See docs/model.md#9-failure-handling.
 func (k *sink) finish(out agent.Outcome, err error) {
 	k.mu.Lock()
@@ -146,7 +154,14 @@ func (k *sink) finish(out agent.Outcome, err error) {
 	if err == nil && k.err != nil {
 		err = k.err
 	}
+	if errors.Is(err, agent.ErrParked) {
+		k.endText()
+		if err = k.park(out.Parked); err == nil {
+			k.run.State = org.RunWaitingOwner
+		}
+	}
 	switch {
+	case k.run.State == org.RunWaitingOwner:
 	case err == nil:
 		if k.text == nil && out.Text != "" {
 			k.append(org.Message{Kind: org.MessageText, Content: out.Text})
@@ -165,14 +180,20 @@ func (k *sink) finish(out agent.Outcome, err error) {
 		// it explains.
 		k.append(org.Message{Kind: org.MessageSystem, Content: sentence(k.run.Failure)})
 	}
-	k.run.EndedAt = k.s.d.Now()
+	if k.run.State != org.RunWaitingOwner {
+		k.run.EndedAt = k.s.d.Now()
+	}
 	if err := k.s.d.Store.UpdateRun(k.ctx, k.run); err != nil {
 		k.fail(err)
 	}
 	// Free the conversation before saying the run ended, so a message sent
-	// on that news is not refused as busy.
+	// on that news is not refused as busy. A waiting run's conversation is
+	// held by its open item instead.
 	k.s.release(k.run.ConversationID, k.run.ID)
 	k.s.d.Bus.Publish(RunChanged{Run: k.run})
+	if k.opened != nil {
+		k.s.d.Bus.Publish(InboxChanged{Item: *k.opened})
+	}
 }
 
 // saveRun stores the run's state and publishes it.

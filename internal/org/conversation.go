@@ -26,10 +26,13 @@ type MessageKind int
 
 // The kinds of message a DM holds.
 const (
-	MessageText       MessageKind = 1
-	MessageToolCall   MessageKind = 2
-	MessageToolResult MessageKind = 3
-	MessageSystem     MessageKind = 9
+	MessageText             MessageKind = 1
+	MessageToolCall         MessageKind = 2
+	MessageToolResult       MessageKind = 3
+	MessageQuestion         MessageKind = 6
+	MessageApprovalRequest  MessageKind = 7
+	MessageApprovalDecision MessageKind = 8
+	MessageSystem           MessageKind = 9
 )
 
 // Message is one row of a thread. Seq orders it within its conversation and

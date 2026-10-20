@@ -1,4 +1,4 @@
-package orchestrate
+package bus
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func publishN(b *Bus, n int) {
 
 func TestBus(t *testing.T) {
 	t.Run("a subscriber is replayed what it missed, then follows live", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		publishN(b, 5)
 		ch, cancel := b.Subscribe(3)
 		defer cancel()
@@ -43,7 +43,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("after zero follows live events only", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		publishN(b, 5)
 		ch, cancel := b.Subscribe(0)
 		defer cancel()
@@ -57,7 +57,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("a subscriber 5,000 events behind gets Resync first", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		publishN(b, 5001)
 		ch, cancel := b.Subscribe(1)
 		defer cancel()
@@ -75,7 +75,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("the oldest kept event is replayed without a resync", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		publishN(b, ringSize+10)
 		ch, cancel := b.Subscribe(10)
 		defer cancel()
@@ -86,7 +86,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("a sequence from an earlier launch gets Resync", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		publishN(b, 3)
 		ch, cancel := b.Subscribe(900)
 		defer cancel()
@@ -100,7 +100,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("a slow subscriber is dropped and the publisher does not wait", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		slow, cancelSlow := b.Subscribe(0)
 		defer cancelSlow()
 		fast, cancelFast := b.Subscribe(0)
@@ -123,7 +123,7 @@ func TestBus(t *testing.T) {
 	})
 
 	t.Run("cancel closes the channel and is safe to repeat", func(t *testing.T) {
-		b := NewBus()
+		b := New()
 		ch, cancel := b.Subscribe(0)
 		cancel()
 		cancel()
@@ -135,7 +135,7 @@ func TestBus(t *testing.T) {
 
 	t.Run("a quiet subscription gets a heartbeat every 20 seconds", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
-			b := NewBus()
+			b := New()
 			publishN(b, 2)
 			ch, cancel := b.Subscribe(0)
 			defer cancel()

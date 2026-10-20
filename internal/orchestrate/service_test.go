@@ -376,6 +376,7 @@ func TestSink_AToolRoundClosesTheTextBeforeIt(t *testing.T) {
 	k := newSink(t, f)
 	k.describe["files.write"] = func(json.RawMessage) string { return "Write a.md" }
 	k.Text("Let me write it.")
+	k.Usage("chatgpt", "gpt", agent.Usage{Prompt: 10}) // not recorded yet: no message
 	k.Round(1)
 	k.ToolCall("c1", "files.write", json.RawMessage(`{}`))
 	k.ToolResult("c1", agent.Result{Text: "Wrote a.md.", Files: []string{"/w/a.md"}}, nil, time.Second)
