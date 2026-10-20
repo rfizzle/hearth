@@ -1,0 +1,59 @@
+{{/*
+The page shell. Every value from the spec reaches the page through a {{.}}
+action, which html/template escapes for where it stands; the only values it
+does not escape are what the funcs in render.go return as trusted (the
+stylesheet, the Markdown walker's output and the chart SVG). Every class name
+the page uses is written out in this folder, so the Tailwind build sees it.
+*/}}
+{{- define "page" -}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="Hearth">
+<title>{{.Title}}</title>
+<style>
+{{stylesheet}}
+@media (prefers-color-scheme: dark) {
+svg .c1:not([fill="none"]) { fill: var(--color-chart-1); } svg .c1:not([stroke="none"]) { stroke: var(--color-chart-1); }
+svg .c2:not([fill="none"]) { fill: var(--color-chart-2); } svg .c2:not([stroke="none"]) { stroke: var(--color-chart-2); }
+svg .c3:not([fill="none"]) { fill: var(--color-chart-3); } svg .c3:not([stroke="none"]) { stroke: var(--color-chart-3); }
+svg .c4:not([fill="none"]) { fill: var(--color-chart-4); } svg .c4:not([stroke="none"]) { stroke: var(--color-chart-4); }
+svg .c5:not([fill="none"]) { fill: var(--color-chart-5); } svg .c5:not([stroke="none"]) { stroke: var(--color-chart-5); }
+svg .c6:not([fill="none"]) { fill: var(--color-chart-6); } svg .c6:not([stroke="none"]) { stroke: var(--color-chart-6); }
+}
+@media print {
+@page { size: {{if eq .Kind "dashboard"}}landscape{{else}}portrait{{end}}; margin: 16mm; }
+}
+</style>
+</head>
+<body class="bg-surface-primary font-sans text-text-primary antialiased print:bg-surface-card">
+<main class="mx-auto px-lg py-xxl {{if eq .Kind "dashboard"}}max-w-6xl{{else}}max-w-3xl{{end}} print:max-w-none print:p-0">
+<header class="mb-xl">
+<h1 class="text-3xl font-semibold tracking-tight">{{.Title}}</h1>
+{{- with .Subtitle}}
+<p class="mt-xs text-lg text-text-secondary">{{.}}</p>
+{{- end}}
+</header>
+{{- $kind := .Kind}}
+{{- range .Sections}}
+<section class="mb-xl">
+{{- with .Heading}}
+<h2 class="mb-md text-xl font-semibold">{{.}}</h2>
+{{- end}}
+<div class="grid grid-cols-1 gap-lg{{template "columns" columns $kind .}}">
+{{- range .Widgets}}
+{{template "widget" .}}
+{{- end}}
+</div>
+</section>
+{{- end}}
+</main>
+</body>
+</html>
+{{end}}
+
+{{- define "columns"}}{{if eq . 3}} sm:grid-cols-3 print:grid-cols-3{{else if eq . 2}} sm:grid-cols-2 print:grid-cols-2{{end}}{{end}}

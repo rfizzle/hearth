@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "kind": "dashboard",
+  "title": "Office this week",
+  "subtitle": "Week of 13 October 2026 & what comes next",
+  "sections": [
+    {"heading": "The numbers", "columns": 3, "widgets": [
+      {"kind": "metric", "label": "Spent this month", "value": 12.4, "format": "currency", "delta": {"value": -3.1, "good": true}, "caption": "Budget $40", "measure": "usage.cost/me/current", "as_of": "2026-10-20T09:30Z"},
+      {"kind": "metric", "label": "A label of exactly forty characters long", "value": 12.5, "format": "percent", "delta": {"value": 2.5, "good": false}},
+      {"kind": "metric", "label": "Tokens", "value": 1234567.891, "format": "integer", "unit": "tokens", "delta": {"value": 1200}},
+      {"kind": "metric", "label": "Ratio", "value": 3.14159, "decimals": 2},
+      {"kind": "metric", "label": "Not read yet", "measure": "inbox.open/org"},
+      {"kind": "progress", "label": "Launch the newsletter", "done": 3, "total": 7, "caption": "3 of 7 tasks done", "measure": "project.tasks/this"},
+      {"kind": "progress", "label": "Nothing to do", "done": 0, "total": 0},
+      {"kind": "light", "label": "Newsletter", "tone": "attention", "word": "Waiting on you", "measure": "project.light/this"},
+      {"kind": "light", "label": "Venue", "tone": "positive", "word": "On track", "caption": "Booked"},
+      {"kind": "light", "label": "Printing", "tone": "negative", "word": "Stopped"},
+      {"kind": "light", "label": "Archive", "tone": "neutral", "word": "Idle", "span": 2}
+    ]},
+    {"heading": "Trends", "columns": 2, "widgets": [
+      {"kind": "line", "title": "Cost per week", "categories": ["W40", "W41", "W42", "W43"], "series": [{"name": "Dana", "values": [3.2, 4.1, 2.8, 5.0]}, {"name": "Sam", "values": [1, 1.5, 1.2, 2]}, {"name": "Ari", "values": [2, 2, 2, 2]}, {"name": "Bo", "values": [0.5, 1, 1.5, 2]}, {"name": "Cy", "values": [4, 3, 2, 1]}, {"name": "Di", "values": [2.5, 3.5, 2.5, 3.5]}], "format": "currency", "y_label": "USD", "y_min": 0, "span": 2},
+      {"kind": "bar", "title": "Tasks by state", "categories": ["Done", "Working", "Waiting", "Failed"], "series": [{"name": "Dana", "values": [3, 2, 1, 1]}, {"name": "Sam", "values": [1, 1, 0, 2]}], "stacked": true},
+      {"kind": "pie", "title": "Spend by employee", "slices": [{"label": "Dana", "value": 12.4}, {"label": "Sam", "value": 6.1}, {"label": "Ari", "value": 3}, {"label": "Bo", "value": 2}, {"label": "Cy", "value": 1}, {"label": "Di", "value": 1}, {"label": "Ed", "value": 0.5}, {"label": "Flo", "value": 0}], "format": "currency"}
+    ]},
+    {"heading": "Open items", "columns": 3, "widgets": [
+      {"kind": "table", "title": "Open items", "span": 3, "columns": [{"header": "Item", "align": "left"}, {"header": "Owner", "align": "center"}, {"header": "Cost", "align": "right", "format": "currency"}, {"header": "Share", "align": "right", "format": "percent"}, {"header": "Count", "format": "integer"}], "rows": [["Newsletter copy", "Dana", 12.5, 40, 3], ["Venue <shortlist>", "Sam", 1250, 60.25, 2.5]], "footer": ["Total", "", 1262.5, 100, 5.5]},
+      {"kind": "list", "title": "Bullets", "items": [{"text": "First"}, {"text": "Second", "detail": "With a detail"}]},
+      {"kind": "list", "title": "Steps", "style": "numbered", "items": [{"text": "Draft"}, {"text": "Review"}]},
+      {"kind": "list", "title": "Next week", "style": "check", "items": [{"text": "Send the first issue", "done": false}, {"text": "Book the venue", "done": true, "detail": "Confirmed Tuesday"}]}
+    ]},
+    {"heading": "Notes", "columns": 1, "widgets": [
+      {"kind": "callout", "tone": "attention", "title": "Needs you", "markdown": "Two tasks are waiting on an answer. **Open the Inbox** to unblock them."},
+      {"kind": "callout", "tone": "positive", "title": "Done", "markdown": "The venue is booked."},
+      {"kind": "callout", "tone": "negative", "markdown": "Printing stopped."},
+      {"kind": "callout", "tone": "neutral", "title": "For the record", "markdown": "Nothing else changed."},
+      {"kind": "text", "markdown": "# Heading one reads as two\n\nA paragraph with *emphasis*, **strong**, ~~struck~~, `code <b>` and a [link](https://example.com/a?b=1&c=2), an <https://example.com/auto> and <dana@example.com>.\nA soft break here  \nand a hard break; 5 < 6 & \"quotes\" 'too'.\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six\n\n- bullet\n- list\n\n3. numbered\n4. from three\n\n- [x] a done task\n- [ ] an open task\n\n> a quote\n> on two lines\n\n```go\nfmt.Println(\"<b>\")\n```\n\n    indented code\n\n| Left | Centre | Right |\n|:-----|:------:|------:|\n| a | b | c |\n\n---\n\nWrite to [Dana](mailto:dana@example.com)."}
+    ]}
+  ]
+}
