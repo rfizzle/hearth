@@ -25,6 +25,10 @@ var (
 	ErrWallCap = errors.New("wall-time cap reached")
 	// ErrCancelled ends a turn whose context was cancelled.
 	ErrCancelled = errors.New("turn cancelled")
+	// ErrParked ends a turn at a call that waits for the owner. It is a
+	// pause, not a failure: the call is in Outcome.Parked.
+	// See docs/model.md#8-approvals.
+	ErrParked = errors.New("waiting for the owner")
 )
 
 // Tool is one tool the model may call, in plain Go: the name, what it is
@@ -57,13 +61,36 @@ type Sink interface {
 	Text(delta string)
 	// ToolCall is a call the model asked for, before it runs.
 	ToolCall(id, name string, args json.RawMessage)
-	// ToolResult is the outcome of one call; err is the executor's own.
+	// ToolResult is the outcome of one call; err is the executor's own. A
+	// call that waits for the owner has err ErrParked and no result: it
+	// did not run, and nothing is owed to the model for it yet.
 	ToolResult(id string, r Result, err error, d time.Duration)
+	// Usage is what one request to the model used, as the provider
+	// reported it.
+	Usage(provider, model string, u Usage)
 	// Round is told when the n-th tool round begins.
 	Round(n int)
 	// Retry is told before the turn waits to ask the provider again.
 	Retry(attempt, max int, wait time.Duration)
 }
+
+// Model is the provider and the model a turn's requests go to.
+type Model struct {
+	Provider string
+	Name     string
+}
+
+// Usage is the tokens one request used: every prompt token, the completion,
+// and the parts of the prompt read from and written to the provider's cache.
+type Usage struct {
+	Prompt     int
+	Completion int
+	Cached     int
+	Created    int
+}
+
+// Gate reports whether a call has to wait for the owner before it runs.
+type Gate func(name string, args json.RawMessage) bool
 
 // Input is everything one turn needs.
 type Input struct {
@@ -73,6 +100,12 @@ type Input struct {
 	Tools   []Tool
 	Stream  Stream
 	Execute Execute
+	// Gate picks the calls that wait for the owner. The first such call in a
+	// round ends the turn with ErrParked once the round's other calls have
+	// run; nil lets every call run.
+	Gate Gate
+	// Model is reported with each request's usage.
+	Model Model
 	// MaxRounds caps tool rounds; zero takes agentcore's own default, so a
 	// caller that means a cap always passes one.
 	MaxRounds int
@@ -86,16 +119,19 @@ type Input struct {
 
 // Outcome is how far a turn got. On a stopped or failed turn Text is the
 // reply streamed since the last tool round, so the caller keeps what the
-// person already saw.
+// person already saw. Parked is the call a turn that ended with ErrParked
+// waits on.
 type Outcome struct {
 	Text   string
 	Rounds int
+	Parked *ToolCall
 }
 
 // Run drives one turn to its end: stream, tool rounds, provider retry, the
-// caps. It returns ErrRoundCap, ErrWallCap or ErrCancelled when stopped, and
-// the provider's own classified failure when the model could not be reached;
-// Explain words either for a person.
+// caps. It returns ErrRoundCap, ErrWallCap or ErrCancelled when stopped,
+// ErrParked when a call waits for the owner, and the provider's own
+// classified failure when the model could not be reached; Explain words
+// either for a person.
 func Run(ctx context.Context, in Input) (Outcome, error) {
 	if ctx.Err() != nil {
 		return Outcome{}, ErrCancelled
@@ -126,6 +162,11 @@ type turn struct {
 	mu        sync.Mutex      // one sink call at a time
 	cur       strings.Builder // reply streamed since the last tool round
 	lastRound int
+
+	// Written by the loop's goroutine only: the first call that waits for
+	// the owner, and every call of the round that waited.
+	parked *ToolCall
+	gated  map[string]bool
 }
 
 // newTurn builds the loop from the input and wires its callbacks.
@@ -140,7 +181,7 @@ func newTurn(ctx, runCtx context.Context, in Input) *turn {
 		initial = append(initial, llm.Message{Role: llm.RoleSystem, Content: in.System})
 	}
 	for _, m := range in.History {
-		initial = append(initial, llm.Message{Role: llmRole(m.Role), Content: m.Text})
+		initial = append(initial, m.llm())
 	}
 
 	t.a = coreagent.New(initial, t.stream)
@@ -151,10 +192,13 @@ func newTurn(ctx, runCtx context.Context, in Input) *turn {
 	t.a.SetExecutor(t.execute)
 	t.h = &coreagent.Headless{
 		Agent:        t.a,
+		Gate:         t.gate,
+		Resolve:      t.park,
 		OnText:       t.onText,
 		OnToolCall:   t.onToolCall,
 		OnToolResult: t.onToolResult,
 		OnRetry:      t.onRetry,
+		OnUsage:      t.onUsage,
 	}
 	return t
 }
@@ -212,6 +256,12 @@ func (t *turn) onToolCall(tc llm.ToolCall) {
 }
 
 func (t *turn) onToolResult(r coreagent.ToolResult) {
+	if t.gated[r.Call.ID] {
+		// The loop's text for a waiting call is the placeholder park gave
+		// it; the call has not run, so the sink is told so and shown none.
+		t.tell(func(k Sink) { k.ToolResult(r.Call.ID, Result{}, ErrParked, r.Duration) })
+		return
+	}
 	res, err := t.side.take(r.Call.Name, r.Call.Arguments)
 	// A call stopped before it ran has no entry; the loop's own text for it
 	// stands.
@@ -263,6 +313,9 @@ func (t *turn) outcome(text string, err error) (Outcome, error) {
 	}
 	out.Text = t.cur.String()
 	switch {
+	case t.parked != nil && errors.Is(err, coreagent.ErrInterrupted) && !t.wall.Load() && t.ctx.Err() == nil:
+		out.Parked = t.parked
+		return out, ErrParked
 	case errors.Is(err, coreagent.ErrRoundCap):
 		return out, fmt.Errorf("%w after %d rounds", ErrRoundCap, out.Rounds)
 	case errors.Is(err, coreagent.ErrInterrupted) && t.wall.Load():

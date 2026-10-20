@@ -119,6 +119,9 @@ func (k *sink) ToolResult(id string, r agent.Result, err error, _ time.Duration)
 	k.append(m)
 }
 
+// Usage is not recorded yet.
+func (k *sink) Usage(string, string, agent.Usage) {}
+
 // Retry empties the streaming message: the attempt that failed streamed
 // tokens the next attempt starts over from.
 func (k *sink) Retry(int, int, time.Duration) {

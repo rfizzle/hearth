@@ -1,6 +1,10 @@
 package agent
 
-import "github.com/rfizzle/llm"
+import (
+	"encoding/json"
+
+	"github.com/rfizzle/llm"
+)
 
 // Role is who a message is from.
 type Role string
@@ -15,10 +19,30 @@ const (
 
 // Message is one turn of a conversation: who said it and what. A caller
 // that holds earlier turns hands them in this form and never sees a
-// provider's message type.
+// provider's message type. A bot message that asked for tools carries the
+// calls in Calls; a tool message answers the call whose id is CallID.
 type Message struct {
-	Role Role
-	Text string
+	Role   Role
+	Text   string
+	Calls  []ToolCall
+	CallID string
+}
+
+// ToolCall is one call a model asked for: its id, the tool and the
+// arguments as JSON.
+type ToolCall struct {
+	ID   string
+	Name string
+	Args json.RawMessage
+}
+
+// llm is m in the provider's form.
+func (m Message) llm() llm.Message {
+	out := llm.Message{Role: llmRole(m.Role), Content: m.Text, ToolCallID: m.CallID}
+	for _, c := range m.Calls {
+		out.ToolCalls = append(out.ToolCalls, llm.ToolCall{ID: c.ID, Name: c.Name, Arguments: string(c.Args)})
+	}
+	return out
 }
 
 // Scrub redacts what must not leave the machine from a message's text. It

@@ -94,7 +94,8 @@ func (r *rec) ToolResult(id string, res hagent.Result, err error, _ time.Duratio
 	r.add(s)
 	r.files = append(r.files, res.Files...)
 }
-func (r *rec) Round(n int) { r.add("round:" + string(rune('0'+n))) }
+func (r *rec) Round(n int)                        { r.add("round:" + string(rune('0'+n))) }
+func (r *rec) Usage(string, string, hagent.Usage) {}
 func (r *rec) Retry(a, m int, _ time.Duration) {
 	r.add("retry:" + string(rune('0'+a)) + "/" + string(rune('0'+m)))
 }
@@ -272,6 +273,85 @@ func TestRun(t *testing.T) {
 			t.Error("model did not read the error")
 		}
 	})
+}
+
+func TestRun_Park(t *testing.T) {
+	gate := func(name string, _ json.RawMessage) bool { return strings.HasPrefix(name, "ask.") }
+	cases := []struct {
+		name  string
+		calls []llm.ToolCall
+		want  []string // what the sink is told
+	}{
+		{
+			"one auto call and one gated call",
+			[]llm.ToolCall{{ID: "c1", Name: "one", Arguments: `{}`}, {ID: "c2", Name: "ask.delete", Arguments: `{"path":"a.md"}`}},
+			[]string{"round:1", "call:c1:one", "result:c1:one done", "call:c2:ask.delete", "result:c2::err=" + hagent.ErrParked.Error()},
+		},
+		{
+			"two gated calls park on the first and owe the second nothing",
+			[]llm.ToolCall{{ID: "c1", Name: "ask.delete", Arguments: `{"path":"a.md"}`}, {ID: "c2", Name: "ask.send", Arguments: `{}`}},
+			[]string{"round:1", "call:c1:ask.delete", "result:c1::err=" + hagent.ErrParked.Error(), "call:c2:ask.send", "result:c2::err=" + hagent.ErrParked.Error()},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &script{steps: []func(context.Context) <-chan llm.StreamEvent{
+				events(llm.StreamEvent{Token: "Let me tidy up."}, llm.StreamEvent{Done: true, ToolCalls: tc.calls}),
+				events(llm.StreamEvent{Token: "never asked"}, llm.StreamEvent{Done: true}),
+			}}
+			r := &rec{}
+			out, err := hagent.Run(context.Background(), hagent.Input{
+				Prompt: "tidy", Stream: s.stream, Execute: echo, Gate: gate, MaxRounds: 5, Sink: r,
+			})
+			if !errors.Is(err, hagent.ErrParked) {
+				t.Fatalf("err = %v, want ErrParked", err)
+			}
+			// The first gated call is the one the turn waits on.
+			first := tc.calls[0]
+			if !gate(first.Name, nil) {
+				first = tc.calls[1]
+			}
+			if out.Parked == nil || out.Parked.ID != first.ID || out.Parked.Name != first.Name || string(out.Parked.Args) != first.Arguments {
+				t.Fatalf("parked = %+v, want %+v", out.Parked, first)
+			}
+			log := strings.Join(r.log, "|")
+			if want := strings.Join(tc.want, "|"); !strings.HasSuffix(log, want) {
+				t.Errorf("sink = %q, want it to end %q", r.log, tc.want)
+			}
+			if strings.Contains(log, "result:c1:waiting") || strings.Contains(log, "result:c2:waiting") {
+				t.Errorf("the sink was handed the placeholder: %q", r.log)
+			}
+			if len(s.seen) != 1 {
+				t.Errorf("requests = %d, want 1: a parked turn asks the model nothing more", len(s.seen))
+			}
+		})
+	}
+}
+
+func TestRun_HistoryCarriesCallsAndResults(t *testing.T) {
+	s := &script{steps: []func(context.Context) <-chan llm.StreamEvent{
+		events(llm.StreamEvent{Token: "ok"}, llm.StreamEvent{Done: true}),
+	}}
+	history := []hagent.Message{
+		{Role: hagent.RoleOwner, Text: "tidy up"},
+		{Role: hagent.RoleBot, Text: "On it.", Calls: []hagent.ToolCall{{ID: "c1", Name: "files.delete", Args: json.RawMessage(`{"path":"a.md"}`)}}},
+		{Role: hagent.RoleTool, CallID: "c1", Text: "Deleted a.md."},
+	}
+	if _, err := hagent.Run(context.Background(), hagent.Input{History: history, Prompt: "(hearth) carry on", Stream: s.stream, MaxRounds: 5}); err != nil {
+		t.Fatal(err)
+	}
+	sent := s.seen[0]
+	if len(sent) != 4 {
+		t.Fatalf("sent %d messages, want history and prompt: %+v", len(sent), sent)
+	}
+	bot, tool := sent[1], sent[2]
+	if bot.Role != llm.RoleAssistant || bot.Content != "On it." || len(bot.ToolCalls) != 1 ||
+		bot.ToolCalls[0] != (llm.ToolCall{ID: "c1", Name: "files.delete", Arguments: `{"path":"a.md"}`}) {
+		t.Errorf("bot message = %+v", bot)
+	}
+	if tool.Role != llm.RoleTool || tool.ToolCallID != "c1" || tool.Content != "Deleted a.md." {
+		t.Errorf("tool message = %+v", tool)
+	}
 }
 
 func TestExplain(t *testing.T) {
