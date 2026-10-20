@@ -227,8 +227,8 @@ func TestRun(t *testing.T) {
 		leak := func(context.Context, string, json.RawMessage) (hagent.Result, error) {
 			return hagent.Result{Text: "token sk-SECRET here"}, nil
 		}
-		scrub := func(m llm.Message) llm.Message {
-			m.Content = strings.ReplaceAll(m.Content, "sk-SECRET", "[redacted]")
+		scrub := func(m hagent.Message) hagent.Message {
+			m.Text = strings.ReplaceAll(m.Text, "sk-SECRET", "[redacted]")
 			return m
 		}
 		r := &rec{}

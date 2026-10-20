@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/rfizzle/llm"
-
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/framing"
 	"github.com/rfizzle/hearth/internal/org"
@@ -99,12 +97,12 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt org.Mes
 // newest text messages that fit the budget, oldest first. Tool rows are
 // left out, and messages in a row from the same side are joined, since some
 // providers refuse two turns in a row from one side.
-func (s *Service) history(ctx context.Context, prompt org.Message) ([]llm.Message, error) {
+func (s *Service) history(ctx context.Context, prompt org.Message) ([]agent.Message, error) {
 	msgs, _, err := s.d.Store.Messages(ctx, prompt.ConversationID, prompt.Seq, historyPage)
 	if err != nil {
 		return nil, err
 	}
-	var out []llm.Message
+	var out []agent.Message
 	used := 0
 	for _, m := range slices.Backward(msgs) {
 		if m.Kind != org.MessageText || m.Content == "" {
@@ -113,15 +111,15 @@ func (s *Service) history(ctx context.Context, prompt org.Message) ([]llm.Messag
 		if used += len(m.Content); used > historyBudget {
 			break
 		}
-		role := llm.RoleAssistant
+		role := agent.RoleBot
 		if m.AuthorBotID == "" {
-			role = llm.RoleUser
+			role = agent.RoleOwner
 		}
 		if n := len(out); n > 0 && out[n-1].Role == role {
-			out[n-1].Content = m.Content + "\n\n" + out[n-1].Content
+			out[n-1].Text = m.Content + "\n\n" + out[n-1].Text
 			continue
 		}
-		out = append(out, llm.Message{Role: role, Content: m.Content})
+		out = append(out, agent.Message{Role: role, Text: m.Content})
 	}
 	slices.Reverse(out)
 	return out, nil

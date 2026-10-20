@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/llm"
-
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/store"
@@ -30,7 +28,7 @@ type Deps struct {
 	Streams func(org.Tier) (agent.Stream, error)
 	// Scrub is applied to every message the model is sent and every tool
 	// result; nil scrubs nothing.
-	Scrub func(llm.Message) llm.Message
+	Scrub agent.Scrub
 	// Fetcher reads web pages; nil leaves web.fetch out.
 	Fetcher *web.Fetcher
 	// Searcher is asked once per run for the configured search service, so

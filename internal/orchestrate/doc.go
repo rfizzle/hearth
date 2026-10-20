@@ -30,7 +30,5 @@
 // Seams it is handed: the store, a function from a tier to a stream, the
 // scrub, the page fetcher, a function that says whether a search service is
 // configured, the bus, the caps and a clock. It imports no provider and no
-// integration, so a test hands it a script. It imports llm only because the
-// agent package takes history and scrub in llm types: a known exception to
-// the layer rule until agent owns those types.
+// integration, so a test hands it a script.
 package orchestrate

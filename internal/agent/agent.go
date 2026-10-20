@@ -67,9 +67,9 @@ type Sink interface {
 
 // Input is everything one turn needs.
 type Input struct {
-	System  string        // the framing and the job description
-	History []llm.Message // earlier turns, oldest first
-	Prompt  string        // the message being answered
+	System  string    // the framing and the job description
+	History []Message // earlier turns, oldest first
+	Prompt  string    // the message being answered
 	Tools   []Tool
 	Stream  Stream
 	Execute Execute
@@ -80,7 +80,7 @@ type Input struct {
 	MaxWall time.Duration
 	// Scrub is applied to every message before it is sent and to each tool
 	// result before the sink sees it. Nil scrubs nothing.
-	Scrub func(llm.Message) llm.Message
+	Scrub Scrub
 	Sink  Sink // nil discards
 }
 
@@ -139,12 +139,14 @@ func newTurn(ctx, runCtx context.Context, in Input) *turn {
 	if in.System != "" {
 		initial = append(initial, llm.Message{Role: llm.RoleSystem, Content: in.System})
 	}
-	initial = append(initial, in.History...)
+	for _, m := range in.History {
+		initial = append(initial, llm.Message{Role: llmRole(m.Role), Content: m.Text})
+	}
 
 	t.a = coreagent.New(initial, t.stream)
 	t.a.SetMaxRounds(in.MaxRounds)
 	if in.Scrub != nil {
-		t.a.SetScrub(in.Scrub)
+		t.a.SetScrub(in.Scrub.core)
 	}
 	t.a.SetExecutor(t.execute)
 	t.h = &coreagent.Headless{
@@ -271,11 +273,11 @@ func (t *turn) outcome(text string, err error) (Outcome, error) {
 	return out, err
 }
 
-func scrubText(scrub func(llm.Message) llm.Message, s string) string {
+func scrubText(scrub Scrub, s string) string {
 	if scrub == nil || s == "" {
 		return s
 	}
-	return scrub(llm.Message{Role: llm.RoleTool, Content: s}).Content
+	return scrub(Message{Role: RoleTool, Text: s}).Text
 }
 
 // sideband carries what an executor produced past the loop's text, matched

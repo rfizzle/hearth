@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools/web"
+	"github.com/rfizzle/llm"
 )
 
 // openCore opens everything the contract serves over the data folder: the
@@ -73,6 +74,10 @@ func withModels(d orchestrate.Deps, accounts *provider.Accounts) orchestrate.Dep
 		}
 		return provider.StreamFunc(m), nil
 	}
-	d.Scrub = accounts.Scrub()
+	scrub := accounts.Scrub()
+	d.Scrub = func(m agent.Message) agent.Message {
+		m.Text = scrub(llm.Message{Content: m.Text}).Content
+		return m
+	}
 	return d
 }
