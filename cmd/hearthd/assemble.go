@@ -10,8 +10,10 @@ import (
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
+	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc"
 	"github.com/rfizzle/hearth/internal/skill"
@@ -19,6 +21,7 @@ import (
 	"github.com/rfizzle/hearth/internal/tools/web"
 	"github.com/rfizzle/hearth/internal/workspace"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/pricing"
 )
 
 // openCore opens everything the contract serves over the data folder: the
@@ -49,8 +52,24 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 	integrations := &integration.Integrations{Keys: accounts.Keys}
 	bus := orchestrate.NewBus()
 	go bus.Heartbeats(ctx)
+	// The price table is the snapshot inside the binary, or a newer one the
+	// last refresh cached; an unreadable cache leaves the snapshot.
+	table, err := pricing.Load()
+	if err != nil {
+		table = pricing.Snapshot()
+	}
+	// The meter stops a run through the service, which exists after it.
+	var svc *orchestrate.Service
+	meterOf := meter.New(db, table, nil,
+		func(it inbox.Item) { bus.Publish(orchestrate.InboxChanged{Item: it}) },
+		func(runID, reason string) {
+			if svc != nil {
+				svc.StopForBudget(runID, reason)
+			}
+		})
 	deps := withModels(orchestrate.Deps{
 		Store:   db,
+		Meter:   meterOf,
 		Fetcher: web.NewFetcher(),
 		Searcher: func() (web.Searcher, bool) {
 			s := integrations.Searcher()
@@ -58,7 +77,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		},
 		Bus: bus, Reserved: reserved,
 	}, accounts)
-	svc, err := orchestrate.Open(ctx, deps)
+	svc, err = orchestrate.Open(ctx, deps)
 	if err != nil {
 		_ = db.Close()
 		return rpc.Options{}, nil, fmt.Errorf("open the orchestrator: %w", err)
@@ -122,6 +141,13 @@ func withModels(d orchestrate.Deps, accounts *provider.Accounts) orchestrate.Dep
 			return nil, err
 		}
 		return provider.StreamFunc(m), nil
+	}
+	d.Models = func(t org.Tier) agent.Model {
+		m, err := accounts.Resolve(provider.Tier(t))
+		if err != nil {
+			return agent.Model{}
+		}
+		return agent.Model{Provider: string(m.Account), Name: m.Name}
 	}
 	scrub := accounts.Scrub()
 	d.Scrub = func(m agent.Message) agent.Message {

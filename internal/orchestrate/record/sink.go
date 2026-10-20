@@ -17,16 +17,24 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate/bus"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/org/usage"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools"
 )
 
+// Meter is what a sink reports each model request to. It is nil when
+// nothing is metered.
+type Meter interface {
+	Record(ctx context.Context, r usage.Record) error
+}
+
 // Host is what a sink reaches the service through: the store it writes, the
-// bus it publishes on, the log and the clock, and Release, which frees the
-// run's conversation for the next message.
+// bus it publishes on, the usage meter, the log and the clock, and Release,
+// which frees the run's conversation for the next message.
 type Host struct {
 	Store *store.DB
 	Bus   *bus.Bus
+	Meter Meter
 	Log   *log.Logger
 	Now   func() time.Time
 	// Release is called once the run's final state is stored, before the
@@ -179,8 +187,24 @@ func (k *Sink) ToolResult(id string, r agent.Result, err error, _ time.Duration)
 	k.append(m)
 }
 
-// Usage is not recorded yet.
-func (k *Sink) Usage(string, string, agent.Usage) {}
+// Usage reports one request to the meter, with the run and the bot it was
+// made for. A request the meter cannot store is logged: the run goes on, and
+// the figure is short by that one.
+// See docs/model.md#usage.
+func (k *Sink) Usage(provider, model string, u agent.Usage) {
+	if k.h.Meter == nil {
+		return
+	}
+	err := k.h.Meter.Record(k.ctx, usage.Record{
+		RunID: k.run.ID, BotID: k.botID, ConversationID: k.run.ConversationID,
+		Provider: provider, Model: model,
+		Prompt: int64(u.Prompt), Completion: int64(u.Completion), Cached: int64(u.Cached), Created: int64(u.Created),
+		At: k.h.Now(),
+	})
+	if err != nil {
+		k.h.Log.Printf("orchestrate: run %s: could not record its usage: %v", k.run.ID, err)
+	}
+}
 
 // Retry empties the streaming message: the attempt that failed streamed
 // tokens the next attempt starts over from.

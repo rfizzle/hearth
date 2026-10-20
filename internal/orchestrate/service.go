@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/meter"
 	"github.com/rfizzle/hearth/internal/orchestrate/park"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
@@ -27,6 +28,11 @@ var ErrBusy = errors.New("the bot is still working on the last message")
 // See docs/model.md#8-approvals.
 var ErrWaiting = errors.New("answer what the bot asked first")
 
+// ErrPaused refuses a message to a bot, or to any bot while the org is
+// paused, whose month's budget is spent.
+// See docs/model.md#usage.
+var ErrPaused = errors.New("this month's budget is spent; resume in Usage or raise the budget")
+
 // quitReason is the failure a run left working by an earlier launch ends
 // with.
 const quitReason = "hearth was quit while this was running"
@@ -36,6 +42,13 @@ type Deps struct {
 	Store *store.DB
 	// Streams opens the model the bot's tier resolves to.
 	Streams func(org.Tier) (agent.Stream, error)
+	// Models names the provider and model the tier resolves to, for the
+	// usage each request is priced by; nil leaves them unnamed, and the
+	// requests unpriced.
+	Models func(org.Tier) agent.Model
+	// Meter records each request's usage and holds the budgets; nil meters
+	// nothing and pauses nothing. Its OnPause should be StopForBudget.
+	Meter *meter.Meter
 	// Scrub is applied to every message the model is sent and every tool
 	// result; nil scrubs nothing.
 	Scrub agent.Scrub
@@ -68,6 +81,7 @@ type Service struct {
 	mu      sync.Mutex
 	working map[string]string             // conversation id -> its run's id
 	cancels map[string]context.CancelFunc // run id -> what stops it
+	spent   map[string]string             // run id -> why the budget stopped it
 	held    map[string]*held              // item id -> the answer waiting out its grace
 
 	grace time.Duration      // answerGrace, shorter in a test
@@ -99,7 +113,7 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 	if d.Log == nil {
 		d.Log = log.Default()
 	}
-	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{},
+	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{}, spent: map[string]string{},
 		held: map[string]*held{}, grace: answerGrace}, nil
 }
 
@@ -113,6 +127,9 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.Message, error) {
 	bot, err := s.dmBot(ctx, convID)
 	if err != nil {
+		return org.Run{}, org.Message{}, err
+	}
+	if err := s.paused(ctx, bot); err != nil {
 		return org.Run{}, org.Message{}, err
 	}
 	if err := s.reserveIdle(ctx, convID); err != nil {
@@ -145,6 +162,9 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 	if err != nil {
 		return org.Run{}, err
 	}
+	if err := s.paused(ctx, bot); err != nil {
+		return org.Run{}, err
+	}
 	if err := s.reserveIdle(ctx, convID); err != nil {
 		return org.Run{}, err
 	}
@@ -161,6 +181,34 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 	s.superseded(context.WithoutCancel(ctx), convID, "Retried")
 	go s.run(runCtx, bot, r, ask{msg: prompt})
 	return r, nil
+}
+
+// paused is ErrPaused, naming the bot, when its budget or the org's is spent
+// this month and not resumed.
+func (s *Service) paused(ctx context.Context, bot org.Bot) error {
+	if s.d.Meter == nil {
+		return nil
+	}
+	paused, err := s.d.Meter.Paused(ctx, bot.ID)
+	if err != nil {
+		return err
+	}
+	if paused {
+		return fmt.Errorf("%s is paused: %w", bot.Name, ErrPaused)
+	}
+	return nil
+}
+
+// StopForBudget stops the run runID, which a request of its found the
+// budget spent: the run ends failed with reason, keeping what it had
+// written. It is the meter's OnPause.
+func (s *Service) StopForBudget(runID, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if cancel, ok := s.cancels[runID]; ok {
+		s.spent[runID] = reason
+		cancel()
+	}
 }
 
 // reserve claims the conversation for a run about to start, or is ErrBusy.

@@ -133,6 +133,8 @@ Modes: `allowed`, `ask me` (approval each time, with "always allow" offered), `n
 
 **Usage record** (`Usage`). Per run: provider, model, input/output/cached tokens, estimated cost from the llm catalog, attributed to bot, team, task and month. Displayed as "Usage" (Q7 decided against "Payroll"). Budgets are soft (warn) at 80% and hard (pause) at 100% per task, team and org per month.
 
+Cost is an estimate in US dollars from llm's price table, not a bill: a model the table does not know is shown as not priced, with its tokens. Requests paid for by a plan (ChatGPT) are counted in tokens and never priced. A budget is a monthly limit for the org or for one bot. At 80% the owner gets one Inbox item for that month. The hard limit pauses the bot (or every bot, for the org's budget), stops the run in progress and refuses new messages until the owner chooses Resume or sets a higher budget; a resumed bot is not paused again that month unless its budget is raised.
+
 ### Vocabulary (user-facing)
 
 | Code name | UI word | Notes |

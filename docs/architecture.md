@@ -157,7 +157,7 @@ Rules:
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
 | `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
-| `internal/meter` | Usage ledger, pricing, budgets | lifted from shhh |
+| `internal/meter` | Usage ledger over llm's prices, month summary, budget rails (D29) | hearth's own ledger: agentcore's is in memory, this one survives relaunch |
 | `internal/memory` | Bot notes: bounded recall, consolidation, pins | new (D13; shhh's memory package stays in shhh) |
 | `internal/handbook` | Pages by scope, the refusal of a page that overfills a reader's context, the "Handbook" block a run carries | new |
 | `internal/secret` | Scrub tool results | lifted from shhh |

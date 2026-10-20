@@ -30,8 +30,11 @@ type ask struct {
 // ends when the run is cancelled; every write uses a context that does not,
 // so what a stopped run wrote is still saved.
 func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
-	k := record.New(record.Host{Store: s.d.Store, Bus: s.d.Bus, Log: s.d.Log, Now: s.d.Now, Release: s.release},
-		context.WithoutCancel(ctx), r, bot.ID, bot.Name)
+	host := record.Host{Store: s.d.Store, Bus: s.d.Bus, Log: s.d.Log, Now: s.d.Now, Release: s.release}
+	if s.d.Meter != nil {
+		host.Meter = s.d.Meter
+	}
+	k := record.New(host, context.WithoutCancel(ctx), r, bot.ID, bot.Name)
 	k.Start()
 	out, err := s.guarded(ctx, k, bot, prompt)
 	if errors.Is(err, agent.ErrParked) && ctx.Err() != nil {
@@ -39,7 +42,20 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 		// does not wait on them.
 		err = agent.ErrCancelled
 	}
+	if reason := s.takeSpent(r.ID); reason != "" && (errors.Is(err, agent.ErrCancelled) || errors.Is(err, agent.ErrParked)) {
+		// The budget stopped it, not the owner: it failed, and says why.
+		err = errors.New(reason)
+	}
 	k.Finish(out, err)
+}
+
+// takeSpent is the reason the budget stopped run runID, or "".
+func (s *Service) takeSpent(runID string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	reason := s.spent[runID]
+	delete(s.spent, runID)
+	return reason
 }
 
 // guarded is the turn with a panic in it, the loop's or a tool's, turned
@@ -97,7 +113,12 @@ func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt 
 	if err != nil {
 		return agent.Outcome{}, err
 	}
+	var model agent.Model
+	if s.d.Models != nil {
+		model = s.d.Models(bot.Tier)
+	}
 	return agent.Run(ctx, agent.Input{
+		Model: model,
 		System: framing.Render(framing.Input{
 			OrgName: o.Name, BotName: bot.Name, Role: bot.Role,
 			JobDescription: bot.JobDescription, FolderPath: folder,
