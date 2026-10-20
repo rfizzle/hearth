@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/workspace"
 )
 
@@ -16,35 +17,57 @@ import (
 var ErrRefused = errors.New("refused")
 
 // Dispatcher runs one bot's calls. Defs is every tool configured for the
-// run, Grants the bot's grants and Root the folder a relative path in a
+// run, Grants the bot's grants, Allowances what the owner has allowed for
+// the conversation the run is in, and Root the folder a relative path in a
 // files call starts from.
 type Dispatcher struct {
-	Defs   *Registry
-	Grants []org.Grant
-	Root   string
+	Defs       *Registry
+	Grants     []org.Grant
+	Allowances []inbox.Allowance
+	Root       string
 }
 
-// Tools is the definitions the grants allow, in registry order: the toolset
-// the model is offered. A tool it is not offered is refused if called.
+// Verdict is what the grants say about a call that may run.
+type Verdict int
+
+// The verdicts. A call the grants refuse has none; Check returns the refusal.
+const (
+	// Auto runs the call now.
+	Auto Verdict = iota + 1
+	// Gated waits for the owner to decide.
+	Gated
+)
+
+// Checked is a call the grants let through, as the dispatcher placed it.
+// Granted is the folder of the grant the call falls under, as that grant
+// names it, and empty for a capability with no folder.
+type Checked struct {
+	Def     Definition
+	Verdict Verdict
+	Call    Call
+	Granted string
+}
+
+// Tools is the definitions the grants offer, in registry order: the toolset
+// the model is offered. A capability granted in ask mode is offered too; a
+// call to it waits for the owner. A tool it is not offered is refused if
+// called.
 func (d Dispatcher) Tools() []Definition {
-	var allowed []Definition
+	var offered []Definition
 	for _, def := range d.Defs.All() {
-		if d.permitted(def) {
-			allowed = append(allowed, def)
+		if d.offered(def) {
+			offered = append(offered, def)
 		}
 	}
-	return allowed
+	return offered
 }
 
-// permitted reports whether the grants let def run without asking anyone.
-func (d Dispatcher) permitted(def Definition) bool {
-	if def.Tier != TierRead {
-		return false
-	}
+// offered reports whether any grant gives def's capability, asking or not.
+func (d Dispatcher) offered(def Definition) bool {
 	if folderScoped(def.Capability) {
-		return len(org.FolderGrants(d.Grants, def.Capability)) > 0
+		return len(org.Folders(d.Grants, def.Capability, org.ModeAsk)) > 0
 	}
-	return org.Allowed(d.Grants, def.Capability) == org.ModeAllowed
+	return org.Allowed(d.Grants, def.Capability) >= org.ModeAsk
 }
 
 // folderScoped reports whether capability is granted per folder, so a call
@@ -57,34 +80,108 @@ func folderScoped(capability org.Capability) bool {
 	return false
 }
 
-// Execute checks the call named name against the grants and runs it. A
-// refusal is a one-line error wrapping ErrRefused, for the model to read.
+// Decide is whether the call named name runs now or waits for the owner. A
+// call the grants refuse is the refusal Execute would return.
+func (d Dispatcher) Decide(name string, args json.RawMessage) (Verdict, error) {
+	c, err := d.Check(name, args)
+	return c.Verdict, err
+}
+
+// Check places the call named name against the grants: the definition, the
+// resolved path for a files capability, the grant it falls under and the
+// verdict. A call waits for the owner when the grant it falls under asks,
+// or when its tool may never be allowed for good, unless an allowance for
+// the conversation covers it. A refusal is a one-line error wrapping
+// ErrRefused, for the model to read.
+// See docs/model.md#8-approvals.
+func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
+	def, ok := d.Defs.Lookup(name)
+	if !ok {
+		return Checked{}, refuse(name, "there is no such tool; call only the tools you were given")
+	}
+	if !d.offered(def) {
+		return Checked{}, refuse(name, "this bot is not allowed to use it")
+	}
+	c := Checked{Def: def, Call: Call{Args: args}}
+	mode := org.Allowed(d.Grants, def.Capability)
+	if folderScoped(def.Capability) {
+		requested, err := pathArg(args)
+		if err != nil {
+			return Checked{}, refuse(name, err.Error())
+		}
+		var g org.Grant
+		g, c.Call.Path, c.Call.Folder, err = place(d.Root, d.Grants, def.Capability, requested)
+		if err != nil {
+			return Checked{}, refuse(name, err.Error())
+		}
+		mode, c.Granted = g.Mode, g.Folder
+	}
+	c.Verdict = verdict(def, mode, d.allowanceCovers(def.Capability, c.Call.Path))
+	return c, nil
+}
+
+// verdict is Auto for a call an allowance covers, Gated for one whose grant
+// asks or whose tool has no standing, and Auto otherwise.
+func verdict(def Definition, mode org.Mode, allowance bool) Verdict {
+	if !allowance && (mode == org.ModeAsk || !def.Standing()) {
+		return Gated
+	}
+	return Auto
+}
+
+// allowanceCovers reports whether an allowance lets capability run at path:
+// one with no folder for a capability with none, or one whose folder holds
+// the resolved path.
+func (d Dispatcher) allowanceCovers(capability org.Capability, path string) bool {
+	for _, a := range d.Allowances {
+		if a.Capability != capability {
+			continue
+		}
+		if !folderScoped(capability) {
+			return true
+		}
+		if a.Folder == "" || path == "" {
+			continue
+		}
+		if real, err := workspace.Resolve(a.Folder, "."); err == nil {
+			if _, err := workspace.Resolve(real, path); err == nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Execute checks the call named name against the grants and runs it when
+// it may run now. A call that waits for the owner is refused here: it runs
+// through ExecuteApproved once they have decided. A refusal is a one-line
+// error wrapping ErrRefused, for the model to read.
 //
 // Every call is checked here, in the core, before its executor runs: a bot
 // is a permission boundary, not a process boundary, so nothing else stands
 // between a model and the owner's files or network.
 // See docs/architecture.md#5-security-model.
 func (d Dispatcher) Execute(ctx context.Context, name string, args json.RawMessage) (Result, error) {
-	def, ok := d.Defs.Lookup(name)
-	if !ok {
-		return Result{}, refuse(name, "there is no such tool; call only the tools you were given")
+	c, err := d.Check(name, args)
+	if err != nil {
+		return Result{}, err
 	}
-	if !d.permitted(def) {
-		return Result{}, refuse(name, "this bot is not allowed to use it")
+	if c.Verdict != Auto {
+		return Result{}, refuse(name, "it needs the owner's approval, and none was given")
 	}
-	call := Call{Args: args}
-	if folderScoped(def.Capability) {
-		requested, err := pathArg(args)
-		if err != nil {
-			return Result{}, refuse(name, err.Error())
-		}
-		folders := org.FolderGrants(d.Grants, def.Capability)
-		call.Path, call.Folder, err = containPath(d.Root, folders, requested)
-		if err != nil {
-			return Result{}, refuse(name, err.Error())
-		}
+	return c.Def.Execute(ctx, c.Call)
+}
+
+// ExecuteApproved runs a call the owner has approved. It skips the verdict
+// and keeps every other check: the tool must still be granted, and a files
+// call's path must still lie in a folder its capability is granted in.
+// See docs/model.md#8-approvals.
+func (d Dispatcher) ExecuteApproved(ctx context.Context, name string, args json.RawMessage) (Result, error) {
+	c, err := d.Check(name, args)
+	if err != nil {
+		return Result{}, err
 	}
-	return def.Execute(ctx, call)
+	return c.Def.Execute(ctx, c.Call)
 }
 
 func refuse(name, reason string) error {
@@ -105,34 +202,58 @@ func pathArg(args json.RawMessage) (string, error) {
 	return a.Path, nil
 }
 
+// place finds the grant a files call to capability falls under, trying the
+// folders granted without asking before those granted in ask mode, so a path
+// in both runs without asking. It returns the grant, the resolved path and
+// the resolved folder.
+func place(root string, grants []org.Grant, capability org.Capability, requested string) (org.Grant, string, string, error) {
+	var scoped []org.Grant
+	for _, mode := range []org.Mode{org.ModeAllowed, org.ModeAsk} {
+		for _, g := range grants {
+			if g.Capability == capability && g.Mode == mode && g.Folder != "" {
+				scoped = append(scoped, g)
+			}
+		}
+	}
+	folders := make([]string, len(scoped))
+	for i, g := range scoped {
+		folders[i] = g.Folder
+	}
+	path, folder, i, err := containPath(root, folders, requested)
+	if err != nil {
+		return org.Grant{}, "", "", err
+	}
+	return scoped[i], path, folder, nil
+}
+
 // containPath resolves requested, relative to root or absolute, inside the
-// first of folders that holds it, and returns the resolved path and the
-// resolved folder. Each folder goes through workspace.Resolve as well as the
-// path: a grant stores a folder as it was given, and on macOS a folder under
-// /var is really under /private/var, so comparing the stored text with a
-// resolved path would refuse every call.
-func containPath(root string, folders []string, requested string) (path, folder string, err error) {
+// first of folders that holds it, and returns the resolved path, the
+// resolved folder and its index. Each folder goes through workspace.Resolve
+// as well as the path: a grant stores a folder as it was given, and on macOS
+// a folder under /var is really under /private/var, so comparing the stored
+// text with a resolved path would refuse every call.
+func containPath(root string, folders []string, requested string) (path, folder string, index int, err error) {
 	// A relative root would be joined on again under each granted folder by
 	// workspace.Resolve, so the bot's files would land somewhere the owner
 	// never picked.
 	if root != "" && !filepath.IsAbs(root) {
-		return "", "", errors.New("this bot's folder is not an absolute path, so no file call can run")
+		return "", "", 0, errors.New("this bot's folder is not an absolute path, so no file call can run")
 	}
 	abs := requested
 	if !filepath.IsAbs(abs) {
 		if root == "" {
-			return "", "", fmt.Errorf("%s is relative and this bot has no folder", requested)
+			return "", "", 0, fmt.Errorf("%s is relative and this bot has no folder", requested)
 		}
 		abs = filepath.Join(root, requested)
 	}
-	for _, f := range folders {
+	for i, f := range folders {
 		realFolder, err := workspace.Resolve(f, ".")
 		if err != nil {
 			continue
 		}
 		if path, err := workspace.Resolve(realFolder, abs); err == nil {
-			return path, realFolder, nil
+			return path, realFolder, i, nil
 		}
 	}
-	return "", "", fmt.Errorf("%s is outside the folders this bot may use", requested)
+	return "", "", 0, fmt.Errorf("%s is outside the folders this bot may use", requested)
 }

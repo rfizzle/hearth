@@ -12,7 +12,7 @@ import (
 type Tier int
 
 // The tiers. A read-tier tool runs when its grant allows it; an act-tier
-// tool also needs the owner's approval for the call.
+// tool also needs the owner's approval for each call, so it has no standing.
 const (
 	TierRead Tier = iota
 	TierAct
@@ -38,14 +38,25 @@ type Result struct {
 // Definition is one tool a model may call. Parameters is its JSON Schema;
 // Describe turns a call's arguments into the plain words the owner sees in
 // place of the JSON, and must not fail on arguments it cannot parse.
+// NoStanding marks a tool the owner may allow once or for a conversation but
+// never for good, such as deleting a file: every other call to it waits for
+// them.
 type Definition struct {
 	Name        string
 	Description string
 	Parameters  json.RawMessage
 	Capability  org.Capability
 	Tier        Tier
+	NoStanding  bool
 	Execute     func(ctx context.Context, call Call) (Result, error)
 	Describe    func(args json.RawMessage) string
+}
+
+// Standing reports whether the owner may allow the tool for good: a
+// read-tier tool not marked NoStanding.
+// See docs/model.md#8-approvals.
+func (d Definition) Standing() bool {
+	return d.Tier == TierRead && !d.NoStanding
 }
 
 // Registry is a set of definitions in the order they were added. The zero

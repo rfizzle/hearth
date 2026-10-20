@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 )
 
 // recorder is a definition's executor that remembers the last call it ran.
@@ -99,7 +100,7 @@ func TestDispatcher_Execute(t *testing.T) {
 		{"an absolute path inside", readWrite(bot), bot, "files.read", `{"path":"` + filepath.Join(bot, "x.md") + `"}`, filepath.Join(inBot, "x.md"), ""},
 		{"a granted folder through a symlinked parent", readWrite(aliased), aliased, "files.write", `{"path":"brief.md"}`, filepath.Join(inBot, "brief.md"), ""},
 		{"a bot without files.write", readOnly, bot, "files.write", `{"path":"brief.md"}`, "", "not allowed"},
-		{"a grant in ask mode", askWrite, bot, "files.write", `{"path":"brief.md"}`, "", "not allowed"},
+		{"a grant in ask mode", askWrite, bot, "files.write", `{"path":"brief.md"}`, "", "needs the owner's approval"},
 		{"a path through a symlink out", readWrite(bot), bot, "files.read", `{"path":"out/secret.txt"}`, "", "outside the folders"},
 		{"dot-dot out of the folder", readWrite(bot), bot, "files.write", `{"path":"../../elsewhere/x.md"}`, "", "outside the folders"},
 		{"an absolute path outside", readWrite(bot), bot, "files.read", `{"path":"` + filepath.Join(outside, "x") + `"}`, "", "outside the folders"},
@@ -110,7 +111,7 @@ func TestDispatcher_Execute(t *testing.T) {
 		{"no path", readWrite(bot), bot, "files.read", `{}`, "", "path is required"},
 		{"arguments that are not an object", readWrite(bot), bot, "files.read", `"x"`, "", "not a JSON object"},
 		{"an unknown tool", readWrite(bot), bot, "files.delete", `{"path":"x"}`, "", "no such tool"},
-		{"an act-tier tool even when granted", []org.Grant{{Capability: "calendar.write", Mode: org.ModeAllowed}}, bot, "calendar.write", `{}`, "", "not allowed"},
+		{"an act-tier tool even when granted", []org.Grant{{Capability: "calendar.write", Mode: org.ModeAllowed}}, bot, "calendar.write", `{}`, "", "needs the owner's approval"},
 		{"a granted web tool", readWrite(bot), bot, "web.fetch", `{"url":"https://example.org"}`, "", ""},
 		{"an ungranted web tool", readOnly, bot, "web.fetch", `{"url":"https://example.org"}`, "", "not allowed"},
 	}
@@ -162,9 +163,9 @@ func TestDispatcher_Tools(t *testing.T) {
 			{Capability: org.FilesDelete, Mode: org.ModeAsk, Folder: folder},
 			{Capability: org.WebFetch, Mode: org.ModeAllowed},
 		}, []string{"files.read", "files.write", "web.fetch"}},
-		{"ask mode only", []org.Grant{{Capability: org.WebFetch, Mode: org.ModeAsk}}, nil},
+		{"ask mode is offered", []org.Grant{{Capability: org.WebFetch, Mode: org.ModeAsk}}, []string{"web.fetch"}},
 		{"a files grant with no folder", []org.Grant{{Capability: org.FilesRead, Mode: org.ModeAllowed}}, nil},
-		{"an act-tier grant", []org.Grant{{Capability: "calendar.write", Mode: org.ModeAllowed}}, nil},
+		{"an act-tier grant", []org.Grant{{Capability: "calendar.write", Mode: org.ModeAllowed}}, []string{"calendar.write"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -177,6 +178,142 @@ func TestDispatcher_Tools(t *testing.T) {
 				t.Fatalf("Tools = %v, want %v", got, tc.want)
 			}
 		})
+	}
+}
+
+// gatedRegistry is registry with a delete tool that has no standing.
+func gatedRegistry(t *testing.T, r *recorder) *Registry {
+	t.Helper()
+	reg := registry(t, r)
+	del := r.def("files.delete", org.FilesDelete, TierRead)
+	del.NoStanding = true
+	if err := reg.Add(del); err != nil {
+		t.Fatal(err)
+	}
+	return reg
+}
+
+func TestDispatcher_Decide(t *testing.T) {
+	base := t.TempDir()
+	bot := filepath.Join(base, "Writer")
+	shared := filepath.Join(base, "Shared")
+	inner := filepath.Join(shared, "Allowed")
+	mkdir(t, bot)
+	mkdir(t, inner)
+	grants := []org.Grant{
+		{Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: bot},
+		{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: bot},
+		{Capability: org.FilesDelete, Mode: org.ModeAllowed, Folder: bot},
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: shared},
+		{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: inner},
+		{Capability: org.WebFetch, Mode: org.ModeAsk},
+		{Capability: "calendar.write", Mode: org.ModeAllowed},
+	}
+	allow := func(c org.Capability, folder string) []inbox.Allowance {
+		return []inbox.Allowance{{ConversationID: "c", Capability: c, Folder: folder}}
+	}
+	inShared := `{"path":"` + filepath.Join(shared, "a.md") + `"}`
+	cases := []struct {
+		name       string
+		allowances []inbox.Allowance
+		tool, args string
+		want       Verdict
+		granted    string // the grant's folder Check reports
+		refusal    string
+	}{
+		{"an allowed folder runs", nil, "files.write", `{"path":"a.md"}`, Auto, bot, ""},
+		{"an ask-mode folder waits", nil, "files.write", inShared, Gated, shared, ""},
+		{"an allowance for the folder runs", allow(org.FilesWrite, shared), "files.write", inShared, Auto, shared, ""},
+		{"an allowance for another capability waits", allow(org.FilesRead, shared), "files.write", inShared, Gated, shared, ""},
+		{"an allowance for another folder waits", allow(org.FilesWrite, bot), "files.write", inShared, Gated, shared, ""},
+		{"an allowed folder inside an ask-mode one runs", nil, "files.write", `{"path":"` + filepath.Join(inner, "b.md") + `"}`, Auto, inner, ""},
+		{"no standing waits under an allowed grant", nil, "files.delete", `{"path":"a.md"}`, Gated, bot, ""},
+		{"no standing runs under an allowance", allow(org.FilesDelete, bot), "files.delete", `{"path":"a.md"}`, Auto, bot, ""},
+		{"an ask-mode tool with no folder waits", nil, "web.fetch", `{"url":"https://example.org"}`, Gated, "", ""},
+		{"an allowance with no folder runs it", allow(org.WebFetch, ""), "web.fetch", `{"url":"https://example.org"}`, Auto, "", ""},
+		{"an act-tier tool waits even when allowed", nil, "calendar.write", `{}`, Gated, "", ""},
+		{"a path outside every folder is refused", nil, "files.write", `{"path":"` + filepath.Join(base, "x.md") + `"}`, 0, "", "outside the folders"},
+		{"an ungranted capability is refused", nil, "web.search", `{}`, 0, "", "no such tool"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := &recorder{}
+			d := Dispatcher{Defs: gatedRegistry(t, rec), Grants: grants, Allowances: tc.allowances, Root: bot}
+			c, err := d.Check(tc.tool, json.RawMessage(tc.args))
+			if tc.refusal != "" {
+				if !errors.Is(err, ErrRefused) || !strings.Contains(err.Error(), tc.refusal) {
+					t.Fatalf("err = %v, want a refusal containing %q", err, tc.refusal)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Check: %v", err)
+			}
+			if c.Verdict != tc.want || c.Granted != tc.granted {
+				t.Fatalf("verdict %d in %q, want %d in %q", c.Verdict, c.Granted, tc.want, tc.granted)
+			}
+			if v, err := d.Decide(tc.tool, json.RawMessage(tc.args)); v != tc.want || err != nil {
+				t.Fatalf("Decide = %d, %v, want %d", v, err, tc.want)
+			}
+			// Execute runs exactly what Decide calls Auto.
+			_, err = d.Execute(context.Background(), tc.tool, json.RawMessage(tc.args))
+			if ran := rec.last != nil; ran != (tc.want == Auto) {
+				t.Fatalf("Execute ran = %v (err %v), want %v", ran, err, tc.want == Auto)
+			}
+		})
+	}
+}
+
+func TestDispatcher_ExecuteApproved(t *testing.T) {
+	base := t.TempDir()
+	bot := filepath.Join(base, "Writer")
+	shared := filepath.Join(base, "Shared")
+	mkdir(t, bot)
+	mkdir(t, shared)
+	grants := []org.Grant{
+		{Capability: org.FilesDelete, Mode: org.ModeAsk, Folder: bot},
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: shared},
+	}
+	cases := []struct {
+		name, tool, args string
+		refusal          string
+	}{
+		{"a gated call in its folder runs", "files.write", `{"path":"` + filepath.Join(shared, "a.md") + `"}`, ""},
+		{"a call with no standing runs", "files.delete", `{"path":"a.md"}`, ""},
+		{"a path outside the folders is still refused", "files.write", `{"path":"` + filepath.Join(bot, "a.md") + `"}`, "outside the folders"},
+		{"dot-dot out is still refused", "files.delete", `{"path":"../Shared/a.md"}`, "outside the folders"},
+		{"an ungranted tool is still refused", "files.read", `{"path":"a.md"}`, "not allowed"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := &recorder{}
+			d := Dispatcher{Defs: gatedRegistry(t, rec), Grants: grants, Root: bot}
+			_, err := d.ExecuteApproved(context.Background(), tc.tool, json.RawMessage(tc.args))
+			if tc.refusal == "" {
+				if err != nil || rec.last == nil {
+					t.Fatalf("ExecuteApproved = %v, ran %v", err, rec.last != nil)
+				}
+				return
+			}
+			if !errors.Is(err, ErrRefused) || !strings.Contains(err.Error(), tc.refusal) || rec.last != nil {
+				t.Fatalf("err = %v, ran %v, want a refusal containing %q", err, rec.last != nil, tc.refusal)
+			}
+		})
+	}
+}
+
+func TestDefinition_Standing(t *testing.T) {
+	for _, tc := range []struct {
+		def  Definition
+		want bool
+	}{
+		{Definition{Tier: TierRead}, true},
+		{Definition{Tier: TierRead, NoStanding: true}, false},
+		{Definition{Tier: TierAct}, false},
+	} {
+		if got := tc.def.Standing(); got != tc.want {
+			t.Errorf("%+v.Standing() = %v, want %v", tc.def, got, tc.want)
+		}
 	}
 }
 
