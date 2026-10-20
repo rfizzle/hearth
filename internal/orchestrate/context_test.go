@@ -116,7 +116,7 @@ func TestDispatcher_TheInboxIsReadOnly(t *testing.T) {
 	if err := os.MkdirAll(box, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	disp, err := f.svc.dispatcher(ctx, f.bot, f.bot.DMConversationID, "")
+	disp, err := f.svc.dispatcher(ctx, f.bot, f.bot.DMConversationID, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

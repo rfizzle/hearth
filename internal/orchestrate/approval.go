@@ -137,7 +137,11 @@ func (s *Service) decide(ctx context.Context, p parked, d inbox.Decision, reason
 	if d == inbox.Deny {
 		return park.Declined(reason), func() outcome { return outcome{text: park.Denial(reason)} }, nil
 	}
-	disp, err := s.dispatcher(ctx, p.bot, p.item.ConversationID, "")
+	proj, err := s.projectIn(ctx, p.item.ConversationID)
+	if err != nil {
+		return "", nil, err
+	}
+	disp, err := s.dispatcher(ctx, p.bot, p.item.ConversationID, "", proj)
 	if err != nil {
 		return "", nil, err
 	}

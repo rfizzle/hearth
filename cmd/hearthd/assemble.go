@@ -91,6 +91,10 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 			return s, s != nil
 		},
 		Bus: bus, Reserved: reserved,
+		Coordinator: func(ctx context.Context) (org.Bot, bool) {
+			b, err := db.Coordinator(ctx)
+			return b, err == nil
+		},
 	}, accounts)
 	svc, err = orchestrate.Open(ctx, deps)
 	if err != nil {

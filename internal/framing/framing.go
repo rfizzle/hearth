@@ -48,6 +48,20 @@ type Input struct {
 	Role           string
 	JobDescription string // inserted verbatim
 	FolderPath     string // where the bot's deliverables go
+	Project        *ProjectInput
+}
+
+// ProjectInput is the project a conversation is about, when it is one. The
+// brief's parts are the owner's and the coordinator's text, inserted
+// verbatim and framed as data.
+type ProjectInput struct {
+	Name          string
+	Goal          string
+	Context       string
+	DoneLooksLike string
+	DoneWhen      string
+	TargetDate    string // yyyy-mm-dd, or empty
+	FolderPath    string // where the project's deliverables go
 }
 
 // Render returns the system text for a direct conversation with the owner.

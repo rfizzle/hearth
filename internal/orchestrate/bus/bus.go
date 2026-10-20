@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/org/memory"
+	"github.com/rfizzle/hearth/internal/project"
 )
 
 const (
@@ -77,6 +78,12 @@ type NoteChanged struct {
 	BotID   string
 	Note    memory.Note
 	Deleted bool
+}
+
+// ProjectChanged is a project as it is now, with its derived status.
+type ProjectChanged struct {
+	Project project.Project
+	Status  project.Status
 }
 
 // Resync tells a subscriber that events it asked for are no longer kept: it

@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/web"
@@ -32,6 +33,11 @@ var ErrWaiting = errors.New("answer what the bot asked first")
 // paused, whose month's budget is spent.
 // See docs/model.md#usage.
 var ErrPaused = errors.New("this month's budget is spent; resume in Usage or raise the budget")
+
+// ErrNoCoordinator refuses a message to a project's conversation while no
+// bot answers for the org.
+// See docs/model.md#1-where-a-message-goes.
+var ErrNoCoordinator = errors.New("no one answers project conversations yet: hire a Chief of Staff")
 
 // quitReason is the failure a run left working by an earlier launch ends
 // with.
@@ -73,6 +79,10 @@ type Deps struct {
 	// leaves web.search out.
 	Searcher func() (web.Searcher, bool)
 	Bus      *Bus
+	// Coordinator is the org-level bot that answers project conversations;
+	// false when there is none, or nil. hearthd hands the store's oldest
+	// org-level bot.
+	Coordinator func(ctx context.Context) (org.Bot, bool)
 	// Reserved are folders no tool may touch, whatever a bot is granted.
 	Reserved []string
 	// Resume is how a run that continues a parked one is handed the round
@@ -144,7 +154,7 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 // that cannot be attached refuses the message with ErrAttachment.
 // See docs/model.md#conversations.
 func (s *Service) Send(ctx context.Context, convID, text string, paths []string) (org.Run, org.Message, error) {
-	bot, err := s.dmBot(ctx, convID)
+	bot, err := s.route(ctx, convID)
 	if err != nil {
 		return org.Run{}, org.Message{}, err
 	}
@@ -200,7 +210,7 @@ func (s *Service) attach(ctx context.Context, bot org.Bot, paths []string) ([]or
 // in the conversation is still working.
 // See docs/model.md#9-failure-handling.
 func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
-	bot, err := s.dmBot(ctx, convID)
+	bot, err := s.route(ctx, convID)
 	if err != nil {
 		return org.Run{}, err
 	}
@@ -370,16 +380,39 @@ func (s *Service) Cancel(runID string) bool {
 	return ok || s.cancelWaiting(context.Background(), runID)
 }
 
-// dmBot is the bot whose DM convID is.
-func (s *Service) dmBot(ctx context.Context, convID string) (org.Bot, error) {
-	bots, err := s.d.Store.Bots(ctx)
+// Coordinator is the bot that answers project conversations, and false when
+// there is none.
+func (s *Service) Coordinator(ctx context.Context) (org.Bot, bool) {
+	if s.d.Coordinator == nil {
+		return org.Bot{}, false
+	}
+	return s.d.Coordinator(ctx)
+}
+
+// route is the bot that answers the conversation convID: a DM's bot, or the
+// coordinator for a project's conversation. Any other conversation is not
+// found.
+// See docs/model.md#1-where-a-message-goes.
+func (s *Service) route(ctx context.Context, convID string) (org.Bot, error) {
+	conv, err := s.d.Store.Conversation(ctx, convID)
 	if err != nil {
 		return org.Bot{}, err
 	}
-	for _, b := range bots {
-		if b.DMConversationID == convID {
-			return b, nil
+	switch conv.Kind {
+	case org.ConversationDM:
+		return s.d.Store.Bot(ctx, conv.BotID)
+	case org.ConversationProject:
+		if bot, ok := s.Coordinator(ctx); ok {
+			return bot, nil
 		}
+		return org.Bot{}, ErrNoCoordinator
 	}
 	return org.Bot{}, fmt.Errorf("conversation %s: %w", convID, store.ErrNotFound)
+}
+
+// status is the status of the project id. A project has no tasks yet, so
+// every project reads as none; the task story fills the counts here, in one
+// place, for the events and the service that list projects.
+func (s *Service) status(_ context.Context, _ string) (project.Status, error) {
+	return project.StatusOf(project.Counts{}), nil
 }

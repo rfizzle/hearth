@@ -42,12 +42,17 @@
 //     that stopped it.
 //   - Deltas go to the bus only. A streaming message is stored empty when it
 //     opens and whole when it closes.
+//   - A message goes to the bot whose DM it is, or in a project's
+//     conversation to the coordinator, or is refused when there is none. A run
+//     in a project reads and writes the project's folder, which is its root,
+//     through grants it holds for that run alone: they are never stored and
+//     never listed, and deleting there is not implied.
 //   - Every tool call goes through the dispatcher with the bot's grants. The
 //     tools are built for each run, so a search key set after launch counts
 //     from the next message.
 //
 // Seams it is handed: the store, a function from a tier to a stream, the
-// scrub, the page fetcher, a function that says whether a search service is
+// scrub, a function that names the coordinator, the page fetcher, a function that says whether a search service is
 // configured, the bus, how a resumed run is handed its round, the caps and a
 // clock. It imports no provider and no
 // integration, so a test hands it a script.

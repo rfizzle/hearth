@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/hearth/internal/handbook"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/memory"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
@@ -59,6 +60,9 @@ type Input struct {
 	Parked       string
 	Resume       Resume
 	Tier         org.Tier
+	// Project is the project the conversation is about, when it is one; its
+	// brief enters the framing.
+	Project *project.Project
 }
 
 // Parts is how many bytes each part of a context took. Brief is a task's,
@@ -96,10 +100,17 @@ func Build(ctx context.Context, db *store.DB, in Input) (Output, error) {
 	var out Output
 	// Owner-supplied text: the org's name and the bot's name, role and job
 	// description, in the places framing's dm.md gives them.
-	framed := framing.Render(framing.Input{
+	fin := framing.Input{
 		OrgName: in.Org.Name, BotName: in.Bot.Name, Role: in.Bot.Role,
 		JobDescription: in.Bot.JobDescription, FolderPath: in.Bot.FolderPath,
-	})
+	}
+	if p := in.Project; p != nil {
+		fin.Project = &framing.ProjectInput{
+			Name: p.Name, Goal: p.Brief.Goal, Context: p.Brief.Context, DoneLooksLike: p.Brief.DoneLooksLike,
+			DoneWhen: p.Brief.DoneWhen, TargetDate: p.TargetDate, FolderPath: p.FolderPath,
+		}
+	}
+	framed := framing.Render(fin)
 	pages, err := db.Pages(ctx)
 	if err != nil {
 		return Output{}, err

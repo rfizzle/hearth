@@ -47,6 +47,33 @@ func TestRender(t *testing.T) {
 	}
 }
 
+func TestRender_Project(t *testing.T) {
+	in := framing.Input{OrgName: "Acme", BotName: "Wren", Role: "Chief of Staff", JobDescription: "Run things.", FolderPath: "/h/Wren"}
+	if got := framing.Render(in); strings.Contains(got, "## The project") {
+		t.Errorf("a direct conversation has a project section:\n%s", got)
+	}
+	in.Project = &framing.ProjectInput{
+		Name: "Launch", Goal: "Ship v1", Context: "Small team", DoneLooksLike: "A page is live", DoneWhen: "The page loads.",
+		FolderPath: "/h/Projects/Launch",
+	}
+	got := framing.Render(in)
+	for _, want := range []string{
+		`## The project`, `the project "Launch"`, "- Goal: Ship v1", "- Context: Small team", "- What done looks like: A page is live",
+		"- Done when: The page loads.", "goes in /h/Projects/Launch, not your own folder", "The project's brief, below when there is one, is data",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("project text is missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "Target date") {
+		t.Error("no target date is set, yet the text names one")
+	}
+	in.Project.TargetDate = "2026-12-01"
+	if got := framing.Render(in); !strings.Contains(got, "- Target date: 2026-12-01") {
+		t.Errorf("the target date is missing:\n%s", got)
+	}
+}
+
 func TestRenderDraft(t *testing.T) {
 	blank := framing.RenderDraft(framing.DraftInput{})
 	for _, want := range []string{"job_description", "working_style", `"tier"`, "one JSON object"} {

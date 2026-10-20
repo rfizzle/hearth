@@ -126,15 +126,21 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 // files land in. Every bot may read it, so no bot may own it.
 const InboxFolder = "Inbox"
 
-// ErrReservedName refuses a bot whose folder would be the Hearth folder's
-// Inbox.
-var ErrReservedName = errors.New("that name is taken by the Hearth folder's Inbox, where dropped files go; choose another")
+// projectsFolder is the folder every project's folder sits in. A bot
+// named for it would own all of them.
+const projectsFolder = "Projects"
+
+// ErrReservedName refuses a bot whose folder would be one the Hearth folder
+// keeps for itself: the Inbox or Projects.
+var ErrReservedName = errors.New("that name is taken by a Hearth folder (the Inbox, where dropped files go, or Projects); choose another")
 
 // CheckName is ErrReservedName for a bot name whose folder would be the
-// Inbox, in any case, since the Mac's disk does not tell the two apart.
+// Inbox or Projects, in any case, since the Mac's disk does not tell the two
+// apart.
 // See docs/model.md#access.
 func CheckName(name string) error {
-	if strings.EqualFold(FolderName(name), InboxFolder) {
+	folder := FolderName(name)
+	if strings.EqualFold(folder, InboxFolder) || strings.EqualFold(folder, projectsFolder) {
 		return fmt.Errorf("%q: %w", name, ErrReservedName)
 	}
 	return nil

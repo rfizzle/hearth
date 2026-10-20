@@ -18,5 +18,8 @@ type (
 	Heartbeat           = bus.Heartbeat
 )
 
+// ProjectChanged is a project as it is now, with its derived status.
+type ProjectChanged = bus.ProjectChanged
+
 // NewBus is an empty bus whose first event is sequence 1.
 func NewBus() *Bus { return bus.New() }
