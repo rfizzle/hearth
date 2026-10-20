@@ -255,6 +255,9 @@ func TestDispatcher_Decide(t *testing.T) {
 			if v, err := d.Decide(tc.tool, json.RawMessage(tc.args)); v != tc.want || err != nil {
 				t.Fatalf("Decide = %d, %v, want %d", v, err, tc.want)
 			}
+			if got := d.Gated(tc.tool, json.RawMessage(tc.args)); got != (tc.want == Gated) {
+				t.Fatalf("Gated = %v, want %v", got, tc.want == Gated)
+			}
 			// Execute runs exactly what Decide calls Auto.
 			_, err = d.Execute(context.Background(), tc.tool, json.RawMessage(tc.args))
 			if ran := rec.last != nil; ran != (tc.want == Auto) {
@@ -360,6 +363,48 @@ func TestDispatcher_NestedGrantsPlaceTheCallInTheInnerFolder(t *testing.T) {
 		if err != nil || c.Granted != inner {
 			t.Fatalf("grants in order %v: granted %q, %v, want %q", order, c.Granted, err, inner)
 		}
+	}
+}
+
+func TestDispatcher_ValidateRefusesBeforeTheGate(t *testing.T) {
+	rec := &recorder{}
+	ask := rec.def("ask_owner", org.AskOwner, TierAct)
+	ask.NoStanding = true
+	ask.Validate = func(args json.RawMessage) error {
+		if !strings.Contains(string(args), "question") {
+			return errors.New("question is required")
+		}
+		return nil
+	}
+	reg, err := NewRegistry(ask)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := Dispatcher{Defs: reg, Grants: []org.Grant{{Capability: org.AskOwner, Mode: org.ModeAllowed}}}
+	cases := []struct {
+		name, args string
+		want       Verdict
+		refusal    string
+	}{
+		{"a valid request waits for the owner", `{"question":"which?"}`, Gated, ""},
+		{"a malformed request is refused, not gated", `{}`, 0, "ask_owner refused: question is required"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := d.Decide("ask_owner", json.RawMessage(tc.args))
+			if tc.refusal == "" {
+				if v != tc.want || err != nil {
+					t.Fatalf("Decide = %d, %v, want %d", v, err, tc.want)
+				}
+				return
+			}
+			if v != 0 || !errors.Is(err, ErrRefused) || err.Error() != tc.refusal || d.Gated("ask_owner", json.RawMessage(tc.args)) {
+				t.Fatalf("Decide = %d, %v, want the refusal %q and no gate", v, err, tc.refusal)
+			}
+			if _, err := d.Execute(context.Background(), "ask_owner", json.RawMessage(tc.args)); err == nil || err.Error() != tc.refusal || rec.last != nil {
+				t.Fatalf("Execute = %v (ran %v), want the refusal and no run", err, rec.last != nil)
+			}
+		})
 	}
 }
 

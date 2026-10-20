@@ -356,7 +356,7 @@ func TestApproval_Refusals(t *testing.T) {
 	if _, _, err := f.svc.Decide(ctx, it.ID, 9, ""); !errors.Is(err, ErrMismatch) {
 		t.Errorf("an unknown decision = %v, want ErrMismatch", err)
 	}
-	if _, _, err := f.svc.Answer(ctx, it.ID, "yes"); !errors.Is(err, ErrMismatch) {
+	if _, _, err := f.svc.Answer(ctx, it.ID, "yes", nil); !errors.Is(err, ErrMismatch) {
 		t.Errorf("an answer to an approval = %v, want ErrMismatch", err)
 	}
 	if _, err := f.svc.Acknowledge(ctx, it.ID); !errors.Is(err, ErrMismatch) {
@@ -365,7 +365,7 @@ func TestApproval_Refusals(t *testing.T) {
 	if _, _, err := f.svc.Decide(ctx, "nope", inbox.AllowOnce, ""); err == nil {
 		t.Error("a decision on no item was accepted")
 	}
-	if _, _, err := f.svc.Answer(ctx, it.ID, "  "); !errors.Is(err, ErrMismatch) {
+	if _, _, err := f.svc.Answer(ctx, it.ID, "  ", nil); !errors.Is(err, ErrMismatch) {
 		t.Errorf("an empty answer = %v, want ErrMismatch", err)
 	}
 }

@@ -40,7 +40,9 @@ type Result struct {
 // place of the JSON, and must not fail on arguments it cannot parse.
 // NoStanding marks a tool the owner may allow once or for a conversation but
 // never for good, such as deleting a file: every other call to it waits for
-// them.
+// them. Validate, when set, refuses arguments the tool cannot act on before
+// the call is placed, so a malformed request is answered with the reason
+// instead of being put to the owner.
 type Definition struct {
 	Name        string
 	Description string
@@ -50,6 +52,7 @@ type Definition struct {
 	NoStanding  bool
 	Execute     func(ctx context.Context, call Call) (Result, error)
 	Describe    func(args json.RawMessage) string
+	Validate    func(args json.RawMessage) error
 }
 
 // Standing reports whether the owner may allow the tool for good: a

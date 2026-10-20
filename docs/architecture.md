@@ -147,6 +147,7 @@ Rules:
 | `internal/agent` | Turn loop, tool rounds, steering queue, repeat detection, retry, compaction | lifted from shhh `internal/agent` core + `retry.go` + `compact.go` |
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
+| `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |

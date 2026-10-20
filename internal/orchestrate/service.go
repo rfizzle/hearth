@@ -66,7 +66,9 @@ type Service struct {
 	mu      sync.Mutex
 	working map[string]string             // conversation id -> its run's id
 	cancels map[string]context.CancelFunc // run id -> what stops it
+	held    map[string]*held              // item id -> the answer waiting out its grace
 
+	grace time.Duration      // answerGrace, shorter in a test
 	extra []tools.Definition // more tools, for a test
 	fault func() error       // fails recording a decision, for a test
 }
@@ -95,7 +97,8 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 	if d.Log == nil {
 		d.Log = log.Default()
 	}
-	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{}}, nil
+	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{},
+		held: map[string]*held{}, grace: answerGrace}, nil
 }
 
 // Send stores text as the owner's message in the DM convID and starts the

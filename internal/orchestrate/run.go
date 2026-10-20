@@ -7,24 +7,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/framing"
-	"github.com/rfizzle/hearth/internal/orchestrate/park"
+	"github.com/rfizzle/hearth/internal/orchestrate/toolset"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/tools"
-	"github.com/rfizzle/hearth/internal/tools/files"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
-const (
-	// historyBudget is how much earlier text, in bytes, a run is given. The
-	// newest messages that fit are kept and older ones fall off.
-	historyBudget = 48 << 10
-	// historyPage is how many earlier messages are read to fill it.
-	historyPage = 200
-)
+// historyPage is how many earlier messages a run's history is read from.
+const historyPage = 200
 
 // ask is what a run answers: the owner's message, or on a resume the app's
 // note, which is not stored, and the run that parked.
@@ -116,7 +109,7 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (a
 		Tools:   offered,
 		Stream:  stream,
 		Execute: execute(disp, k),
-		Gate:    gate(disp),
+		Gate:    disp.Gated,
 		// See docs/model.md#4-termination-guarantees.
 		MaxRounds: s.d.Caps.Steps,
 		MaxWall:   s.d.Caps.Wall,
@@ -134,44 +127,7 @@ func (s *Service) history(ctx context.Context, prompt ask) ([]agent.Message, str
 	if err != nil {
 		return nil, "", err
 	}
-	if prompt.parked == "" {
-		return textHistory(msgs), prompt.msg.Content, nil
-	}
-	round, ok := park.Find(msgs, prompt.parked)
-	if !ok {
-		return nil, "", errors.New("the round this run continues is no longer in the conversation")
-	}
-	before := slices.IndexFunc(msgs, func(m org.Message) bool { return m.Seq >= round.Start })
-	history, text := s.d.Resume.Assemble(textHistory(msgs[:before]), round, prompt.msg.Content)
-	return history, text, nil
-}
-
-// textHistory is the newest text messages of msgs that fit the budget,
-// oldest first. Tool rows are left out, and messages in a row from the same
-// side are joined, since some providers refuse two turns in a row from one
-// side.
-func textHistory(msgs []org.Message) []agent.Message {
-	var out []agent.Message
-	used := 0
-	for _, m := range slices.Backward(msgs) {
-		if m.Kind != org.MessageText || m.Content == "" {
-			continue
-		}
-		if used += len(m.Content); used > historyBudget {
-			break
-		}
-		role := agent.RoleBot
-		if m.AuthorBotID == "" {
-			role = agent.RoleOwner
-		}
-		if n := len(out); n > 0 && out[n-1].Role == role {
-			out[n-1].Text = m.Content + "\n\n" + out[n-1].Text
-			continue
-		}
-		out = append(out, agent.Message{Role: role, Text: m.Content})
-	}
-	slices.Reverse(out)
-	return out
+	return s.d.Resume.History(msgs, prompt.parked, prompt.msg.Content)
 }
 
 // dispatcher is what checks bot's calls in the conversation convID: every
@@ -193,19 +149,9 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID string) (t
 	return tools.Dispatcher{Defs: reg, Grants: grants, Allowances: allowances, Root: bot.FolderPath}, nil
 }
 
-// gate is the approval gate a run is handed: a call waits for the owner
-// when the dispatcher says so. A call it refuses runs through Execute, which
-// gives the model the refusal.
-// See docs/model.md#8-approvals.
-func gate(d tools.Dispatcher) agent.Gate {
-	return func(name string, args json.RawMessage) bool {
-		v, err := d.Decide(name, args)
-		return err == nil && v == tools.Gated
-	}
-}
-
-// registry is every tool configured now: the file tools, web.fetch when
-// there is a fetcher, and web.search when a search service has a key.
+// registry is every tool configured now: the file tools, asking the owner,
+// web.fetch when there is a fetcher, and web.search when a search service
+// has a key.
 func (s *Service) registry() (*tools.Registry, error) {
 	var searcher web.Searcher
 	if s.d.Searcher != nil {
@@ -213,8 +159,7 @@ func (s *Service) registry() (*tools.Registry, error) {
 			searcher = found
 		}
 	}
-	defs := append(files.Definitions(), web.Definitions(s.d.Fetcher, searcher)...)
-	return tools.NewRegistry(append(defs, s.extra...)...)
+	return toolset.Registry(s.d.Fetcher, searcher, s.extra...)
 }
 
 // execute runs a call through the dispatcher, the one place its grants are

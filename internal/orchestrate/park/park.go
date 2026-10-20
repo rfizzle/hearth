@@ -2,6 +2,7 @@ package park
 
 import (
 	"encoding/json"
+	"slices"
 
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
@@ -69,6 +70,22 @@ func Allowed(d inbox.Decision, botName, folder string) string {
 		return "Always allowed for " + botName + in
 	}
 	return "Allowed once"
+}
+
+// Raise is grants with the ask-mode grant of capability in granted, the
+// folder as the grant names it, raised to allowed, and no other: always
+// allowing a write in one folder must not allow a folder around it that
+// happens to be granted too. The caller reads the grants just before, so
+// an edit in the Access sheet is not undone.
+// See docs/model.md#8-approvals.
+func Raise(grants []org.Grant, capability org.Capability, granted string) []org.Grant {
+	out := slices.Clone(grants)
+	for i, g := range out {
+		if g.Capability == capability && g.Folder == granted && g.Mode == org.ModeAsk {
+			out[i].Mode = org.ModeAllowed
+		}
+	}
+	return out
 }
 
 // Declined is the thread's words for a denial.

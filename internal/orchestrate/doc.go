@@ -24,7 +24,10 @@
 //     through the dispatcher's approved door, records the outcome in the
 //     thread, closes the item, ends the waiting run done and starts a new
 //     run whose context is rebuilt from the store with the parked round at
-//     its end. Cancelling a waiting run closes its item.
+//     its end. Cancelling a waiting run closes its item. An answer to a
+//     question is held for a short grace first, in memory only, and a
+//     second answer inside it replaces the first; a relaunch drops one
+//     still held and the question stays open.
 //   - A panic in the turn, the loop's or a tool's, ends the run failed like
 //     any other failure and is logged with its stack; it never takes the core
 //     down or leaves the conversation busy.

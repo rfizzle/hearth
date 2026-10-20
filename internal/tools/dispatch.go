@@ -109,12 +109,23 @@ func (d Dispatcher) Decide(name string, args json.RawMessage) (Verdict, error) {
 	return c.Verdict, err
 }
 
+// Gated reports whether the call named name waits for the owner: the
+// approval gate a run is handed. A call the grants refuse is not gated;
+// Execute gives the model the refusal.
+// See docs/model.md#8-approvals.
+func (d Dispatcher) Gated(name string, args json.RawMessage) bool {
+	v, err := d.Decide(name, args)
+	return err == nil && v == Gated
+}
+
 // Check places the call named name against the grants: the definition, the
 // resolved path for a files capability, the grant it falls under and the
 // verdict. A call waits for the owner when the grant it falls under asks,
 // or when its tool may never be allowed for good, unless an allowance for
-// the conversation covers it. A refusal is a one-line error wrapping
-// ErrRefused, for the model to read.
+// the conversation covers it. Arguments the tool's own check refuses are
+// refused here, before any verdict, so a malformed request never waits for
+// the owner. A refusal is a one-line error wrapping ErrRefused, for the
+// model to read.
 // See docs/model.md#8-approvals.
 func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
 	def, ok := d.Defs.Lookup(name)
@@ -123,6 +134,11 @@ func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
 	}
 	if !d.offered(def) {
 		return Checked{}, refuse(name, "this bot is not allowed to use it")
+	}
+	if def.Validate != nil {
+		if err := def.Validate(args); err != nil {
+			return Checked{}, refuse(name, err.Error())
+		}
 	}
 	c := Checked{Def: def, Call: Call{Args: args}}
 	mode := org.Allowed(d.Grants, def.Capability)

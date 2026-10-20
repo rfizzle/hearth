@@ -132,6 +132,24 @@ func TestWords(t *testing.T) {
 	}
 }
 
+func TestRaise(t *testing.T) {
+	grants := []org.Grant{
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: "/A/B"},
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: "/A"},
+		{Capability: org.FilesRead, Mode: org.ModeAsk, Folder: "/A/B"},
+	}
+	got := Raise(grants, org.FilesWrite, "/A/B")
+	want := []org.Mode{org.ModeAllowed, org.ModeAsk, org.ModeAsk}
+	for i, g := range got {
+		if g.Mode != want[i] {
+			t.Errorf("grant %d = %+v, want mode %d", i, g, want[i])
+		}
+	}
+	if grants[0].Mode != org.ModeAsk {
+		t.Error("Raise changed the grants it was given")
+	}
+}
+
 func TestRequest(t *testing.T) {
 	run := org.Run{ID: "r", BotID: "b", ConversationID: "c"}
 	cases := []struct {

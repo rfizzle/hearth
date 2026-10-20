@@ -58,7 +58,7 @@ func TestRenderAsksThePerson(t *testing.T) {
 	}
 	section := got[i:]
 	for _, want := range []string{
-		"Single choice", "Multiple choice", "Free text", "Yes or no", "Date", "File or folder", "Scale",
+		"suggested replies", "Single choice", "Multiple choice", "Free text", "Yes or no", "Date", "File or folder", "Scale",
 		"The owner chose: Keep it", "The owner chose: Other:", "The owner chose none", "The owner answered:",
 		"The owner said: Yes", "The owner picked the date: 2026-10-24", "The owner picked: /", "The owner rated it 4 of 5",
 	} {

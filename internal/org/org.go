@@ -60,9 +60,9 @@ type RoleTemplate struct {
 
 // NewBot returns a new idle bot, the grants a bot starts with and its DM with
 // the owner. The bot's folder is its file-system-safe name under
-// workspaceRoot. A new bot can read and write its own folder, fetch pages and
-// search the web, and must ask before deleting a file in its folder; it is
-// granted nothing else.
+// workspaceRoot. A new bot can read and write its own folder, fetch pages,
+// search the web and ask the owner a question, and must ask before deleting
+// a file in its folder; it is granted nothing else.
 // See docs/model.md#access.
 func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Grant, Conversation) {
 	folder := filepath.Join(workspaceRoot, FolderName(name))
@@ -80,6 +80,7 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 		{Capability: FilesDelete, Mode: ModeAsk, Folder: folder},
 		{Capability: WebFetch, Mode: ModeAllowed},
 		{Capability: WebSearch, Mode: ModeAllowed},
+		{Capability: AskOwner, Mode: ModeAllowed},
 	}
 	dm := Conversation{Kind: ConversationDM, Title: name}
 	return bot, grants, dm

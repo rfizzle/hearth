@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"slices"
-	"strings"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/orchestrate/park"
@@ -65,22 +63,6 @@ func (s *Service) Decide(ctx context.Context, itemID string, d inbox.Decision, r
 	}
 	owner := org.Message{Kind: org.MessageApprovalDecision, Content: said}
 	return s.settle(ctx, p, owner, call, d, "", said)
-}
-
-// Answer settles the question itemID with the owner's words: their reply in
-// the thread, the answer as the call's result, and the run that carries on.
-// See docs/model.md#8-approvals.
-func (s *Service) Answer(ctx context.Context, itemID, text string) (inbox.Item, org.Run, error) {
-	if strings.TrimSpace(text) == "" {
-		return inbox.Item{}, org.Run{}, fmt.Errorf("an empty answer: %w", ErrMismatch)
-	}
-	p, err := s.claim(ctx, itemID, inbox.Question)
-	if err != nil {
-		return inbox.Item{}, org.Run{}, err
-	}
-	owner := org.Message{Kind: org.MessageText, Content: text}
-	answered := func() outcome { return outcome{text: park.Answered(text)} }
-	return s.settle(context.WithoutCancel(ctx), p, owner, answered, 0, text, "Answered")
 }
 
 // Acknowledge closes the failure or budget item itemID. No run waits on one.
@@ -195,7 +177,7 @@ func (s *Service) allow(ctx context.Context, p parked, disp tools.Dispatcher, c 
 		if err != nil {
 			return disp, err
 		}
-		if err := s.d.Store.ReplaceGrants(ctx, p.bot.ID, raise(grants, c)); err != nil {
+		if err := s.d.Store.ReplaceGrants(ctx, p.bot.ID, park.Raise(grants, c.Def.Capability, c.Granted)); err != nil {
 			return disp, err
 		}
 		if disp.Grants, err = s.d.Store.GrantsFor(ctx, p.bot.ID); err != nil {
@@ -204,21 +186,6 @@ func (s *Service) allow(ctx context.Context, p parked, disp tools.Dispatcher, c 
 		s.d.Bus.Publish(GrantsChanged{BotID: p.bot.ID, Grants: disp.Grants})
 	}
 	return disp, nil
-}
-
-// raise is grants with the ask-mode grant the call c falls under raised to
-// allowed, and no other: always allowing a write in one folder must not
-// allow a folder around it that happens to be granted too. The grants are
-// read just before, so an edit in the Access sheet is not undone.
-// See docs/model.md#8-approvals.
-func raise(grants []org.Grant, c tools.Checked) []org.Grant {
-	out := slices.Clone(grants)
-	for i, g := range out {
-		if g.Capability == c.Def.Capability && g.Folder == c.Granted && g.Mode == org.ModeAsk {
-			out[i].Mode = org.ModeAllowed
-		}
-	}
-	return out
 }
 
 // runApproved runs the call the owner allowed, outside any model loop,
