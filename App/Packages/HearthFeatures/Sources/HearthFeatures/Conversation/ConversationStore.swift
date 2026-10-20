@@ -9,6 +9,9 @@
 // nothing about any of them.
 // See docs/architecture.md#3-the-contract-sketch
 //
+// The composer's draft lives here, so a chip on the bot's introduction can
+// fill it, and so does whether the "About" header is open.
+//
 // An approval request or a question in the thread is joined by message id to
 // the Inbox's open items, so while one is open the thread draws its card; the
 // conversation then waits for the owner and Send is held, since the core
@@ -67,6 +70,15 @@ public final class ConversationStore {
     public private(set) var attachments: [Hearth_V1_FileRef] = []
     /// Why the last drop took nothing, in a line, or nil.
     public private(set) var attachmentNotice: String?
+    /// What is typed in the composer and not yet sent. The store owns it so a
+    /// suggestion chip elsewhere on the screen can fill it.
+    public var draft = ""
+    /// Bumped each time the composer should take focus, which a chip's fill
+    /// asks for; the screen watches it.
+    public private(set) var focusComposer = 0
+    /// Whether the "About" header is open. It starts closed and is not kept
+    /// across launches.
+    public var aboutOpen = false
 
     private var loadingOlder = false
     private let client: any HearthClient
@@ -197,6 +209,13 @@ public final class ConversationStore {
         } catch {
             self.error = error.localizedDescription
         }
+    }
+
+    /// Puts `text` in the composer, replacing what was there, and asks for
+    /// focus there. It never sends: the owner reads it, changes it, and sends.
+    public func fill(_ text: String) {
+        draft = text
+        focusComposer += 1
     }
 
     /// Takes the files dropped on the composer. Only file URLs count; each is

@@ -5,8 +5,11 @@
 // the newest message stays in view as it streams, and reaching the top pages
 // older messages in. The status line and the composer are a bar on the
 // transcript's bottom edge, so messages scroll beneath the glass. A
-// conversation with nothing in it says hello instead. Show in Finder reaches
-// the revealInFinder action the app target sets. Only the owner's own send
+// conversation with nothing in it shows the bot's introduction card, centred,
+// and a bot without one says hello instead; once it has messages the card
+// collapses to an "About <name>" row pinned under the title, which opens into
+// the same card, and a chip on the card fills the composer without sending.
+// Show in Finder reaches the revealInFinder action the app target sets. Only the owner's own send
 // moves in; everything from the core appears in place, and the empty state
 // fades out. An approval or a question the run parked on stands in the thread
 // as a RequestRow: its Inbox card while it is open, then a quiet line, or a
@@ -51,12 +54,16 @@ public struct ConversationScreen: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) { bar }
+            .safeAreaBar(edge: .top) { aboutBar }
             .navigationTitle(bot.name)
             .task(id: store.conversationID) {
                 await store.load()
                 loaded = true
             }
     }
+
+    /// Whether the core sent the bot an introduction to show.
+    private var hasIntroduction: Bool { !bot.introduction.purpose.isEmpty }
 
     @ViewBuilder
     private var content: some View {
@@ -70,6 +77,14 @@ public struct ConversationScreen: View {
             } actions: {
                 Button("Try Again") { Task { await store.load() } }
             }
+        } else if store.rows.isEmpty, hasIntroduction {
+            // Centred while it fits; a short window scrolls it from the top.
+            ViewThatFits(in: .vertical) {
+                introduction
+                ScrollView { introduction }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transition(.opacity)
         } else if store.rows.isEmpty {
             ContentUnavailableView {
                 Label {
@@ -85,6 +100,28 @@ public struct ConversationScreen: View {
             .transition(.opacity)
         } else {
             transcript
+        }
+    }
+
+    private var introduction: some View {
+        IntroductionCard(introduction: bot.introduction, bot: bot, onTry: store.fill)
+            .padding(Theme.Spacing.lg)
+            .frame(maxWidth: .infinity)
+    }
+
+    /// The header pinned under the title once there is something to scroll
+    /// past: nothing while the card is the empty state.
+    @ViewBuilder
+    private var aboutBar: some View {
+        if loaded, !store.rows.isEmpty, hasIntroduction {
+            AboutRow(
+                isExpanded: Bindable(store).aboutOpen, introduction: bot.introduction, bot: bot,
+                onTry: store.fill
+            )
+            .frame(maxWidth: Theme.Size.readableWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, Theme.Spacing.lg)
+            .padding(.top, Theme.Spacing.sm)
         }
     }
 
@@ -183,6 +220,7 @@ public struct ConversationScreen: View {
                 attachmentNotice: store.attachmentNotice,
                 onDrop: { urls in store.attach(urls) },
                 onRemove: { file in store.removeAttachment(path: file.path) },
+                text: Bindable(store).draft, focusToken: store.focusComposer,
                 onSend: { text in await store.send(text) },
                 onStop: { Task { await store.cancel() } })
         }

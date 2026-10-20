@@ -25,8 +25,8 @@ extension Catalog {
             GalleryPage(
                 package: package, name: "ConversationScreen",
                 states: [
-                    conversationMidStream(), conversationSummaryOpen(), conversationWaiting(),
-                    conversationEmpty(),
+                    conversationEmpty(), conversationAboutOpen(), conversationMidStream(),
+                    conversationSummaryOpen(), conversationWaiting(),
                 ]),
         ]
     }
@@ -116,6 +116,18 @@ extension Catalog {
                     .frame(height: 700)))
     }
 
+    /// The DM with the "About" header open over the transcript.
+    fileprivate static func conversationAboutOpen() -> GalleryState {
+        let client = PreviewClient()
+        let relay = EventRelay(client: client)
+        let store = ConversationStore(
+            client: client, relay: relay, conversationID: Fixtures.dmConversation.id)
+        store.aboutOpen = true
+        return GalleryState(
+            name: "about open", width: 560,
+            view: AnyView(ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 760)))
+    }
+
     /// A conversation nobody has written in yet: the id matches no messages.
     fileprivate static func conversationEmpty() -> GalleryState {
         let client = PreviewClient()
@@ -123,7 +135,8 @@ extension Catalog {
         let store = ConversationStore(client: client, relay: relay, conversationID: "empty")
         return GalleryState(
             name: "empty", width: 560,
-            view: AnyView(ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 360)))
+            view: AnyView(
+                ConversationScreen(store: store, bot: Fixtures.chiefOfStaff).frame(height: 760)))
     }
 }
 

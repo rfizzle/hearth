@@ -9,7 +9,8 @@
 // behaviour is theirs; the field's label names the bot. The field is a
 // vertical-axis TextField that grows to eight lines, not a TextEditor, which
 // has no height of its own and fills the whole bar. The draft is presentation
-// state and clears once the send succeeds, so a refused message is still
+// state, the screen's when it passes a binding so a suggestion chip can fill
+// it and move focus here, and clears once the send succeeds, so a refused message is still
 // there to try again. Send and Stop are one round button whose symbol replaces
 // itself, so the pointer target stays put. While the conversation waits for
 // the owner to answer a card above it, the field is disabled and says so in
@@ -38,15 +39,21 @@ public struct Composer: View {
     let onSend: (String) async -> Bool
     let onStop: () -> Void
 
-    @State private var draft: String
+    let sharedDraft: Binding<String>?
+    let focusToken: Int
+
+    @State private var ownDraft: String
     @State private var isTargeted: Bool
+    @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A composer labelled `label` ("Message Dana"); `isWorking` while the
     /// conversation's run has not ended, and `waitingPrompt` ("Answer Dana
     /// above first") while it waits for the owner. `attachments` are the
     /// chips for the files dropped and not yet sent; `onDrop` takes what was
-    /// dropped on the bar and `onRemove` a chip taken off.
+    /// dropped on the bar and `onRemove` a chip taken off. A `text` binding
+    /// makes the draft the caller's, so a chip elsewhere can fill it; the
+    /// field takes focus whenever `focusToken` changes.
     public init(
         label: String,
         isWorking: Bool,
@@ -56,6 +63,8 @@ public struct Composer: View {
         onDrop: @escaping ([URL]) -> Void = { _ in },
         onRemove: @escaping (Hearth_V1_FileRef) -> Void = { _ in },
         draft: String = "",
+        text: Binding<String>? = nil,
+        focusToken: Int = 0,
         isTargeted: Bool = false,
         onSend: @escaping (String) async -> Bool,
         onStop: @escaping () -> Void
@@ -69,9 +78,13 @@ public struct Composer: View {
         self.onRemove = onRemove
         self.onSend = onSend
         self.onStop = onStop
-        _draft = State(initialValue: draft)
+        sharedDraft = text
+        self.focusToken = focusToken
+        _ownDraft = State(initialValue: draft)
         _isTargeted = State(initialValue: isTargeted)
     }
+
+    private var draft: Binding<String> { sharedDraft ?? $ownDraft }
 
     public var body: some View {
         let stops = Self.showsStop(isWorking: isWorking)
@@ -145,8 +158,10 @@ public struct Composer: View {
     }
 
     private var field: some View {
-        TextField(waitingPrompt ?? label, text: $draft, axis: .vertical)
+        TextField(waitingPrompt ?? label, text: draft, axis: .vertical)
             .textFieldStyle(.plain)
+            .focused($isFocused)
+            .onChange(of: focusToken) { isFocused = true }
             .lineLimit(1...8)
             .font(Theme.body)
             .foregroundStyle(Theme.color(.textPrimary))
@@ -160,17 +175,17 @@ public struct Composer: View {
     }
 
     private var canSend: Bool {
-        Self.canSend(draft: draft, isWorking: isWorking, isWaiting: waitingPrompt != nil)
+        Self.canSend(
+            draft: draft.wrappedValue, isWorking: isWorking, isWaiting: waitingPrompt != nil)
     }
 
     private func send() {
         guard canSend else { return }
-        let sent = draft
+        let sent = draft.wrappedValue
         Task {
             // Typing during the call keeps what was typed.
-            if await onSend(sent.trimmingCharacters(in: .whitespacesAndNewlines)), draft == sent {
-                draft = ""
-            }
+            let accepted = await onSend(sent.trimmingCharacters(in: .whitespacesAndNewlines))
+            if accepted, draft.wrappedValue == sent { draft.wrappedValue = "" }
         }
     }
 

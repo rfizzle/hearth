@@ -42,6 +42,19 @@ extension Catalog {
                     Composer(previewState: $0)
                 }),
             GalleryPage(
+                package: package, name: "SuggestionChip",
+                states: GalleryState.each(SuggestionChip.PreviewState.self, width: 560) {
+                    SuggestionChip(previewState: $0)
+                }),
+            GalleryPage(
+                package: package, name: "IntroductionCard",
+                states: GalleryState.each(IntroductionCard.PreviewState.self, width: 560) {
+                    IntroductionCard(previewState: $0)
+                }
+                    + GalleryState.each(AboutRow.PreviewState.self, width: 560) {
+                        AboutRow(previewState: $0)
+                    }),
+            GalleryPage(
                 package: package, name: "TranscriptText",
                 states: GalleryState.each(TranscriptText.PreviewState.self, width: 560) {
                     TranscriptText(text: $0.text)

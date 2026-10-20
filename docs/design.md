@@ -147,6 +147,13 @@ An empty screen says what is missing and offers the one thing to do about it, in
 plain words ("Nobody here yet. Hire someone to get started."), with the system's
 empty-state layout. Nothing apologises and nothing lists features.
 
+A conversation with a bot opens with the bot's introduction on a card: who it is,
+what it is here for, three lines on how to work with it and three things to try,
+the last as grey chips that fill the message field and never send. It is not a
+message, so it sits on a card, not in the transcript's flat text. Once the
+conversation has messages the card collapses to an "About Dana" row pinned under
+the title, which opens into the same card.
+
 First run happens inside the main window: three steps in a centred column, with
 no sidebar and no toolbar, and a cross-fade to the split view once the
 organisation exists (D24 in `decisions.md`). Optional setup, such as web search,

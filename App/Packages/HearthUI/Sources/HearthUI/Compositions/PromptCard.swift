@@ -188,16 +188,7 @@ public struct PromptCard: View {
 
     private var suggestionButtons: some View {
         ForEach(item.suggestedAnswers, id: \.self) { answer in
-            Button {
-                reply = answer
-            } label: {
-                Pill(answer)
-                    .frame(minHeight: Theme.Size.minTarget)
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(answer)
-            .accessibilityHint("Puts this answer in the reply")
+            SuggestionChip(answer, hint: "Puts this answer in the reply") { reply = answer }
         }
     }
 
