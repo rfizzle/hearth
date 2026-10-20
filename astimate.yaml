@@ -386,6 +386,9 @@ exemptions:
   - package: internal/rpc
     metric: dup_blocks
     reason: Connect handler signatures are dictated by the generated service interfaces; the bodies are one-line translations
+  - package: internal/keystore
+    metric: dup_blocks
+    reason: the routers' methods are dictated by the Store and credstore.Store interfaces; each takes the read lock and makes one call, so a save cannot land mid-switch
   - package: internal/rpc
     metric: duplication_pct
     reason: the same repeated Connect handler signatures, counted as a share of lines rather than as blocks

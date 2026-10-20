@@ -188,6 +188,59 @@ func TestSyncRefusesBadNamesWithoutEchoingValues(t *testing.T) {
 	}
 }
 
+func TestSyncRefusesAnEmptyValueAndKeepsTheFileCopy(t *testing.T) {
+	Init()
+	dir := filepath.Join(t.TempDir(), "Hearth")
+	accts, err := Open(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = accts.Keys.Save("anthropic", sentinel+"-a")
+	_, err = accts.Sync([]keystore.Credential{{Name: "anthropic", Value: nil}})
+	if err == nil || strings.Contains(err.Error(), sentinel) {
+		t.Fatalf("Sync with an empty value = %v, want a refusal", err)
+	}
+	if accts.mem != nil || !exists(t, filepath.Join(dir, "keys", "anthropic")) {
+		t.Fatal("a refused sync switched the accounts or touched the files")
+	}
+	toStore, err := accts.Sync(nil)
+	if err != nil || len(toStore) != 1 || string(toStore[0].Value) != sentinel+"-a" {
+		t.Errorf("next sync = %v, %v; want the file value back", names(toStore), err)
+	}
+}
+
+func TestASaveDuringTheSwitchLandsInMemory(t *testing.T) {
+	Init()
+	dir := filepath.Join(t.TempDir(), "Hearth")
+	accts, err := Open(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = accts.Keys.Save("anthropic", sentinel+"-a")
+	started, done := make(chan struct{}), make(chan struct{})
+	go func() {
+		close(started)
+		_ = accts.Keys.Save("gemini", sentinel+"-g") // races the switch
+		close(done)
+	}()
+	<-started
+	if _, err := accts.Sync(nil); err != nil {
+		t.Fatal(err)
+	}
+	<-done
+	// Either order is whole: before the switch the value came back in
+	// records to store; after it, it is in memory. It is never in a file the
+	// next sync deletes unread.
+	if v, err := accts.Keys.Load("gemini"); err != nil || v != sentinel+"-g" {
+		t.Errorf("gemini after the race = %q, %v", v, err)
+	}
+	if exists(t, filepath.Join(dir, "keys", "gemini")) {
+		if _, err := accts.Export("gemini"); err != nil {
+			t.Error("the save landed in a file that memory does not hold")
+		}
+	}
+}
+
 func TestSignInSavesToMemoryAndFiresTheChange(t *testing.T) {
 	r := newRig(t)
 	var seen changes
@@ -277,6 +330,12 @@ func TestMemoryKeysNeverWritesAndNeverSpeaksAValue(t *testing.T) {
 	_ = m.SaveRecord([]byte(sentinel))
 	_ = m.SaveHostID("urn:uuid:" + sentinel)
 	_ = m.Clear("anthropic")
+	if err := m.Clear("chatgpt"); err == nil {
+		t.Error("Clear took a name the sign-in owns")
+	}
+	if err := m.Clear("never-held"); err != nil || m.WasRemoved("never-held") {
+		t.Errorf("clearing nothing = %v, removed=%v", err, m.WasRemoved("never-held"))
+	}
 	for _, c := range seen.take() {
 		if strings.Contains(c.name, sentinel) {
 			t.Errorf("a change named a value: %v", c)

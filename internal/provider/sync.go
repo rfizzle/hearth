@@ -2,6 +2,9 @@ package provider
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/rfizzle/llm/chatgpt/credstore"
 
 	"github.com/rfizzle/hearth/internal/keystore"
 )
@@ -38,35 +41,45 @@ func (a *Accounts) Sync(records []keystore.Credential) (toStore []keystore.Crede
 		if err := keystore.CheckRecordName(c.Name); err != nil {
 			return nil, err
 		}
+		if len(c.Value) == 0 {
+			// An empty value would count as held and hide the file's copy.
+			return nil, fmt.Errorf("the record %q has no value", c.Name)
+		}
 		held[c.Name] = true
 	}
 	if a.mem != nil {
 		return nil, a.dropFiles(held)
 	}
-	fromFiles, err := a.files().Read()
-	if err != nil {
-		return nil, err
-	}
 	mem := keystore.NewMemoryKeys()
-	if err := mem.Preload(records); err != nil {
-		return nil, err
-	}
-	for _, c := range fromFiles {
-		if !held[c.Name] {
-			toStore = append(toStore, c)
-		}
-	}
-	if err := mem.Preload(toStore); err != nil {
-		return nil, err
-	}
 	mem.OnChange = func(name string, deleted bool) {
 		if f := a.OnCredentialChange; f != nil {
 			f(name, deleted)
 		}
 	}
+	// Read, preload and switch are one step under both routers' write
+	// locks, so a save during the switch lands in memory, not in a file the
+	// next sync deletes unread.
+	err = a.keys.Replace(func(keystore.Store) (keystore.Store, error) {
+		return mem, a.store.Replace(func(credstore.Store) (credstore.Store, error) {
+			fromFiles, err := a.files().Read()
+			if err != nil {
+				return nil, err
+			}
+			if err := mem.Preload(records); err != nil {
+				return nil, err
+			}
+			for _, c := range fromFiles {
+				if !held[c.Name] {
+					toStore = append(toStore, c)
+				}
+			}
+			return mem, mem.Preload(toStore)
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
 	a.mem = mem
-	a.keys.Use(mem)
-	a.store.Use(mem)
 	return toStore, nil
 }
 

@@ -179,10 +179,15 @@ func (m *MemoryKeys) Clear(name string) error {
 	if err := CheckName(name); err != nil {
 		return err
 	}
+	if Reserved(name) {
+		return errReserved(name)
+	}
 	m.mu.Lock()
 	_, had := m.keys[name]
 	delete(m.keys, name)
-	m.removed[name] = true
+	if had {
+		m.removed[name] = true
+	}
 	m.mu.Unlock()
 	if had {
 		m.changed(name, true)
