@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// NativeService is served by the app and called by the core: the things only
+// Apple's frameworks can do, asked for over a second loopback listener in the
+// app with the launch token as the bearer. Calls are JSON, unary and served
+// one at a time. The core treats a call that fails as pages left unread.
+// See docs/decisions.md#hearth--decisions
+service NativeService {
+  // Ping says the app is listening and which native surface it serves.
+  rpc Ping(NativeServicePingRequest) returns (NativeServicePingResponse) {}
+  // ExtractText reads the text of picture pages and images: a page's own
+  // text layer when the app's reader finds one, else the page drawn and
+  // recognised. At most ten pages are read per call.
+  rpc ExtractText(ExtractTextRequest) returns (ExtractTextResponse) {}
+}
+
+message NativeServicePingRequest {}
+
+message NativeServicePingResponse {
+  // Bumped when the native surface changes.
+  int32 version = 1;
+}
+
+message ExtractTextRequest {
+  // The file's absolute path. The app reads it and writes nothing.
+  string path = 1;
+  // Pages counted from 1, at most ten; empty is the first ten pages of the
+  // file. An image is page 1.
+  repeated int32 pages = 2;
+}
+
+message ExtractTextResponse {
+  // The pages read, in the order asked; a page left out was not read.
+  repeated ExtractedPage pages = 1;
+}
+
+message ExtractedPage {
+  int32 page = 1;
+  string text = 2;
+  TextSource source = 3;
+  // What an image shows, most confident first; at most five, none for a
+  // page of a PDF.
+  repeated string labels = 4;
+}
+
+// TextSource says how a page's text was found.
+enum TextSource {
+  TEXT_SOURCE_UNSPECIFIED = 0;
+  // Read from the page's own text, by the app's PDF reader.
+  TEXT_SOURCE_TEXT_LAYER = 1;
+  // Recognised from the page drawn as a picture; it may have mistakes.
+  TEXT_SOURCE_RECOGNISED = 2;
+}
