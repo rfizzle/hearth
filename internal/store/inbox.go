@@ -11,6 +11,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // ErrItemOpen is returned when a conversation already has an open Inbox item:
@@ -41,7 +42,7 @@ func (db *DB) CreateInboxItem(ctx context.Context, it inbox.Item) (inbox.Item, e
 	if err != nil {
 		return inbox.Item{}, fmt.Errorf("create inbox item: %w", err)
 	}
-	it.ID = newID()
+	it.ID = sqlrow.NewID()
 	it.State = inbox.Open
 	it.CreatedAt = db.clock()
 	it.ClosedAt = time.Time{}
@@ -53,9 +54,9 @@ func (db *DB) CreateInboxItem(ctx context.Context, it inbox.Item) (inbox.Item, e
 		(id, kind, state, bot_id, conversation_id, run_id, message_id, title, effect, call, question, suggested,
 		widget_spec, widget_answer, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		it.ID, it.Kind, it.State, it.BotID, nullString(it.ConversationID), nullString(it.RunID),
-		nullString(it.MessageID), it.Title, it.Effect, call, it.Question, suggested,
-		nullString(it.Widget), nullString(it.WidgetAnswer), it.CreatedAt.UnixMilli()); err != nil {
+		it.ID, it.Kind, it.State, it.BotID, sqlrow.NullString(it.ConversationID), sqlrow.NullString(it.RunID),
+		sqlrow.NullString(it.MessageID), it.Title, it.Effect, call, it.Question, suggested,
+		sqlrow.NullString(it.Widget), sqlrow.NullString(it.WidgetAnswer), it.CreatedAt.UnixMilli()); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: inbox_items.conversation_id") {
 			return inbox.Item{}, fmt.Errorf("create inbox item: conversation %s: %w", it.ConversationID, ErrItemOpen)
 		}
@@ -74,14 +75,14 @@ func (db *DB) InboxItems(ctx context.Context, openOnly bool) ([]inbox.Item, erro
 		args = append(args, inbox.Open)
 	}
 	query += ` ORDER BY created_at, rowid`
-	return queryAll(ctx, db.sql, "inbox items", scanItem, query, args...)
+	return sqlrow.QueryAll(ctx, db.sql, "inbox items", scanItem, query, args...)
 }
 
 // InboxItem is the item with id, or ErrNotFound.
 func (db *DB) InboxItem(ctx context.Context, id string) (inbox.Item, error) {
 	it, err := scanItem(db.sql.QueryRowContext(ctx, itemColumns+` WHERE id = ?`, id))
 	if err != nil {
-		return inbox.Item{}, fmt.Errorf("inbox item %s: %w", id, notFound(err))
+		return inbox.Item{}, fmt.Errorf("inbox item %s: %w", id, sqlrow.NotFound(err))
 	}
 	return it, nil
 }
@@ -123,7 +124,7 @@ func (db *DB) CloseInboxItem(ctx context.Context, id string, decision inbox.Deci
 	return nil
 }
 
-func scanItem(row scanner) (inbox.Item, error) {
+func scanItem(row sqlrow.Scanner) (inbox.Item, error) {
 	var it inbox.Item
 	var call, suggested, widget, answer sql.NullString
 	var created, closed sql.NullInt64
@@ -132,7 +133,7 @@ func scanItem(row scanner) (inbox.Item, error) {
 		&it.Decision, &it.Answer, &it.Outcome); err != nil {
 		return inbox.Item{}, err
 	}
-	it.CreatedAt, it.ClosedAt = fromMillis(created), fromMillis(closed)
+	it.CreatedAt, it.ClosedAt = sqlrow.FromMillis(created), sqlrow.FromMillis(closed)
 	it.Widget, it.WidgetAnswer = widget.String, answer.String
 	if call.Valid {
 		it.Call = new(org.ToolCall)

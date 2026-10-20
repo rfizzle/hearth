@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // Org is the org, or ErrNotFound before the owner has named it.
@@ -14,7 +15,7 @@ func (db *DB) Org(ctx context.Context) (org.Org, error) {
 	err := db.sql.QueryRowContext(ctx, `SELECT name, workspace_path FROM org WHERE id = 1`).
 		Scan(&o.Name, &o.WorkspacePath)
 	if err != nil {
-		return org.Org{}, fmt.Errorf("org: %w", notFound(err))
+		return org.Org{}, fmt.Errorf("org: %w", sqlrow.NotFound(err))
 	}
 	return o, nil
 }

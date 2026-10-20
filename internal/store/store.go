@@ -2,27 +2,31 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/store/books"
 	"github.com/rfizzle/hearth/internal/store/migrate"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
 
-// ErrNotFound is returned when the row asked for does not exist.
-var ErrNotFound = errors.New("not found")
+// ErrNotFound is returned when the row asked for does not exist, by the
+// store and by every repository it embeds.
+var ErrNotFound = sqlrow.ErrNotFound
 
 // ErrFolderTaken is returned when a new bot's folder is another bot's,
 // whatever the case.
 var ErrFolderTaken = errors.New("another bot already has that folder")
 
-// DB is an open store.
+// DB is an open store. The repositories of the sub-packages are embedded,
+// so their methods are the store's.
 type DB struct {
+	*books.Repo
+
 	sql *sql.DB
 	now func() time.Time
 }
@@ -43,6 +47,7 @@ func Open(path string) (*DB, error) {
 	// per connection, so a pool would only add connections to configure.
 	conn.SetMaxOpenConns(1)
 	db := &DB{sql: conn, now: time.Now}
+	db.Repo = books.New(conn, db.clock)
 	if err := migrate.Up(context.Background(), conn); err != nil {
 		conn.Close()
 		return nil, err
@@ -58,103 +63,6 @@ func (db *DB) Close() error {
 // clock is the time now, to the millisecond the store keeps.
 func (db *DB) clock() time.Time {
 	return time.UnixMilli(db.now().UnixMilli()).UTC()
-}
-
-// newID is a random 128-bit id in hex.
-func newID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	return hex.EncodeToString(b[:])
-}
-
-// millis is t as Unix milliseconds, and NULL for the zero time.
-func millis(t time.Time) sql.NullInt64 {
-	if t.IsZero() {
-		return sql.NullInt64{}
-	}
-	return sql.NullInt64{Int64: t.UnixMilli(), Valid: true}
-}
-
-// fromMillis is the inverse of millis.
-func fromMillis(n sql.NullInt64) time.Time {
-	if !n.Valid {
-		return time.Time{}
-	}
-	return time.UnixMilli(n.Int64).UTC()
-}
-
-// nullString stores the empty string as NULL, for a column that references
-// another table.
-func nullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: s != ""}
-}
-
-// scanner is a *sql.Row or *sql.Rows.
-type scanner interface{ Scan(...any) error }
-
-// queryAll runs query and reads every row with scan. what names the rows in
-// an error.
-func queryAll[T any](ctx context.Context, db *sql.DB, what string, scan func(scanner) (T, error), query string, args ...any) ([]T, error) {
-	rows, err := db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", what, err)
-	}
-	defer rows.Close()
-	var out []T
-	for rows.Next() {
-		v, err := scan(rows)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", what, err)
-		}
-		out = append(out, v)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%s: %w", what, err)
-	}
-	return out, nil
-}
-
-// update runs an UPDATE of one row, and is ErrNotFound when it changed none.
-// what names the row in an error.
-func (db *DB) update(ctx context.Context, what, query string, args ...any) error {
-	res, err := db.sql.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("update %s: %w", what, err)
-	}
-	if n, err := res.RowsAffected(); err != nil || n == 0 {
-		return fmt.Errorf("update %s: %w", what, orNotFound(err))
-	}
-	return nil
-}
-
-// deleteByID removes the row of table with id, and is ErrNotFound when there
-// is none. what names the row in an error.
-func (db *DB) deleteByID(ctx context.Context, what, table, id string) error {
-	res, err := db.sql.ExecContext(ctx, "DELETE FROM "+table+" WHERE id = ?", id)
-	if err != nil {
-		return fmt.Errorf("delete %s %s: %w", what, id, err)
-	}
-	if n, err := res.RowsAffected(); err != nil || n == 0 {
-		return fmt.Errorf("delete %s %s: %w", what, id, orNotFound(err))
-	}
-	return nil
-}
-
-// inTx runs fn in one transaction and commits it when fn succeeds. what
-// names the operation in an error.
-func (db *DB) inTx(ctx context.Context, what string, fn func(*sql.Tx) error) error {
-	tx, err := db.sql.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("%s: %w", what, err)
-	}
-	defer tx.Rollback()
-	if err = fn(tx); err == nil {
-		err = tx.Commit()
-	}
-	if err != nil {
-		return fmt.Errorf("%s: %w", what, err)
-	}
-	return nil
 }
 
 // jsonField is a nullable JSON column and where its value goes.
@@ -176,20 +84,4 @@ func decodeFields(owner string, fields ...jsonField) error {
 		}
 	}
 	return nil
-}
-
-// notFound turns sql.ErrNoRows into ErrNotFound.
-func notFound(err error) error {
-	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNotFound
-	}
-	return err
-}
-
-// orNotFound is err, or ErrNotFound when an update found no row to change.
-func orNotFound(err error) error {
-	if err != nil {
-		return err
-	}
-	return ErrNotFound
 }

@@ -279,3 +279,25 @@ func TestRuns(t *testing.T) {
 		t.Fatalf("UpdateRun(gone): %v, want ErrNotFound", err)
 	}
 }
+
+func TestUpdateBot(t *testing.T) {
+	db := newStore(t)
+	dana := hire(t, db, "Dana")
+	dana.Name, dana.Role, dana.JobDescription = "Dana K", "Editor", "Edits."
+	dana.Tier, dana.Avatar, dana.ModelOverride = org.TierBest, "owl", "opus-4"
+	dana.FolderPath = "/elsewhere"
+	got, err := db.UpdateBot(t.Context(), dana)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "Dana K" || got.Role != "Editor" || got.JobDescription != "Edits." || got.Tier != org.TierBest ||
+		got.Avatar != "owl" || got.ModelOverride != "opus-4" {
+		t.Fatalf("bot = %+v", got)
+	}
+	if got.FolderPath == "/elsewhere" || got.DMConversationID == "" {
+		t.Fatalf("UpdateBot changed the folder or lost the DM: %+v", got)
+	}
+	if _, err := db.UpdateBot(t.Context(), org.Bot{ID: "nope"}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("UpdateBot of a missing bot: %v", err)
+	}
+}

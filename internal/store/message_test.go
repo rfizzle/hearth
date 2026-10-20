@@ -31,3 +31,26 @@ func TestMessage_ReadsOneByID(t *testing.T) {
 		t.Fatalf("Message(gone) = %v, want ErrNotFound", err)
 	}
 }
+
+func TestMessages_AttachmentsRoundTrip(t *testing.T) {
+	db := newStore(t)
+	dana := hire(t, db, "Dana")
+	want := []org.FileRef{{Path: "/w/brief.md", Name: "brief.md"}}
+	m, err := db.AppendMessage(t.Context(), org.Message{ConversationID: dana.DMConversationID, Kind: org.MessageText,
+		Content: "see attached", Attachments: want})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.Message(t.Context(), m.ID)
+	if err != nil || !slices.Equal(got.Attachments, want) {
+		t.Fatalf("Message = %+v, %v", got, err)
+	}
+	m.Attachments = nil
+	if err := db.UpdateMessage(t.Context(), m); err != nil {
+		t.Fatal(err)
+	}
+	msgs, _, err := db.Messages(t.Context(), dana.DMConversationID, 0, 10)
+	if err != nil || len(msgs) != 1 || msgs[0].Attachments != nil {
+		t.Fatalf("Messages after clearing = %+v, %v", msgs, err)
+	}
+}

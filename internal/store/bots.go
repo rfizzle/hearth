@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // CreateBot stores a new bot with its grants and its DM in one transaction,
@@ -15,9 +16,9 @@ import (
 // conversation to reach it in.
 func (db *DB) CreateBot(ctx context.Context, bot org.Bot, grants []org.Grant, dm org.Conversation) (org.Bot, error) {
 	now := db.clock()
-	bot.ID = newID()
+	bot.ID = sqlrow.NewID()
 	bot.CreatedAt = now
-	dm.ID = newID()
+	dm.ID = sqlrow.NewID()
 	dm.BotID = bot.ID
 
 	tx, err := db.sql.BeginTx(ctx, nil)
@@ -90,14 +91,14 @@ const botColumns = `SELECT b.id, b.name, b.role, b.job_description, b.tier, b.st
 
 // Bots is every bot, oldest hire first.
 func (db *DB) Bots(ctx context.Context) ([]org.Bot, error) {
-	return queryAll(ctx, db.sql, "bots", scanBot, botColumns+` ORDER BY b.created_at, b.rowid`, org.ConversationDM)
+	return sqlrow.QueryAll(ctx, db.sql, "bots", scanBot, botColumns+` ORDER BY b.created_at, b.rowid`, org.ConversationDM)
 }
 
 // Bot is the bot with id, or ErrNotFound.
 func (db *DB) Bot(ctx context.Context, id string) (org.Bot, error) {
 	b, err := scanBot(db.sql.QueryRowContext(ctx, botColumns+` WHERE b.id = ?`, org.ConversationDM, id))
 	if err != nil {
-		return org.Bot{}, fmt.Errorf("bot %s: %w", id, notFound(err))
+		return org.Bot{}, fmt.Errorf("bot %s: %w", id, sqlrow.NotFound(err))
 	}
 	return b, nil
 }
@@ -107,7 +108,7 @@ func (db *DB) Bot(ctx context.Context, id string) (org.Bot, error) {
 // status and grants do not change here. It returns the bot as stored, or
 // ErrNotFound.
 func (db *DB) UpdateBot(ctx context.Context, bot org.Bot) (org.Bot, error) {
-	if err := db.update(ctx, "bot "+bot.ID, `UPDATE bots
+	if err := sqlrow.Update(ctx, db.sql, "bot "+bot.ID, `UPDATE bots
 		SET name = ?, role = ?, job_description = ?, tier = ?, avatar = ?, model_override = ? WHERE id = ?`,
 		bot.Name, bot.Role, bot.JobDescription, bot.Tier, bot.Avatar, bot.ModelOverride, bot.ID); err != nil {
 		return org.Bot{}, err
@@ -115,11 +116,11 @@ func (db *DB) UpdateBot(ctx context.Context, bot org.Bot) (org.Bot, error) {
 	return db.Bot(ctx, bot.ID)
 }
 
-func scanBot(row scanner) (org.Bot, error) {
+func scanBot(row sqlrow.Scanner) (org.Bot, error) {
 	var b org.Bot
 	var created sql.NullInt64
 	err := row.Scan(&b.ID, &b.Name, &b.Role, &b.JobDescription, &b.Tier, &b.Status, &b.Avatar, &b.FolderPath,
 		&created, &b.ModelOverride, &b.DMConversationID)
-	b.CreatedAt = fromMillis(created)
+	b.CreatedAt = sqlrow.FromMillis(created)
 	return b, err
 }

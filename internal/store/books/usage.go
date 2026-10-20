@@ -1,19 +1,20 @@
-package store
+package books
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org/usage"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // AddUsage stores one model request. Its month is the month of r.At, which
 // is now when it is zero.
-func (db *DB) AddUsage(ctx context.Context, r usage.Record) error {
+func (repo *Repo) AddUsage(ctx context.Context, r usage.Record) error {
 	if r.At.IsZero() {
-		r.At = db.clock()
+		r.At = repo.clock()
 	}
-	if _, err := db.sql.ExecContext(ctx, `INSERT INTO usage
+	if _, err := repo.sql.ExecContext(ctx, `INSERT INTO usage
 		(run_id, bot_id, conversation_id, month, provider, model, prompt, completion, cached, created, plan,
 		cost_micros, priced, at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -30,13 +31,13 @@ const totalsColumns = `COUNT(*), COALESCE(SUM(prompt), 0), COALESCE(SUM(completi
 
 // UsageByMonth is what each bot spent in month ("2026-10"), by bot id, and
 // the total over all of them. A month with no requests has neither.
-func (db *DB) UsageByMonth(ctx context.Context, month string) ([]usage.BotTotals, usage.Totals, error) {
-	scan := func(row scanner) (usage.BotTotals, error) {
+func (repo *Repo) UsageByMonth(ctx context.Context, month string) ([]usage.BotTotals, usage.Totals, error) {
+	scan := func(row sqlrow.Scanner) (usage.BotTotals, error) {
 		var b usage.BotTotals
 		err := row.Scan(&b.BotID, &b.Requests, &b.Prompt, &b.Completion, &b.Cached, &b.Created, &b.CostMicros, &b.Unpriced)
 		return b, err
 	}
-	bots, err := queryAll(ctx, db.sql, "usage", scan,
+	bots, err := sqlrow.QueryAll(ctx, repo.sql, "usage", scan,
 		`SELECT bot_id, `+totalsColumns+` FROM usage WHERE month = ? GROUP BY bot_id ORDER BY bot_id`, month)
 	if err != nil {
 		return nil, usage.Totals{}, err
@@ -49,8 +50,8 @@ func (db *DB) UsageByMonth(ctx context.Context, month string) ([]usage.BotTotals
 }
 
 // UsageMonths is every month with usage, the latest first.
-func (db *DB) UsageMonths(ctx context.Context) ([]string, error) {
-	return queryAll(ctx, db.sql, "usage months", func(row scanner) (string, error) {
+func (repo *Repo) UsageMonths(ctx context.Context) ([]string, error) {
+	return sqlrow.QueryAll(ctx, repo.sql, "usage months", func(row sqlrow.Scanner) (string, error) {
 		var m string
 		return m, row.Scan(&m)
 	}, `SELECT DISTINCT month FROM usage ORDER BY month DESC`)

@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // Page sizes for Messages: the size a limit of zero means, and the most one
@@ -38,7 +39,7 @@ func (db *DB) Messages(ctx context.Context, convID string, beforeSeq int64, limi
 	query += ` ORDER BY seq DESC LIMIT ?`
 	args = append(args, limit+1)
 
-	msgs, err = queryAll(ctx, db.sql, "messages", scanMessage, query, args...)
+	msgs, err = sqlrow.QueryAll(ctx, db.sql, "messages", scanMessage, query, args...)
 	if err != nil {
 		return nil, false, err
 	}
@@ -61,7 +62,7 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 	if m.CreatedAt.IsZero() {
 		m.CreatedAt = now
 	}
-	m.ID = newID()
+	m.ID = sqlrow.NewID()
 
 	tx, err := db.sql.BeginTx(ctx, nil)
 	if err != nil {
@@ -74,7 +75,7 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
 	if n, err := res.RowsAffected(); err != nil || n == 0 {
-		return org.Message{}, fmt.Errorf("append message: conversation %s: %w", m.ConversationID, orNotFound(err))
+		return org.Message{}, fmt.Errorf("append message: conversation %s: %w", m.ConversationID, sqlrow.OrNotFound(err))
 	}
 	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(seq), 0) + 1 FROM messages WHERE conversation_id = ?`,
 		m.ConversationID).Scan(&m.Seq); err != nil {
@@ -85,8 +86,8 @@ func (db *DB) AppendMessage(ctx context.Context, m org.Message) (org.Message, er
 		widget_spec, widget_answer, attachments)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		m.ID, m.ConversationID, m.Seq, m.AuthorBotID, m.Kind, m.Content, parts.calls, m.ToolCallID, parts.files,
-		nullString(m.RunID), m.Streaming, millis(m.CreatedAt),
-		nullString(m.Widget), nullString(m.WidgetAnswer), parts.attachments); err != nil {
+		sqlrow.NullString(m.RunID), m.Streaming, sqlrow.Millis(m.CreatedAt),
+		sqlrow.NullString(m.Widget), sqlrow.NullString(m.WidgetAnswer), parts.attachments); err != nil {
 		return org.Message{}, fmt.Errorf("append message: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -104,16 +105,16 @@ func (db *DB) UpdateMessage(ctx context.Context, m org.Message) error {
 	if err != nil {
 		return fmt.Errorf("update message: %w", err)
 	}
-	return db.update(ctx, "message "+m.ID, `UPDATE messages
+	return sqlrow.Update(ctx, db.sql, "message "+m.ID, `UPDATE messages
 		SET content = ?, tool_calls = ?, tool_call_id = ?, files = ?, streaming = ?,
 		widget_spec = ?, widget_answer = ?, attachments = ? WHERE id = ?`,
-		m.Content, parts.calls, m.ToolCallID, parts.files, m.Streaming, nullString(m.Widget), nullString(m.WidgetAnswer), parts.attachments, m.ID)
+		m.Content, parts.calls, m.ToolCallID, parts.files, m.Streaming, sqlrow.NullString(m.Widget), sqlrow.NullString(m.WidgetAnswer), parts.attachments, m.ID)
 }
 
 // DeleteMessage removes the message with id. It is ErrNotFound when there is
 // none.
 func (db *DB) DeleteMessage(ctx context.Context, id string) error {
-	return db.deleteByID(ctx, "message", "messages", id)
+	return sqlrow.DeleteByID(ctx, db.sql, "message", "messages", id)
 }
 
 // CloseStreamingMessages ends every message still streaming: one with no
@@ -123,7 +124,7 @@ func (db *DB) DeleteMessage(ctx context.Context, id string) error {
 // closed and how many it deleted.
 // See docs/model.md#9-failure-handling.
 func (db *DB) CloseStreamingMessages(ctx context.Context) (closed, deleted int64, err error) {
-	err = db.inTx(ctx, "close streaming messages", func(tx *sql.Tx) error {
+	err = sqlrow.InTx(ctx, db.sql, "close streaming messages", func(tx *sql.Tx) error {
 		for _, q := range []struct {
 			n   *int64
 			sql string
@@ -170,7 +171,7 @@ func encodeParts(m org.Message) (p jsonParts, err error) {
 	return p, nil
 }
 
-func scanMessage(row scanner) (org.Message, error) {
+func scanMessage(row sqlrow.Scanner) (org.Message, error) {
 	var m org.Message
 	var p jsonParts
 	var widget, answer sql.NullString
@@ -179,7 +180,7 @@ func scanMessage(row scanner) (org.Message, error) {
 		&m.ToolCallID, &p.files, &m.RunID, &m.Streaming, &created, &widget, &answer, &p.attachments); err != nil {
 		return org.Message{}, err
 	}
-	m.CreatedAt = fromMillis(created)
+	m.CreatedAt = sqlrow.FromMillis(created)
 	m.Widget, m.WidgetAnswer = widget.String, answer.String
 	err := decodeFields("message "+m.ID, jsonField{p.calls, &m.ToolCalls, "tool calls"},
 		jsonField{p.files, &m.Files, "files"}, jsonField{p.attachments, &m.Attachments, "attachments"})

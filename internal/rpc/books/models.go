@@ -9,7 +9,7 @@ import (
 	"github.com/rfizzle/hearth/internal/provider/models"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
-	"github.com/rfizzle/hearth/internal/store"
+	storebooks "github.com/rfizzle/hearth/internal/store/books"
 )
 
 // ListKnownServices is the services hearth knows the address of, with
@@ -46,13 +46,13 @@ func (s Models) Tiers(ctx context.Context, _ *connect.Request[hearthv1.TiersRequ
 // SetTiers replaces the mapping and tells the bus; a tier left out follows
 // the defaults, and a tier named twice is not one mapping.
 func (s Models) SetTiers(ctx context.Context, req *connect.Request[hearthv1.SetTiersRequest]) (*connect.Response[hearthv1.SetTiersResponse], error) {
-	choices := make([]store.TierChoice, 0, len(req.Msg.GetTiers()))
+	choices := make([]storebooks.TierChoice, 0, len(req.Msg.GetTiers()))
 	for _, c := range req.Msg.GetTiers() {
 		one, err := tierFromProto(c)
 		if err != nil {
 			return nil, err
 		}
-		if slices.ContainsFunc(choices, func(had store.TierChoice) bool { return had.Tier == one.Tier }) {
+		if slices.ContainsFunc(choices, func(had storebooks.TierChoice) bool { return had.Tier == one.Tier }) {
 			return nil, wire.Invalid("%s is named twice", c.GetTier())
 		}
 		choices = append(choices, one)

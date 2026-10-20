@@ -1,7 +1,8 @@
-package store
+package books_test
 
 import (
 	"errors"
+	"path/filepath"
 	"slices"
 	"testing"
 	"time"
@@ -9,7 +10,31 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/org/usage"
+	"github.com/rfizzle/hearth/internal/store"
+	"github.com/rfizzle/hearth/internal/store/books"
 )
+
+// newStore opens a store in a temporary folder through store.Open, so the
+// migrations run and the repository is the one the store embeds.
+func newStore(t *testing.T) *store.DB {
+	t.Helper()
+	db, err := store.Open(filepath.Join(t.TempDir(), "hearth.db"))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+func hire(t *testing.T, db *store.DB, name string) org.Bot {
+	t.Helper()
+	bot, grants, dm := org.NewBot(name, "Analyst", "Finds things out.", org.TierBalanced, "/Users/me/Hearth")
+	stored, err := db.CreateBot(t.Context(), bot, grants, dm)
+	if err != nil {
+		t.Fatalf("CreateBot: %v", err)
+	}
+	return stored
+}
 
 func noteTexts(notes []memory.Note) []string {
 	var out []string
@@ -35,7 +60,7 @@ func TestNotes_RoundTripKeepingPinsThroughReplace(t *testing.T) {
 	if a.ID == "" || a.CreatedAt.IsZero() {
 		t.Fatalf("AddNote did not mint an id and a time: %+v", a)
 	}
-	if _, err := db.AddNote(ctx, memory.Note{BotID: "nobody", Text: "x"}); !errors.Is(err, ErrNotFound) {
+	if _, err := db.AddNote(ctx, memory.Note{BotID: "nobody", Text: "x"}); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("AddNote for a missing bot: %v, want ErrNotFound", err)
 	}
 
@@ -67,10 +92,10 @@ func TestNotes_RoundTripKeepingPinsThroughReplace(t *testing.T) {
 	if err := db.DeleteNote(ctx, a.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.DeleteNote(ctx, a.ID); !errors.Is(err, ErrNotFound) {
+	if err := db.DeleteNote(ctx, a.ID); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("second DeleteNote: %v, want ErrNotFound", err)
 	}
-	if _, err := db.EditNote(ctx, "nope", "x"); !errors.Is(err, ErrNotFound) {
+	if _, err := db.EditNote(ctx, "nope", "x"); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("EditNote of a missing note: %v", err)
 	}
 }
@@ -83,7 +108,7 @@ func TestReplaceNotes_FailureLeavesNotesAsTheyWere(t *testing.T) {
 	}
 	// A note with a fixed id twice cannot happen through ReplaceNotes, so
 	// break the transaction by replacing for a bot that does not exist.
-	if err := db.ReplaceNotes(t.Context(), "nobody", []memory.Note{{Text: "new"}}); !errors.Is(err, ErrNotFound) {
+	if err := db.ReplaceNotes(t.Context(), "nobody", []memory.Note{{Text: "new"}}); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("ReplaceNotes for a missing bot: %v, want ErrNotFound", err)
 	}
 	if got, _ := db.Notes(t.Context(), dana.ID); !slices.Equal(noteTexts(got), []string{"old"}) {
@@ -118,17 +143,17 @@ func TestPages(t *testing.T) {
 	}
 
 	for _, bad := range []memory.Scope{{}, {Everyone: true, BotID: dana.ID}} {
-		if _, err := db.PutPage(ctx, memory.Page{Title: "x", Scope: bad}); !errors.Is(err, ErrBadScope) {
+		if _, err := db.PutPage(ctx, memory.Page{Title: "x", Scope: bad}); !errors.Is(err, books.ErrBadScope) {
 			t.Fatalf("PutPage with scope %+v: %v, want ErrBadScope", bad, err)
 		}
 	}
-	if _, err := db.PutPage(ctx, memory.Page{Title: "x", Scope: memory.Scope{BotID: "nobody"}}); !errors.Is(err, ErrNotFound) {
+	if _, err := db.PutPage(ctx, memory.Page{Title: "x", Scope: memory.Scope{BotID: "nobody"}}); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("PutPage for a missing bot: %v, want ErrNotFound", err)
 	}
 	if err := db.DeletePage(ctx, all.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.DeletePage(ctx, all.ID); !errors.Is(err, ErrNotFound) {
+	if err := db.DeletePage(ctx, all.ID); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("second DeletePage: %v", err)
 	}
 	_ = own
@@ -205,14 +230,14 @@ func TestTiers_PutAndRead(t *testing.T) {
 	if got, err := db.Tiers(ctx); err != nil || len(got) != 0 {
 		t.Fatalf("Tiers on a new store = %+v, %v", got, err)
 	}
-	first := []TierChoice{
+	first := []books.TierChoice{
 		{Tier: org.TierBest, Provider: "anthropic", Model: "opus"},
 		{Tier: org.TierFast, Provider: "openai-compatible", Profile: "local", Model: "llama"},
 	}
 	if err := db.PutTiers(ctx, first); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := db.Tiers(ctx); err != nil || !slices.Equal(got, []TierChoice{first[1], first[0]}) {
+	if got, err := db.Tiers(ctx); err != nil || !slices.Equal(got, []books.TierChoice{first[1], first[0]}) {
 		t.Fatalf("Tiers = %+v, %v", got, err)
 	}
 	if err := db.PutTiers(ctx, first[:1]); err != nil {
@@ -220,65 +245,5 @@ func TestTiers_PutAndRead(t *testing.T) {
 	}
 	if got, _ := db.Tiers(ctx); !slices.Equal(got, first[:1]) {
 		t.Fatalf("Tiers after replacing = %+v", got)
-	}
-}
-
-func TestPutSummary(t *testing.T) {
-	db := newStore(t)
-	dana := hire(t, db, "Dana")
-	if err := db.PutSummary(t.Context(), dana.DMConversationID, "We agreed on the plan.", 12); err != nil {
-		t.Fatal(err)
-	}
-	c, err := db.Conversation(t.Context(), dana.DMConversationID)
-	if err != nil || c.Summary != "We agreed on the plan." || c.SummaryThroughSeq != 12 {
-		t.Fatalf("conversation = %+v, %v", c, err)
-	}
-	if err := db.PutSummary(t.Context(), "nope", "x", 1); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("PutSummary on a missing conversation: %v", err)
-	}
-}
-
-func TestUpdateBot(t *testing.T) {
-	db := newStore(t)
-	dana := hire(t, db, "Dana")
-	dana.Name, dana.Role, dana.JobDescription = "Dana K", "Editor", "Edits."
-	dana.Tier, dana.Avatar, dana.ModelOverride = org.TierBest, "owl", "opus-4"
-	dana.FolderPath = "/elsewhere"
-	got, err := db.UpdateBot(t.Context(), dana)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Name != "Dana K" || got.Role != "Editor" || got.JobDescription != "Edits." || got.Tier != org.TierBest ||
-		got.Avatar != "owl" || got.ModelOverride != "opus-4" {
-		t.Fatalf("bot = %+v", got)
-	}
-	if got.FolderPath == "/elsewhere" || got.DMConversationID == "" {
-		t.Fatalf("UpdateBot changed the folder or lost the DM: %+v", got)
-	}
-	if _, err := db.UpdateBot(t.Context(), org.Bot{ID: "nope"}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("UpdateBot of a missing bot: %v", err)
-	}
-}
-
-func TestMessages_AttachmentsRoundTrip(t *testing.T) {
-	db := newStore(t)
-	dana := hire(t, db, "Dana")
-	want := []org.FileRef{{Path: "/w/brief.md", Name: "brief.md"}}
-	m, err := db.AppendMessage(t.Context(), org.Message{ConversationID: dana.DMConversationID, Kind: org.MessageText,
-		Content: "see attached", Attachments: want})
-	if err != nil {
-		t.Fatal(err)
-	}
-	got, err := db.Message(t.Context(), m.ID)
-	if err != nil || !slices.Equal(got.Attachments, want) {
-		t.Fatalf("Message = %+v, %v", got, err)
-	}
-	m.Attachments = nil
-	if err := db.UpdateMessage(t.Context(), m); err != nil {
-		t.Fatal(err)
-	}
-	msgs, _, err := db.Messages(t.Context(), dana.DMConversationID, 0, 10)
-	if err != nil || len(msgs) != 1 || msgs[0].Attachments != nil {
-		t.Fatalf("Messages after clearing = %+v, %v", msgs, err)
 	}
 }

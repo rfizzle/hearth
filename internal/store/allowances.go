@@ -6,6 +6,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // AddAllowance lets a.ConversationID use a.Capability in a.Folder without
@@ -30,12 +31,12 @@ func (db *DB) AddAllowance(ctx context.Context, a inbox.Allowance) error {
 // were added. A conversation with none, or no such conversation, has an
 // empty list.
 func (db *DB) Allowances(ctx context.Context, conversationID string) ([]inbox.Allowance, error) {
-	scan := func(row scanner) (a inbox.Allowance, err error) {
+	scan := func(row sqlrow.Scanner) (a inbox.Allowance, err error) {
 		var c string
 		err = row.Scan(&a.ConversationID, &c, &a.Folder)
 		a.Capability = org.Capability(c)
 		return a, err
 	}
-	return queryAll(ctx, db.sql, "allowances", scan,
+	return sqlrow.QueryAll(ctx, db.sql, "allowances", scan,
 		`SELECT conversation_id, capability, folder FROM allowances WHERE conversation_id = ? ORDER BY rowid`, conversationID)
 }

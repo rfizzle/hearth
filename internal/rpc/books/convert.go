@@ -10,7 +10,7 @@ import (
 	"github.com/rfizzle/hearth/internal/provider/models"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
-	"github.com/rfizzle/hearth/internal/store"
+	storebooks "github.com/rfizzle/hearth/internal/store/books"
 )
 
 // The conversions between the notes, pages, totals and tiers and the
@@ -54,23 +54,23 @@ func summaryToProto(s meter.Summary) *hearthv1.SummaryResponse {
 	}
 }
 
-func tierToProto(c store.TierChoice) *hearthv1.TierChoice {
+func tierToProto(c storebooks.TierChoice) *hearthv1.TierChoice {
 	p := wire.ToProto(wire.ProviderNames, provider.Provider(c.Provider))
 	return &hearthv1.TierChoice{Tier: hearthv1.Tier(c.Tier), Provider: p, Profile: c.Profile, Model: c.Model}
 }
 
 // tierFromProto is one row of the owner's mapping; the tier, the provider
 // and the model must each be named.
-func tierFromProto(c *hearthv1.TierChoice) (store.TierChoice, error) {
+func tierFromProto(c *hearthv1.TierChoice) (storebooks.TierChoice, error) {
 	tier, err := wire.TierFromProto(c.GetTier())
 	if err != nil {
-		return store.TierChoice{}, err
+		return storebooks.TierChoice{}, err
 	}
 	p, err := wire.FromProto(wire.ProviderNames, c.GetProvider())
 	if err != nil {
-		return store.TierChoice{}, err
+		return storebooks.TierChoice{}, err
 	}
-	return store.TierChoice{Tier: tier, Provider: string(p), Profile: c.GetProfile(), Model: c.GetModel()}, wire.Need("model", c.GetModel())
+	return storebooks.TierChoice{Tier: tier, Provider: string(p), Profile: c.GetProfile(), Model: c.GetModel()}, wire.Need("model", c.GetModel())
 }
 
 func optionToProto(o models.Option) *hearthv1.ModelOption {

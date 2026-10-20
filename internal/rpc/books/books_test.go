@@ -12,7 +12,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/org/usage"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
-	"github.com/rfizzle/hearth/internal/store"
+	storebooks "github.com/rfizzle/hearth/internal/store/books"
 
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
@@ -59,7 +59,7 @@ func TestEvent_ConvertsWhatBooksPublishes(t *testing.T) {
 		{PageChanged{Page: memory.Page{ID: "p1", Markdown: "abc"}}, func(m *hearthv1.SubscribeResponse) bool {
 			return m.GetHandbookChanged().GetPage().GetBytes() == 3
 		}},
-		{TiersChanged{Tiers: []store.TierChoice{{Tier: org.TierBest, Provider: "anthropic", Model: "m"}}}, func(m *hearthv1.SubscribeResponse) bool {
+		{TiersChanged{Tiers: []storebooks.TierChoice{{Tier: org.TierBest, Provider: "anthropic", Model: "m"}}}, func(m *hearthv1.SubscribeResponse) bool {
 			c := m.GetTiersChanged().GetTiers()
 			return len(c) == 1 && c[0].GetProvider() == hearthv1.Provider_PROVIDER_ANTHROPIC && c[0].GetTier() == hearthv1.Tier_TIER_BEST
 		}},

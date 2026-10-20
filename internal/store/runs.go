@@ -6,15 +6,16 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // CreateRun stores a new run, minting its id, and returns it as stored.
 func (db *DB) CreateRun(ctx context.Context, r org.Run) (org.Run, error) {
-	r.ID = newID()
+	r.ID = sqlrow.NewID()
 	_, err := db.sql.ExecContext(ctx, `INSERT INTO runs
 		(id, conversation_id, bot_id, state, steps, failure, started_at, ended_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.ConversationID, r.BotID, r.State, r.Steps, r.Failure, millis(r.StartedAt), millis(r.EndedAt))
+		r.ID, r.ConversationID, r.BotID, r.State, r.Steps, r.Failure, sqlrow.Millis(r.StartedAt), sqlrow.Millis(r.EndedAt))
 	if err != nil {
 		return org.Run{}, fmt.Errorf("create run: %w", err)
 	}
@@ -24,9 +25,9 @@ func (db *DB) CreateRun(ctx context.Context, r org.Run) (org.Run, error) {
 // UpdateRun replaces a stored run's state, steps, failure and times. It is
 // ErrNotFound when no run has r.ID.
 func (db *DB) UpdateRun(ctx context.Context, r org.Run) error {
-	return db.update(ctx, "run "+r.ID, `UPDATE runs
+	return sqlrow.Update(ctx, db.sql, "run "+r.ID, `UPDATE runs
 		SET state = ?, steps = ?, failure = ?, started_at = ?, ended_at = ? WHERE id = ?`,
-		r.State, r.Steps, r.Failure, millis(r.StartedAt), millis(r.EndedAt), r.ID)
+		r.State, r.Steps, r.Failure, sqlrow.Millis(r.StartedAt), sqlrow.Millis(r.EndedAt), r.ID)
 }
 
 // Run is the run with id, or ErrNotFound.
@@ -37,9 +38,9 @@ func (db *DB) Run(ctx context.Context, id string) (org.Run, error) {
 		FROM runs WHERE id = ?`, id).
 		Scan(&r.ID, &r.ConversationID, &r.BotID, &r.State, &r.Steps, &r.Failure, &started, &ended)
 	if err != nil {
-		return org.Run{}, fmt.Errorf("run %s: %w", id, notFound(err))
+		return org.Run{}, fmt.Errorf("run %s: %w", id, sqlrow.NotFound(err))
 	}
-	r.StartedAt, r.EndedAt = fromMillis(started), fromMillis(ended)
+	r.StartedAt, r.EndedAt = sqlrow.FromMillis(started), sqlrow.FromMillis(ended)
 	return r, nil
 }
 
@@ -47,7 +48,7 @@ func (db *DB) Run(ctx context.Context, id string) (org.Run, error) {
 // and false when it has had none. Newest is the order the runs were created
 // in, which is the order they started in.
 func (db *DB) LatestRun(ctx context.Context, convID string) (org.Run, bool, error) {
-	rows, err := queryAll(ctx, db.sql, "latest run of "+convID, scanRun, `SELECT `+runColumns+`
+	rows, err := sqlrow.QueryAll(ctx, db.sql, "latest run of "+convID, scanRun, `SELECT `+runColumns+`
 		FROM runs WHERE conversation_id = ? ORDER BY rowid DESC LIMIT 1`, convID)
 	if err != nil || len(rows) == 0 {
 		return org.Run{}, false, err
@@ -58,11 +59,11 @@ func (db *DB) LatestRun(ctx context.Context, convID string) (org.Run, bool, erro
 // runColumns is what scanRun reads.
 const runColumns = `id, conversation_id, bot_id, state, steps, failure, started_at, ended_at`
 
-func scanRun(row scanner) (org.Run, error) {
+func scanRun(row sqlrow.Scanner) (org.Run, error) {
 	var r org.Run
 	var started, ended sql.NullInt64
 	err := row.Scan(&r.ID, &r.ConversationID, &r.BotID, &r.State, &r.Steps, &r.Failure, &started, &ended)
-	r.StartedAt, r.EndedAt = fromMillis(started), fromMillis(ended)
+	r.StartedAt, r.EndedAt = sqlrow.FromMillis(started), sqlrow.FromMillis(ended)
 	return r, err
 }
 

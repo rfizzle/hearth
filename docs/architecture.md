@@ -149,6 +149,8 @@ Rules:
 | `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
 | `internal/store/migrate` | The ordered schema steps and the runner that applies the ones a file has not seen | new |
+| `internal/store/books` | What the bots remember, read and cost: notes, handbook pages, usage, budgets, tiers; the store embeds it | new |
+| `internal/store/sqlrow` | The row mechanics the store's repositories share: ids, time columns, one-row updates, transactions | new |
 | `internal/agent` | Turn loop, tool rounds, steering queue, repeat detection, retry, compaction | lifted from shhh `internal/agent` core + `retry.go` + `compact.go` |
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |

@@ -32,3 +32,18 @@ func TestConversation_CarriesItsNewestRun(t *testing.T) {
 		t.Fatalf("Conversation of a missing id: %v, want ErrNotFound", err)
 	}
 }
+
+func TestPutSummary(t *testing.T) {
+	db := newStore(t)
+	dana := hire(t, db, "Dana")
+	if err := db.PutSummary(t.Context(), dana.DMConversationID, "We agreed on the plan.", 12); err != nil {
+		t.Fatal(err)
+	}
+	c, err := db.Conversation(t.Context(), dana.DMConversationID)
+	if err != nil || c.Summary != "We agreed on the plan." || c.SummaryThroughSeq != 12 {
+		t.Fatalf("conversation = %+v, %v", c, err)
+	}
+	if err := db.PutSummary(t.Context(), "nope", "x", 1); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("PutSummary on a missing conversation: %v", err)
+	}
+}

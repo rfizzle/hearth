@@ -12,6 +12,7 @@ import (
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/store"
+	storebooks "github.com/rfizzle/hearth/internal/store/books"
 )
 
 // Pages is the handbook the HandbookService serves; handbook.Service is one.
@@ -54,7 +55,7 @@ type PageChanged struct {
 }
 
 // TiersChanged is the tier mapping after the owner changed it.
-type TiersChanged struct{ Tiers []store.TierChoice }
+type TiersChanged struct{ Tiers []storebooks.TierChoice }
 
 // UsageTicked is a bot's month after one of its requests, with its budget,
 // and the org's month.

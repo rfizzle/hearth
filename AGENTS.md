@@ -123,7 +123,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
   org/                domain types, grant resolution, budget math (exists)
   workspace/          the Hearth folder's layout and path containment (exists)
-  store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps
+  store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps, store/books the notes, handbook, usage, budgets and tiers, store/sqlrow the row mechanics they share
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```
 

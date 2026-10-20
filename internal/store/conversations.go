@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // Conversations is every conversation the bot with botID is in, the most
 // recently active first, each with its newest run when it has had one.
 func (db *DB) Conversations(ctx context.Context, botID string) ([]org.Conversation, error) {
-	return queryAll(ctx, db.sql, "conversations", scanConversation, conversationSelect+
+	return sqlrow.QueryAll(ctx, db.sql, "conversations", scanConversation, conversationSelect+
 		` WHERE c.bot_id = ? ORDER BY c.updated_at DESC, c.rowid DESC`, botID)
 }
 
@@ -25,7 +26,7 @@ const conversationSelect = `SELECT c.id, c.kind, COALESCE(c.bot_id, ''), c.title
 
 // Conversation is the conversation with id and its newest run, or ErrNotFound.
 func (db *DB) Conversation(ctx context.Context, id string) (org.Conversation, error) {
-	rows, err := queryAll(ctx, db.sql, "conversation "+id, scanConversation, conversationSelect+` WHERE c.id = ?`, id)
+	rows, err := sqlrow.QueryAll(ctx, db.sql, "conversation "+id, scanConversation, conversationSelect+` WHERE c.id = ?`, id)
 	if err != nil {
 		return org.Conversation{}, err
 	}
@@ -39,11 +40,11 @@ func (db *DB) Conversation(ctx context.Context, id string) (org.Conversation, er
 // its messages up to throughSeq. It is ErrNotFound when there is no such
 // conversation.
 func (db *DB) PutSummary(ctx context.Context, conversationID, text string, throughSeq int64) error {
-	return db.update(ctx, "conversation "+conversationID,
+	return sqlrow.Update(ctx, db.sql, "conversation "+conversationID,
 		`UPDATE conversations SET summary = ?, summary_through_seq = ? WHERE id = ?`, text, throughSeq, conversationID)
 }
 
-func scanConversation(row scanner) (org.Conversation, error) {
+func scanConversation(row sqlrow.Scanner) (org.Conversation, error) {
 	var c org.Conversation
 	var created, updated, started, ended sql.NullInt64
 	var run struct {
@@ -54,11 +55,11 @@ func scanConversation(row scanner) (org.Conversation, error) {
 	err := row.Scan(&c.ID, &c.Kind, &c.BotID, &c.Title, &created, &updated,
 		&c.Summary, &c.SummaryThroughSeq,
 		&run.id, &run.conv, &run.bot, &run.state, &run.steps, &run.failure, &started, &ended)
-	c.CreatedAt, c.UpdatedAt = fromMillis(created), fromMillis(updated)
+	c.CreatedAt, c.UpdatedAt = sqlrow.FromMillis(created), sqlrow.FromMillis(updated)
 	if run.id.Valid {
 		c.LatestRun = &org.Run{ID: run.id.String, ConversationID: run.conv.String, BotID: run.bot.String,
 			State: org.RunState(run.state.Int64), Steps: int(run.steps.Int64), Failure: run.failure.String,
-			StartedAt: fromMillis(started), EndedAt: fromMillis(ended)}
+			StartedAt: sqlrow.FromMillis(started), EndedAt: sqlrow.FromMillis(ended)}
 	}
 	return c, err
 }

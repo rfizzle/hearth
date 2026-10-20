@@ -6,16 +6,17 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/store/sqlrow"
 )
 
 // GrantsFor is every grant the bot with botID holds, in the order they were
 // given. A bot with none, or no such bot, has an empty list.
 func (db *DB) GrantsFor(ctx context.Context, botID string) ([]org.Grant, error) {
-	scan := func(row scanner) (g org.Grant, err error) {
+	scan := func(row sqlrow.Scanner) (g org.Grant, err error) {
 		err = row.Scan(&g.BotID, &g.Capability, &g.Mode, &g.Folder)
 		return g, err
 	}
-	return queryAll(ctx, db.sql, "grants", scan,
+	return sqlrow.QueryAll(ctx, db.sql, "grants", scan,
 		`SELECT bot_id, capability, mode, folder FROM grants WHERE bot_id = ? ORDER BY id`, botID)
 }
 
@@ -28,10 +29,10 @@ func (db *DB) GrantsFor(ctx context.Context, botID string) ([]org.Grant, error) 
 // are stored for botID.
 // See docs/model.md#access.
 func (db *DB) ReplaceGrants(ctx context.Context, botID string, grants []org.Grant) error {
-	return db.inTx(ctx, "replace grants", func(tx *sql.Tx) error {
+	return sqlrow.InTx(ctx, db.sql, "replace grants", func(tx *sql.Tx) error {
 		var own string
 		if err := tx.QueryRowContext(ctx, `SELECT folder_path FROM bots WHERE id = ?`, botID).Scan(&own); err != nil {
-			return fmt.Errorf("bot %s: %w", botID, notFound(err))
+			return fmt.Errorf("bot %s: %w", botID, sqlrow.NotFound(err))
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM grants WHERE bot_id = ? AND folder <> ? AND capability NOT IN (?, ?)`,
 			botID, own, org.AskOwner, org.Remember); err != nil {
