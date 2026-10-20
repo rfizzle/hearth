@@ -245,6 +245,11 @@ func TestValidate_RefusesBeforeTheGate(t *testing.T) {
 		{"a template set in the spec", map[string]any{"path": "d", "spec": withTemplate}, "the template is set from the tool's template argument"},
 		{"as_of from the bot", map[string]any{"path": "d", "spec": asOf}, "as_of is filled in when Hearth writes"},
 		{"a measure of the wrong kind", map[string]any{"path": "d", "spec": bound("metric", "project.tasks/p1")}, "project.tasks reads a progress, and a metric widget shows a number"},
+		{"a delta beside a bound metric", map[string]any{"path": "d", "spec": func() map[string]any {
+			s := bound("metric", "usage.cost/me/current")
+			s["sections"].([]any)[0].(map[string]any)["widgets"].([]any)[0].(map[string]any)["delta"] = map[string]any{"value": -35, "good": true}
+			return s
+		}()}, "a bound metric takes no delta"},
 		{"an unknown family", map[string]any{"path": "d", "spec": bound("metric", "weather.today")}, "is not a measure"},
 		{"an extension on the path", map[string]any{"path": "d.html", "spec": text("x")}, "leave out .html"},
 		{"a folder for a path", map[string]any{"path": "reports/", "spec": text("x")}, "give a name, not a folder"},

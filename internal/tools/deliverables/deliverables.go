@@ -201,9 +201,9 @@ func (t tool) fit(id string, spec deliverable.Spec) (*template.Template, deliver
 	return nil, spec, fmt.Errorf("there is no template %q; use one of %s, or leave template out", id, strings.Join(ids, ", "))
 }
 
-// bind parses each bound widget's measure id, checks that its family reads
-// the kind of value the widget shows, and resolves its aliases for the
-// caller. this in a conversation with no project is refused here, before
+// bind refuses a delta on a bound metric, parses each bound widget's
+// measure id, checks that its family reads the kind of value the widget
+// shows, and resolves its aliases for the caller. this in a conversation with no project is refused here, before
 // the call is placed.
 func (t tool) bind(spec deliverable.Spec) ([]binding, error) {
 	var bound []binding
@@ -223,6 +223,9 @@ func (t tool) bind(spec deliverable.Spec) ([]binding, error) {
 }
 
 func (t tool) resolve(w deliverable.Widget) (measure.ID, error) {
+	if w.Kind == deliverable.Metric && w.Delta != nil {
+		return measure.ID{}, errors.New("a bound metric takes no delta: the change beside a figure the office keeps would be a number you typed; leave delta out, or leave measure out and give the value yourself")
+	}
 	id, err := measure.ParseID(w.Measure)
 	if err != nil {
 		return measure.ID{}, err
@@ -366,12 +369,9 @@ func (t tool) draw(call tools.Call, spec deliverable.Spec) (outs []output, notYe
 	if rel, err := filepath.Rel(call.Folder, stem); err == nil {
 		shown = filepath.ToSlash(rel)
 	}
-	// Within as well as Inside: a reserved folder that does not exist yet,
-	// such as the owner's templates before the first is saved, has nothing
-	// on disk for Inside to resolve, and a write here would create it.
 	for _, ext := range []string{specExt, pageExt, pdfExt} {
 		for _, r := range t.reserved {
-			if workspace.Inside(r, stem+ext) || workspace.Within(r, stem+ext) {
+			if workspace.Inside(r, stem+ext) {
 				return nil, false, fmt.Errorf("%s is in a folder Hearth keeps for itself", shown+ext)
 			}
 		}
