@@ -68,6 +68,7 @@ type Service struct {
 	cancels map[string]context.CancelFunc // run id -> what stops it
 
 	extra []tools.Definition // more tools, for a test
+	fault func() error       // fails recording a decision, for a test
 }
 
 // Open is a service over d. Runs an earlier launch left queued or working

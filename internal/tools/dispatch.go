@@ -48,6 +48,28 @@ type Checked struct {
 	Granted string
 }
 
+// Describe is the call in the owner's words with its path as the dispatcher
+// resolved it: the name of the granted folder it fell under, then the path
+// inside it. A path the model wrote through .. or a link reads as the folder
+// it lands in, never as the bot's paraphrase of it.
+// See docs/model.md#8-approvals.
+func (c Checked) Describe() string {
+	if c.Def.Describe == nil {
+		return ""
+	}
+	args := c.Call.Args
+	if rel, err := filepath.Rel(c.Call.Folder, c.Call.Path); c.Call.Path != "" && err == nil {
+		var fields map[string]json.RawMessage
+		if json.Unmarshal(args, &fields) == nil {
+			fields["path"], _ = json.Marshal(filepath.Join(filepath.Base(c.Granted), rel))
+			if b, err := json.Marshal(fields); err == nil {
+				args = b
+			}
+		}
+	}
+	return c.Def.Describe(args)
+}
+
 // Tools is the definitions the grants offer, in registry order: the toolset
 // the model is offered. A capability granted in ask mode is offered too; a
 // call to it waits for the owner. A tool it is not offered is refused if
@@ -202,33 +224,39 @@ func pathArg(args json.RawMessage) (string, error) {
 	return a.Path, nil
 }
 
+// errOutside ends a refusal for a path in none of the granted folders.
+var errOutside = errors.New("is outside the folders this bot may use")
+
 // place finds the grant a files call to capability falls under, trying the
 // folders granted without asking before those granted in ask mode, so a path
 // in both runs without asking. It returns the grant, the resolved path and
 // the resolved folder.
 func place(root string, grants []org.Grant, capability org.Capability, requested string) (org.Grant, string, string, error) {
-	var scoped []org.Grant
 	for _, mode := range []org.Mode{org.ModeAllowed, org.ModeAsk} {
+		var scoped []org.Grant
+		var folders []string
 		for _, g := range grants {
 			if g.Capability == capability && g.Mode == mode && g.Folder != "" {
 				scoped = append(scoped, g)
+				folders = append(folders, g.Folder)
 			}
 		}
+		path, folder, i, err := containPath(root, folders, requested)
+		if err == nil {
+			return scoped[i], path, folder, nil
+		}
+		if !errors.Is(err, errOutside) {
+			return org.Grant{}, "", "", err
+		}
 	}
-	folders := make([]string, len(scoped))
-	for i, g := range scoped {
-		folders[i] = g.Folder
-	}
-	path, folder, i, err := containPath(root, folders, requested)
-	if err != nil {
-		return org.Grant{}, "", "", err
-	}
-	return scoped[i], path, folder, nil
+	return org.Grant{}, "", "", fmt.Errorf("%s %w", requested, errOutside)
 }
 
 // containPath resolves requested, relative to root or absolute, inside the
-// first of folders that holds it, and returns the resolved path, the
-// resolved folder and its index. Each folder goes through workspace.Resolve
+// most specific of folders that holds it, the one deepest on disk, and
+// returns the resolved path, the resolved folder and its index: a decision
+// on a call in a nested folder is about that folder, not one around it,
+// whichever the owner granted first. Each folder goes through workspace.Resolve
 // as well as the path: a grant stores a folder as it was given, and on macOS
 // a folder under /var is really under /private/var, so comparing the stored
 // text with a resolved path would refuse every call.
@@ -246,14 +274,18 @@ func containPath(root string, folders []string, requested string) (path, folder 
 		}
 		abs = filepath.Join(root, requested)
 	}
+	index = -1
 	for i, f := range folders {
 		realFolder, err := workspace.Resolve(f, ".")
-		if err != nil {
+		if err != nil || len(realFolder) <= len(folder) {
 			continue
 		}
-		if path, err := workspace.Resolve(realFolder, abs); err == nil {
-			return path, realFolder, i, nil
+		if p, err := workspace.Resolve(realFolder, abs); err == nil {
+			path, folder, index = p, realFolder, i
 		}
 	}
-	return "", "", 0, fmt.Errorf("%s is outside the folders this bot may use", requested)
+	if index < 0 {
+		return "", "", 0, fmt.Errorf("%s %w", requested, errOutside)
+	}
+	return path, folder, index, nil
 }

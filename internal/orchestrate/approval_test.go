@@ -36,7 +36,7 @@ func deleteTool() tools.Definition {
 		Describe: func(args json.RawMessage) string {
 			var a struct{ Path string }
 			_ = json.Unmarshal(args, &a)
-			return "Delete " + a.Path + " from Dana's folder"
+			return "Delete " + a.Path
 		},
 	}
 }
@@ -128,7 +128,7 @@ func TestApproval_ParkAndAllowOnce(t *testing.T) {
 	}
 	msgs := f.messages(t)
 	req := msgs[len(msgs)-1]
-	if req.Kind != org.MessageApprovalRequest || req.Content != "Delete brief.md from Dana's folder" || req.RunID != parkedRun.ID {
+	if req.Kind != org.MessageApprovalRequest || req.Content != "Delete Dana/brief.md" || req.RunID != parkedRun.ID {
 		t.Fatalf("last message = %+v, want the request in the describer's words", req)
 	}
 	if it.Kind != inbox.Approval || it.Effect != req.Content || it.MessageID != req.ID || it.Call.ID != "c2" {
@@ -253,7 +253,7 @@ func TestApproval_AlwaysAllow(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, it := f.park(t, "save it")
-		if !strings.HasPrefix(it.Effect, "Write "+filepath.Join(shared, "a.md")) {
+		if it.Effect != "Write Shared/a.md (1 byte)" {
 			t.Fatalf("effect = %q, want the describer's words", it.Effect)
 		}
 		f.decide(t, it, inbox.AlwaysAllow, "")
@@ -432,4 +432,68 @@ func TestApproval_AlwaysAllowRaisesOnlyTheFolderAsked(t *testing.T) {
 	if !slices.Contains(allowed, inner) || slices.Contains(allowed, outer) {
 		t.Fatalf("allowed folders = %v, want %s and not %s", allowed, inner, outer)
 	}
+}
+
+func TestApproval_TheCardNamesTheFolderTheCallLandsIn(t *testing.T) {
+	cases := []struct{ name, path string }{
+		{"dot-dot out of the bot's folder", "notes/../../Other/tax.md"},
+		{"a link out of the bot's folder", "link/tax.md"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := parkedFixture(t, nil,
+				events(toolCall("c1", "files.write", `{"path":"`+tc.path+`","content":"x"}`)),
+				events(llm.StreamEvent{Token: "Saved."}, llm.StreamEvent{Done: true}),
+			)
+			ctx := context.Background()
+			other := filepath.Join(filepath.Dir(f.bot.FolderPath), "Other")
+			if err := os.MkdirAll(filepath.Join(f.bot.FolderPath, "notes"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(other, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(other, filepath.Join(f.bot.FolderPath, "link")); err != nil {
+				t.Fatal(err)
+			}
+			grants := []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: other}}
+			if err := f.db.ReplaceGrants(ctx, f.bot.ID, grants); err != nil {
+				t.Fatal(err)
+			}
+			_, it := f.park(t, "save it")
+			msgs := f.messages(t)
+			if want := "Write Other/tax.md (1 byte)"; it.Effect != want || msgs[len(msgs)-1].Content != want {
+				t.Fatalf("card = %q, item = %q, want %q", msgs[len(msgs)-1].Content, it.Effect, want)
+			}
+			f.decide(t, it, inbox.AlwaysAllow, "")
+			var said string
+			for _, m := range f.messages(t) {
+				if m.Kind == org.MessageApprovalDecision {
+					said = m.Content
+				}
+			}
+			if said != "Always allowed for Dana in Other" {
+				t.Fatalf("decision = %q, want it to name the folder", said)
+			}
+		})
+	}
+}
+
+func TestApproval_AFailureAfterTheCallRanEndsTheRunFailed(t *testing.T) {
+	f := parkedFixture(t, []string{"brief.md"}, events(toolCall("c1", "files.delete", `{"path":"brief.md"}`)))
+	r, it := f.park(t, "tidy up")
+	f.svc.fault = func() error { return errors.New("disk full") }
+	if _, _, err := f.svc.Decide(context.Background(), it.ID, inbox.AllowOnce, ""); err == nil {
+		t.Fatal("Decide reported success")
+	}
+	got := f.storedRun(t, r.ID)
+	if got.State != org.RunFailed || got.Failure != abandonReason || got.EndedAt.IsZero() {
+		t.Fatalf("run = %+v, want failed with the reason", got)
+	}
+	msgs := f.messages(t)
+	if last := msgs[len(msgs)-1]; last.Kind != org.MessageSystem || last.RunID != r.ID {
+		t.Fatalf("last message = %+v, want the reason in the thread", last)
+	}
+	f.svc.fault = nil
+	f.send(t, "again", ended) // the conversation is free again
 }

@@ -116,9 +116,10 @@ func TestResume_Assemble(t *testing.T) {
 
 func TestWords(t *testing.T) {
 	for _, tc := range []struct{ got, want string }{
-		{Allowed(inbox.AllowOnce, "Dana"), "Allowed once"},
-		{Allowed(inbox.AllowForTask, "Dana"), "Allowed for this conversation"},
-		{Allowed(inbox.AlwaysAllow, "Dana"), "Always allowed for Dana"},
+		{Allowed(inbox.AllowOnce, "Dana", "Other"), "Allowed once"},
+		{Allowed(inbox.AllowForTask, "Dana", "Other"), "Allowed for this conversation in Other"},
+		{Allowed(inbox.AlwaysAllow, "Dana", "Other"), "Always allowed for Dana in Other"},
+		{Allowed(inbox.AlwaysAllow, "Dana", ""), "Always allowed for Dana"},
 		{Declined(""), "Declined"},
 		{Declined("not that one"), "Declined: not that one"},
 		{Denial(""), "The owner declined this. Do not try it again in this conversation; do what you can without it."},

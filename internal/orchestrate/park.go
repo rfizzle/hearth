@@ -16,7 +16,13 @@ func (k *sink) park(c *agent.ToolCall) error {
 	if c == nil {
 		return errors.New("the run stopped to wait for you, but on nothing")
 	}
-	g := park.Call{ID: c.ID, Name: c.Name, Args: c.Args, Effect: k.calls[c.ID].Summary}
+	// The card is described from the parked call's own arguments, with the
+	// path the dispatcher resolved, so neither a path through .. or a link
+	// nor a call id the model reused can put other words on it.
+	g := park.Call{ID: c.ID, Name: c.Name, Args: c.Args}
+	if checked, err := k.disp.Check(c.Name, c.Args); err == nil {
+		g.Effect = checked.Describe()
+	}
 	if g.Effect == "" {
 		g.Effect = "Use " + c.Name
 	}

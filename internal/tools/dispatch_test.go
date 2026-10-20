@@ -302,6 +302,67 @@ func TestDispatcher_ExecuteApproved(t *testing.T) {
 	}
 }
 
+func TestChecked_DescribeNamesTheFolderTheCallLandsIn(t *testing.T) {
+	base := t.TempDir()
+	bot := filepath.Join(base, "Dana")
+	other := filepath.Join(base, "Other")
+	mkdir(t, bot)
+	mkdir(t, other)
+	symlink(t, other, filepath.Join(bot, "link"))
+	grants := []org.Grant{
+		{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: bot},
+		{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: other},
+	}
+	reg, err := NewRegistry(Definition{
+		Name: "files.write", Capability: org.FilesWrite, Tier: TierRead,
+		Execute: func(context.Context, Call) (Result, error) { return Result{}, nil },
+		Describe: func(args json.RawMessage) string {
+			var a struct{ Path string }
+			_ = json.Unmarshal(args, &a)
+			return "Write " + a.Path
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := Dispatcher{Defs: reg, Grants: grants, Root: bot}
+	cases := []struct{ name, path, want string }{
+		{"dot-dot out of the bot's folder", "notes/../../Other/tax.md", "Write Other/tax.md"},
+		{"a link out of the bot's folder", "link/tax.md", "Write Other/tax.md"},
+		{"an absolute path", filepath.Join(other, "a", "b.md"), "Write Other/a/b.md"},
+		{"a path in the bot's own folder", "brief.md", "Write Dana/brief.md"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := d.Check("files.write", json.RawMessage(`{"path":"`+tc.path+`","content":"x"}`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := c.Describe(); got != tc.want {
+				t.Fatalf("Describe = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDispatcher_NestedGrantsPlaceTheCallInTheInnerFolder(t *testing.T) {
+	base := t.TempDir()
+	outer := filepath.Join(base, "A")
+	inner := filepath.Join(outer, "B")
+	mkdir(t, inner)
+	for _, order := range [][]string{{outer, inner}, {inner, outer}} {
+		var grants []org.Grant
+		for _, f := range order {
+			grants = append(grants, org.Grant{Capability: org.FilesWrite, Mode: org.ModeAsk, Folder: f})
+		}
+		d := Dispatcher{Defs: registry(t, &recorder{}), Grants: grants, Root: base}
+		c, err := d.Check("files.write", json.RawMessage(`{"path":"`+filepath.Join(inner, "x.md")+`"}`))
+		if err != nil || c.Granted != inner {
+			t.Fatalf("grants in order %v: granted %q, %v, want %q", order, c.Granted, err, inner)
+		}
+	}
+}
+
 func TestDefinition_Standing(t *testing.T) {
 	for _, tc := range []struct {
 		def  Definition

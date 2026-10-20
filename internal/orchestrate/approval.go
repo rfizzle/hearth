@@ -160,12 +160,16 @@ func (s *Service) decide(ctx context.Context, p parked, d inbox.Decision, reason
 	args := json.RawMessage(p.call.Arguments)
 	// A call the grants now refuse stores nothing; running it gives the bot
 	// the refusal.
+	folder := ""
 	if c, err := disp.Check(p.call.Name, args); err == nil {
 		if disp, err = s.allow(ctx, p, disp, c, d); err != nil {
 			return "", nil, err
 		}
+		if c.Granted != "" {
+			folder = filepath.Base(c.Granted)
+		}
 	}
-	return park.Allowed(d, p.bot.Name), func() outcome { return s.runApproved(ctx, disp, p.call) }, nil
+	return park.Allowed(d, p.bot.Name, folder), func() outcome { return s.runApproved(ctx, disp, p.call) }, nil
 }
 
 // allow stores what an allow decision leaves behind and returns the
@@ -263,25 +267,10 @@ func (s *Service) settle(ctx context.Context, p parked, owner org.Message, call 
 	if err != nil {
 		return fail(err)
 	}
-	out := call()
-	owner.ConversationID = conv
-	result := org.Message{
-		ConversationID: conv, AuthorBotID: p.bot.ID, RunID: p.run.ID, Kind: org.MessageToolResult,
-		Content: out.text, ToolCallID: p.call.ID, ToolCalls: []org.ToolCall{p.call}, Files: out.files,
-	}
-	for _, m := range []org.Message{owner, result} {
-		stored, err := s.d.Store.AppendMessage(ctx, m)
-		if err != nil {
-			return fail(err)
-		}
-		s.d.Bus.Publish(MessageUpserted{Message: stored})
-	}
-	// The parked run did what it could; the new run continues it.
-	p.run.State, p.run.EndedAt = org.RunDone, s.d.Now()
-	if err := s.d.Store.UpdateRun(ctx, p.run); err != nil {
+	if err := s.record(ctx, p, owner, call()); err != nil {
+		s.abandon(ctx, p)
 		return fail(err)
 	}
-	s.d.Bus.Publish(RunChanged{Run: p.run})
 	note := org.Message{ConversationID: conv, Content: park.Note}
 	r, runCtx, err := s.start(ctx, p.bot, note)
 	if err != nil {
@@ -289,6 +278,59 @@ func (s *Service) settle(ctx context.Context, p parked, owner org.Message, call 
 	}
 	go s.run(runCtx, p.bot, r, ask{msg: note, parked: p.run.ID})
 	return item, r, nil
+}
+
+// record writes the owner's message and the call's result to the thread
+// and ends the parked run done: it did what it could, and the new run
+// continues it.
+func (s *Service) record(ctx context.Context, p parked, owner org.Message, out outcome) error {
+	if s.fault != nil {
+		if err := s.fault(); err != nil {
+			return err
+		}
+	}
+	owner.ConversationID = p.item.ConversationID
+	result := org.Message{
+		ConversationID: p.item.ConversationID, AuthorBotID: p.bot.ID, RunID: p.run.ID, Kind: org.MessageToolResult,
+		Content: out.text, ToolCallID: p.call.ID, ToolCalls: []org.ToolCall{p.call}, Files: out.files,
+	}
+	for _, m := range []org.Message{owner, result} {
+		stored, err := s.d.Store.AppendMessage(ctx, m)
+		if err != nil {
+			return err
+		}
+		s.d.Bus.Publish(MessageUpserted{Message: stored})
+	}
+	p.run.State, p.run.EndedAt = org.RunDone, s.d.Now()
+	if err := s.d.Store.UpdateRun(ctx, p.run); err != nil {
+		return err
+	}
+	s.d.Bus.Publish(RunChanged{Run: p.run})
+	return nil
+}
+
+// abandonReason is why a parked run failed after the owner's decision.
+const abandonReason = "your decision was recorded, but the conversation could not be updated with what came of it"
+
+// abandon ends the parked run failed when the thread could not record what
+// a decision came to, with the reason in the thread, so it does not wait on
+// an item that is already closed and the owner is offered Retry. A failure
+// here as well is logged.
+// See docs/model.md#9-failure-handling.
+func (s *Service) abandon(ctx context.Context, p parked) {
+	p.run.State, p.run.Failure, p.run.EndedAt = org.RunFailed, abandonReason, s.d.Now()
+	if err := s.d.Store.UpdateRun(ctx, p.run); err != nil {
+		s.d.Log.Printf("orchestrate: run %s could not be ended after a decision: %v", p.run.ID, err)
+		return
+	}
+	s.d.Bus.Publish(RunChanged{Run: p.run})
+	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: p.item.ConversationID, AuthorBotID: p.bot.ID,
+		RunID: p.run.ID, Kind: org.MessageSystem, Content: sentence(abandonReason)})
+	if err != nil {
+		s.d.Log.Printf("orchestrate: run %s: %v", p.run.ID, err)
+		return
+	}
+	s.d.Bus.Publish(MessageUpserted{Message: m})
 }
 
 // closed reads the item itemID after it closed and publishes it.

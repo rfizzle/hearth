@@ -96,6 +96,7 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (a
 	if err != nil {
 		return agent.Outcome{}, err
 	}
+	k.disp = disp
 	var offered []agent.Tool
 	for _, d := range disp.Tools() {
 		offered = append(offered, agent.Tool{Name: d.Name, Description: d.Description, Parameters: d.Parameters})

@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/tools"
 )
 
 // sink stores and publishes what one run's turn does as it does it. The bot's
@@ -35,6 +36,7 @@ type sink struct {
 	stop     context.CancelFunc
 	panicked any         // the first panic, nil if none
 	opened   *inbox.Item // the item a parked run opened, published by finish
+	disp     tools.Dispatcher
 }
 
 var _ agent.Sink = (*sink)(nil)

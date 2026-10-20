@@ -53,13 +53,20 @@ func Request(r org.Run, c Call) (org.Message, inbox.Item) {
 	return m, it
 }
 
-// Allowed is the thread's words for an allow decision on a call of botName's.
-func Allowed(d inbox.Decision, botName string) string {
+// Allowed is the thread's words for an allow decision on a call of
+// botName's in folder, the name of the granted folder the call fell under,
+// or empty for a capability with no folder. A decision that outlasts the
+// call names the folder it widens.
+func Allowed(d inbox.Decision, botName, folder string) string {
+	in := ""
+	if folder != "" {
+		in = " in " + folder
+	}
 	switch d {
 	case inbox.AllowForTask:
-		return "Allowed for this conversation"
+		return "Allowed for this conversation" + in
 	case inbox.AlwaysAllow:
-		return "Always allowed for " + botName
+		return "Always allowed for " + botName + in
 	}
 	return "Allowed once"
 }
