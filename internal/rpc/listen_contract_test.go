@@ -63,6 +63,31 @@ func TestPingOverRealListeners(t *testing.T) {
 	}
 }
 
+// TestApprovalOverLoopback runs the owner deciding on a bot's request to
+// delete a file, over a real loopback listener.
+func TestApprovalOverLoopback(t *testing.T) {
+	r := newRig(t, calls("c1", "files.delete", `{"path":"brief.md"}`), answer("Deleted."))
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	srv := &http.Server{Handler: NewHandler(r.opts), ReadHeaderTimeout: time.Second}
+	go func() { _ = srv.Serve(l) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	addr := l.Addr().String()
+	dial := func(ctx context.Context, _, _ string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, "tcp", addr)
+	}
+	hc := &http.Client{Transport: &http.Transport{DialContext: dial}}
+	_, err = newClients(hc, "").inbox.ListInbox(t.Context(), connect.NewRequest(&hearthv1.ListInboxRequest{}))
+	if connect.CodeOf(err) != connect.CodeUnauthenticated {
+		t.Fatalf("ListInbox without the token = %v, want unauthenticated", err)
+	}
+	checkApprovalFlow(t, newClients(hc, testToken), r)
+}
+
 // TestOnboardingOverLoopback runs the owner's first minutes, and the refusal
 // of a caller without the token, over a real loopback listener.
 func TestOnboardingOverLoopback(t *testing.T) {

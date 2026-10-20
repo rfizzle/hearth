@@ -8,6 +8,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/widget"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
@@ -61,13 +62,17 @@ func orgToProto(o org.Org) *hearthv1.Org {
 }
 
 func conversationToProto(c org.Conversation) *hearthv1.Conversation {
-	return &hearthv1.Conversation{
+	out := &hearthv1.Conversation{
 		Id:        c.ID,
 		Kind:      hearthv1.ConversationKind(c.Kind),
 		BotId:     c.BotID,
 		Title:     c.Title,
 		UpdatedAt: timestamp(c.UpdatedAt),
 	}
+	if c.LatestRun != nil {
+		out.LatestRun = runToProto(*c.LatestRun)
+	}
+	return out
 }
 
 func messageToProto(m org.Message) *hearthv1.Message {
@@ -82,6 +87,9 @@ func messageToProto(m org.Message) *hearthv1.Message {
 		RunId:          m.RunID,
 		Streaming:      m.Streaming,
 	}
+	var spec widget.Spec
+	out.Widget, spec = widgetOf(m.Widget)
+	out.Answer = answerOf(m.WidgetAnswer, spec)
 	// A tool message carries one call; the contract has room for one. A
 	// result names the call it answers.
 	switch {

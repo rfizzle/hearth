@@ -20,7 +20,7 @@ func (s *eventService) Subscribe(ctx context.Context, req *connect.Request[heart
 			if !open {
 				return connect.NewError(connect.CodeAborted, errors.New("fell behind the events; reconnect from the last sequence read"))
 			}
-			msg, known := eventToProto(e)
+			msg, known := s.opts.eventToProto(ctx, e)
 			if !known {
 				continue
 			}

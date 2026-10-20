@@ -2,17 +2,25 @@
 //
 // Responsibility: register the generated Connect handlers, check the launch
 // token on every request, and translate between proto messages and the
-// domain values behind them. It serves the org, the bots and their
-// templates, the conversations and their runs, the model accounts, the
-// integrations and the event stream, beside the Ping and StreamHello
-// of the spike. Nothing else.
+// domain values behind them. It serves the org, the bots, their templates
+// and their grants, the conversations with their newest run and a retry, the
+// Inbox of decisions and answers, the model accounts, the integrations and
+// the event stream, beside the Ping and StreamHello of the spike. Nothing
+// else.
 //
 // Invariants the types do not hold:
 //   - Handlers hold no domain logic. A handler with an if about the domain
 //     belongs in the package that owns that rule; what a handler may decide
 //     is a code: a store.ErrNotFound is not_found, a run in progress is
 //     failed_precondition, a folder another bot has is already_exists, an
-//     empty required field is invalid_argument.
+//     empty required field is invalid_argument. Every domain error picks its
+//     code in one function, never in a handler.
+//   - A handler never widens access: a grant is stored as the owner set it,
+//     after the inbox package has refused a mode its capability never has,
+//     and a decision on an item goes to the orchestrator, which refuses one
+//     already made.
+//   - A missing org is an empty answer, not an error: onboarding has not
+//     happened.
 //   - The token is compared in constant time, ahead of the router, so a
 //     request without it reaches no handler, registered or not.
 //   - An account carries a label and never a key; the integration's label is

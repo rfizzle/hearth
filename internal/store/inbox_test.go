@@ -147,6 +147,7 @@ func TestReplaceGrants_KeepsTheOwnFolderAndReplacesTheRest(t *testing.T) {
 		{Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: "/w/Shared"},
 		{Capability: org.FilesWrite, Mode: org.ModeNotGranted, Folder: bot.FolderPath}, // tries to drop the own folder
 		{Capability: org.WebFetch, Mode: org.ModeAsk},
+		{Capability: org.AskOwner, Mode: org.ModeNotGranted}, // tries to drop the right to ask
 	}
 	if err := db.ReplaceGrants(ctx, bot.ID, req); err != nil {
 		t.Fatalf("ReplaceGrants: %v", err)
@@ -173,6 +174,7 @@ func TestReplaceGrants_KeepsTheOwnFolderAndReplacesTheRest(t *testing.T) {
 		t.Fatalf("own-folder grants = %+v, want %+v", own, wantOwn)
 	}
 	wantRest := []org.Grant{
+		{BotID: bot.ID, Capability: org.AskOwner, Mode: org.ModeAllowed}, // kept: the owner never edits it
 		{BotID: bot.ID, Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: "/w/Shared"},
 		{BotID: bot.ID, Capability: org.WebFetch, Mode: org.ModeAsk},
 	}

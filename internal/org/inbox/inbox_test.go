@@ -68,3 +68,36 @@ func TestApply(t *testing.T) {
 		})
 	}
 }
+
+func TestStandingAndCheckGrants(t *testing.T) {
+	for c, want := range map[org.Capability]bool{
+		org.FilesRead: true, org.FilesWrite: true, org.WebFetch: true, org.WebSearch: true,
+		org.FilesDelete: false, org.AskOwner: false,
+	} {
+		if got := Standing(c); got != want {
+			t.Errorf("Standing(%s) = %v, want %v", c, got, want)
+		}
+	}
+	tests := []struct {
+		name    string
+		grants  []org.Grant
+		wantErr error
+	}{
+		{"nothing", nil, nil},
+		{"standing allowed", []org.Grant{{Capability: org.FilesRead, Mode: org.ModeAllowed, Folder: "/w"}}, nil},
+		{"delete asks", []org.Grant{{Capability: org.FilesDelete, Mode: org.ModeAsk, Folder: "/w"}}, nil},
+		{"delete off", []org.Grant{{Capability: org.FilesDelete, Mode: org.ModeNotGranted, Folder: "/w"}}, nil},
+		{"delete allowed", []org.Grant{{Capability: org.FilesDelete, Mode: org.ModeAllowed, Folder: "/w"}}, ErrNoStanding},
+		{"a relative folder", []org.Grant{{Capability: org.FilesRead, Mode: org.ModeAsk, Folder: "Dana"}}, ErrBadFolder},
+		{"a folder that climbs", []org.Grant{{Capability: org.FilesRead, Mode: org.ModeAsk, Folder: "/w/Dana/../Sam"}}, ErrBadFolder},
+		{"a folder with a trailing slash", []org.Grant{{Capability: org.FilesRead, Mode: org.ModeAsk, Folder: "/w/Dana/"}}, ErrBadFolder},
+		{"the right to ask is always allowed", []org.Grant{{Capability: org.AskOwner, Mode: org.ModeAllowed}}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := CheckGrants(tt.grants); !errors.Is(err, tt.wantErr) {
+				t.Errorf("err = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}

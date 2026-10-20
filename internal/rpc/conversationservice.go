@@ -44,3 +44,28 @@ func (s *conversationService) Cancel(_ context.Context, req *connect.Request[hea
 	}
 	return connect.NewResponse(&hearthv1.CancelResponse{}), nil
 }
+
+// GetConversation is the conversation with its newest run, so a screen
+// opened mid-run shows it.
+func (s *conversationService) GetConversation(ctx context.Context, req *connect.Request[hearthv1.GetConversationRequest]) (*connect.Response[hearthv1.GetConversationResponse], error) {
+	if err := need("id", req.Msg.GetId()); err != nil {
+		return nil, err
+	}
+	c, err := s.opts.Store.Conversation(ctx, req.Msg.GetId())
+	return reply(&hearthv1.GetConversationResponse{Conversation: conversationToProto(c)}, err)
+}
+
+// Retry runs the owner message behind the run again. The orchestrator takes
+// a conversation, so the run is only the way to name it.
+// See docs/model.md#9-failure-handling
+func (s *conversationService) Retry(ctx context.Context, req *connect.Request[hearthv1.RetryRequest]) (*connect.Response[hearthv1.RetryResponse], error) {
+	if err := need("run_id", req.Msg.GetRunId()); err != nil {
+		return nil, err
+	}
+	was, err := s.opts.Store.Run(ctx, req.Msg.GetRunId())
+	if err != nil {
+		return nil, fail(err)
+	}
+	run, err := s.opts.Orchestrator.Retry(ctx, was.ConversationID)
+	return reply(&hearthv1.RetryResponse{Run: runToProto(run)}, err)
+}

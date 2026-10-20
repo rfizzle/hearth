@@ -33,8 +33,8 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	t.Helper()
 	ctx := t.Context()
 
-	if _, err := c.org.GetOrg(ctx, connect.NewRequest(&hearthv1.GetOrgRequest{})); code(err) != connect.CodeNotFound {
-		t.Fatalf("GetOrg before onboarding = %v, want not_found", err)
+	if got, err := c.org.GetOrg(ctx, connect.NewRequest(&hearthv1.GetOrgRequest{})); err != nil || got.Msg.GetOrg() != nil {
+		t.Fatalf("GetOrg before onboarding = %v, %v, want an empty answer", got, err)
 	}
 	o := unary(t, c.org.UpdateOrg, &hearthv1.UpdateOrgRequest{Name: "Acme", WorkspacePath: r.root}).GetOrg()
 	if o.GetName() != "Acme" || o.GetWorkspacePath() != r.root {
@@ -353,6 +353,35 @@ func TestEveryRPCWithoutTheTokenIsUnauthenticated(t *testing.T) {
 				_, err := c.integ.ClearIntegration(ctx, connect.NewRequest(&hearthv1.ClearIntegrationRequest{}))
 				return err
 			},
+			"ListGrants": func() error {
+				_, err := c.bot.ListGrants(ctx, connect.NewRequest(&hearthv1.ListGrantsRequest{}))
+				return err
+			},
+			"SetGrants": func() error {
+				_, err := c.bot.SetGrants(ctx, connect.NewRequest(&hearthv1.SetGrantsRequest{}))
+				return err
+			},
+			"GetConversation": func() error {
+				_, err := c.conv.GetConversation(ctx, connect.NewRequest(&hearthv1.GetConversationRequest{}))
+				return err
+			},
+			"Retry": func() error { _, err := c.conv.Retry(ctx, connect.NewRequest(&hearthv1.RetryRequest{})); return err },
+			"ListInbox": func() error {
+				_, err := c.inbox.ListInbox(ctx, connect.NewRequest(&hearthv1.ListInboxRequest{}))
+				return err
+			},
+			"Decide": func() error {
+				_, err := c.inbox.Decide(ctx, connect.NewRequest(&hearthv1.DecideRequest{}))
+				return err
+			},
+			"Answer": func() error {
+				_, err := c.inbox.Answer(ctx, connect.NewRequest(&hearthv1.AnswerRequest{}))
+				return err
+			},
+			"Acknowledge": func() error {
+				_, err := c.inbox.Acknowledge(ctx, connect.NewRequest(&hearthv1.AcknowledgeRequest{}))
+				return err
+			},
 			"Subscribe": func() error {
 				s, err := c.event.Subscribe(ctx, connect.NewRequest(&hearthv1.SubscribeRequest{}))
 				if err != nil {
@@ -386,6 +415,10 @@ func TestEnumsThatAreCastNumberAlike(t *testing.T) {
 		{"tool call", int(hearthv1.MessageKind_MESSAGE_KIND_TOOL_CALL), int(org.MessageToolCall)},
 		{"tool result", int(hearthv1.MessageKind_MESSAGE_KIND_TOOL_RESULT), int(org.MessageToolResult)},
 		{"system", int(hearthv1.MessageKind_MESSAGE_KIND_SYSTEM), int(org.MessageSystem)},
+		{"question", int(hearthv1.MessageKind_MESSAGE_KIND_QUESTION), int(org.MessageQuestion)},
+		{"approval request", int(hearthv1.MessageKind_MESSAGE_KIND_APPROVAL_REQUEST), int(org.MessageApprovalRequest)},
+		{"approval decision", int(hearthv1.MessageKind_MESSAGE_KIND_APPROVAL_DECISION), int(org.MessageApprovalDecision)},
+		{"waiting owner", int(hearthv1.RunState_RUN_STATE_WAITING_OWNER), int(org.RunWaitingOwner)},
 		{"queued", int(hearthv1.RunState_RUN_STATE_QUEUED), int(org.RunQueued)},
 		{"run working", int(hearthv1.RunState_RUN_STATE_WORKING), int(org.RunWorking)},
 		{"done", int(hearthv1.RunState_RUN_STATE_DONE), int(org.RunDone)},

@@ -10,9 +10,18 @@ import (
 	"github.com/rfizzle/hearth/internal/workspace"
 )
 
+// GetOrg leaves the org unset before the owner has named it: nothing is
+// missing, onboarding has not happened.
 func (s *orgService) GetOrg(ctx context.Context, _ *connect.Request[hearthv1.GetOrgRequest]) (*connect.Response[hearthv1.GetOrgResponse], error) {
-	o, err := s.opts.Store.Org(ctx)
-	return reply(&hearthv1.GetOrgResponse{Org: orgToProto(o)}, err)
+	o, found, err := s.opts.Store.FindOrg(ctx)
+	if err != nil {
+		return nil, fail(err)
+	}
+	res := &hearthv1.GetOrgResponse{}
+	if found {
+		res.Org = orgToProto(o)
+	}
+	return connect.NewResponse(res), nil
 }
 
 // UpdateOrg creates the Hearth folder, then keeps the org: a folder that

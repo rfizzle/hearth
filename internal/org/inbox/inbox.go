@@ -2,6 +2,7 @@ package inbox
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -106,6 +107,30 @@ func Apply(d Decision, grants []org.Grant, capability org.Capability, folder str
 		return out, nil, nil
 	}
 	return grants, nil, nil
+}
+
+// Standing reports whether the owner may allow c for good. A capability that
+// may only be allowed one task at a time, such as deleting a file, has none.
+func Standing(c org.Capability) bool { return !noStanding(c) }
+
+// ErrBadFolder is a grant scoped to a folder that is not a clean full path,
+// which could name a different place than the owner chose.
+var ErrBadFolder = errors.New("a folder must be a full path with no . or .. in it")
+
+// CheckGrants refuses grants that would leave a capability allowed for good
+// that has no standing, and grants scoped to a folder that is not a clean
+// full path. The grant to ask the owner is always allowed and is not the
+// owner's to set, so it is not judged for its mode.
+func CheckGrants(grants []org.Grant) error {
+	for _, g := range grants {
+		if g.Folder != "" && (!filepath.IsAbs(g.Folder) || filepath.Clean(g.Folder) != g.Folder) {
+			return fmt.Errorf("%q: %w", g.Folder, ErrBadFolder)
+		}
+		if g.Mode == org.ModeAllowed && g.Capability != org.AskOwner && noStanding(g.Capability) {
+			return fmt.Errorf("%s: %w", g.Capability, ErrNoStanding)
+		}
+	}
+	return nil
 }
 
 // noStanding is true for a capability that has no always-allow: deleting a

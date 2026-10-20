@@ -110,7 +110,7 @@ cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
 internal/             dependencies point down only; only rpc/, orchestrate/, draft/, provider/, integration/, agent/, framing/, skill/, tools/, org/, workspace/ and store/ exist so far
-  rpc/                serves the org, bot, conversation, provider, integration and event services over the store, runs and accounts; the token check; generated code under gen/ (exists)
+  rpc/                serves the org, bot (with grants), conversation (with retry), inbox, provider, integration and event services over the store, runs and accounts; the token check; generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/ and toolset/ below it)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)

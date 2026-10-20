@@ -8,7 +8,9 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/draft"
+	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/inbox"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
@@ -84,4 +86,51 @@ func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1
 		Name: d.Name, Role: d.Role, JobDescription: d.JobDescription,
 		WorkingStyle: d.WorkingStyle, Tier: hearthv1.Tier(d.Tier),
 	}, err)
+}
+
+// ListGrants is what the bot may do, one row per capability and per folder.
+// See docs/model.md#access
+func (s *botService) ListGrants(ctx context.Context, req *connect.Request[hearthv1.ListGrantsRequest]) (*connect.Response[hearthv1.ListGrantsResponse], error) {
+	id := req.Msg.GetBotId()
+	if err := need("bot_id", id); err != nil {
+		return nil, err
+	}
+	bot, err := s.opts.Store.Bot(ctx, id)
+	if err != nil {
+		return nil, fail(err)
+	}
+	grants, err := s.opts.Store.GrantsFor(ctx, id)
+	return reply(&hearthv1.ListGrantsResponse{Grants: grantsToProto(grants, bot.FolderPath)}, err)
+}
+
+// SetGrants replaces the bot's grants with the owner's rows. The inbox
+// package refuses a mode a capability never has and the store keeps the
+// bot's own folder; the handler widens nothing and answers with the grants
+// the store holds, which it tells the bus.
+// See docs/model.md#access
+func (s *botService) SetGrants(ctx context.Context, req *connect.Request[hearthv1.SetGrantsRequest]) (*connect.Response[hearthv1.SetGrantsResponse], error) {
+	m := req.Msg
+	if err := need("bot_id", m.GetBotId()); err != nil {
+		return nil, err
+	}
+	grants := make([]org.Grant, 0, len(m.GetGrants()))
+	for _, g := range m.GetGrants() {
+		one, err := grantFromProto(g)
+		if err != nil {
+			return nil, err
+		}
+		grants = append(grants, one)
+	}
+	if err := inbox.CheckGrants(grants); err != nil {
+		return nil, fail(err)
+	}
+	if err := s.opts.Store.ReplaceGrants(ctx, m.GetBotId(), grants); err != nil {
+		return nil, fail(err)
+	}
+	stored, err := s.opts.Store.GrantsFor(ctx, m.GetBotId())
+	if err != nil {
+		return nil, fail(err)
+	}
+	s.opts.publish(orchestrate.GrantsChanged{BotID: m.GetBotId(), Grants: stored})
+	return connect.NewResponse(&hearthv1.SetGrantsResponse{Grants: s.opts.grantsOf(ctx, m.GetBotId(), stored)}), nil
 }

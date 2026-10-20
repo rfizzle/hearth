@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"context"
+
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
@@ -20,9 +22,13 @@ type IntegrationChanged struct{ Integration integration.Account }
 // BotChanged is a bot as it is now: new, or changed.
 type BotChanged struct{ Bot org.Bot }
 
+// ConversationChanged is a conversation as it is now: its newest run or its
+// title changed.
+type ConversationChanged struct{ Conversation org.Conversation }
+
 // eventToProto is the SubscribeResponse for a bus event, and false for a body
 // the contract has no message for.
-func eventToProto(e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
+func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
 	out := &hearthv1.SubscribeResponse{Sequence: e.Seq}
 	switch b := e.Body.(type) {
 	case orchestrate.MessageDelta:
@@ -33,6 +39,20 @@ func eventToProto(e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
 		out.Event = &hearthv1.SubscribeResponse_MessageUpserted{MessageUpserted: &hearthv1.MessageUpserted{Message: messageToProto(b.Message)}}
 	case orchestrate.RunChanged:
 		out.Event = &hearthv1.SubscribeResponse_RunChanged{RunChanged: &hearthv1.RunChanged{Run: runToProto(b.Run)}}
+	case orchestrate.MessageDeleted:
+		out.Event = &hearthv1.SubscribeResponse_MessageDeleted{MessageDeleted: &hearthv1.MessageDeleted{
+			ConversationId: b.ConversationID, MessageId: b.MessageID,
+		}}
+	case orchestrate.InboxChanged:
+		out.Event = &hearthv1.SubscribeResponse_InboxChanged{InboxChanged: &hearthv1.InboxChanged{Item: o.itemToProto(ctx, b.Item)}}
+	case orchestrate.GrantsChanged:
+		out.Event = &hearthv1.SubscribeResponse_GrantsChanged{GrantsChanged: &hearthv1.GrantsChanged{
+			BotId: b.BotID, Grants: o.grantsOf(ctx, b.BotID, b.Grants),
+		}}
+	case ConversationChanged:
+		out.Event = &hearthv1.SubscribeResponse_ConversationChanged{ConversationChanged: &hearthv1.ConversationChanged{
+			Conversation: conversationToProto(b.Conversation),
+		}}
 	case orchestrate.Resync:
 		out.Event = &hearthv1.SubscribeResponse_Resync{Resync: &hearthv1.Resync{}}
 	case orchestrate.Heartbeat:

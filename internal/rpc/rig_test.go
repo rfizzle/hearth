@@ -150,7 +150,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 	}
 }
 
-// clients are the six services and the spike's, over one transport.
+// clients are the seven services, over one transport.
 type clients struct {
 	org   hearthv1connect.OrgServiceClient
 	bot   hearthv1connect.BotServiceClient
@@ -158,6 +158,7 @@ type clients struct {
 	prov  hearthv1connect.ProviderServiceClient
 	integ hearthv1connect.IntegrationServiceClient
 	event hearthv1connect.EventServiceClient
+	inbox hearthv1connect.InboxServiceClient
 }
 
 func newClients(hc *http.Client, token string) clients {
@@ -170,6 +171,7 @@ func newClients(hc *http.Client, token string) clients {
 		prov:  hearthv1connect.NewProviderServiceClient(hc, base, opt),
 		integ: hearthv1connect.NewIntegrationServiceClient(hc, base, opt),
 		event: hearthv1connect.NewEventServiceClient(hc, base, opt),
+		inbox: hearthv1connect.NewInboxServiceClient(hc, base, opt),
 	}
 }
 
