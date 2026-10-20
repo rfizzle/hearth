@@ -249,3 +249,67 @@ private struct Parked {
     #expect(store.run == nil)
     #expect(store.messages == Fixtures.dmMessages)
 }
+
+@MainActor
+@Test func aScreenOpenedMidRunShowsTheRunWithoutAnEvent() async {
+    let store = ConversationStore(
+        client: PreviewClient(latestRun: Fixtures.workingRun),
+        relay: EventRelay(client: PreviewClient()), conversationID: Fixtures.dmConversation.id)
+    #expect(!store.isWorking)
+    await store.load()
+    #expect(store.run == Fixtures.workingRun)
+    #expect(store.isWorking)
+    #expect(!store.canRetry)
+}
+
+@MainActor
+@Test func retryAfterAFailedRunAppliesTheNewRun() async {
+    let store = store()
+    await store.load()
+    await store.retry()
+    #expect(store.run == nil)
+
+    await store.handle(.with { $0.event = .runChanged(.with { $0.run = Fixtures.failedRun }) })
+    #expect(store.canRetry)
+    await store.retry()
+    #expect(store.run?.id == "run-retry")
+    #expect(store.run?.state == .queued)
+    #expect(store.isWorking)
+    #expect(!store.canRetry)
+}
+
+@MainActor
+@Test func aStoppedRunCanBeRetried() async {
+    var stopped = Fixtures.workingRun
+    stopped.state = .cancelled
+    let store = store()
+    await store.handle(.with { $0.event = .runChanged(.with { $0.run = stopped }) })
+    #expect(store.canRetry)
+}
+
+@MainActor
+@Test func aDeletedMessageLeavesTheList() async {
+    let store = store()
+    await store.load()
+    let doomed = Fixtures.streamingReply.id
+    await store.handle(
+        .with {
+            $0.event = .messageDeleted(
+                .with {
+                    $0.conversationID = "conversation-other"
+                    $0.messageID = doomed
+                })
+        })
+    #expect(store.messages.contains { $0.id == doomed })
+    await store.handle(
+        .with {
+            $0.event = .messageDeleted(
+                .with {
+                    $0.conversationID = Fixtures.dmConversation.id
+                    $0.messageID = doomed
+                })
+        })
+    #expect(!store.messages.contains { $0.id == doomed })
+    #expect(store.messages.count == Fixtures.dmMessages.count - 1)
+    #expect(!store.rows.contains { $0.id == doomed })
+}

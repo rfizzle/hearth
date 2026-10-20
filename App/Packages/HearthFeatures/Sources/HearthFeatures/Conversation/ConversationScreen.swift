@@ -12,9 +12,11 @@
 // as a RequestRow: its Inbox card while it is open, then a quiet line, or a
 // quiet card for a question answered with its control. While it is open the
 // status line says the bot is waiting and the composer asks for the answer
-// instead of a message.
+// instead of a message. A run that failed or was stopped offers Retry on the
+// status line.
 // See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run,
-// docs/design.md#motion and docs/model.md#owner-interaction
+// docs/design.md#motion, docs/model.md#owner-interaction and
+// docs/model.md#9-failure-handling
 
 import HearthDesign
 import HearthKit
@@ -127,8 +129,12 @@ public struct ConversationScreen: View {
 
     private var bar: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            RunStatusLine(run: store.run, botName: bot.name, isWaiting: store.isWaiting)
-                .padding(.horizontal, Theme.Spacing.lg)
+            RunStatusLine(
+                run: store.run, botName: bot.name, isWaiting: store.isWaiting,
+                action: store.canRetry
+                    ? .init("Retry") { Task { await store.retry() } } : nil
+            )
+            .padding(.horizontal, Theme.Spacing.lg)
             if let error = store.error, loaded {
                 Text(error)
                     .font(Theme.caption)

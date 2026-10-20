@@ -1,13 +1,15 @@
 // BotList is the sidebar's list of bots under a "Your team" header, one row
-// each with an avatar, the name, the role and, while a bot is working or
-// paused, a status dot; the store holds the selection. Given the Inbox, a row
-// above the team opens it, carrying how many items are open in a Pill in the
-// attention tone, and nothing when none are; its label says the count too. Rows are List rows, so
-// selection, keyboard and VoiceOver are the system's, and a row reads as one
-// element. The role uses the system's .secondary style rather than the text
-// token so sidebar vibrancy applies over the glass pane. With nobody hired the
-// sidebar shows only the header; the invitation to hire is TeamEmptyView, which
-// the window shows in the detail column. A new bot slides into the list.
+// each with an avatar, the name, the role and, while a bot is working, paused
+// or waiting for the owner, a status dot; the store holds the selection. Given
+// the Inbox, a row above the team opens it, carrying how many items are open in
+// a Pill in the attention tone, and nothing when none are; its label says the
+// count too. Rows are List rows, so selection, keyboard and VoiceOver are the
+// system's, and a row reads as one element, saying "waiting for you" as its
+// value while the bot waits. The role uses the system's .secondary style rather
+// than the text token so sidebar vibrancy applies over the glass pane. With
+// nobody hired the sidebar shows only the header; the invitation to hire is
+// TeamEmptyView, which the window shows in the detail column. A new bot slides
+// into the list.
 // See docs/design.md#window-anatomy, docs/design.md#motion and
 // docs/model.md#owner-interaction
 
@@ -42,7 +44,7 @@ public struct BotList: View {
             }
             Section("Your team") {
                 ForEach(store.bots, id: \.id) { bot in
-                    BotRow(bot: bot)
+                    BotRow(bot: bot, activity: store.activity(of: bot))
                         .tag(BotListStore.Selection.bot(bot.id))
                 }
             }
@@ -111,6 +113,7 @@ public struct TeamEmptyView: View {
 
 private struct BotRow: View {
     let bot: Hearth_V1_Bot
+    let activity: BotListStore.Activity?
 
     var body: some View {
         HStack(spacing: Theme.Spacing.sm) {
@@ -120,15 +123,18 @@ private struct BotRow: View {
                 Text(bot.role).font(Theme.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: Theme.Spacing.sm)
-            switch bot.status {
+            switch activity {
             case .working:
                 StatusDot(.positive, label: "Working", pulses: true)
+            case .waiting:
+                StatusDot(.attention, label: "Waiting")
             case .paused:
                 StatusDot(.attention, label: "Paused")
-            default:
+            case nil:
                 EmptyView()
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityValue(activity?.spoken ?? "")
     }
 }

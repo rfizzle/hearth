@@ -41,3 +41,31 @@ import Testing
     bots.selection = nil
     #expect(bots.selected == nil)
 }
+
+@MainActor
+@Test func aBotsDotFollowsItsConversationsLatestRun() async {
+    let idle = PreviewClient()
+    let quiet = BotListStore(client: idle, relay: EventRelay(client: idle))
+    await quiet.load()
+    let dana = Fixtures.bot
+    #expect(quiet.activity(of: dana) == nil)
+
+    let busy = PreviewClient(latestRun: Fixtures.workingRun)
+    let bots = BotListStore(client: busy, relay: EventRelay(client: busy))
+    await bots.load()
+    #expect(bots.activity(of: dana) == .working)
+
+    var waiting = Fixtures.workingRun
+    waiting.state = .waitingOwner
+    await bots.handle(.with { $0.event = .runChanged(.with { $0.run = waiting }) })
+    #expect(bots.activity(of: dana) == .waiting)
+    #expect(BotListStore.Activity.waiting.spoken == "waiting for you")
+    #expect(BotListStore.Activity.working.spoken == nil)
+
+    await bots.handle(.with { $0.event = .runChanged(.with { $0.run = Fixtures.failedRun }) })
+    #expect(bots.activity(of: dana) == nil)
+
+    var paused = dana
+    paused.status = .paused
+    #expect(bots.activity(of: paused) == .paused)
+}

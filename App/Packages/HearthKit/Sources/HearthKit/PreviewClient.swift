@@ -12,7 +12,19 @@ public struct PreviewClient: HearthClient {
     /// The page size when listMessages is asked for the default.
     public static let defaultPageSize: Int32 = 50
 
-    public init() {}
+    /// The latest run the DM reports, nil before its first message.
+    public let latestRun: Hearth_V1_Run?
+
+    /// A client whose DM reports `latestRun`.
+    public init(latestRun: Hearth_V1_Run? = nil) {
+        self.latestRun = latestRun
+    }
+
+    private var directMessage: Hearth_V1_Conversation {
+        var conversation = Fixtures.dmConversation
+        if let latestRun { conversation.latestRun = latestRun }
+        return conversation
+    }
 
     public func ping() async throws -> String {
         "preview"
@@ -65,7 +77,7 @@ public struct PreviewClient: HearthClient {
     }
 
     public func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {
-        botID.isEmpty || botID == Fixtures.bot.id ? [Fixtures.dmConversation] : []
+        botID.isEmpty || botID == Fixtures.bot.id ? [directMessage] : []
     }
 
     public func listMessages(
@@ -94,7 +106,7 @@ public struct PreviewClient: HearthClient {
     public func cancel(runID: String) async throws {}
 
     public func getConversation(id: String) async throws -> Hearth_V1_Conversation {
-        var conversation = Fixtures.dmConversation
+        var conversation = directMessage
         conversation.id = id
         return conversation
     }

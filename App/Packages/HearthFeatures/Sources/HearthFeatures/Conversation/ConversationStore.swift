@@ -2,9 +2,11 @@
 // it, and its run. It loads the newest page, pages older ones in on request,
 // and applies what the relay delivers: a message delta appends to the cached
 // message, an upsert replaces it whole (the core sends the final text as one),
-// a run change moves the status line, and a resync refetches the page and
-// forgets the run until the core reports it again. Send
-// and Stop are calls; the store decides nothing about either.
+// a run change moves the status line, a deleted message leaves the list, and
+// a resync refetches the conversation and the page. Loading asks for the
+// conversation first and takes its latest run, so a screen opened mid-run
+// shows the work at once. Send, Stop and Retry are calls; the store decides
+// nothing about any of them.
 // See docs/architecture.md#3-the-contract-sketch
 //
 // An approval request or a question in the thread is joined by message id to
@@ -126,8 +128,19 @@ public final class ConversationStore {
         }
     }
 
-    /// Fetches the newest page, replacing what is loaded.
+    /// Whether the latest run ended in a way Retry can run again.
+    public var canRetry: Bool {
+        run?.state == .failed || run?.state == .cancelled
+    }
+
+    /// Fetches the conversation, for its latest run, then the newest page,
+    /// replacing what is loaded. A conversation that cannot be fetched leaves
+    /// the run as it was; the page decides whether the call failed.
     public func load() async {
+        let conversation = try? await client.getConversation(id: conversationID)
+        if let conversation, conversation.hasLatestRun, run == nil {
+            run = conversation.latestRun
+        }
         do {
             let page = try await client.listMessages(
                 conversationID: conversationID, beforeSeq: 0, limit: pageSize)
@@ -187,6 +200,22 @@ public final class ConversationStore {
         }
     }
 
+    /// Runs the failed or stopped run again; the core's answer is the new run,
+    /// and its events follow.
+    public func retry() async {
+        guard let run, canRetry else { return }
+        do {
+            let next = try await client.retry(runID: run.id)
+            // The run's own events can arrive first; theirs are newer.
+            if self.run?.id != next.id {
+                self.run = next
+            }
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
     /// Applies one event from the relay.
     func handle(_ event: Hearth_V1_SubscribeResponse) async {
         switch event.event {
@@ -198,9 +227,11 @@ public final class ConversationStore {
             upsert(change.message)
         case .runChanged(let change) where change.run.conversationID == conversationID:
             run = change.run
+        case .messageDeleted(let deleted) where deleted.conversationID == conversationID:
+            messages.removeAll { $0.id == deleted.messageID }
         case .resync:
             // The run's last change may be among the events the core no longer
-            // holds, and no call fetches a run; the next change or send sets it.
+            // holds; the conversation says where its latest run stands.
             run = nil
             await load()
         default:

@@ -2,6 +2,10 @@
 // sidebar has selected: the Inbox or a bot. It fetches the list, applies the
 // bot changes the relay delivers, refetches on a resync, and decides nothing;
 // the selection is what the sidebar highlights and the detail column opens.
+// Each bot's row dot follows its conversation's latest run, read once per bot
+// from the core and moved by the run changes after: working, or waiting for
+// the owner in the attention tone.
+// See docs/model.md#8-approvals
 
 import HearthKit
 import Observation
@@ -25,7 +29,20 @@ public final class BotListStore {
     /// The last failed call's text, if one failed.
     public private(set) var error: String?
 
+    /// What a bot's row dot says.
+    public enum Activity: Equatable, Sendable {
+        case working
+        case waiting
+        case paused
+
+        /// What VoiceOver adds to the row, if anything.
+        public var spoken: String? {
+            self == .waiting ? "waiting for you" : nil
+        }
+    }
+
     private var loaded = false
+    private var runs: [String: Hearth_V1_Run] = [:]
     private let client: any HearthClient
     @ObservationIgnored private let relay: EventRelay
     @ObservationIgnored private var registration: EventRelay.Registration?
@@ -61,7 +78,22 @@ public final class BotListStore {
         bots.first { $0.id == selection }
     }
 
-    /// Fetches the list from the core.
+    /// What `bot`'s row dot says: waiting for the owner, working, paused, or
+    /// nothing. The latest run outranks the bot's own status.
+    public func activity(of bot: Hearth_V1_Bot) -> Activity? {
+        switch runs[bot.id]?.state {
+        case .waitingOwner: return .waiting
+        case .queued, .working: return .working
+        default: break
+        }
+        return switch bot.status {
+        case .working: .working
+        case .paused: .paused
+        default: nil
+        }
+    }
+
+    /// Fetches the list from the core, then each bot's latest run.
     public func load() async {
         do {
             bots = try await client.listBots()
@@ -69,6 +101,17 @@ public final class BotListStore {
             error = nil
         } catch {
             self.error = error.localizedDescription
+            return
+        }
+        for bot in bots {
+            // A conversation that cannot be read leaves its bot's dot to the
+            // bot's own status.
+            guard let list = try? await client.listConversations(botID: bot.id) else { continue }
+            if let latest = list.filter(\.hasLatestRun).map(\.latestRun).last {
+                runs[bot.id] = latest
+            } else {
+                runs[bot.id] = nil
+            }
         }
     }
 
@@ -76,6 +119,7 @@ public final class BotListStore {
     func handle(_ event: Hearth_V1_SubscribeResponse) async {
         switch event.event {
         case .botChanged(let change): upsert(change.bot)
+        case .runChanged(let change): runs[change.run.botID] = change.run
         case .resync: await load()
         default: break
         }
