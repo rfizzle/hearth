@@ -41,6 +41,7 @@ Hearth.app
 | Orchestration (assign, waits, budgets, schedules (planned)) | core | New; `model.md#orchestration` is its spec. |
 | Tool registry | core | shhh's `Definition{Tool, Execute, Receipt}` shape. Two tiers only: read and act; act tools consult the approval gate. |
 | Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search (offered only while a search key is stored), assign, ask_owner, remember. |
+| Document reading and rendering | core | pure Go; the app only for text recognition through the native service |
 | Native tools (planned) | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
 | Credentials | app (Keychain) → core (memory) | The app reads its Keychain records and pushes them with `SyncCredentials` on connect; the core holds them in memory and writes none to disk. A changed record reaches the app as a `credential_changed` event (name only) and an `ExportCredential` call. The core hands back the records its own files held that the app lacked; a later sync that holds every one of those names deletes `keys/` and `chatgpt/`. A core started by hand with no app keeps owner-only files in those folders (D29). |
 | ChatGPT plan tokens | core, in memory, over llm's `credstore.Store` | llm's `chatgpt.Open` takes a `Store`; the core gives it `provider.MemoryKeys`, which keeps the record under `chatgpt` and the host id under `chatgpt-host` and fires the change on every save, token refresh included. The app's Keychain is the durable copy. The file store serves a hand-run core only (D29). |
@@ -75,7 +76,7 @@ OrgService        ExportOrg, ImportOrg
 BotService        Delete
 TeamService       List, Create, Update, Delete
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-NativeToolService (planned; served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
+NativeService (planned; served by the app, called by the core): Ping, ExtractText, Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
 Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple. A heartbeat keeps a quiet subscription under the client's idle timeout, and the app reconnects from the last sequence it saw.
@@ -129,7 +130,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/native is planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, render and native are planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -177,6 +178,9 @@ Rules:
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
+| `internal/document` (planned) | Reads the common document kinds as text: kind by header, the caps, the notices and the picture-page rule; pure Go | new |
+| `internal/render` (planned) | Renders a Markdown file to PDF or Word, deterministically, for `files.render` | new |
+| `internal/native` (planned) | Proxies to the app's NativeService, ExtractText first | new |
 | `internal/tools/files` | `files.read`, `files.write`, `files.delete` inside the folders a bot's grants name | new |
 | `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
@@ -197,7 +201,7 @@ Rules:
 | `internal/assembly` | A run's context, built in a fixed order within byte caps (framing, handbook, notes, summary, window, the parked round, attachments); dropped files brought where the bot may read them; and the side runs after a run: the conversation's summary and tidying a bot's notes | new |
 | `cmd/hearthd` | Assembly, `--repl` harness for driving the core without the app | new |
 
-Planned, with no directory yet: `internal/native` (proxies to the app's NativeToolService), `internal/tools/describe` (plain-English effect strings for approval cards), and a scrub of tool results for key shapes. Bot notes live in `org/memory`, `tools/memory` and `assembly`.
+Planned, with no directory yet: `internal/tools/describe` (plain-English effect strings for approval cards), and a scrub of tool results for key shapes. Bot notes live in `org/memory`, `tools/memory` and `assembly`.
 
 Each package states its contract the Go way: a `doc.go` whose package comment names the responsibility, the invariants the type system does not hold, and the seams it is handed. Behaviour that spans packages (assignment, approvals, budgets, schedules) is already written down in `model.md#orchestration`; code cites those headings. No per-package spec files and no approval states: shhh's convention, which has held up, rather than overwatch's, which became paperwork.
 
@@ -248,7 +252,7 @@ App/
     HearthUI/                 components and compositions that know the domain models
     HearthFeatures/           one folder per feature: an @Observable store + screens
     HearthNative/             EventKit, Contacts, Shortcuts, Keychain, UNUserNotification,
-                              Foundation Models adapters; the NativeToolService server
+                              Foundation Models adapters; the NativeService server
 ```
 
 Dependency direction: `Hearth` → `HearthFeatures` → `HearthUI` → `HearthDesign`, with `HearthKit` importable by everything above `HearthDesign` and `HearthNative` importable only by `Hearth`. `HearthDesign` imports nothing of hearth's.
