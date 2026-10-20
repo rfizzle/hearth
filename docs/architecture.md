@@ -35,13 +35,13 @@ Hearth.app
 
 | Concern | Lives in | Notes |
 |---|---|---|
-| Org, bots, teams, conversations, tasks, runs, usage, handbook, notes | core | SQLite is the source of truth. The app holds view models only. |
+| Org, bots, teams (planned), conversations, tasks (planned), runs, usage, handbook, notes | core | SQLite is the source of truth. The app holds view models only. |
 | Provider calls, streaming, retries | core | llm for calls; the retry loop is lifted from shhh (`internal/agent/retry.go` precedent), since llm only classifies failures. |
 | Agent loop | core | Lifted from shhh `internal/agent` (passive state machine with StreamFunc / ToolExecutor / ApprovalGate seams), stripped of the coding-specific classifier, modes and tools. |
-| Orchestration (assign, waits, budgets, schedules) | core | New; `model.md#orchestration` is its spec. |
+| Orchestration (assign, waits, budgets, schedules (planned)) | core | New; `model.md#orchestration` is its spec. |
 | Tool registry | core | shhh's `Definition{Tool, Execute, Receipt}` shape. Two tiers only: read and act; act tools consult the approval gate. |
 | Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search (offered only while a search key is stored), assign, ask_owner, remember. |
-| Native tools | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
+| Native tools (planned) | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
 | Credentials | app (Keychain) → core (memory) | The app reads its Keychain records and pushes them with `SyncCredentials` on connect; the core holds them in memory and writes none to disk. A changed record reaches the app as a `credential_changed` event (name only) and an `ExportCredential` call. The core hands back the records its own files held that the app lacked; a later sync that holds every one of those names deletes `keys/` and `chatgpt/`. A core started by hand with no app keeps owner-only files in those folders (D29). |
 | ChatGPT plan tokens | core, in memory, over llm's `credstore.Store` | llm's `chatgpt.Open` takes a `Store`; the core gives it `provider.MemoryKeys`, which keeps the record under `chatgpt` and the host id under `chatgpt-host` and fires the change on every save, token refresh included. The app's Keychain is the durable copy. The file store serves a hand-run core only (D29). |
 | Security-scoped bookmarks | app | Folder grants outside the Workspace are picked with NSOpenPanel and stored as bookmarks by the app; the app resolves them and tells the core the real path and the grant. Relevant only if a sandboxed build ships. |
@@ -75,7 +75,7 @@ OrgService        ExportOrg, ImportOrg
 BotService        Delete
 TeamService       List, Create, Update, Delete
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-NativeToolService (served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
+NativeToolService (planned; served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
 Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple. A heartbeat keeps a quiet subscription under the client's idle timeout, and the app reconnects from the last sequence it saw.
@@ -94,7 +94,7 @@ Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a 
 ### 5. Security model
 
 - Bots are a *permission* boundary, not a process boundary. Every tool call is checked against the calling bot's grants in the core before dispatch, and act-tier tools go through the approval gate. This is the opposite of Grok Bot's shared-computer design and is a stated differentiator.
-- Credentials never enter model context. Tool results are scrubbed for the known key shapes before they are appended (lift shhh's `secret` scrub).
+- Credentials never enter model context. Tool results are scrubbed for the known key shapes before they are appended (planned: lift shhh's `secret` scrub).
 - Web fetch has no cookies, follows redirects with a cap, strips scripts, limits size, and blocks link-local and private ranges.
 - Prompt injection from fetched pages and files is treated as untrusted data: the framing says so, and act-tier tools require approval regardless of what a page says. There is no "always allow" for `files.delete` or any Shortcut that the owner did not individually grant.
 - The core listens on loopback only and checks the launch token on every request (D16).
@@ -173,7 +173,7 @@ Rules:
 | `internal/orchestrate/park` | What a run that waits on the owner leaves behind: the thread message and the Inbox item, the wording of each decision, the grant for an always-allow | new |
 | `internal/orchestrate/record` | What one run writes as it goes: its messages, steps and how it ended, stored and published; the agent's sink | new |
 | `internal/orchestrate/toolset` | The tools one run is handed, built from the bot's grants | new |
-| `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
+| `internal/tools` | `Definition{Tool, Execute, Describe}` registry (`Describe` is planned); files, web, assign, ask_owner, remember | shhh shape, new contents |
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
