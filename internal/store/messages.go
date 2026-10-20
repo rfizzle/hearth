@@ -110,6 +110,52 @@ func (db *DB) UpdateMessage(ctx context.Context, m org.Message) error {
 		m.Content, calls, m.ToolCallID, files, m.Streaming, nullString(m.Widget), nullString(m.WidgetAnswer), m.ID)
 }
 
+// DeleteMessage removes the message with id. It is ErrNotFound when there is
+// none.
+func (db *DB) DeleteMessage(ctx context.Context, id string) error {
+	res, err := db.sql.ExecContext(ctx, `DELETE FROM messages WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete message %s: %w", id, err)
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return fmt.Errorf("delete message %s: %w", id, orNotFound(err))
+	}
+	return nil
+}
+
+// CloseStreamingMessages ends every message still streaming: one with no
+// text is deleted, since nothing of it was kept, and the rest are set to not
+// streaming. It is for startup, before any run begins: a message still
+// streaming then was cut off by the core stopping. It returns how many it
+// closed and how many it deleted.
+// See docs/model.md#9-failure-handling.
+func (db *DB) CloseStreamingMessages(ctx context.Context) (closed, deleted int64, err error) {
+	tx, err := db.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, 0, fmt.Errorf("close streaming messages: %w", err)
+	}
+	defer tx.Rollback()
+	for _, q := range []struct {
+		n   *int64
+		sql string
+	}{
+		{&deleted, `DELETE FROM messages WHERE streaming = 1 AND content = ''`},
+		{&closed, `UPDATE messages SET streaming = 0 WHERE streaming = 1`},
+	} {
+		res, err := tx.ExecContext(ctx, q.sql)
+		if err != nil {
+			return 0, 0, fmt.Errorf("close streaming messages: %w", err)
+		}
+		if *q.n, err = res.RowsAffected(); err != nil {
+			return 0, 0, fmt.Errorf("close streaming messages: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, 0, fmt.Errorf("close streaming messages: %w", err)
+	}
+	return closed, deleted, nil
+}
+
 // encodeParts is m's tool calls and files as JSON, NULL when there are none.
 func encodeParts(m org.Message) (calls, files sql.NullString, err error) {
 	if calls, err = encodeJSON(m.ToolCalls, len(m.ToolCalls)); err != nil {

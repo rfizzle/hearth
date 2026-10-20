@@ -43,6 +43,29 @@ func (db *DB) Run(ctx context.Context, id string) (org.Run, error) {
 	return r, nil
 }
 
+// LatestRun is the newest run in the conversation convID, in whatever state,
+// and false when it has had none. Newest is the order the runs were created
+// in, which is the order they started in.
+func (db *DB) LatestRun(ctx context.Context, convID string) (org.Run, bool, error) {
+	rows, err := queryAll(ctx, db.sql, "latest run of "+convID, scanRun, `SELECT `+runColumns+`
+		FROM runs WHERE conversation_id = ? ORDER BY rowid DESC LIMIT 1`, convID)
+	if err != nil || len(rows) == 0 {
+		return org.Run{}, false, err
+	}
+	return rows[0], true, nil
+}
+
+// runColumns is what scanRun reads.
+const runColumns = `id, conversation_id, bot_id, state, steps, failure, started_at, ended_at`
+
+func scanRun(row scanner) (org.Run, error) {
+	var r org.Run
+	var started, ended sql.NullInt64
+	err := row.Scan(&r.ID, &r.ConversationID, &r.BotID, &r.State, &r.Steps, &r.Failure, &started, &ended)
+	r.StartedAt, r.EndedAt = fromMillis(started), fromMillis(ended)
+	return r, err
+}
+
 // FailWorkingRuns ends every run still queued or working as failed with
 // reason, and returns how many it ended. It is for startup, before any run
 // begins: a run still in either state then was cut off by the core stopping,

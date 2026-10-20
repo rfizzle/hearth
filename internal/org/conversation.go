@@ -8,12 +8,15 @@ type ConversationKind int
 // ConversationDM is a bot's direct conversation with the owner.
 const ConversationDM ConversationKind = 1
 
-// Conversation is one thread. A DM belongs to the bot in BotID.
+// Conversation is one thread. A DM belongs to the bot in BotID. LatestRun is
+// the newest run in it, in whatever state, when a list fills it in, and nil
+// before the first message.
 type Conversation struct {
 	ID        string
 	Kind      ConversationKind
 	BotID     string
 	Title     string
+	LatestRun *Run
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

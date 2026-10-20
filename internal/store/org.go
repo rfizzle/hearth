@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/org"
@@ -16,6 +17,15 @@ func (db *DB) Org(ctx context.Context) (org.Org, error) {
 		return org.Org{}, fmt.Errorf("org: %w", notFound(err))
 	}
 	return o, nil
+}
+
+// FindOrg is the org, and false with no error before the owner has named it.
+func (db *DB) FindOrg(ctx context.Context) (org.Org, bool, error) {
+	o, err := db.Org(ctx)
+	if errors.Is(err, ErrNotFound) {
+		return org.Org{}, false, nil
+	}
+	return o, err == nil, err
 }
 
 // PutOrg saves the org, creating its one row or replacing it.
