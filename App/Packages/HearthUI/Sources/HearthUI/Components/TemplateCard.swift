@@ -1,8 +1,11 @@
 // TemplateCard shows one starting point for a new bot: the role and a line
-// about what it does. It is a Button, so keyboard and VoiceOver behaviour is
-// the system's; a selected card says so in its accessibility traits as well as
-// in its outline. The same card carries the "Describe the job" choice, which
-// is a starting point with no template behind it.
+// about what it does, on a raised card. It is a plain Button around a
+// CardSurface, so keyboard and VoiceOver behaviour is the system's; a selected
+// card says so in its accessibility traits as well as in its outline and
+// check. The same card carries the "Describe the job" choice, a starting point
+// with no template behind it, marked by a pencil. It fills the height its row
+// gives it, so cards side by side in a grid share one height.
+// See docs/design.md#spacing-and-shape
 
 import HearthDesign
 import HearthKit
@@ -15,7 +18,15 @@ public struct TemplateCard: View {
     let isSelected: Bool
     let onPick: () -> Void
 
-    public init(role: String, summary: String, isSelected: Bool, onPick: @escaping () -> Void) {
+    let isBlank: Bool
+
+    /// A card with `role` and `summary`; `isBlank` marks the choice with no
+    /// template behind it, which shows a pencil.
+    public init(
+        role: String, summary: String, isSelected: Bool, isBlank: Bool = false,
+        onPick: @escaping () -> Void
+    ) {
+        self.isBlank = isBlank
         self.role = role
         self.summary = summary
         self.isSelected = isSelected
@@ -30,24 +41,35 @@ public struct TemplateCard: View {
 
     public var body: some View {
         Button(action: onPick) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(role)
-                    .font(.headline)
-                    .foregroundStyle(Theme.color(.textPrimary))
-                Text(summary)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.color(.textSecondary))
-                    .multilineTextAlignment(.leading)
+            CardSurface(isSelected: isSelected) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(role)
+                            .font(Theme.headline)
+                            .foregroundStyle(Theme.color(.textPrimary))
+                        Spacer(minLength: Theme.Spacing.sm)
+                        if isSelected {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.tint)
+                                .accessibilityHidden(true)
+                        } else if isBlank {
+                            Image(systemName: "square.and.pencil")
+                                .foregroundStyle(Theme.color(.textSecondary))
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    Text(summary)
+                        .font(Theme.callout)
+                        .foregroundStyle(Theme.color(.textSecondary))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(
-                        isSelected ? Color.accentColor : Theme.color(.textSecondary),
-                        lineWidth: isSelected ? 2 : 1))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(maxHeight: .infinity, alignment: .top)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
@@ -72,7 +94,8 @@ extension TemplateCard {
     /// A card showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
-            role: state.role, summary: state.summary, isSelected: state == .selected, onPick: {})
+            role: state.role, summary: state.summary, isSelected: state == .selected,
+            isBlank: state == .describe, onPick: {})
     }
 }
 

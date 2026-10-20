@@ -1,7 +1,8 @@
 // TierPicker chooses how much thinking a bot does: Fast, Balanced or Best. It
 // wraps a segmented Picker, so keyboard and VoiceOver behaviour is the
-// system's, and a line under it says what the choice means in plain words.
-// The picker edits a binding and decides nothing.
+// system's, and inside a grouped form the form draws its leading label. A
+// line under it says what the choice means in plain words. The picker edits a
+// binding and decides nothing.
 
 import HearthDesign
 import HearthKit
@@ -16,7 +17,7 @@ public struct TierPicker: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             Picker("Quality", selection: $tier) {
                 ForEach(Self.choices, id: \.self) { choice in
                     Text(Self.name(choice)).tag(choice)
@@ -24,7 +25,7 @@ public struct TierPicker: View {
             }
             .pickerStyle(.segmented)
             Text(Self.hint(tier))
-                .font(Theme.body)
+                .font(Theme.callout)
                 .foregroundStyle(Theme.color(.textSecondary))
         }
     }
