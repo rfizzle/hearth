@@ -8,8 +8,13 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/integration"
+	"github.com/rfizzle/hearth/internal/orchestrate"
+	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
+	"github.com/rfizzle/hearth/internal/store"
 )
 
 const (
@@ -36,6 +41,33 @@ type Options struct {
 	Interval time.Duration
 	// Words is the list StreamHello cycles through; empty means a fixed sentence.
 	Words []string
+
+	// The domain the services translate to. Every service is registered, so
+	// a handler called without its part set fails; hearthd sets all of them,
+	// and a test of the spike service sets none.
+
+	// Store backs OrgService, BotService and ConversationService.
+	Store *store.DB
+	// Orchestrator starts and stops the runs ConversationService sends.
+	Orchestrator *orchestrate.Service
+	// Accounts backs ProviderService. NewHandler publishes its changes on
+	// Bus.
+	Accounts *provider.Accounts
+	// Integrations backs IntegrationService. NewHandler publishes its
+	// changes on Bus.
+	Integrations *integration.Integrations
+	// Templates are the role templates BotService lists.
+	Templates []org.RoleTemplate
+	// Bus is what EventService streams and the handlers publish to.
+	Bus *orchestrate.Bus
+}
+
+// publish tells the bus about a change a handler made; with no bus nobody
+// is following.
+func (o Options) publish(body any) {
+	if o.Bus != nil {
+		o.Bus.Publish(body)
+	}
 }
 
 func (o Options) withDefaults() Options {
@@ -49,18 +81,40 @@ func (o Options) withDefaults() Options {
 }
 
 // NewHandler returns the HTTP handler for the hearth.v1 contract, behind the
-// launch-token check.
+// launch-token check. It serves the spike service and the six services over
+// the domain in Options. It points the accounts' and the integrations' change
+// hooks at the bus, so a sign-in finishing or a key pasted reaches the app
+// whoever caused it; call it before either is used.
+// See docs/architecture.md#1-layering
 func NewHandler(o Options) http.Handler {
 	o = o.withDefaults()
 	mux := http.NewServeMux()
-	path, h := hearthv1connect.NewHearthServiceHandler(&service{opts: o})
-	mux.Handle(path, h)
+	mux.Handle(hearthv1connect.NewHearthServiceHandler(&service{opts: o}))
+	mux.Handle(hearthv1connect.NewOrgServiceHandler(&orgService{opts: o}))
+	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{opts: o}))
+	if o.Accounts != nil {
+		o.Accounts.OnChange = func(a provider.Account) { o.publish(AccountChanged{Account: a}) }
+	}
+	if o.Integrations != nil {
+		o.Integrations.OnChange = func(a integration.Account) { o.publish(IntegrationChanged{Integration: a}) }
+	}
+	mux.Handle(hearthv1connect.NewConversationServiceHandler(&conversationService{opts: o}))
+	mux.Handle(hearthv1connect.NewProviderServiceHandler(&providerService{opts: o}))
+	mux.Handle(hearthv1connect.NewIntegrationServiceHandler(&integrationService{opts: o}))
+	mux.Handle(hearthv1connect.NewEventServiceHandler(&eventService{opts: o}))
 	return requireToken(o.Token, mux)
 }
 
-type service struct {
-	opts Options
-}
+// The services, one per file beside this one.
+type (
+	service             struct{ opts Options } // the spike: Ping and StreamHello
+	orgService          struct{ opts Options } // OrgService: the org's name and the Hearth folder
+	botService          struct{ opts Options } // BotService: the templates, hiring and listing bots
+	conversationService struct{ opts Options } // ConversationService: the threads and the owner's side of a run
+	providerService     struct{ opts Options } // ProviderService: which model accounts are signed in
+	integrationService  struct{ opts Options } // IntegrationService: the optional services that are not model providers
+	eventService        struct{ opts Options } // EventService: the one stream every change travels on
+)
 
 func (s *service) Ping(context.Context, *connect.Request[hearthv1.PingRequest]) (*connect.Response[hearthv1.PingResponse], error) {
 	return connect.NewResponse(&hearthv1.PingResponse{Version: s.opts.Version}), nil

@@ -382,4 +382,10 @@ languages:
 
 # Each exemption names a package, a rule and the reason the rule is accepted
 # there; none exist yet, and one is added only when the reason can be written down.
-exemptions: []
+exemptions:
+  - package: internal/rpc
+    metric: dup_blocks
+    reason: Connect handler signatures are dictated by the generated service interfaces; the bodies are one-line translations
+  - package: internal/rpc
+    metric: duplication_pct
+    reason: the same repeated Connect handler signatures, counted as a share of lines rather than as blocks

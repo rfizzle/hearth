@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/rfizzle/hearth/internal/org"
 )
@@ -25,6 +26,9 @@ func (db *DB) CreateBot(ctx context.Context, bot org.Bot, grants []org.Grant, dm
 	}
 	defer tx.Rollback()
 
+	if err := checkFolderFree(ctx, tx, bot.FolderPath); err != nil {
+		return org.Bot{}, err
+	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO bots
 		(id, name, role, job_description, tier, status, avatar, folder_path, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -48,6 +52,33 @@ func (db *DB) CreateBot(ctx context.Context, bot org.Bot, grants []org.Grant, dm
 	}
 	bot.DMConversationID = dm.ID
 	return bot, nil
+}
+
+// checkFolderFree is ErrFolderTaken when another bot's folder is folder,
+// compared without regard to case: the default Mac volume is
+// case-insensitive, so "Dana" and "dana" would share one folder on disk.
+// It reads inside the creating transaction, so two hires racing for one
+// name cannot both pass.
+// See docs/model.md#access
+func checkFolderFree(ctx context.Context, tx *sql.Tx, folder string) error {
+	rows, err := tx.QueryContext(ctx, `SELECT folder_path FROM bots`)
+	if err != nil {
+		return fmt.Errorf("create bot: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var other string
+		if err := rows.Scan(&other); err != nil {
+			return fmt.Errorf("create bot: %w", err)
+		}
+		if strings.EqualFold(other, folder) {
+			return fmt.Errorf("create bot: %w", ErrFolderTaken)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("create bot: %w", err)
+	}
+	return nil
 }
 
 // botColumns reads a bot with the id of its DM, which lives on the

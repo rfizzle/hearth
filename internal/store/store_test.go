@@ -55,6 +55,21 @@ func TestOrg(t *testing.T) {
 	}
 }
 
+func TestCreateBot_RefusesAFolderAnotherBotHasWhateverTheCase(t *testing.T) {
+	db := newStore(t)
+	hire(t, db, "Dana")
+	for _, name := range []string{"Dana", "dana", "DANA"} {
+		bot, grants, dm := org.NewBot(name, "Writer", "Writes.", org.TierFast, orgFixture.WorkspacePath)
+		if _, err := db.CreateBot(t.Context(), bot, grants, dm); !errors.Is(err, ErrFolderTaken) {
+			t.Errorf("CreateBot(%q) = %v, want ErrFolderTaken", name, err)
+		}
+	}
+	if bots, err := db.Bots(t.Context()); err != nil || len(bots) != 1 {
+		t.Fatalf("Bots after refusals = %d, %v, want 1", len(bots), err)
+	}
+	hire(t, db, "Dan")
+}
+
 func TestCreateBot_StoresTheBotItsGrantsAndItsDM(t *testing.T) {
 	db := newStore(t)
 	db.now = func() time.Time { return time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC) }

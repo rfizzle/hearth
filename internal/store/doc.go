@@ -15,6 +15,8 @@
 //   - Ids are minted here, when a value is first stored. Values built in org
 //     carry none until then.
 //   - No credential is stored in any table.
+//   - Two bots never share a folder, compared without regard to case; the
+//     second hire is refused inside the transaction that would save it.
 //
 // It is handed only the path of the file.
 package store

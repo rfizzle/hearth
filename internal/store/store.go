@@ -15,6 +15,10 @@ import (
 // ErrNotFound is returned when the row asked for does not exist.
 var ErrNotFound = errors.New("not found")
 
+// ErrFolderTaken is returned when a new bot's folder is another bot's,
+// whatever the case.
+var ErrFolderTaken = errors.New("another bot already has that folder")
+
 // DB is an open store.
 type DB struct {
 	sql *sql.DB

@@ -107,8 +107,8 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, orchestrate/, provider/, integration/, agent/, framing/, tools/, org/, workspace/ and store/ exist so far
-  rpc/                Connect handlers and the token check; generated code under gen/
+internal/             dependencies point down only; only rpc/, orchestrate/, provider/, integration/, agent/, framing/, skill/, tools/, org/, workspace/ and store/ exist so far
+  rpc/                serves the org, bot, conversation, provider, integration and event services over the store, runs and accounts; the token check; generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs and the bus)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
@@ -117,7 +117,8 @@ internal/             dependencies point down only; only rpc/, orchestrate/, pro
   tools/              the tool registry, and the check every call passes against the bot's grants (exists)
     files/            files.read and files.write inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
-  memory/ handbook/ meter/ native/ secret/ skill/
+  skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
+  memory/ handbook/ meter/ native/ secret/
   org/                domain types, grant resolution, budget math (exists)
   workspace/          the Hearth folder's layout and path containment (exists)
   store/              SQLite, migrations, repositories (exists)
