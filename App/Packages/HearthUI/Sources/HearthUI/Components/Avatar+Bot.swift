@@ -9,8 +9,8 @@ import SwiftUI
 
 extension Avatar {
     /// `bot`'s avatar.
-    public init(bot: Hearth_V1_Bot) {
-        self.init(Self.content(name: bot.name, avatar: bot.avatar))
+    public init(bot: Hearth_V1_Bot, size: Size = .regular) {
+        self.init(Self.content(name: bot.name, avatar: bot.avatar), size: size)
     }
 
     /// The owner's avatar.

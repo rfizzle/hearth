@@ -1,7 +1,10 @@
-// FileRow names a file a bot wrote and offers Show in Finder, which calls the
-// revealInFinder environment action with the file's path. The button is a
-// system Button, so keyboard and VoiceOver behaviour is the system's; its
-// label names the file, so a list of several reads apart.
+// FileRow is a file a bot wrote, drawn as a bordered chip with the Finder's
+// icon for its type; the chip is the action and clicking it calls the
+// revealInFinder environment action with the file's path. The context menu
+// offers the same. It is a system Button, so keyboard and VoiceOver behaviour
+// is the system's; its label names the file and the action, so a list of
+// several reads apart.
+// See docs/design.md#the-transcript
 
 import HearthDesign
 import HearthKit
@@ -18,18 +21,30 @@ public struct FileRow: View {
     }
 
     public var body: some View {
-        HStack {
-            Image(systemName: "doc.text")
-                .foregroundStyle(Theme.color(.textSecondary))
-                .accessibilityHidden(true)
-            Text(file.name)
-                .font(Theme.body)
-                .foregroundStyle(Theme.color(.textPrimary))
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer()
+        Button {
+            revealInFinder(file.path)
+        } label: {
+            HStack(spacing: Theme.Spacing.xs) {
+                FileIcon(filename: file.name)
+                Text(file.name)
+                    .font(Theme.callout)
+                    .foregroundStyle(Theme.color(.textPrimary))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .padding(.horizontal, Theme.Spacing.sm)
+            .padding(.vertical, Theme.Spacing.xs)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous)
+                    .stroke(.separator)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help("Show in Finder")
+        .accessibilityLabel("\(file.name), show in Finder")
+        .contextMenu {
             Button("Show in Finder") { revealInFinder(file.path) }
-                .accessibilityLabel("Show \(file.name) in Finder")
         }
     }
 }

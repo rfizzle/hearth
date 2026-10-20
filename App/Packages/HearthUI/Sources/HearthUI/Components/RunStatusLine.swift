@@ -1,8 +1,9 @@
 // RunStatusLine says where the conversation's run is, under the transcript:
 // working (with a small system spinner), waiting for the owner, stopped, or
-// failed with the core's plain-words reason. A finished or absent run shows
-// nothing. The failure carries a warning symbol as well as its text, so it
-// never relies on a tint; the line reads as one element.
+// failed with the core's plain-words reason in the negative tone. A finished
+// or absent run shows nothing. The failure carries a warning symbol as well as
+// its text, so it never relies on a tint; the line reads as one element.
+// See docs/design.md#the-transcript
 
 import HearthDesign
 import HearthKit
@@ -20,7 +21,7 @@ public struct RunStatusLine: View {
 
     public var body: some View {
         if let text = Self.text(run: run, botName: botName) {
-            HStack(spacing: 6) {
+            HStack(spacing: Theme.Spacing.xs) {
                 switch run?.state {
                 case .queued, .working:
                     ProgressView().controlSize(.small)
@@ -32,7 +33,7 @@ public struct RunStatusLine: View {
                 Text(text)
             }
             .font(Theme.caption)
-            .foregroundStyle(Theme.color(.textSecondary))
+            .foregroundStyle(Theme.color(run?.state == .failed ? Tone.negative : Tone.neutral))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
         }

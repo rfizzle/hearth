@@ -42,6 +42,9 @@ import Testing
     let states = MessageRow.PreviewState.self
     #expect(MessageRow(previewState: .owner).isOwner)
     #expect(!MessageRow(previewState: .streaming).isOwner)
+    #expect(!MessageRow(previewState: .ownerLong).message.streaming)
+    #expect(MessageRow(previewState: .ownerLong).isOwner)
+    #expect(states.ownerLong.message.content.count > states.owner.message.content.count)
     #expect(states.streaming.message.streaming)
     #expect(!states.complete.message.streaming)
     #expect(states.withFile.message.files == [Fixtures.briefFile])
@@ -55,6 +58,7 @@ import Testing
     let call = ToolCallRow.PreviewState.done.messages.call.tool
     #expect(ToolCallRow.summary(call) == call.summary)
     #expect(ToolCallRow.summary(.with { $0.name = "web.fetch" }) == "web.fetch")
+    #expect(ToolCallRow.PreviewState.runningExpanded.messages.result == nil)
     #expect(FileRow.PreviewState.allCases.count == 2)
 }
 
@@ -63,4 +67,13 @@ import Testing
     #expect(Avatar.content(name: "Dana", avatar: "magnifyingglass") == .symbol("magnifyingglass"))
     #expect(Avatar.content(name: "Dana", avatar: "🦊") == .character("🦊"))
     #expect(Avatar.content(name: "Dana", avatar: "") == .initials("Dana"))
+}
+
+@MainActor
+@Test func eachToolHasItsSymbolAndTheRestShareOne() {
+    #expect(ToolCallRow.symbol(for: "web.search") == "magnifyingglass")
+    #expect(ToolCallRow.symbol(for: "web.fetch") == "globe")
+    #expect(ToolCallRow.symbol(for: "files.write") == "doc.badge.plus")
+    #expect(ToolCallRow.symbol(for: "files.read") == "doc.text")
+    #expect(ToolCallRow.symbol(for: "calendar.add") == "gearshape")
 }

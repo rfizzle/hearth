@@ -1,11 +1,14 @@
-// MessageRow is one message in the transcript: an Avatar, the author's name
-// and the time over the text, the owner's on the right and on the secondary
-// surface. It composes Avatar, TranscriptText while the message is still
-// streaming, a Text of the parsed Markdown once it is complete, and a FileRow
-// per file the message produced. Inline Markdown only: tables and code blocks
-// wait for a Markdown package. A system message is a centred notice with an
-// info symbol instead. The name and time read as one element; the Avatar is
-// hidden, since the name says who wrote it.
+// MessageRow is one message in the transcript. A bot's message is flat in the
+// readable column: an Avatar, the name and the time over the text, and a
+// FileRow per file it produced, the way a thread reads in a mail client. The
+// owner's is a quiet grey bubble on the trailing edge with no name, and its
+// time is help text and the accessibility value. A system message is a
+// centred notice. The text is TranscriptText while the message is still
+// streaming and parsed inline Markdown once it is complete; tables and code
+// blocks wait for a Markdown package. There is no streaming cursor: the status
+// line is the one working signal. The name and time read as one element; the
+// Avatar is hidden, since the name says who wrote it.
+// See docs/design.md#the-transcript
 
 import HearthDesign
 import HearthKit
@@ -30,47 +33,68 @@ public struct MessageRow: View {
     public var body: some View {
         if message.kind == .system {
             notice
+        } else if isOwner {
+            ownerBubble
         } else {
-            HStack(alignment: .top, spacing: 8) {
-                if isOwner {
-                    Spacer(minLength: 48)
-                } else {
-                    avatar
-                }
-                VStack(alignment: isOwner ? .trailing : .leading, spacing: 4) {
-                    header
-                    content
-                    ForEach(message.files, id: \.path) { file in
-                        FileRow(file: file)
-                    }
-                }
-                if isOwner {
-                    avatar
-                } else {
-                    Spacer(minLength: 48)
+            botMessage
+        }
+    }
+
+    private var botMessage: some View {
+        HStack(alignment: .top, spacing: Theme.Spacing.sm) {
+            avatar
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                header
+                content
+                ForEach(message.files, id: \.path) { file in
+                    FileRow(file: file)
                 }
             }
-            .accessibilityElement(children: .contain)
         }
+        .frame(maxWidth: Theme.Size.readableWidth, alignment: .leading)
+        .accessibilityElement(children: .contain)
+    }
+
+    private var ownerBubble: some View {
+        VStack(alignment: .trailing, spacing: Theme.Spacing.xs) {
+            complete
+                .padding(.horizontal, Theme.Spacing.md)
+                .padding(.vertical, Theme.Spacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
+                        .fill(Theme.color(.surfaceSecondary))
+                )
+                .frame(maxWidth: Theme.Size.bubbleWidth, alignment: .trailing)
+                .help(timeText)
+                .accessibilityValue(timeText)
+            ForEach(message.files, id: \.path) { file in
+                FileRow(file: file)
+            }
+        }
+        .frame(maxWidth: Theme.Size.readableWidth, alignment: .trailing)
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder
     private var avatar: some View {
         if let author {
             Avatar(bot: author)
-        } else if isOwner {
-            Avatar.owner
         } else {
             Avatar(.symbol("person.crop.circle.badge.questionmark"))
         }
     }
 
+    private var timeText: String {
+        message.createdAt.date.formatted(.dateTime.hour().minute())
+    }
+
     private var header: some View {
-        HStack(spacing: 6) {
-            Text(isOwner ? "You" : author?.name ?? "Someone")
-                .font(.headline)
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.sm) {
+            Text(author?.name ?? "Someone")
+                .font(Theme.headline)
                 .foregroundStyle(Theme.color(.textPrimary))
-            Text(message.createdAt.date, format: .dateTime.hour().minute())
+            Spacer(minLength: Theme.Spacing.sm)
+            Text(timeText)
                 .font(Theme.caption)
                 .foregroundStyle(Theme.color(.textSecondary))
         }
@@ -81,11 +105,6 @@ public struct MessageRow: View {
     private var content: some View {
         if message.streaming {
             TranscriptText(text: message.content)
-        } else if isOwner {
-            complete
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8).fill(Theme.color(.surfaceSecondary)))
         } else {
             complete
         }
@@ -99,7 +118,7 @@ public struct MessageRow: View {
     }
 
     private var notice: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Theme.Spacing.xs) {
             Image(systemName: "info.circle").accessibilityHidden(true)
             Text(message.content)
         }
@@ -122,6 +141,7 @@ extension MessageRow {
     /// The states the gallery and previews show.
     public enum PreviewState: String, CaseIterable, Sendable {
         case owner
+        case ownerLong
         case streaming
         case complete
         case withFile
@@ -131,6 +151,13 @@ extension MessageRow {
             switch self {
             case .owner:
                 return Fixtures.dmMessages[0]
+            case .ownerLong:
+                var message = Fixtures.dmMessages[0]
+                message.content =
+                    message.content
+                    + " I want it to cover what it costs to install, what it costs to run, "
+                    + "what grants there are, and whether the walls and loft need doing first."
+                return message
             case .streaming:
                 return Fixtures.streamingReply
             case .complete:
@@ -159,6 +186,7 @@ extension MessageRow {
 }
 
 #Preview("Owner") { MessageRow(previewState: .owner).padding() }
+#Preview("Long owner") { MessageRow(previewState: .ownerLong).padding() }
 #Preview("Streaming") { MessageRow(previewState: .streaming).padding() }
 #Preview("Complete") { MessageRow(previewState: .complete).padding() }
 #Preview("With a file") { MessageRow(previewState: .withFile).padding() }
