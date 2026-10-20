@@ -5,5 +5,5 @@
 enum Catalog {
     /// Built once: the screens hold stores that load in the background.
     static let pages: [GalleryPage] =
-        design + onboarding + hire + conversation + screens
+        design + onboarding + hire + conversation + screens + [motion]
 }

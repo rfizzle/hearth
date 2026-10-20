@@ -45,7 +45,7 @@ DIST_DIR=$(CURDIR)/dist
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-s -w -X main.version=$(VERSION)
 
-.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build gallery-open gallery-shot ci-swift app-build app-sign notarize app-verify cache-dir
+.PHONY: all build proto proto-check proto-drift fmt fmt-check vet lint test test-contract test-integration docs-check vulncheck astimate ci prepush hooks help swift-fmt swift-format-check swift-lint swift-test tokens-check gallery-build gallery-open gallery-shot gallery-record ci-swift app-build app-sign notarize app-verify cache-dir
 
 all: help
 
@@ -188,6 +188,19 @@ gallery-shot: ## Capture a gallery page to .cache/gallery/<PAGE>.png (PAGE=Messa
 	@screencapture -x -o -l "$$(cat $(GALLERY_SHOT_DIR)/.windowid)" $(GALLERY_SHOT_DIR)/$(PAGE).png
 	@sips -Z 1600 $(GALLERY_SHOT_DIR)/$(PAGE).png >/dev/null
 	@echo "captured $(GALLERY_SHOT_DIR)/$(PAGE).png"
+
+# The Motion page plays each change on launch with --play; the recording is the
+# window's region, since screencapture -l is stills only. Seconds cover the
+# whole sequence.
+RECORD_SECONDS ?= 45
+
+gallery-record: ## Record the Motion page playing to .cache/gallery/Motion.mov (needs Screen Recording)
+	@$(MAKE) --no-print-directory gallery-open GALLERY_ARGS="--page Motion --play -ApplePersistenceIgnoreState YES"
+	@mkdir -p $(GALLERY_SHOT_DIR)
+	@until $(SWIFT) scripts/app/windowid.swift --bounds "Hearth Gallery" >/dev/null 2>&1; do sleep 0.3; done
+	@osascript -e 'tell application "HearthGallery" to activate'
+	@screencapture -v -V $(RECORD_SECONDS) -x -R "$$($(SWIFT) scripts/app/windowid.swift --bounds "Hearth Gallery")" $(GALLERY_SHOT_DIR)/Motion.mov
+	@echo "recorded $(GALLERY_SHOT_DIR)/Motion.mov"
 
 ci-swift: swift-format-check swift-lint swift-test gallery-build ## Run every Swift check CI runs (macOS only)
 

@@ -16,15 +16,23 @@ struct StateCard: View {
                 .accessibilityAddTraits(.isHeader)
             // Side by side when the window is wide enough, stacked when not,
             // so a canvas is never cut off.
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: Theme.Spacing.lg) {
-                    canvas(.light)
-                    canvas(.dark)
-                }
-                VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                    canvas(.light)
-                    canvas(.dark)
-                }
+            if state.pair {
+                pair
+            } else {
+                canvas(.light)
+            }
+        }
+    }
+
+    private var pair: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: Theme.Spacing.lg) {
+                canvas(.light)
+                canvas(.dark)
+            }
+            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+                canvas(.light)
+                canvas(.dark)
             }
         }
     }

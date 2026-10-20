@@ -9,6 +9,9 @@ struct GalleryState: Identifiable {
     /// The width the unit is shown at; nil lets it take its natural size.
     let width: CGFloat?
     let view: AnyView
+    /// Whether the card shows the light and dark canvases; a page that plays
+    /// a change shows one, so the change is not played twice.
+    var pair = true
 
     var id: String { name }
 }

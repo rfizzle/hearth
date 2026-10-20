@@ -1,7 +1,8 @@
 // GalleryApp is the review surface for the look: a sidebar of pages grouped
 // by package and, for the page chosen, one card per state with the light and
 // dark canvases side by side. Launch arguments make a capture scriptable:
-// --page <Name>, --text largest, --window-width and --window-height <points>.
+// --page <Name>, --text largest, --window-width and --window-height <points>,
+// and --play, which plays each change on the Motion page in turn.
 
 import HearthDesign
 import SwiftUI
@@ -10,6 +11,7 @@ import SwiftUI
 struct LaunchOptions {
     var page: String?
     var largestText = false
+    var play = false
     var windowWidth: CGFloat = 1560
     var windowHeight: CGFloat = 900
 
@@ -19,6 +21,7 @@ struct LaunchOptions {
             switch argument {
             case "--page": page = value
             case "--text": largestText = value == "largest"
+            case "--play": play = true
             case "--window-width":
                 windowWidth = value.flatMap(Double.init).map { CGFloat($0) } ?? windowWidth
             case "--window-height":
@@ -44,13 +47,16 @@ struct GalleryApp: App {
 private struct GalleryRoot: View {
     @State private var selection: String?
     @State private var largestText: Bool
+    private let play: Bool
 
     private let pages = Catalog.pages
 
     init(options: LaunchOptions) {
-        let named = Catalog.pages.first { $0.name.lowercased() == options.page?.lowercased() }
+        let wanted = options.page ?? (options.play ? "Motion" : nil)
+        let named = Catalog.pages.first { $0.name.lowercased() == wanted?.lowercased() }
         _selection = State(initialValue: (named ?? Catalog.pages.first)?.name)
         _largestText = State(initialValue: options.largestText)
+        play = options.play
     }
 
     private var page: GalleryPage? {
@@ -81,11 +87,18 @@ private struct GalleryRoot: View {
                 max: Theme.Size.sidebarMax)
         } detail: {
             if let page {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Theme.Spacing.xl) {
-                        ForEach(page.states) { StateCard(state: $0) }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: Theme.Spacing.xl) {
+                            ForEach(page.states) { StateCard(state: $0).id($0.id) }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .task(id: page.name) {
+                        if play && page.name == Catalog.motionPage {
+                            await Catalog.playMotion { proxy.scrollTo($0, anchor: .center) }
+                        }
+                    }
                 }
                 .contentMargins(Theme.Spacing.xl)
                 .dynamicTypeSize(largestText ? .accessibility5 : .large)

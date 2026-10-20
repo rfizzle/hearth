@@ -60,7 +60,7 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 | Serve the contract by hand (data in `--data-dir`, default Application Support) | `hearthd serve --token <t> --data-dir <dir>` |
 | Swift gates / format Swift | `make ci-swift` / `make swift-fmt` |
 | Open the gallery (`GALLERY_ARGS="--page <Name>"`) | `make gallery-open` |
-| Capture a gallery page to `.cache/gallery/<Name>.png` | `make gallery-shot PAGE=<Name>` |
+| Capture a gallery page to `.cache/gallery/<Name>.png` / record the Motion page playing to `Motion.mov` | `make gallery-shot PAGE=<Name>` / `make gallery-record` |
 | Build Hearth.app | `make app-build` |
 | Sign the bundle | `make app-sign` |
 | Notarise and staple | `make notarize` |

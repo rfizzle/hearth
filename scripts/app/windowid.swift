@@ -3,12 +3,15 @@
 // menu-bar-sized windows, hence the largest. The owner name is the bundle's
 // display name ("Hearth Gallery", "Hearth"). Owner names, bounds and window
 // numbers need no permission; only titles and pixels do.
-// Usage: swift scripts/app/windowid.swift [owner name, default Hearth Gallery]
+// With --bounds it prints the window's rectangle as x,y,w,h in points instead,
+// for screencapture -R, which records a region (-l is stills only).
+// Usage: swift scripts/app/windowid.swift [--bounds] [owner name, default Hearth Gallery]
 
 import CoreGraphics
 import Foundation
 
-let owner = CommandLine.arguments.dropFirst().first ?? "Hearth Gallery"
+let wantsBounds = CommandLine.arguments.contains("--bounds")
+let owner = CommandLine.arguments.dropFirst().first { $0 != "--bounds" } ?? "Hearth Gallery"
 let windows =
     CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
     as? [[String: Any]] ?? []
@@ -25,7 +28,12 @@ let ours = windows.filter {
 if let window = ours.max(by: { area($0) < area($1) }),
     let id = window[kCGWindowNumber as String] as? Int
 {
-    print(id)
+    if wantsBounds, let bounds = window[kCGWindowBounds as String] as? [String: Double] {
+        let parts = ["X", "Y", "Width", "Height"].map { Int((bounds[$0] ?? 0).rounded()) }
+        print(parts.map(String.init).joined(separator: ","))
+    } else {
+        print(id)
+    }
     exit(0)
 }
 FileHandle.standardError.write(Data("no window for \(owner)\n".utf8))
