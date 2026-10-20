@@ -157,6 +157,7 @@ Rules:
 | `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
 | `internal/native` | Tool proxies to the app's NativeToolService | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
+| `internal/provider/gateway` | A service reached by address: the table of known services, the check on an address, the list of its models, the check that a completion is one | new |
 | `internal/keystore` | Named secrets: the Store interface, the file store, the memory store the app syncs into | new |
 | `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
 | `internal/meter` | Usage ledger over llm's prices, month summary, budget rails (D29) | hearth's own ledger: agentcore's is in memory, this one survives relaunch |

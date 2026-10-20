@@ -1,4 +1,4 @@
-package provider
+package gateway
 
 import (
 	"bytes"
@@ -82,14 +82,15 @@ func httpClient(c *http.Client) *http.Client {
 	return c
 }
 
-// peeking returns c sending through a transport that keeps response starts.
-func peeking(c *http.Client) *http.Client {
+// Peeking returns c sending through a transport that keeps response starts,
+// which Check needs to word a body that is not a completion.
+func Peeking(c *http.Client) *http.Client {
 	out := *httpClient(c)
 	out.Transport = peekingTransport{next: out.Transport}
 	return &out
 }
 
-// checked wraps an added service's provider so a completion that is not
+// Check wraps an added service's provider, called name, so a completion that is not
 // one is an error. A gateway can answer 200 to every path with a body of
 // its own (an unknown-operation notice, say); the stream reader sees no
 // choices, takes it for a ping and ends without a word, and the person is
@@ -97,6 +98,10 @@ func peeking(c *http.Client) *http.Client {
 // from a body that had no choices in it, reports the service and the first
 // of what it sent, with any secret removed.
 // See docs/model.md#providers-and-models
+func Check(p llm.Provider, name string, scrub func(string) string) llm.Provider {
+	return checked{Provider: p, name: name, scrub: scrub}
+}
+
 type checked struct {
 	llm.Provider
 	name  string

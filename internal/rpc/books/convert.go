@@ -6,6 +6,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/org/usage"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/provider/gateway"
 	"github.com/rfizzle/hearth/internal/provider/models"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
@@ -78,10 +79,10 @@ func optionToProto(o models.Option) *hearthv1.ModelOption {
 }
 
 // knownKinds is the contract's known-service kinds against provider's.
-var knownKinds = map[hearthv1.KnownServiceKind]provider.KnownKind{
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_BUILTIN:    provider.Builtin,
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_COMPATIBLE: provider.CompatibleService,
-	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_LOCAL:      provider.Local,
+var knownKinds = map[hearthv1.KnownServiceKind]gateway.KnownKind{
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_BUILTIN:    gateway.Builtin,
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_COMPATIBLE: gateway.CompatibleService,
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_LOCAL:      gateway.Local,
 }
 
 // knownServiceToProto is a known service with what detection found.

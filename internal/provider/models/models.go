@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/provider/gateway"
 	"github.com/rfizzle/llm"
 )
 
@@ -86,7 +87,7 @@ func serviceModels(acct provider.Account, found []Service) []string {
 // detected runtimes, matched by address). Each model appears once.
 func Options(a *provider.Accounts, found []Service) []Option {
 	names := map[string]string{}
-	for _, k := range provider.KnownServices() {
+	for _, k := range gateway.KnownServices() {
 		names[k.ID] = k.Name
 	}
 	var out []Option

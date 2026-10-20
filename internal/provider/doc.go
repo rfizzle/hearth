@@ -7,8 +7,9 @@
 // llm directly. It knows which providers are signed in, keeps the
 // OpenAI-compatible services the person added by address as named profiles,
 // builds the one a tier resolves to, opens a completion stream in llm's
-// terms, and scrubs every stored secret out of a message. It also holds the
-// table of services hearth knows the address of.
+// terms, and scrubs every stored secret out of a message. The network side
+// of a service by address (the table of known services, the address check,
+// the model list) is the sub-package gateway.
 //
 // Invariants the types do not hold:
 //   - Once the app has synced its Keychain (Sync), credentials live in

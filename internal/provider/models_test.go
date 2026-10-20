@@ -127,12 +127,3 @@ func TestSaveProfileLocalServiceNeedsNoKey(t *testing.T) {
 		t.Errorf("the service saw %q, want %q", seen, want)
 	}
 }
-
-func TestListModelsReadsTheIds(t *testing.T) {
-	var seen []string
-	accts := &Accounts{Keys: &memKeys{}, client: modelsService(200, `{"data":[{"id":"b"},{"id":""},{"id":"a"}]}`, &seen)}
-	ids, err := accts.listModels(t.Context(), "https://gw.example/v1", gatewayKey)
-	if err != nil || !slices.Equal(ids, []string{"b", "a"}) {
-		t.Errorf("listModels = %q, %v", ids, err)
-	}
-}

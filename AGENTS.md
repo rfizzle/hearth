@@ -115,7 +115,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
   assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
-  provider/           accounts, the key store seam, tier to model, login for the app (exists)
+  provider/           accounts, the key store seam, tier to model, login for the app (exists); gateway/ is the address check, the model list and the known services, models/ the choice among models
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
   tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner)
     files/            files.read, files.write and files.delete inside a granted folder (exists)

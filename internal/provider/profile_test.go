@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/llm"
 
+	"github.com/rfizzle/hearth/internal/provider/gateway"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
@@ -239,11 +240,11 @@ func TestKnownServicesAgreeWithTheContract(t *testing.T) {
 	}
 	ids := map[string]bool{}
 	builtins := 0
-	for _, s := range KnownServices() {
+	for _, s := range gateway.KnownServices() {
 		if s.ID == "" || s.Name == "" || s.BaseURL == "" || s.HelpURL == "" {
 			t.Errorf("%+v lacks an id, a name, an address or a help page", s)
 		}
-		if _, _, err := checkBaseURL(s.BaseURL); err != nil {
+		if _, _, err := gateway.CheckBaseURL(s.BaseURL); err != nil {
 			t.Errorf("%s: address %q is refused: %v", s.ID, s.BaseURL, err)
 		}
 		if ids[s.ID] {
@@ -256,7 +257,7 @@ func TestKnownServicesAgreeWithTheContract(t *testing.T) {
 		}
 		kinds[k] = true
 		switch {
-		case s.Kind == Builtin:
+		case s.Kind == gateway.Builtin:
 			builtins++
 			if !known(Provider(s.ID)) {
 				t.Errorf("builtin row %q is not a provider", s.ID)

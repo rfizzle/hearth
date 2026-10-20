@@ -1,4 +1,4 @@
-package provider
+package gateway
 
 // KnownKind is what sort of service a known service is.
 type KnownKind string

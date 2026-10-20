@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -16,6 +14,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/rfizzle/hearth/internal/keystore"
+	"github.com/rfizzle/hearth/internal/provider/gateway"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/compat"
 )
@@ -129,7 +128,7 @@ func (a *Accounts) SetProfile(p Profile, key string) (Account, error) {
 	p.Name = strings.TrimSpace(p.Name)
 	p.DefaultModel = strings.TrimSpace(p.DefaultModel)
 	key = strings.TrimSpace(key)
-	base, local, err := checkBaseURL(p.BaseURL)
+	base, local, err := gateway.CheckBaseURL(p.BaseURL)
 	if err != nil {
 		return Account{}, err
 	}
@@ -158,7 +157,7 @@ func (a *Accounts) SetProfile(p Profile, key string) (Account, error) {
 			return Account{}, err
 		}
 		f.Added = old.Added
-		if key == "" && !local && hostMoved(old.BaseURL, p.BaseURL) {
+		if key == "" && !local && gateway.HostMoved(old.BaseURL, p.BaseURL) {
 			return Account{}, errors.New("the address changed; paste the key again")
 		}
 	}
@@ -217,14 +216,6 @@ func (a *Accounts) ClearProfile(id string) error {
 	return nil
 }
 
-// hostMoved reports whether two addresses are on different hosts, so a
-// stored key must not follow the service to the new one.
-func hostMoved(from, to string) bool {
-	a, errA := url.Parse(from)
-	b, errB := url.Parse(to)
-	return errA != nil || errB != nil || a.Host != b.Host
-}
-
 // mintProfileID is a fresh id: eight hex digits no stored profile uses.
 func (a *Accounts) mintProfileID() (string, error) {
 	for range 8 {
@@ -240,33 +231,6 @@ func (a *Accounts) mintProfileID() (string, error) {
 	return "", errors.New("could not find a free id for the service")
 }
 
-// checkBaseURL returns the address with no trailing slash, and whether it is
-// on this Mac. It refuses anything but http or https, and plain http to
-// another machine, where the key could be read on the way.
-func checkBaseURL(raw string) (base string, local bool, err error) {
-	raw = strings.TrimRight(strings.TrimSpace(raw), "/")
-	if raw == "" {
-		return "", false, errors.New("enter the service's address, the field was empty")
-	}
-	u, err := url.Parse(raw)
-	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
-		return "", false, errors.New("the address should look like https://example.com/v1")
-	}
-	// The address is shown and returned; it is not a secret, so a key in it
-	// would leave the core.
-	// See docs/model.md#providers-and-models
-	if u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
-		return "", false, errors.New("put the key in the key field, not in the address")
-	}
-	host := u.Hostname()
-	ip := net.ParseIP(host)
-	local = host == "localhost" || (ip != nil && ip.IsLoopback())
-	if u.Scheme == "http" && !local {
-		return "", false, errors.New("use an https address; over http the key could be read on the way")
-	}
-	return raw, local, nil
-}
-
 // buildProfile makes the provider for one profile through llm's compatible
 // backend, under the profile's name so a failure says which service. It
 // sends through the accounts' client, nil being a plain one.
@@ -277,7 +241,7 @@ func (a *Accounts) buildProfile(p Profile) (llm.Provider, error) {
 	}
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = p.BaseURL
-	cfg.HTTPClient = peeking(a.client)
+	cfg.HTTPClient = gateway.Peeking(a.client)
 	prov := compat.NewNamed(openai.NewClientWithConfig(cfg), p.DefaultModel, p.BaseURL, p.Name)
-	return checked{Provider: prov, name: p.Name, scrub: func(s string) string { return a.vault().ScrubMessage(llm.Message{Content: s}).Content }}, nil
+	return gateway.Check(prov, p.Name, func(s string) string { return a.vault().ScrubMessage(llm.Message{Content: s}).Content }), nil
 }
