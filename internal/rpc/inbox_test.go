@@ -367,7 +367,7 @@ func TestAnswer_RefusesWhatTheControlDoesNot(t *testing.T) {
 		want connect.Code
 	}{
 		{"no item", &hearthv1.AnswerRequest{Answer: "a"}, connect.CodeInvalidArgument},
-		{"words with a line break", &hearthv1.AnswerRequest{ItemId: id, Answer: "a\nb"}, connect.CodeInvalidArgument},
+		{"words with a control character", &hearthv1.AnswerRequest{ItemId: id, Answer: "a\x07b"}, connect.CodeInvalidArgument},
 		{"words past the cap", &hearthv1.AnswerRequest{ItemId: id, Answer: strings.Repeat("a", 4097)}, connect.CodeInvalidArgument},
 		{"an option that is not offered", &hearthv1.AnswerRequest{ItemId: id, Value: &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_ChoiceId{ChoiceId: "z"}}}, connect.CodeInvalidArgument},
 		{"the wrong kind of answer", &hearthv1.AnswerRequest{ItemId: id, Value: &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_Yes{Yes: true}}}, connect.CodeInvalidArgument},

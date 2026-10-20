@@ -53,9 +53,9 @@ func TestDates_AMacEastOrWestOfUTCKeepsTheOwnersDayAndTime(t *testing.T) {
 	}
 }
 
-func TestWords_AreOneShortLine(t *testing.T) {
+func TestWords_AreShortPlainText(t *testing.T) {
 	for text, want := range map[string]bool{
-		"": true, "Keep it": true, "two\nlines": false, "tab\there": false,
+		"": true, "Keep it": true, "two\nlines": true, "tab\there": true, "bell\x07": false, "nul\x00": false,
 		strings.Repeat("a", 4096): true, strings.Repeat("a", 4097): false,
 	} {
 		err := Words("the answer", text)

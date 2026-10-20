@@ -3,7 +3,9 @@ package widgetwire
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,13 +36,17 @@ func Of(stored string) Control {
 const maxWords = 4096
 
 // Words refuses text the owner typed, named what in the refusal, that is
-// longer than a reply needs or holds a line break or another control
-// character. The refusal is one Invalid is true for.
+// longer than a reply needs or holds a control character other than a line
+// break or a tab: the answer field is a multi-line one. The refusal is one
+// Invalid is true for.
 func Words(what, text string) error {
 	if n := utf8.RuneCountInString(text); n > maxWords {
 		return fmt.Errorf("%w: %s is %d characters; keep it to %d or fewer", widget.ErrInvalid, what, n, maxWords)
 	}
-	return widget.Plain(what, text)
+	if strings.ContainsFunc(text, func(r rune) bool { return unicode.IsControl(r) && r != '\n' && r != '\t' }) {
+		return fmt.Errorf("%w: %s holds a control character; write it as plain text", widget.ErrInvalid, what)
+	}
+	return nil
 }
 
 // Invalid is true for a refusal by the widget package: an answer its control
