@@ -28,8 +28,11 @@ for target in "$reader" "$helper" "$app"; do
 		;;
 	esac
 done
-if ! codesign -d --entitlements - "$reader" 2>/dev/null | grep -q com.apple.security.app-sandbox; then
-	echo "$reader is not sandboxed" >&2
+# The reader's entitlements must be exactly {app-sandbox: true}: a false value
+# or any added entitlement (network, file access, a temporary exception) fails.
+reader_ents=$(codesign -d --entitlements :- "$reader" 2>/dev/null | plutil -convert json -o - - 2>/dev/null || true)
+if [ "$reader_ents" != '{"com.apple.security.app-sandbox":true}' ]; then
+	echo "$reader entitlements are not exactly the sandbox: $reader_ents" >&2
 	exit 1
 fi
 echo "$reader: sandboxed"
