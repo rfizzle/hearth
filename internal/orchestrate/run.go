@@ -33,8 +33,29 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt org.Me
 	k.run.State = org.RunWorking
 	k.run.StartedAt = s.d.Now()
 	k.saveRun()
-	out, err := s.turn(ctx, k, bot, prompt)
+	out, err := s.guarded(ctx, k, bot, prompt)
 	k.finish(out, err)
+}
+
+// guarded is the turn with a panic in it, the loop's or a tool's, turned
+// into the error the run fails with: one bad tool call must not take the
+// core down, nor leave the conversation busy for good. The panic is logged
+// with its stack. A tool runs on a goroutine of its own, so its panic is
+// caught there, stops the turn, and is reported here.
+// See docs/model.md#9-failure-handling.
+func (s *Service) guarded(ctx context.Context, k *sink, bot org.Bot, prompt org.Message) (out agent.Outcome, err error) {
+	ctx, stop := context.WithCancel(ctx)
+	defer stop()
+	k.stop = stop
+	defer func() {
+		if p := recover(); p != nil {
+			k.crash(p)
+		}
+		if p := k.crashed(); p != nil {
+			out, err = agent.Outcome{}, fmt.Errorf("something went wrong inside hearth: %v", p)
+		}
+	}()
+	return s.turn(ctx, k, bot, prompt)
 }
 
 // turn gathers what the bot's turn needs and runs it, reporting to k.
@@ -84,7 +105,7 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt org.Mes
 		Prompt:  prompt.Content,
 		Tools:   offered,
 		Stream:  stream,
-		Execute: execute(disp),
+		Execute: execute(disp, k),
 		// See docs/model.md#4-termination-guarantees.
 		MaxRounds: s.d.Caps.Steps,
 		MaxWall:   s.d.Caps.Wall,
@@ -138,9 +159,16 @@ func (s *Service) registry() (*tools.Registry, error) {
 }
 
 // execute runs a call through the dispatcher, the one place its grants are
-// checked, and hands the loop the paths of the files it wrote.
-func execute(d tools.Dispatcher) agent.Execute {
-	return func(ctx context.Context, name string, args json.RawMessage) (agent.Result, error) {
+// checked, and hands the loop the paths of the files it wrote. A panic in the
+// call stops the run through k.
+func execute(d tools.Dispatcher, k *sink) agent.Execute {
+	return func(ctx context.Context, name string, args json.RawMessage) (res agent.Result, err error) {
+		defer func() {
+			if p := recover(); p != nil {
+				k.crash(p)
+				err = fmt.Errorf("%s stopped unexpectedly", name)
+			}
+		}()
 		r, err := d.Execute(ctx, name, args)
 		paths := make([]string, len(r.Files))
 		for i, f := range r.Files {

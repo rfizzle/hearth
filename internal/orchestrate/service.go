@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"slices"
 	"sync"
 	"time"
 
@@ -38,6 +40,9 @@ type Deps struct {
 	Bus      *Bus
 	// Caps are the limits every run ends at; zero takes the defaults.
 	Caps org.Caps
+	// Log is where a run that panicked is reported, with its stack; nil is
+	// the standard logger.
+	Log *log.Logger
 	// Now is the clock; nil is time.Now.
 	Now func() time.Time
 }
@@ -54,7 +59,8 @@ type Service struct {
 
 // Open is a service over d. Runs an earlier launch left queued or working
 // are ended as failed first: nothing resumes them, and left alone their bot
-// would show as working forever.
+// would show as working forever. Messages it left streaming are closed, or
+// deleted when they hold nothing, so no bubble stays open.
 // See docs/model.md#9-failure-handling.
 func Open(ctx context.Context, d Deps) (*Service, error) {
 	if d.Store == nil || d.Streams == nil || d.Bus == nil {
@@ -69,28 +75,38 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 	if _, err := d.Store.FailWorkingRuns(ctx, quitReason); err != nil {
 		return nil, fmt.Errorf("orchestrate: %w", err)
 	}
+	if _, _, err := d.Store.CloseStreamingMessages(ctx); err != nil {
+		return nil, fmt.Errorf("orchestrate: %w", err)
+	}
+	if d.Log == nil {
+		d.Log = log.Default()
+	}
 	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{}}, nil
 }
 
 // Send stores text as the owner's message in the DM convID and starts the
 // run that answers it, returning both as stored. The run goes on after Send
 // returns; its progress is published on the bus. Send refuses with ErrBusy
-// while an earlier run in the conversation has not ended.
+// while an earlier run in the conversation has not ended. If the run cannot
+// be stored the owner's message is removed again, so no message is left that
+// nothing answers.
 func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.Message, error) {
 	bot, err := s.dmBot(ctx, convID)
 	if err != nil {
 		return org.Run{}, org.Message{}, err
 	}
-	s.mu.Lock()
-	if _, busy := s.working[convID]; busy {
-		s.mu.Unlock()
-		return org.Run{}, org.Message{}, ErrBusy
+	if err := s.reserve(convID); err != nil {
+		return org.Run{}, org.Message{}, err
 	}
-	s.working[convID] = ""
-	s.mu.Unlock()
-
-	r, m, runCtx, err := s.start(ctx, bot, convID, text)
+	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: convID, Kind: org.MessageText, Content: text})
 	if err != nil {
+		s.release(convID, "")
+		return org.Run{}, org.Message{}, err
+	}
+	s.d.Bus.Publish(MessageUpserted{Message: m})
+	r, runCtx, err := s.start(ctx, bot, m)
+	if err != nil {
+		s.unsend(ctx, m)
 		s.release(convID, "")
 		return org.Run{}, org.Message{}, err
 	}
@@ -98,25 +114,86 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 	return r, m, nil
 }
 
-// start stores the owner's message and the queued run, and registers what
-// stops the run.
-func (s *Service) start(ctx context.Context, bot org.Bot, convID, text string) (org.Run, org.Message, context.Context, error) {
-	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: convID, Kind: org.MessageText, Content: text})
+// Retry answers the owner's last message in the DM convID again, as a new
+// run from scratch; the runs before it are left as they are. It refuses with
+// ErrBusy while a run in the conversation is still working.
+// See docs/model.md#9-failure-handling.
+func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
+	bot, err := s.dmBot(ctx, convID)
 	if err != nil {
-		return org.Run{}, org.Message{}, nil, err
+		return org.Run{}, err
 	}
-	s.d.Bus.Publish(MessageUpserted{Message: m})
-	r, err := s.d.Store.CreateRun(ctx, org.Run{ConversationID: convID, BotID: bot.ID, State: org.RunQueued})
+	if err := s.reserve(convID); err != nil {
+		return org.Run{}, err
+	}
+	prompt, err := s.lastOwnerMessage(ctx, convID)
 	if err != nil {
-		return org.Run{}, org.Message{}, nil, err
+		s.release(convID, "")
+		return org.Run{}, err
+	}
+	r, runCtx, err := s.start(ctx, bot, prompt)
+	if err != nil {
+		s.release(convID, "")
+		return org.Run{}, err
+	}
+	go s.run(runCtx, bot, r, prompt)
+	return r, nil
+}
+
+// reserve claims the conversation for a run about to start, or is ErrBusy.
+func (s *Service) reserve(convID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, busy := s.working[convID]; busy {
+		return ErrBusy
+	}
+	s.working[convID] = ""
+	return nil
+}
+
+// start stores the queued run that answers prompt and registers what stops
+// it.
+func (s *Service) start(ctx context.Context, bot org.Bot, prompt org.Message) (org.Run, context.Context, error) {
+	r, err := s.d.Store.CreateRun(ctx, org.Run{ConversationID: prompt.ConversationID, BotID: bot.ID, State: org.RunQueued})
+	if err != nil {
+		return org.Run{}, nil, err
 	}
 	// The run outlives the request that started it; only Cancel stops it.
 	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	s.mu.Lock()
-	s.working[convID] = r.ID
+	s.working[r.ConversationID] = r.ID
 	s.cancels[r.ID] = cancel
 	s.mu.Unlock()
-	return r, m, runCtx, nil
+	return r, runCtx, nil
+}
+
+// unsend removes the owner's message m again.
+func (s *Service) unsend(ctx context.Context, m org.Message) {
+	if err := s.d.Store.DeleteMessage(context.WithoutCancel(ctx), m.ID); err != nil {
+		s.d.Log.Printf("orchestrate: could not remove message %s after its run failed to start: %v", m.ID, err)
+		return
+	}
+	s.d.Bus.Publish(MessageDeleted{ConversationID: m.ConversationID, MessageID: m.ID})
+}
+
+// lastOwnerMessage is the newest text the owner wrote in convID.
+func (s *Service) lastOwnerMessage(ctx context.Context, convID string) (org.Message, error) {
+	var before int64
+	for {
+		msgs, more, err := s.d.Store.Messages(ctx, convID, before, 200)
+		if err != nil {
+			return org.Message{}, err
+		}
+		for _, m := range slices.Backward(msgs) {
+			if m.Kind == org.MessageText && m.AuthorBotID == "" {
+				return m, nil
+			}
+		}
+		if !more {
+			return org.Message{}, fmt.Errorf("conversation %s has no message of yours to answer: %w", convID, store.ErrNotFound)
+		}
+		before = msgs[0].Seq
+	}
 }
 
 // release frees the conversation for the next message.

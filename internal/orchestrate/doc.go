@@ -16,6 +16,14 @@
 //   - Every run ends done, cancelled or failed, and the conversation is free
 //     again before the bus hears so. A failed run leaves a system message in
 //     the thread saying why, written as the bot's on that run.
+//   - A panic in the turn, the loop's or a tool's, ends the run failed like
+//     any other failure and is logged with its stack; it never takes the core
+//     down or leaves the conversation busy.
+//   - A run that ends failed or cancelled with a reply that streamed nothing
+//     deletes that empty message rather than leaving a bubble. Launch also
+//     closes any message an earlier launch left streaming.
+//   - A message is never left in the thread without a run to answer it: if the
+//     run cannot be stored, the message is removed again.
 //   - A cancelled run keeps what streamed: its writes do not use the context
 //     that stopped it.
 //   - Deltas go to the bus only. A streaming message is stored empty when it

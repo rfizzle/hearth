@@ -41,6 +41,12 @@ type MessageUpserted struct {
 	Message org.Message
 }
 
+// MessageDeleted is a message removed from its conversation.
+type MessageDeleted struct {
+	ConversationID string
+	MessageID      string
+}
+
 // RunChanged is a run's new state or step count.
 type RunChanged struct {
 	Run org.Run
