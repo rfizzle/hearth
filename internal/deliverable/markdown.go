@@ -19,6 +19,7 @@ var md = goldmark.New(goldmark.WithExtensions(extension.Table, extension.Striket
 
 // ParseMarkdown parses src with the strict reader every renderer shares. A
 // renderer walks the result and writes only the elements the catalogue allows.
+// Text the caller did not write passes CheckMarkdown first.
 func ParseMarkdown(src []byte) ast.Node {
 	return md.Parse(gtext.NewReader(src))
 }
@@ -40,6 +41,9 @@ func markdown(noun, src string, hi int) error {
 		return err
 	}
 	b := []byte(src)
+	if err := CheckMarkdown(b); err != nil {
+		return refuse("the %s: %v; write it more simply", noun, err)
+	}
 	return ast.Walk(ParseMarkdown(b), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil

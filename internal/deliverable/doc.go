@@ -21,6 +21,10 @@
 //   - Markdown in a text or callout widget has no HTML, no image and no link
 //     but http, https and mailto; ParseMarkdown is the one strict parser every
 //     renderer shares.
+//   - Markdown from outside, a widget's or a file's, passes CheckMarkdown
+//     before ParseMarkdown sees it: the parser cannot be interrupted, and
+//     deep nesting, many brackets, many emphasis characters and wide tables
+//     cost it the square of their size in time or memory.
 //   - A measure is only an id here. Whether it names a real family and subject,
 //     and what value it reads, is the measure layer's to say.
 //

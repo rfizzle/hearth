@@ -19,12 +19,12 @@
 //     the caller hands it, for a relative path, at most 20 images of at most
 //     20 megapixels, PNG or JPEG. An address with a scheme is refused before
 //     anything is opened.
-//   - A render is bounded: a source of at most 1 MB and 10,000 [, with no
-//     line nesting hundreds deep, refused before the parser sees it (its
-//     time grows with the square of both and it cannot be interrupted);
-//     200 pages, 60 seconds and 40 MB of images; a walk that stops nesting
-//     at a fixed depth; and fpdf given text a word at a time. A panic in the
-//     drawing library is ErrRender.
+//   - A render is bounded: a source of at most 1 MB that deliverable's
+//     CheckMarkdown accepts before the parser sees it, the parse on its own
+//     goroutine so the call returns at the deadline; 200 pages, 60 seconds
+//     and 40 MB of images; a walk that stops nesting at a fixed depth; and
+//     fpdf given text a word at a time. A panic in the parser or the drawing
+//     library is ErrRender.
 //   - Notices are fixed sentences naming only the file; nothing from the
 //     document is logged.
 //

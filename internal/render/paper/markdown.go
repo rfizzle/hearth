@@ -1,9 +1,7 @@
 package paper
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -60,70 +58,6 @@ type Report struct {
 // ErrTooLarge is a source over MaxSource.
 var ErrTooLarge = fmt.Errorf("a Markdown file over %d MB is not rendered", MaxSource>>20)
 
-// ErrTooDeep is a source with a line that opens lists or quotes hundreds
-// deep. The parser's time grows with the square of the nesting and cannot
-// be interrupted, so such a file is refused before it is parsed.
-var ErrTooDeep = errors.New("a Markdown file that nests lists or quotes hundreds deep is not rendered")
-
-// maxBrackets is the most [ a source may hold. The parser's time for links
-// and their references also grows with the square of their number: 100,000
-// open links take it about a minute, ten thousand well under a second.
-const maxBrackets = 10_000
-
-// ErrTooManyBrackets is a source over maxBrackets, refused before it is
-// parsed for the same reason as ErrTooDeep.
-var ErrTooManyBrackets = fmt.Errorf("a Markdown file with more than %d square brackets is not rendered; split it into smaller files", maxBrackets)
-
-// maxPrefix is the longest run of indentation and list or quote markers a
-// line may start with. Every list or quote a line is inside takes at least
-// one of these bytes, so the run bounds the nesting the parser sees.
-const maxPrefix = 256
-
-// tooDeep reports whether a line of src starts with more than maxPrefix
-// bytes of indentation and list or quote markers.
-func tooDeep(src []byte) bool {
-	for line := range bytes.Lines(src) {
-		if prefix(line) > maxPrefix {
-			return true
-		}
-	}
-	return false
-}
-
-// prefix is how many bytes line starts with that could open or hold a list
-// or a quote: spaces, tabs, >, and a list marker followed by a space.
-func prefix(line []byte) int {
-	i := 0
-	for i < len(line) {
-		c := line[i]
-		switch {
-		case c == ' ' || c == '\t' || c == '>':
-			i++
-		case c == '-' || c == '*' || c == '+':
-			if !spaced(line, i+1) {
-				return i
-			}
-			i += 2
-		case c >= '0' && c <= '9':
-			j := i
-			for j < len(line) && j-i < 10 && line[j] >= '0' && line[j] <= '9' {
-				j++
-			}
-			if j >= len(line) || (line[j] != '.' && line[j] != ')') || !spaced(line, j+1) {
-				return i
-			}
-			i = j + 2
-		default:
-			return i
-		}
-	}
-	return i
-}
-
-func spaced(line []byte, i int) bool {
-	return i < len(line) && (line[i] == ' ' || line[i] == '\t')
-}
-
 // Markdown renders src as a PDF in the print style. The same src and options
 // give the same bytes: nothing reads the clock, and the dates are Modified.
 // A render that runs past Deadline returns the context's error; a fault in
@@ -133,11 +67,10 @@ func Markdown(ctx context.Context, src []byte, o Options) (out []byte, rep Repor
 	if len(src) > MaxSource {
 		return nil, Report{}, ErrTooLarge
 	}
-	if tooDeep(src) {
-		return nil, Report{}, ErrTooDeep
-	}
-	if bytes.Count(src, []byte("[")) > maxBrackets {
-		return nil, Report{}, ErrTooManyBrackets
+	// The parser cannot be interrupted, and some inputs cost it the square
+	// of their size; those are refused before it sees them.
+	if err := deliverable.CheckMarkdown(src); err != nil {
+		return nil, Report{}, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, Deadline)
 	defer cancel()
@@ -150,8 +83,12 @@ func Markdown(ctx context.Context, src []byte, o Options) (out []byte, rep Repor
 	if err != nil {
 		return nil, Report{}, err
 	}
+	tree, err := parse(ctx, src)
+	if err != nil {
+		return nil, Report{}, err
+	}
 	w := &walker{d: d, src: src, o: o, ctx: ctx}
-	w.blocks(deliverable.ParseMarkdown(src), 0)
+	w.blocks(tree, 0)
 	if err := ctx.Err(); err != nil {
 		return nil, Report{}, err
 	}
@@ -166,6 +103,30 @@ func Markdown(ctx context.Context, src []byte, o Options) (out []byte, rep Repor
 		return nil, Report{}, err
 	}
 	return out, Report{Pages: pages, Bytes: len(out), Notices: w.notices}, nil
+}
+
+// parse runs the parser on its own goroutine and waits for it or for ctx,
+// so a render returns at its deadline even if the parse is still running;
+// CheckMarkdown bounds how long that can be. A parser panic is ErrRender.
+func parse(ctx context.Context, src []byte) (ast.Node, error) {
+	done := make(chan ast.Node, 1)
+	go func() {
+		defer func() {
+			if recover() != nil {
+				done <- nil
+			}
+		}()
+		done <- deliverable.ParseMarkdown(src)
+	}()
+	select {
+	case tree := <-done:
+		if tree == nil {
+			return nil, ErrRender
+		}
+		return tree, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 // walker draws one parsed document onto d.

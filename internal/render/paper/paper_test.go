@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/hearth/internal/deliverable"
 	"github.com/rfizzle/hearth/internal/document/pdftext"
 )
 
@@ -225,26 +226,21 @@ func TestMarkdownBounds(t *testing.T) {
 		t.Errorf("a cancelled render: %v, want context.Canceled", err)
 	}
 	for name, src := range map[string]string{
-		"quotes": strings.Repeat(">", 200000) + " deep",
-		"lists":  strings.Repeat("- ", 100000) + "deep",
-		"items":  "- a\n" + strings.Repeat("  ", 200) + "- b\n",
+		"quotes":   strings.Repeat(">", 200000) + " deep",
+		"brackets": strings.Repeat("[a](", 100000),
+		"emphasis": strings.Repeat("a*_", 100000),
 	} {
-		if _, _, err := Markdown(context.Background(), []byte(src), Options{}); !errors.Is(err, ErrTooDeep) {
-			t.Errorf("%s: %v, want ErrTooDeep", name, err)
-		}
-	}
-	for _, src := range []string{strings.Repeat("[a](", 100000), strings.Repeat("[a]: b\n", 20000) + "[a]"} {
-		if _, _, err := Markdown(context.Background(), []byte(src), Options{}); !errors.Is(err, ErrTooManyBrackets) {
-			t.Errorf("%.12q…: %v, want ErrTooManyBrackets", src, err)
+		if _, _, err := Markdown(context.Background(), []byte(src), Options{}); !errors.Is(err, deliverable.ErrTooComplex) {
+			t.Errorf("%s: %v, want ErrTooComplex", name, err)
 		}
 	}
 	for name, src := range map[string]string{
-		"links":    strings.Repeat("[a](", maxBrackets),
-		"nested":   strings.Repeat("> ", 120) + "deep",
-		"emphasis": strings.Repeat("*a ", 100000) + strings.Repeat("a* ", 100000),
-		"one word": strings.Repeat("x", 500000),
-		"a rule":   strings.Repeat("-", 5000),
-		"a number": strings.Repeat("7", 5000),
+		"links":           strings.Repeat("[a](", 10000),
+		"nested":          strings.Repeat("> ", 120) + "deep",
+		"nested emphasis": strings.Repeat("*a ", 15000) + strings.Repeat("a* ", 15000),
+		"one word":        strings.Repeat("x", 500000),
+		"a rule":          strings.Repeat("-", 5000),
+		"a number":        strings.Repeat("7", 5000),
 	} {
 		t.Run(name, func(t *testing.T) {
 			start := time.Now()
