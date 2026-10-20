@@ -58,8 +58,8 @@ extension Catalog {
         let empty = BotListStore(client: noBotsClient, relay: EventRelay(client: noBotsClient))
         return [
             GalleryState(
-                name: "idle, working, paused", width: 280,
-                view: AnyView(BotList(store: team, onHire: {}).frame(height: 240))),
+                name: "the office, then the team idle, working, paused", width: 280,
+                view: AnyView(BotList(store: team, onHire: {}).frame(height: 320))),
             GalleryState(
                 name: "none", width: 640,
                 view: AnyView(

@@ -1,5 +1,5 @@
-// The sidebar: the Inbox row's count follows the open items, and selecting
-// the Inbox or a bot is one selection.
+// The sidebar: the Inbox row's count follows the open items, selecting the
+// Inbox or a bot is one selection, and the Office holds the Chief of Staff.
 
 import HearthKit
 import Testing
@@ -68,4 +68,32 @@ import Testing
     var paused = dana
     paused.status = .paused
     #expect(bots.activity(of: paused) == .paused)
+}
+
+@MainActor
+@Test func theOfficeHoldsTheChiefOfStaffAboveTheTeam() async {
+    let client = PreviewClient()
+    let bots = BotListStore(client: client, relay: EventRelay(client: client))
+    await bots.load()
+    #expect(bots.office.map(\.id) == [Fixtures.chiefOfStaff.id])
+    #expect(bots.team.map(\.id) == [Fixtures.bot.id])
+    #expect(!bots.showsHireAffordance)
+}
+
+@MainActor
+@Test func theChiefOfStaffIsSelectedOnlyWhenNothingIs() async {
+    let client = PreviewClient()
+    let bots = BotListStore(client: client, relay: EventRelay(client: client))
+    bots.selectOfficeIfNothingSelected()
+    #expect(bots.selected == nil)
+    await bots.load()
+    bots.selectOfficeIfNothingSelected()
+    #expect(bots.selection == Fixtures.chiefOfStaff.id)
+
+    bots.selection = Fixtures.bot.id
+    bots.selectOfficeIfNothingSelected()
+    #expect(bots.selection == Fixtures.bot.id)
+    bots.selected = .inbox
+    bots.selectOfficeIfNothingSelected()
+    #expect(bots.selected == .inbox)
 }

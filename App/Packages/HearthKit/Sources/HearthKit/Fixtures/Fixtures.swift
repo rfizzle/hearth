@@ -62,7 +62,7 @@ public enum Fixtures {
         $0.tier = .balanced
     }
 
-    /// Dana, a research lead hired from the first template, idle.
+    /// Dana, a research lead on the team hired from the first template, idle.
     public static let bot = Hearth_V1_Bot.with {
         $0.id = "bot-dana"
         $0.name = "Dana"
@@ -73,6 +73,22 @@ public enum Fixtures {
         $0.avatar = ""
         $0.folderPath = workspacePath + "/Dana"
         $0.dmConversationID = "conversation-dana"
+        $0.scope = .team
+    }
+
+    /// The Chief of Staff, the org-level bot hired at onboarding, idle.
+    public static let chiefOfStaff = Hearth_V1_Bot.with {
+        $0.id = "bot-chief-of-staff"
+        $0.name = "Chief of Staff"
+        $0.role = "Chief of Staff"
+        $0.jobDescription =
+            "What the owner asks without naming anyone comes to you first, "
+            + "and you decide who does it."
+        $0.tier = .balanced
+        $0.status = .idle
+        $0.folderPath = workspacePath + "/Chief of Staff"
+        $0.dmConversationID = "conversation-chief-of-staff"
+        $0.scope = .org
     }
 
     /// ChatGPT signed in, an Anthropic key stored, Gemini signed out.

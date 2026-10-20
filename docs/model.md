@@ -220,7 +220,7 @@ The org-wide concurrency limit also bounds the number of simultaneous model call
 
 ### 5. The Chief of Staff's routing policy
 
-The coordinator is a normal bot with a strong job description shipped with the app. Behaviour it is instructed to follow (and which the UI reinforces by showing its reasoning as a short "Plan" card before it assigns):
+The coordinator is a normal bot with a strong job description shipped with the app. It is hired for the owner as an org-level bot when onboarding names the org, so someone is already at the desk; an org named before then gains it on its next launch. Behaviour it is instructed to follow (and which the UI reinforces by showing its reasoning as a short "Plan" card before it assigns):
 
 1. Answer directly if the request needs no tools or needs only its own grants and is small.
 2. Otherwise identify the one team whose purpose matches; assign with a full brief; wait; check; reply to the owner with the result and where the files are.

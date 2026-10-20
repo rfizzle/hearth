@@ -21,6 +21,12 @@
 //   - No credential is stored in any table.
 //   - Two bots never share a folder, compared without regard to case; the
 //     second hire is refused inside the transaction that would save it.
+//   - The org's first save hires its Chief of Staff, an org-level bot, in
+//     the same transaction, and a later save hires nobody.
+//
+// Coordinator is the seam the projects work resolves its coordinator
+// through: the org-level bot a project conversation is addressed to, or
+// ErrNotFound while there is none.
 //
 // It is handed only the path of the file.
 package store

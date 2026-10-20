@@ -54,6 +54,10 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 			return rpc.Options{}, nil, fmt.Errorf("give older bots the right to %s: %w", c, err)
 		}
 	}
+	if err := hireChiefOfStaff(ctx, db); err != nil {
+		_ = db.Close()
+		return rpc.Options{}, nil, fmt.Errorf("hire the chief of staff: %w", err)
+	}
 	integrations := &integration.Integrations{Keys: accounts.Keys}
 	bus := orchestrate.NewBus()
 	go bus.Heartbeats(ctx)
@@ -106,6 +110,22 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		Handbook:        pages,
 		Meter:           meterOf,
 	}, func() { _ = db.Close() }, nil
+}
+
+// hireChiefOfStaff gives an org named before the Chief of Staff came with
+// onboarding the one it would have had, so an existing data folder gains it
+// on the next launch. Before onboarding there is no org and nothing to do;
+// an org that has an org-level bot keeps it, and one whose team already
+// holds the folder the Chief of Staff would take is left without one.
+// See docs/model.md#5-the-chief-of-staffs-routing-policy
+func hireChiefOfStaff(ctx context.Context, db *store.DB) error {
+	o, found, err := db.FindOrg(ctx)
+	if err != nil || !found {
+		return err
+	}
+	bot, grants, dm := skill.ChiefOfStaff(o.WorkspacePath)
+	_, _, err = db.PutOrgWithCoordinator(ctx, o, bot, grants, dm)
+	return err
 }
 
 // reservedFolders are the folders the tools and the grants must keep away

@@ -77,7 +77,7 @@ public struct PreviewClient: HearthClient {
     }
 
     public func listBots() async throws -> [Hearth_V1_Bot] {
-        [Fixtures.bot]
+        [Fixtures.chiefOfStaff, Fixtures.bot]
     }
 
     public func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {

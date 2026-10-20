@@ -1,13 +1,14 @@
-// BotList is the sidebar's list of bots under a "Your team" header, one row
-// each with an avatar, the name, the role and, while a bot is working, paused
+// BotList is the sidebar's list of bots: the org-level bots, the Chief of
+// Staff first, under an "Office" header, then the rest under "Your team", one
+// row each with an avatar, the name, the role and, while a bot is working, paused
 // or waiting for the owner, a status dot; the store holds the selection. Given
-// the Inbox, a row above the team opens it, carrying how many items are open in
+// the Inbox, a row above both opens it, carrying how many items are open in
 // a Pill in the attention tone, and nothing when none are; its label says the
 // count too. Rows are List rows, so selection, keyboard and VoiceOver are the
 // system's, and a row reads as one element, saying "waiting for you" as its
 // value while the bot waits. The role uses the system's .secondary style rather
 // than the text token so sidebar vibrancy applies over the glass pane. With
-// nobody hired the sidebar shows only the header; the invitation to hire is
+// nobody on the team its section shows only the header; the invitation to hire is
 // TeamEmptyView, which the window shows in the detail column. A new bot slides
 // into the list. A bot's context menu offers Access… when the window gives it.
 // See docs/design.md#window-anatomy, docs/design.md#motion and
@@ -48,16 +49,13 @@ public struct BotList: View {
                         .tag(BotListStore.Selection.inbox)
                 }
             }
-            Section("Your team") {
-                ForEach(store.bots, id: \.id) { bot in
-                    BotRow(bot: bot, activity: store.activity(of: bot))
-                        .tag(BotListStore.Selection.bot(bot.id))
-                        .contextMenu {
-                            if let onAccess {
-                                Button("Access…", systemImage: "lock.open") { onAccess(bot) }
-                            }
-                        }
+            if !store.office.isEmpty {
+                Section("Office") {
+                    ForEach(store.office, id: \.id) { row($0) }
                 }
+            }
+            Section("Your team") {
+                ForEach(store.team, id: \.id) { row($0) }
             }
         }
         .listStyle(.sidebar)
@@ -66,6 +64,16 @@ public struct BotList: View {
         )
         .task { await store.load() }
         .task { await inbox?.load() }
+    }
+
+    private func row(_ bot: Hearth_V1_Bot) -> some View {
+        BotRow(bot: bot, activity: store.activity(of: bot))
+            .tag(BotListStore.Selection.bot(bot.id))
+            .contextMenu {
+                if let onAccess {
+                    Button("Access…", systemImage: "lock.open") { onAccess(bot) }
+                }
+            }
     }
 }
 

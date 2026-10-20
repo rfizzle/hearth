@@ -92,6 +92,13 @@ enum Tier {
   TIER_BEST = 3;
 }
 
+// BotScope is where a bot works: on a team or for the whole org.
+enum BotScope {
+  BOT_SCOPE_UNSPECIFIED = 0;
+  BOT_SCOPE_TEAM = 1;
+  BOT_SCOPE_ORG = 2;
+}
+
 enum BotStatus {
   BOT_STATUS_UNSPECIFIED = 0;
   BOT_STATUS_IDLE = 1;
@@ -115,6 +122,9 @@ message Bot {
   string dm_conversation_id = 9;
   // A model the owner pinned under Advanced; empty means the tier decides.
   string model_override = 10;
+  // Where the bot works: on a team, or for the whole org, as the Chief of
+  // Staff does. The sidebar lists org-level bots under "Office".
+  BotScope scope = 11;
 }
 
 message RoleTemplate {

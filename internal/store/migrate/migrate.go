@@ -182,6 +182,10 @@ var migrations = []string{
 	ALTER TABLE conversations ADD COLUMN summary_through_seq INTEGER NOT NULL DEFAULT 0;
 	ALTER TABLE bots ADD COLUMN model_override TEXT NOT NULL DEFAULT '';
 	ALTER TABLE messages ADD COLUMN attachments TEXT;`,
+
+	// A bot works on a team (1) or for the whole org (2); every bot hired
+	// before scopes existed was a team member.
+	`ALTER TABLE bots ADD COLUMN scope INTEGER NOT NULL DEFAULT 1;`,
 }
 
 // Count is the number of steps, the version a current file records.

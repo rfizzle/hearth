@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -31,11 +32,20 @@ func (db *DB) FindOrg(ctx context.Context) (org.Org, bool, error) {
 
 // PutOrg saves the org, creating its one row or replacing it.
 func (db *DB) PutOrg(ctx context.Context, o org.Org) error {
-	_, err := db.sql.ExecContext(ctx, `INSERT INTO org (id, name, workspace_path) VALUES (1, ?, ?)
-		ON CONFLICT (id) DO UPDATE SET name = excluded.name, workspace_path = excluded.workspace_path`,
-		o.Name, o.WorkspacePath)
-	if err != nil {
+	if err := putOrg(ctx, db.sql, o); err != nil {
 		return fmt.Errorf("put org: %w", err)
 	}
 	return nil
+}
+
+// execer is a *sql.DB or a *sql.Tx.
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func putOrg(ctx context.Context, e execer, o org.Org) error {
+	_, err := e.ExecContext(ctx, `INSERT INTO org (id, name, workspace_path) VALUES (1, ?, ?)
+		ON CONFLICT (id) DO UPDATE SET name = excluded.name, workspace_path = excluded.workspace_path`,
+		o.Name, o.WorkspacePath)
+	return err
 }

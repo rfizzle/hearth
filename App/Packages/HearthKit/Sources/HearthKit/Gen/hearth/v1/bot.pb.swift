@@ -157,6 +157,45 @@ public nonisolated enum Hearth_V1_Tier: SwiftProtobuf.Enum, Swift.CaseIterable {
 
 }
 
+/// BotScope is where a bot works: on a team or for the whole org.
+public nonisolated enum Hearth_V1_BotScope: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+  case team // = 1
+  case org // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .team
+    case 2: self = .org
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .team: return 1
+    case .org: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Hearth_V1_BotScope] = [
+    .unspecified,
+    .team,
+    .org,
+  ]
+
+}
+
 public nonisolated enum Hearth_V1_BotStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unspecified // = 0
@@ -308,6 +347,10 @@ public nonisolated struct Hearth_V1_Bot: Sendable {
 
   /// A model the owner pinned under Advanced; empty means the tier decides.
   public var modelOverride: String = String()
+
+  /// Where the bot works: on a team, or for the whole org, as the Chief of
+  /// Staff does. The sidebar lists org-level bots under "Office".
+  public var scope: Hearth_V1_BotScope = .unspecified
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -711,6 +754,10 @@ nonisolated extension Hearth_V1_Tier: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TIER_UNSPECIFIED\0\u{1}TIER_FAST\0\u{1}TIER_BALANCED\0\u{1}TIER_BEST\0")
 }
 
+nonisolated extension Hearth_V1_BotScope: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0BOT_SCOPE_UNSPECIFIED\0\u{1}BOT_SCOPE_TEAM\0\u{1}BOT_SCOPE_ORG\0")
+}
+
 nonisolated extension Hearth_V1_BotStatus: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0BOT_STATUS_UNSPECIFIED\0\u{1}BOT_STATUS_IDLE\0\u{1}BOT_STATUS_WORKING\0\u{1}BOT_STATUS_PAUSED\0\u{1}BOT_STATUS_DISABLED\0")
 }
@@ -897,7 +944,7 @@ nonisolated extension Hearth_V1_SetGrantsResponse: SwiftProtobuf.Message, SwiftP
 
 nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Bot"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}status\0\u{1}avatar\0\u{3}folder_path\0\u{3}dm_conversation_id\0\u{3}model_override\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{1}tier\0\u{1}status\0\u{1}avatar\0\u{3}folder_path\0\u{3}dm_conversation_id\0\u{3}model_override\0\u{1}scope\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -915,6 +962,7 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 8: try { try decoder.decodeSingularStringField(value: &self.folderPath) }()
       case 9: try { try decoder.decodeSingularStringField(value: &self.dmConversationID) }()
       case 10: try { try decoder.decodeSingularStringField(value: &self.modelOverride) }()
+      case 11: try { try decoder.decodeSingularEnumField(value: &self.scope) }()
       default: break
       }
     }
@@ -951,6 +999,9 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if !self.modelOverride.isEmpty {
       try visitor.visitSingularStringField(value: self.modelOverride, fieldNumber: 10)
     }
+    if self.scope != .unspecified {
+      try visitor.visitSingularEnumField(value: self.scope, fieldNumber: 11)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -965,6 +1016,7 @@ nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.folderPath != rhs.folderPath {return false}
     if lhs.dmConversationID != rhs.dmConversationID {return false}
     if lhs.modelOverride != rhs.modelOverride {return false}
+    if lhs.scope != rhs.scope {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

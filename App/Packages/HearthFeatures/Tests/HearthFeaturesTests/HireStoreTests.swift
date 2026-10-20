@@ -235,9 +235,9 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     sam.name = "Sam"
     let store = botList()
     await store.load()
-    #expect(store.bots.map(\.name) == ["Dana"])
+    #expect(store.team.map(\.name) == ["Dana"])
     await store.handle(botEvent(sam))
-    #expect(store.bots.map(\.name) == ["Dana", "Sam"])
+    #expect(store.team.map(\.name) == ["Dana", "Sam"])
 }
 
 @MainActor
@@ -248,7 +248,7 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     await store.load()
     store.selection = Fixtures.bot.id
     await store.handle(botEvent(renamed))
-    #expect(store.bots.count == 1)
+    #expect(store.team.count == 1)
     #expect(store.selectedBot?.status == .working)
 }
 
@@ -270,9 +270,9 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     let store = botList()
     await store.load()
     await store.handle(botEvent(stray))
-    #expect(store.bots.count == 2)
+    #expect(store.team.count == 2)
     await store.handle(.with { $0.event = .resync(Hearth_V1_Resync()) })
-    #expect(store.bots.map(\.id) == [Fixtures.bot.id])
+    #expect(store.bots.map(\.id) == [Fixtures.chiefOfStaff.id, Fixtures.bot.id])
 }
 
 @MainActor

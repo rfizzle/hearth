@@ -3,10 +3,11 @@
 // icon-only toolbar item over the sidebar and the bot's folder as the one
 // item beside Access… and the inspector toggle over the conversation. The
 // inspector opens beside it with what the bot remembers. The Inbox row opens
-// the Inbox in the detail column. Nobody hired shows the invitation in the
+// the Inbox in the detail column. Nobody on the team shows the invitation in the
 // detail column; nobody selected says to choose. The hire sheet and the Access
 // sheet are presented here, and the helper notice sits over the top of the
-// detail column until the owner dismisses it.
+// detail column until the owner dismisses it. When the window first shows
+// the team with nothing selected, the Chief of Staff is.
 // See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
 import HearthDesign
@@ -55,6 +56,9 @@ struct TeamView: View {
                     value: model.helperRestarted)
         }
         .navigationSplitViewStyle(.balanced)
+        .onChange(of: session.bots.office.first?.id, initial: true) {
+            session.bots.selectOfficeIfNothingSelected()
+        }
         .task { await session.usage.load() }
         .sheet(isPresented: $model.isHiring) {
             HireSheetHost(session: session)

@@ -35,6 +35,17 @@ const (
 	BotWorking BotStatus = 2
 )
 
+// Scope is where a bot works: on a team, or for the whole org, above the
+// teams, as the Chief of Staff does.
+// See docs/model.md#people
+type Scope int
+
+// The scopes a bot can have.
+const (
+	ScopeTeam Scope = 1
+	ScopeOrg  Scope = 2
+)
+
 // Bot is one employee. FolderPath is its own folder in the workspace and
 // DMConversationID its direct conversation with the owner.
 type Bot struct {
@@ -52,19 +63,24 @@ type Bot struct {
 	// ModelOverride names a model that wins over the one the tier maps to;
 	// empty when the bot follows its tier.
 	ModelOverride string
+
+	// Scope is a team's, or the org's for a bot above the teams.
+	Scope Scope
 }
 
 // RoleTemplate is a starting point for hiring: a role, a summary of it, the
-// job description a new bot gets and the tier it suggests.
+// job description a new bot gets, the tier it suggests and the scope the bot
+// works at.
 type RoleTemplate struct {
 	ID             string
 	Role           string
 	Summary        string
 	JobDescription string
 	SuggestedTier  Tier
+	Scope          Scope
 }
 
-// NewBot returns a new idle bot, the grants a bot starts with and its DM with
+// NewBot returns a new idle team bot, the grants a bot starts with and its DM with
 // the owner. The bot's folder is its file-system-safe name under
 // workspaceRoot. A new bot can read and write its own folder, fetch pages,
 // search the web and ask the owner a question, and must ask before deleting
@@ -79,6 +95,7 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 		Tier:           tier,
 		Status:         BotIdle,
 		FolderPath:     folder,
+		Scope:          ScopeTeam,
 	}
 	grants := []Grant{
 		{Capability: FilesRead, Mode: ModeAllowed, Folder: folder},

@@ -15,6 +15,7 @@ var releasedMigrations = []string{
 	"93df9e5c9bf09887", // 1: org, bots, grants, conversations, runs, messages
 	"f56ea3ed3d7ca9cc", // 2: inbox items, allowances, the message widget columns
 	"2b92f32667289f55", // 3: notes, handbook pages, usage, budgets, tiers, summaries, bot override, attachments
+	"6e62aca3a00a7458", // 4: the bot scope
 }
 
 func migrationDigest(m string) string {

@@ -4,8 +4,10 @@
 // the selection is what the sidebar highlights and the detail column opens.
 // Each bot's row dot follows its conversation's latest run, read once per bot
 // from the core and moved by the run changes after: working, or waiting for
-// the owner in the attention tone.
-// See docs/model.md#8-approvals
+// the owner in the attention tone. The org-level bots, the Chief of Staff
+// first, are the sidebar's Office and everyone else its team, by the scope
+// the core reports; with nothing selected yet, the Chief of Staff is.
+// See docs/model.md#8-approvals and docs/model.md#people
 
 import HearthKit
 import Observation
@@ -62,9 +64,26 @@ public final class BotListStore {
         if let registration { relay.unregister(registration) }
     }
 
-    /// Whether to offer hiring: the list has loaded and holds nobody.
+    /// The org-level bots, in the core's order: the sidebar's Office.
+    public var office: [Hearth_V1_Bot] {
+        bots.filter { $0.scope == .org }
+    }
+
+    /// Every other bot, in the core's order: the sidebar's team.
+    public var team: [Hearth_V1_Bot] {
+        bots.filter { $0.scope != .org }
+    }
+
+    /// Whether to offer hiring: the list has loaded and nobody is on the team.
     public var showsHireAffordance: Bool {
-        loaded && bots.isEmpty
+        loaded && team.isEmpty
+    }
+
+    /// Selects the first org-level bot, the Chief of Staff, when nothing is
+    /// selected; a selection the owner made stays.
+    public func selectOfficeIfNothingSelected() {
+        guard selected == nil, let first = office.first else { return }
+        selected = .bot(first.id)
     }
 
     /// The selected bot's id, if a bot is selected; setting it selects that

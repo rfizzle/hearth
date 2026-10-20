@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
+	"github.com/rfizzle/hearth/internal/skill"
 )
 
 // GetOrg leaves the org unset before the owner has named it: nothing is
@@ -26,7 +27,10 @@ func (s *orgService) GetOrg(ctx context.Context, _ *connect.Request[hearthv1.Get
 }
 
 // UpdateOrg creates the Hearth folder, then keeps the org: a folder that
-// cannot be made is refused before the org points at it.
+// cannot be made is refused before the org points at it. The first save
+// hires the Chief of Staff with it, so someone is at the desk when
+// onboarding ends; a later save hires nobody.
+// See docs/model.md#5-the-chief-of-staffs-routing-policy
 func (s *orgService) UpdateOrg(ctx context.Context, req *connect.Request[hearthv1.UpdateOrgRequest]) (*connect.Response[hearthv1.UpdateOrgResponse], error) {
 	m := req.Msg
 	if err := wire.Need("name", m.GetName(), "workspace_path", m.GetWorkspacePath()); err != nil {
@@ -39,5 +43,10 @@ func (s *orgService) UpdateOrg(ctx context.Context, req *connect.Request[hearthv
 		return nil, wire.Invalid("%v", err)
 	}
 	o := org.Org{Name: m.GetName(), WorkspacePath: m.GetWorkspacePath()}
-	return wire.Reply(&hearthv1.UpdateOrgResponse{Org: orgToProto(o)}, s.opts.Store.PutOrg(ctx, o))
+	bot, grants, dm := skill.ChiefOfStaff(o.WorkspacePath)
+	bot, hired, err := s.opts.Store.PutOrgWithCoordinator(ctx, o, bot, grants, dm)
+	if hired {
+		s.opts.publish(wire.BotChanged{Bot: bot})
+	}
+	return wire.Reply(&hearthv1.UpdateOrgResponse{Org: orgToProto(o)}, err)
 }

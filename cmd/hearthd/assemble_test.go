@@ -77,6 +77,57 @@ func TestOpenCore_GivesOlderBotsTheRightToAsk(t *testing.T) {
 	}
 }
 
+func TestOpenCore_GivesAnOlderOrgItsChiefOfStaffOnce(t *testing.T) {
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "hearth.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(dir, "Hearth")
+	if err := db.PutOrg(t.Context(), org.Org{Name: "Acme", WorkspacePath: root}); err != nil {
+		t.Fatal(err)
+	}
+	bot, grants, dm := org.NewBot("Dana", "Analyst", "Reads.", org.TierFast, root)
+	if _, err := db.CreateBot(t.Context(), bot, grants, dm); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	for range 2 {
+		ctx, cancel := context.WithCancel(context.Background())
+		opts, closeCore, err := openCore(ctx, dir)
+		if err != nil {
+			cancel()
+			t.Fatalf("openCore: %v", err)
+		}
+		cos, err := opts.Store.Coordinator(ctx)
+		bots, _ := opts.Store.Bots(ctx)
+		closeCore()
+		cancel()
+		if err != nil || cos.Name != "Chief of Staff" || cos.Scope != org.ScopeOrg || cos.DMConversationID == "" {
+			t.Fatalf("Coordinator after open = %+v, %v", cos, err)
+		}
+		if len(bots) != 2 {
+			t.Fatalf("bots after open = %+v, want Dana and one Chief of Staff", bots)
+		}
+	}
+}
+
+func TestOpenCore_HiresNobodyBeforeOnboarding(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, t.TempDir())
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	if bots, err := opts.Store.Bots(ctx); err != nil || len(bots) != 0 {
+		t.Fatalf("bots before onboarding = %+v, %v, want none", bots, err)
+	}
+}
+
 func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
 	dir := t.TempDir()
 	ctx, cancel := context.WithCancel(context.Background())

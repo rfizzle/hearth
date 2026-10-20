@@ -187,6 +187,56 @@ func (Tier) EnumDescriptor() ([]byte, []int) {
 	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{2}
 }
 
+// BotScope is where a bot works: on a team or for the whole org.
+type BotScope int32
+
+const (
+	BotScope_BOT_SCOPE_UNSPECIFIED BotScope = 0
+	BotScope_BOT_SCOPE_TEAM        BotScope = 1
+	BotScope_BOT_SCOPE_ORG         BotScope = 2
+)
+
+// Enum value maps for BotScope.
+var (
+	BotScope_name = map[int32]string{
+		0: "BOT_SCOPE_UNSPECIFIED",
+		1: "BOT_SCOPE_TEAM",
+		2: "BOT_SCOPE_ORG",
+	}
+	BotScope_value = map[string]int32{
+		"BOT_SCOPE_UNSPECIFIED": 0,
+		"BOT_SCOPE_TEAM":        1,
+		"BOT_SCOPE_ORG":         2,
+	}
+)
+
+func (x BotScope) Enum() *BotScope {
+	p := new(BotScope)
+	*p = x
+	return p
+}
+
+func (x BotScope) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BotScope) Descriptor() protoreflect.EnumDescriptor {
+	return file_hearth_v1_bot_proto_enumTypes[3].Descriptor()
+}
+
+func (BotScope) Type() protoreflect.EnumType {
+	return &file_hearth_v1_bot_proto_enumTypes[3]
+}
+
+func (x BotScope) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BotScope.Descriptor instead.
+func (BotScope) EnumDescriptor() ([]byte, []int) {
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{3}
+}
+
 type BotStatus int32
 
 const (
@@ -226,11 +276,11 @@ func (x BotStatus) String() string {
 }
 
 func (BotStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_hearth_v1_bot_proto_enumTypes[3].Descriptor()
+	return file_hearth_v1_bot_proto_enumTypes[4].Descriptor()
 }
 
 func (BotStatus) Type() protoreflect.EnumType {
-	return &file_hearth_v1_bot_proto_enumTypes[3]
+	return &file_hearth_v1_bot_proto_enumTypes[4]
 }
 
 func (x BotStatus) Number() protoreflect.EnumNumber {
@@ -239,7 +289,7 @@ func (x BotStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use BotStatus.Descriptor instead.
 func (BotStatus) EnumDescriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{3}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{4}
 }
 
 type Grant struct {
@@ -531,6 +581,9 @@ type Bot struct {
 	DmConversationId string `protobuf:"bytes,9,opt,name=dm_conversation_id,json=dmConversationId,proto3" json:"dm_conversation_id,omitempty"`
 	// A model the owner pinned under Advanced; empty means the tier decides.
 	ModelOverride string `protobuf:"bytes,10,opt,name=model_override,json=modelOverride,proto3" json:"model_override,omitempty"`
+	// Where the bot works: on a team, or for the whole org, as the Chief of
+	// Staff does. The sidebar lists org-level bots under "Office".
+	Scope         BotScope `protobuf:"varint,11,opt,name=scope,proto3,enum=hearth.v1.BotScope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -633,6 +686,13 @@ func (x *Bot) GetModelOverride() string {
 		return x.ModelOverride
 	}
 	return ""
+}
+
+func (x *Bot) GetScope() BotScope {
+	if x != nil {
+		return x.Scope
+	}
+	return BotScope_BOT_SCOPE_UNSPECIFIED
 }
 
 type RoleTemplate struct {
@@ -1851,7 +1911,7 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\x06bot_id\x18\x01 \x01(\tR\x05botId\x12(\n" +
 	"\x06grants\x18\x02 \x03(\v2\x10.hearth.v1.GrantR\x06grants\"=\n" +
 	"\x11SetGrantsResponse\x12(\n" +
-	"\x06grants\x18\x01 \x03(\v2\x10.hearth.v1.GrantR\x06grants\"\xc7\x02\n" +
+	"\x06grants\x18\x01 \x03(\v2\x10.hearth.v1.GrantR\x06grants\"\xf2\x02\n" +
 	"\x03Bot\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1864,7 +1924,8 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"folderPath\x12,\n" +
 	"\x12dm_conversation_id\x18\t \x01(\tR\x10dmConversationId\x12%\n" +
 	"\x0emodel_override\x18\n" +
-	" \x01(\tR\rmodelOverride\"\xad\x01\n" +
+	" \x01(\tR\rmodelOverride\x12)\n" +
+	"\x05scope\x18\v \x01(\x0e2\x13.hearth.v1.BotScopeR\x05scope\"\xad\x01\n" +
 	"\fRoleTemplate\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12\x18\n" +
@@ -1956,7 +2017,11 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\x10TIER_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tTIER_FAST\x10\x01\x12\x11\n" +
 	"\rTIER_BALANCED\x10\x02\x12\r\n" +
-	"\tTIER_BEST\x10\x03*\x84\x01\n" +
+	"\tTIER_BEST\x10\x03*L\n" +
+	"\bBotScope\x12\x19\n" +
+	"\x15BOT_SCOPE_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eBOT_SCOPE_TEAM\x10\x01\x12\x11\n" +
+	"\rBOT_SCOPE_ORG\x10\x02*\x84\x01\n" +
 	"\tBotStatus\x12\x1a\n" +
 	"\x16BOT_STATUS_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fBOT_STATUS_IDLE\x10\x01\x12\x16\n" +
@@ -1992,94 +2057,96 @@ func file_hearth_v1_bot_proto_rawDescGZIP() []byte {
 	return file_hearth_v1_bot_proto_rawDescData
 }
 
-var file_hearth_v1_bot_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_hearth_v1_bot_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_hearth_v1_bot_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_hearth_v1_bot_proto_goTypes = []any{
 	(Capability)(0),               // 0: hearth.v1.Capability
 	(GrantMode)(0),                // 1: hearth.v1.GrantMode
 	(Tier)(0),                     // 2: hearth.v1.Tier
-	(BotStatus)(0),                // 3: hearth.v1.BotStatus
-	(*Grant)(nil),                 // 4: hearth.v1.Grant
-	(*ListGrantsRequest)(nil),     // 5: hearth.v1.ListGrantsRequest
-	(*ListGrantsResponse)(nil),    // 6: hearth.v1.ListGrantsResponse
-	(*SetGrantsRequest)(nil),      // 7: hearth.v1.SetGrantsRequest
-	(*SetGrantsResponse)(nil),     // 8: hearth.v1.SetGrantsResponse
-	(*Bot)(nil),                   // 9: hearth.v1.Bot
-	(*RoleTemplate)(nil),          // 10: hearth.v1.RoleTemplate
-	(*ListTemplatesRequest)(nil),  // 11: hearth.v1.ListTemplatesRequest
-	(*ListTemplatesResponse)(nil), // 12: hearth.v1.ListTemplatesResponse
-	(*CreateBotRequest)(nil),      // 13: hearth.v1.CreateBotRequest
-	(*CreateBotResponse)(nil),     // 14: hearth.v1.CreateBotResponse
-	(*ListBotsRequest)(nil),       // 15: hearth.v1.ListBotsRequest
-	(*ListBotsResponse)(nil),      // 16: hearth.v1.ListBotsResponse
-	(*GetBotRequest)(nil),         // 17: hearth.v1.GetBotRequest
-	(*GetBotResponse)(nil),        // 18: hearth.v1.GetBotResponse
-	(*DraftBotRequest)(nil),       // 19: hearth.v1.DraftBotRequest
-	(*DraftBotResponse)(nil),      // 20: hearth.v1.DraftBotResponse
-	(*UpdateBotRequest)(nil),      // 21: hearth.v1.UpdateBotRequest
-	(*UpdateBotResponse)(nil),     // 22: hearth.v1.UpdateBotResponse
-	(*Note)(nil),                  // 23: hearth.v1.Note
-	(*ListNotesRequest)(nil),      // 24: hearth.v1.ListNotesRequest
-	(*ListNotesResponse)(nil),     // 25: hearth.v1.ListNotesResponse
-	(*EditNoteRequest)(nil),       // 26: hearth.v1.EditNoteRequest
-	(*EditNoteResponse)(nil),      // 27: hearth.v1.EditNoteResponse
-	(*DeleteNoteRequest)(nil),     // 28: hearth.v1.DeleteNoteRequest
-	(*DeleteNoteResponse)(nil),    // 29: hearth.v1.DeleteNoteResponse
-	(*PinNoteRequest)(nil),        // 30: hearth.v1.PinNoteRequest
-	(*PinNoteResponse)(nil),       // 31: hearth.v1.PinNoteResponse
-	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
+	(BotScope)(0),                 // 3: hearth.v1.BotScope
+	(BotStatus)(0),                // 4: hearth.v1.BotStatus
+	(*Grant)(nil),                 // 5: hearth.v1.Grant
+	(*ListGrantsRequest)(nil),     // 6: hearth.v1.ListGrantsRequest
+	(*ListGrantsResponse)(nil),    // 7: hearth.v1.ListGrantsResponse
+	(*SetGrantsRequest)(nil),      // 8: hearth.v1.SetGrantsRequest
+	(*SetGrantsResponse)(nil),     // 9: hearth.v1.SetGrantsResponse
+	(*Bot)(nil),                   // 10: hearth.v1.Bot
+	(*RoleTemplate)(nil),          // 11: hearth.v1.RoleTemplate
+	(*ListTemplatesRequest)(nil),  // 12: hearth.v1.ListTemplatesRequest
+	(*ListTemplatesResponse)(nil), // 13: hearth.v1.ListTemplatesResponse
+	(*CreateBotRequest)(nil),      // 14: hearth.v1.CreateBotRequest
+	(*CreateBotResponse)(nil),     // 15: hearth.v1.CreateBotResponse
+	(*ListBotsRequest)(nil),       // 16: hearth.v1.ListBotsRequest
+	(*ListBotsResponse)(nil),      // 17: hearth.v1.ListBotsResponse
+	(*GetBotRequest)(nil),         // 18: hearth.v1.GetBotRequest
+	(*GetBotResponse)(nil),        // 19: hearth.v1.GetBotResponse
+	(*DraftBotRequest)(nil),       // 20: hearth.v1.DraftBotRequest
+	(*DraftBotResponse)(nil),      // 21: hearth.v1.DraftBotResponse
+	(*UpdateBotRequest)(nil),      // 22: hearth.v1.UpdateBotRequest
+	(*UpdateBotResponse)(nil),     // 23: hearth.v1.UpdateBotResponse
+	(*Note)(nil),                  // 24: hearth.v1.Note
+	(*ListNotesRequest)(nil),      // 25: hearth.v1.ListNotesRequest
+	(*ListNotesResponse)(nil),     // 26: hearth.v1.ListNotesResponse
+	(*EditNoteRequest)(nil),       // 27: hearth.v1.EditNoteRequest
+	(*EditNoteResponse)(nil),      // 28: hearth.v1.EditNoteResponse
+	(*DeleteNoteRequest)(nil),     // 29: hearth.v1.DeleteNoteRequest
+	(*DeleteNoteResponse)(nil),    // 30: hearth.v1.DeleteNoteResponse
+	(*PinNoteRequest)(nil),        // 31: hearth.v1.PinNoteRequest
+	(*PinNoteResponse)(nil),       // 32: hearth.v1.PinNoteResponse
+	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
 }
 var file_hearth_v1_bot_proto_depIdxs = []int32{
 	0,  // 0: hearth.v1.Grant.capability:type_name -> hearth.v1.Capability
 	1,  // 1: hearth.v1.Grant.mode:type_name -> hearth.v1.GrantMode
-	4,  // 2: hearth.v1.ListGrantsResponse.grants:type_name -> hearth.v1.Grant
-	4,  // 3: hearth.v1.SetGrantsRequest.grants:type_name -> hearth.v1.Grant
-	4,  // 4: hearth.v1.SetGrantsResponse.grants:type_name -> hearth.v1.Grant
+	5,  // 2: hearth.v1.ListGrantsResponse.grants:type_name -> hearth.v1.Grant
+	5,  // 3: hearth.v1.SetGrantsRequest.grants:type_name -> hearth.v1.Grant
+	5,  // 4: hearth.v1.SetGrantsResponse.grants:type_name -> hearth.v1.Grant
 	2,  // 5: hearth.v1.Bot.tier:type_name -> hearth.v1.Tier
-	3,  // 6: hearth.v1.Bot.status:type_name -> hearth.v1.BotStatus
-	2,  // 7: hearth.v1.RoleTemplate.suggested_tier:type_name -> hearth.v1.Tier
-	10, // 8: hearth.v1.ListTemplatesResponse.templates:type_name -> hearth.v1.RoleTemplate
-	2,  // 9: hearth.v1.CreateBotRequest.tier:type_name -> hearth.v1.Tier
-	9,  // 10: hearth.v1.CreateBotResponse.bot:type_name -> hearth.v1.Bot
-	9,  // 11: hearth.v1.ListBotsResponse.bots:type_name -> hearth.v1.Bot
-	9,  // 12: hearth.v1.GetBotResponse.bot:type_name -> hearth.v1.Bot
-	2,  // 13: hearth.v1.DraftBotRequest.tier:type_name -> hearth.v1.Tier
-	2,  // 14: hearth.v1.DraftBotResponse.tier:type_name -> hearth.v1.Tier
-	2,  // 15: hearth.v1.UpdateBotRequest.tier:type_name -> hearth.v1.Tier
-	9,  // 16: hearth.v1.UpdateBotResponse.bot:type_name -> hearth.v1.Bot
-	32, // 17: hearth.v1.Note.created_at:type_name -> google.protobuf.Timestamp
-	23, // 18: hearth.v1.ListNotesResponse.notes:type_name -> hearth.v1.Note
-	23, // 19: hearth.v1.EditNoteResponse.note:type_name -> hearth.v1.Note
-	23, // 20: hearth.v1.PinNoteResponse.note:type_name -> hearth.v1.Note
-	11, // 21: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
-	13, // 22: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
-	15, // 23: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
-	17, // 24: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
-	19, // 25: hearth.v1.BotService.DraftBot:input_type -> hearth.v1.DraftBotRequest
-	5,  // 26: hearth.v1.BotService.ListGrants:input_type -> hearth.v1.ListGrantsRequest
-	7,  // 27: hearth.v1.BotService.SetGrants:input_type -> hearth.v1.SetGrantsRequest
-	21, // 28: hearth.v1.BotService.UpdateBot:input_type -> hearth.v1.UpdateBotRequest
-	24, // 29: hearth.v1.BotService.ListNotes:input_type -> hearth.v1.ListNotesRequest
-	26, // 30: hearth.v1.BotService.EditNote:input_type -> hearth.v1.EditNoteRequest
-	28, // 31: hearth.v1.BotService.DeleteNote:input_type -> hearth.v1.DeleteNoteRequest
-	30, // 32: hearth.v1.BotService.PinNote:input_type -> hearth.v1.PinNoteRequest
-	12, // 33: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
-	14, // 34: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
-	16, // 35: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
-	18, // 36: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
-	20, // 37: hearth.v1.BotService.DraftBot:output_type -> hearth.v1.DraftBotResponse
-	6,  // 38: hearth.v1.BotService.ListGrants:output_type -> hearth.v1.ListGrantsResponse
-	8,  // 39: hearth.v1.BotService.SetGrants:output_type -> hearth.v1.SetGrantsResponse
-	22, // 40: hearth.v1.BotService.UpdateBot:output_type -> hearth.v1.UpdateBotResponse
-	25, // 41: hearth.v1.BotService.ListNotes:output_type -> hearth.v1.ListNotesResponse
-	27, // 42: hearth.v1.BotService.EditNote:output_type -> hearth.v1.EditNoteResponse
-	29, // 43: hearth.v1.BotService.DeleteNote:output_type -> hearth.v1.DeleteNoteResponse
-	31, // 44: hearth.v1.BotService.PinNote:output_type -> hearth.v1.PinNoteResponse
-	33, // [33:45] is the sub-list for method output_type
-	21, // [21:33] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	4,  // 6: hearth.v1.Bot.status:type_name -> hearth.v1.BotStatus
+	3,  // 7: hearth.v1.Bot.scope:type_name -> hearth.v1.BotScope
+	2,  // 8: hearth.v1.RoleTemplate.suggested_tier:type_name -> hearth.v1.Tier
+	11, // 9: hearth.v1.ListTemplatesResponse.templates:type_name -> hearth.v1.RoleTemplate
+	2,  // 10: hearth.v1.CreateBotRequest.tier:type_name -> hearth.v1.Tier
+	10, // 11: hearth.v1.CreateBotResponse.bot:type_name -> hearth.v1.Bot
+	10, // 12: hearth.v1.ListBotsResponse.bots:type_name -> hearth.v1.Bot
+	10, // 13: hearth.v1.GetBotResponse.bot:type_name -> hearth.v1.Bot
+	2,  // 14: hearth.v1.DraftBotRequest.tier:type_name -> hearth.v1.Tier
+	2,  // 15: hearth.v1.DraftBotResponse.tier:type_name -> hearth.v1.Tier
+	2,  // 16: hearth.v1.UpdateBotRequest.tier:type_name -> hearth.v1.Tier
+	10, // 17: hearth.v1.UpdateBotResponse.bot:type_name -> hearth.v1.Bot
+	33, // 18: hearth.v1.Note.created_at:type_name -> google.protobuf.Timestamp
+	24, // 19: hearth.v1.ListNotesResponse.notes:type_name -> hearth.v1.Note
+	24, // 20: hearth.v1.EditNoteResponse.note:type_name -> hearth.v1.Note
+	24, // 21: hearth.v1.PinNoteResponse.note:type_name -> hearth.v1.Note
+	12, // 22: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
+	14, // 23: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
+	16, // 24: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
+	18, // 25: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
+	20, // 26: hearth.v1.BotService.DraftBot:input_type -> hearth.v1.DraftBotRequest
+	6,  // 27: hearth.v1.BotService.ListGrants:input_type -> hearth.v1.ListGrantsRequest
+	8,  // 28: hearth.v1.BotService.SetGrants:input_type -> hearth.v1.SetGrantsRequest
+	22, // 29: hearth.v1.BotService.UpdateBot:input_type -> hearth.v1.UpdateBotRequest
+	25, // 30: hearth.v1.BotService.ListNotes:input_type -> hearth.v1.ListNotesRequest
+	27, // 31: hearth.v1.BotService.EditNote:input_type -> hearth.v1.EditNoteRequest
+	29, // 32: hearth.v1.BotService.DeleteNote:input_type -> hearth.v1.DeleteNoteRequest
+	31, // 33: hearth.v1.BotService.PinNote:input_type -> hearth.v1.PinNoteRequest
+	13, // 34: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
+	15, // 35: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
+	17, // 36: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
+	19, // 37: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
+	21, // 38: hearth.v1.BotService.DraftBot:output_type -> hearth.v1.DraftBotResponse
+	7,  // 39: hearth.v1.BotService.ListGrants:output_type -> hearth.v1.ListGrantsResponse
+	9,  // 40: hearth.v1.BotService.SetGrants:output_type -> hearth.v1.SetGrantsResponse
+	23, // 41: hearth.v1.BotService.UpdateBot:output_type -> hearth.v1.UpdateBotResponse
+	26, // 42: hearth.v1.BotService.ListNotes:output_type -> hearth.v1.ListNotesResponse
+	28, // 43: hearth.v1.BotService.EditNote:output_type -> hearth.v1.EditNoteResponse
+	30, // 44: hearth.v1.BotService.DeleteNote:output_type -> hearth.v1.DeleteNoteResponse
+	32, // 45: hearth.v1.BotService.PinNote:output_type -> hearth.v1.PinNoteResponse
+	34, // [34:46] is the sub-list for method output_type
+	22, // [22:34] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_bot_proto_init() }
@@ -2092,7 +2159,7 @@ func file_hearth_v1_bot_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_bot_proto_rawDesc), len(file_hearth_v1_bot_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,

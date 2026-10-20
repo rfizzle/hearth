@@ -42,6 +42,7 @@ func TestNewBot_GrantsTheDefaultsAndNothingElse(t *testing.T) {
 		Tier:           TierBalanced,
 		Status:         BotIdle,
 		FolderPath:     folder,
+		Scope:          ScopeTeam,
 	}
 	if bot != want {
 		t.Fatalf("bot = %+v, want %+v", bot, want)

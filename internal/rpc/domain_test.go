@@ -46,6 +46,15 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	if got := unary(t, c.org.GetOrg, &hearthv1.GetOrgRequest{}).GetOrg(); got.GetName() != "Acme" {
 		t.Fatalf("GetOrg = %v", got)
 	}
+	office := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots()
+	if len(office) != 1 || office[0].GetName() != "Chief of Staff" || office[0].GetScope() != hearthv1.BotScope_BOT_SCOPE_ORG ||
+		office[0].GetDmConversationId() == "" || office[0].GetFolderPath() != filepath.Join(r.root, "Chief of Staff") {
+		t.Fatalf("after onboarding ListBots = %v, want the Chief of Staff at the org level with its DM", office)
+	}
+	unary(t, c.org.UpdateOrg, &hearthv1.UpdateOrgRequest{Name: "Acme", WorkspacePath: r.root})
+	if again := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots(); len(again) != 1 || again[0].GetId() != office[0].GetId() {
+		t.Fatalf("a second UpdateOrg left %v, want the one Chief of Staff", again)
+	}
 
 	tpls := unary(t, c.bot.ListTemplates, &hearthv1.ListTemplatesRequest{}).GetTemplates()
 	if len(tpls) != 3 || tpls[0].GetJobDescription() == "" {
@@ -64,8 +73,9 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	if got := hired[len(hired)-1].GetBotChanged().GetBot(); got.GetId() != bot.GetId() {
 		t.Fatalf("bot_changed = %v, want the hired bot", got)
 	}
-	if bots := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots(); len(bots) != 1 || bots[0].GetId() != bot.GetId() {
-		t.Fatalf("ListBots = %v", bots)
+	if bots := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots(); len(bots) != 2 || bots[1].GetId() != bot.GetId() ||
+		bots[1].GetScope() != hearthv1.BotScope_BOT_SCOPE_TEAM {
+		t.Fatalf("ListBots = %v, want the Chief of Staff, then Dana on the team", bots)
 	}
 	if got := unary(t, c.bot.GetBot, &hearthv1.GetBotRequest{Id: bot.GetId()}).GetBot(); got.GetName() != "Dana" {
 		t.Fatalf("GetBot = %v", got)
@@ -219,8 +229,8 @@ func TestErrorsCarryTheCodeTheAppReads(t *testing.T) {
 			}
 		})
 	}
-	if bots := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots(); len(bots) != 1 {
-		t.Errorf("the refused hires left %d bots, want 1", len(bots))
+	if bots := unary(t, c.bot.ListBots, &hearthv1.ListBotsRequest{}).GetBots(); len(bots) != 2 {
+		t.Errorf("the refused hires left %d bots, want the Chief of Staff and Dana", len(bots))
 	}
 }
 

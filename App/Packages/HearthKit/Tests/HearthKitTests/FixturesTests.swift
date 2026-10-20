@@ -6,10 +6,13 @@ import Testing
 
 @testable import HearthKit
 
-@Test func theOrgHasThreeTemplatesAndOneBot() {
+@Test func theOrgHasThreeTemplatesTheChiefOfStaffAndOneBot() {
     #expect(Fixtures.templates.count == 3)
     #expect(Fixtures.bot.dmConversationID == Fixtures.dmConversation.id)
     #expect(Fixtures.bot.folderPath.hasPrefix(Fixtures.org.workspacePath))
+    #expect(Fixtures.bot.scope == .team)
+    #expect(Fixtures.chiefOfStaff.scope == .org)
+    #expect(Fixtures.chiefOfStaff.folderPath.hasPrefix(Fixtures.org.workspacePath))
 }
 
 @Test func theDMCoversEveryRowTheTranscriptDraws() {
