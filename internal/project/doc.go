@@ -14,6 +14,6 @@
 //     wire; they are never renumbered.
 //
 // It does no I/O and mints no ids; the store mints them and the caller makes
-// the folder. It imports org and the standard library only.
+// the folder. It imports org, org/memory and the standard library only.
 // See docs/model.md#work.
 package project

@@ -110,7 +110,7 @@ cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
 internal/             dependencies point down only; only rpc/, orchestrate/, assembly/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, handbook/, meter/, org/, project/, workspace/ and store/ exist so far
-  rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
+  rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), project, inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/ and toolset/ below it)
   assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
@@ -121,7 +121,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
     files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
-  org/                domain types, grant resolution, budget math (exists); intro/ is a bot's introduction card and the rule that assembles one; project/ is a project's types and the rule that derives its status from its tasks
+  org/                domain types, grant resolution, budget math (exists); intro/ is a bot's introduction card and the rule that assembles one; project/ is a project's types, the moves its state allows, and the rule that derives its status from its tasks
   workspace/          the Hearth folder's layout and path containment, a bot's and a project's folder (exists)
   store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps, store/books the notes, handbook, usage, budgets and tiers, store/sqlrow the row mechanics they share
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen

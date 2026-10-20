@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/org/widget"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/provider/gateway"
 	"github.com/rfizzle/hearth/internal/store"
@@ -36,8 +37,8 @@ func Fail(err error) error {
 	}{
 		{connect.CodeNotFound, []error{store.ErrNotFound, provider.ErrNoProfile, keystore.ErrNoKey}},
 		{connect.CodeAlreadyExists, []error{store.ErrFolderTaken}},
-		{connect.CodeFailedPrecondition, []error{orchestrate.ErrBusy, orchestrate.ErrWaiting, orchestrate.ErrPaused, orchestrate.ErrClosed}},
-		{connect.CodeInvalidArgument, []error{orchestrate.ErrMismatch, orchestrate.ErrAttachment, org.ErrReservedName, widget.ErrInvalid}},
+		{connect.CodeFailedPrecondition, []error{orchestrate.ErrBusy, orchestrate.ErrWaiting, orchestrate.ErrPaused, orchestrate.ErrClosed, orchestrate.ErrNoCoordinator, project.ErrState}},
+		{connect.CodeInvalidArgument, []error{orchestrate.ErrMismatch, orchestrate.ErrAttachment, org.ErrReservedName, widget.ErrInvalid, project.ErrInvalid}},
 		{connect.CodeInvalidArgument, []error{inbox.ErrNoStanding, inbox.ErrBadFolder, inbox.ErrReservedFolder}},
 		{connect.CodeInvalidArgument, []error{integration.ErrEmptyKey, integration.ErrUnknown}},
 		{connect.CodeInvalidArgument, []error{gateway.ErrAddress}},

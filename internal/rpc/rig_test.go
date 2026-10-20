@@ -150,7 +150,13 @@ func drafterOver(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub)
 	}
 }
 
-func newRig(t *testing.T, steps ...step) *rig {
+func newRig(t *testing.T, steps ...step) *rig { return newRigWith(t, false, steps...) }
+
+// newCoordinatedRig is a rig whose orchestrator answers project conversations
+// with the org's Chief of Staff, as hearthd wires it.
+func newCoordinatedRig(t *testing.T, steps ...step) *rig { return newRigWith(t, true, steps...) }
+
+func newRigWith(t *testing.T, coordinated bool, steps ...step) *rig {
 	t.Helper()
 	provider.Init()
 	dir := t.TempDir()
@@ -166,11 +172,18 @@ func newRig(t *testing.T, steps ...step) *rig {
 	}
 	bus := orchestrate.NewBus()
 	sc := &script{steps: steps}
-	svc, err := orchestrate.Open(t.Context(), orchestrate.Deps{
+	deps := orchestrate.Deps{
 		Store:   db,
 		Streams: func(org.Bot) (agent.Stream, error) { return sc.stream, nil },
 		Bus:     bus,
-	})
+	}
+	if coordinated {
+		deps.Coordinator = func(ctx context.Context) (org.Bot, bool) {
+			b, err := db.Coordinator(ctx)
+			return b, err == nil
+		}
+	}
+	svc, err := orchestrate.Open(t.Context(), deps)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,6 +226,7 @@ type clients struct {
 	inbox hearthv1connect.InboxServiceClient
 	book  hearthv1connect.HandbookServiceClient
 	usage hearthv1connect.UsageServiceClient
+	proj  hearthv1connect.ProjectServiceClient
 }
 
 func newClients(hc *http.Client, token string) clients {
@@ -228,6 +242,7 @@ func newClients(hc *http.Client, token string) clients {
 		inbox: hearthv1connect.NewInboxServiceClient(hc, base, opt),
 		book:  hearthv1connect.NewHandbookServiceClient(hc, base, opt),
 		usage: hearthv1connect.NewUsageServiceClient(hc, base, opt),
+		proj:  hearthv1connect.NewProjectServiceClient(hc, base, opt),
 	}
 }
 

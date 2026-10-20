@@ -129,6 +129,14 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	if len(page.GetMessages()) != 2 || page.GetHasMore() {
 		t.Errorf("ListMessages = %d messages, has_more %v, want the owner's and the bot's", len(page.GetMessages()), page.GetHasMore())
 	}
+
+	made := unary(t, c.proj.CreateProject, &hearthv1.CreateProjectRequest{Name: "Launch", Brief: launchBrief}).GetProject()
+	if made.GetId() == "" || made.GetFolderPath() != filepath.Join(r.root, "Projects", "Launch") {
+		t.Errorf("CreateProject = %v", made)
+	}
+	if listed := unary(t, c.proj.ListProjects, &hearthv1.ListProjectsRequest{}).GetProjects(); len(listed) != 1 || listed[0].GetId() != made.GetId() {
+		t.Errorf("ListProjects = %v, want the one made", listed)
+	}
 }
 
 func TestOnboardingThenAnAnswer(t *testing.T) {
@@ -402,6 +410,26 @@ func TestEveryRPCWithoutTheTokenIsUnauthenticated(t *testing.T) {
 			},
 			"Acknowledge": func() error {
 				_, err := c.inbox.Acknowledge(ctx, connect.NewRequest(&hearthv1.AcknowledgeRequest{}))
+				return err
+			},
+			"ListProjects": func() error {
+				_, err := c.proj.ListProjects(ctx, connect.NewRequest(&hearthv1.ListProjectsRequest{}))
+				return err
+			},
+			"CreateProject": func() error {
+				_, err := c.proj.CreateProject(ctx, connect.NewRequest(&hearthv1.CreateProjectRequest{}))
+				return err
+			},
+			"UpdateProject": func() error {
+				_, err := c.proj.UpdateProject(ctx, connect.NewRequest(&hearthv1.UpdateProjectRequest{}))
+				return err
+			},
+			"MarkProjectDone": func() error {
+				_, err := c.proj.MarkProjectDone(ctx, connect.NewRequest(&hearthv1.MarkProjectDoneRequest{}))
+				return err
+			},
+			"ArchiveProject": func() error {
+				_, err := c.proj.ArchiveProject(ctx, connect.NewRequest(&hearthv1.ArchiveProjectRequest{}))
 				return err
 			},
 			"Subscribe": func() error {

@@ -36,6 +36,8 @@ func (o Deps) eventToProto(ctx context.Context, e orchestrate.Event) (*hearthv1.
 		out.Event = &hearthv1.SubscribeResponse_ConversationChanged{ConversationChanged: &hearthv1.ConversationChanged{
 			Conversation: conversationToProto(b.Conversation),
 		}}
+	case orchestrate.ProjectChanged:
+		out.Event = &hearthv1.SubscribeResponse_ProjectChanged{ProjectChanged: &hearthv1.ProjectChanged{Project: projectToProto(b.Project, b.Status)}}
 	case orchestrate.Resync:
 		out.Event = &hearthv1.SubscribeResponse_Resync{Resync: &hearthv1.Resync{}}
 	case orchestrate.Heartbeat:

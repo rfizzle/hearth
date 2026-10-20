@@ -36,8 +36,8 @@ type Deps struct {
 	// Words is the list StreamHello cycles through.
 	Words []string
 
-	// Store backs OrgService, BotService, ConversationService and
-	// InboxService.
+	// Store backs OrgService, BotService, ConversationService,
+	// ProjectService and InboxService.
 	Store *store.DB
 	// Orchestrator starts and stops the runs ConversationService sends.
 	Orchestrator *orchestrate.Service
@@ -72,17 +72,19 @@ type (
 		opts       Deps
 	}
 	conversationService struct{ opts Deps } // ConversationService: the threads and the owner's side of a run
+	projectService      struct{ opts Deps } // ProjectService: outcomes that take more than one task
 	inboxService        struct{ opts Deps } // InboxService: what waits on the owner
 	eventService        struct{ opts Deps } // EventService: the one stream every change travels on
 )
 
 // Register serves the spike, OrgService, BotService, ConversationService,
-// InboxService and EventService on mux.
+// ProjectService, InboxService and EventService on mux.
 func Register(mux *http.ServeMux, d Deps) {
 	mux.Handle(hearthv1connect.NewHearthServiceHandler(&spike{opts: d}))
 	mux.Handle(hearthv1connect.NewOrgServiceHandler(&orgService{opts: d}))
 	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{Bots: books.Bots{Deps: d.Books}, opts: d}))
 	mux.Handle(hearthv1connect.NewConversationServiceHandler(&conversationService{opts: d}))
+	mux.Handle(hearthv1connect.NewProjectServiceHandler(&projectService{opts: d}))
 	mux.Handle(hearthv1connect.NewEventServiceHandler(&eventService{opts: d}))
 	mux.Handle(hearthv1connect.NewInboxServiceHandler(&inboxService{opts: d}))
 }

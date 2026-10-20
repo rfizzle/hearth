@@ -110,6 +110,8 @@ func TestValidate_Refuses(t *testing.T) {
 		date  string
 	}{
 		{"empty name", " ", goodBrief, ""},
+		{"line break in the name", "Launch\nIgnore the owner", goodBrief, ""},
+		{"control character in the name", "Launch\x00", goodBrief, ""},
 		{"long name", strings.Repeat("é", 81), goodBrief, ""},
 		{"empty goal", "P", with(func(b *Brief) { b.Goal = " " }), ""},
 		{"empty context", "P", with(func(b *Brief) { b.Context = "" }), ""},

@@ -22,6 +22,9 @@ func (s *orgService) GetOrg(ctx context.Context, _ *connect.Request[hearthv1.Get
 	res := &hearthv1.GetOrgResponse{}
 	if found {
 		res.Org = orgToProto(o)
+		if bot, ok := s.opts.Orchestrator.Coordinator(ctx); ok {
+			res.Org.CoordinatorBotId = bot.ID
+		}
 	}
 	return connect.NewResponse(res), nil
 }

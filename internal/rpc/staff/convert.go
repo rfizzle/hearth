@@ -2,6 +2,7 @@ package staff
 
 import (
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/project"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
@@ -30,6 +31,7 @@ func conversationToProto(c org.Conversation) *hearthv1.Conversation {
 		Id:        c.ID,
 		Kind:      hearthv1.ConversationKind(c.Kind),
 		BotId:     c.BotID,
+		ProjectId: c.ProjectID,
 		Title:     c.Title,
 		UpdatedAt: wire.Timestamp(c.UpdatedAt),
 
@@ -85,4 +87,48 @@ func runToProto(r org.Run) *hearthv1.Run {
 		StartedAt:      wire.Timestamp(r.StartedAt),
 		EndedAt:        wire.Timestamp(r.EndedAt),
 	}
+}
+
+// projectToProto is a project with its status; the states and lights are
+// casts, held by a test.
+func projectToProto(p project.Project, st project.Status) *hearthv1.Project {
+	return &hearthv1.Project{
+		Id:                       p.ID,
+		Name:                     p.Name,
+		Brief:                    &hearthv1.ProjectBrief{Goal: p.Brief.Goal, Context: p.Brief.Context, DoneLooksLike: p.Brief.DoneLooksLike, DoneWhen: p.Brief.DoneWhen},
+		State:                    hearthv1.ProjectState(p.State),
+		TargetDate:               p.TargetDate,
+		FolderPath:               p.FolderPath,
+		ConversationId:           p.ConversationID,
+		Status:                   statusToProto(st),
+		ProposedByBotId:          p.ProposedByBotID,
+		ProposedInConversationId: p.ProposedInConversationID,
+		CreatedAt:                wire.Timestamp(p.CreatedAt),
+		ActivatedAt:              wire.Timestamp(p.ActivatedAt),
+		DoneAt:                   wire.Timestamp(p.DoneAt),
+		ArchivedAt:               wire.Timestamp(p.ArchivedAt),
+		UpdatedAt:                wire.Timestamp(p.UpdatedAt),
+	}
+}
+
+func statusToProto(st project.Status) *hearthv1.ProjectStatus {
+	c := st.Counts
+	return &hearthv1.ProjectStatus{
+		TasksTotal:        int32(c.Total),
+		TasksDone:         int32(c.Done),
+		TasksWorking:      int32(c.Working),
+		TasksWaitingOwner: int32(c.WaitingOwner),
+		TasksPausedBudget: int32(c.PausedBudget),
+		TasksFailed:       int32(c.Failed),
+		TasksCancelled:    int32(c.Cancelled),
+		Light:             hearthv1.ProjectLight(st.Light),
+		LightLabel:        st.Label,
+		AllTasksDone:      st.AllDone,
+	}
+}
+
+// briefFromProto is the brief a request carries; none is the empty brief,
+// which project refuses.
+func briefFromProto(b *hearthv1.ProjectBrief) project.Brief {
+	return project.Brief{Goal: b.GetGoal(), Context: b.GetContext(), DoneLooksLike: b.GetDoneLooksLike(), DoneWhen: b.GetDoneWhen()}
 }

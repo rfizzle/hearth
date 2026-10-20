@@ -199,3 +199,30 @@ func TestBotFolderTakenByAProject(t *testing.T) {
 		t.Fatalf("CreateBot into a project's folder = %v, want ErrFolderTaken", err)
 	}
 }
+
+func TestEditAndMoveProject(t *testing.T) {
+	db := newStore(t)
+	ctx := t.Context()
+	p, conv := newProject(t, "Launch")
+	p, err := db.CreateProject(ctx, p, conv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.EditProject(ctx, p.ID, " Renamed ", p.Brief, "2027-01-01")
+	if err != nil || got.Name != "Renamed" || got.FolderPath != p.FolderPath {
+		t.Fatalf("EditProject = %+v, %v", got, err)
+	}
+	if _, err := db.EditProject(ctx, p.ID, "", p.Brief, ""); !errors.Is(err, project.ErrInvalid) {
+		t.Fatalf("EditProject with no name = %v", err)
+	}
+	if _, err := db.EditProject(ctx, "nope", "X", p.Brief, ""); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("EditProject of a missing id = %v", err)
+	}
+	at := time.Now()
+	if done, err := db.MoveProject(ctx, p.ID, project.Done, at); err != nil || done.State != project.Done {
+		t.Fatalf("MoveProject done = %+v, %v", done, err)
+	}
+	if _, err := db.MoveProject(ctx, p.ID, project.Done, at); !errors.Is(err, project.ErrState) {
+		t.Fatalf("done twice = %v, want ErrState", err)
+	}
+}

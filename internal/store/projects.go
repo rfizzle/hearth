@@ -126,6 +126,38 @@ func (db *DB) SetProjectState(ctx context.Context, id string, s project.State, a
 		s, at.UnixMilli(), db.clock().UnixMilli(), id)
 }
 
+// EditProject applies the owner's edits to the project with id as
+// project.Edit allows and returns it as stored. The folder stays.
+func (db *DB) EditProject(ctx context.Context, id, name string, brief project.Brief, targetDate string) (project.Project, error) {
+	p, err := db.Project(ctx, id)
+	if err == nil {
+		p, err = project.Edit(p, name, brief, targetDate)
+	}
+	if err == nil {
+		err = db.UpdateProject(ctx, p)
+	}
+	if err != nil {
+		return project.Project{}, err
+	}
+	return db.Project(ctx, id)
+}
+
+// MoveProject takes the project with id to state next, stamped at, if its
+// state allows it (project.State.CanBecome), and returns it as stored.
+func (db *DB) MoveProject(ctx context.Context, id string, next project.State, at time.Time) (project.Project, error) {
+	p, err := db.Project(ctx, id)
+	if err == nil {
+		err = p.State.CanBecome(next)
+	}
+	if err == nil {
+		err = db.SetProjectState(ctx, id, next, at)
+	}
+	if err != nil {
+		return project.Project{}, err
+	}
+	return db.Project(ctx, id)
+}
+
 // projectSelect reads a project with the id of its conversation, which lives
 // on the conversation rather than the project; a caller adds the WHERE.
 const projectSelect = `SELECT p.id, p.name, p.goal, p.context, p.done_looks_like, p.done_when, p.state,

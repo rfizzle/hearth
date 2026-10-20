@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
 
 // CanPropose is the capability to propose a project to the owner. It is
@@ -57,6 +58,10 @@ type Project struct {
 // a project cannot have.
 var ErrInvalid = errors.New("invalid project")
 
+// ErrState is returned, wrapped with the reason, for a move the project's
+// state does not allow.
+var ErrState = errors.New("project state does not allow that")
+
 const (
 	maxName = 80
 	maxPart = 4000
@@ -66,12 +71,15 @@ const (
 )
 
 // Validate is nil when name, brief and targetDate may make a project: a name
-// of one to 80 runes, four brief parts of one to 4,000 runes each, and a
+// of one to 80 runes on one line, four brief parts of one to 4,000 runes each, and a
 // target date that is empty or yyyy-mm-dd.
 func Validate(name string, brief Brief, targetDate string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return fmt.Errorf("%w: the name is empty", ErrInvalid)
+	}
+	if memory.OneLine(name) != name {
+		return fmt.Errorf("%w: the name has a line break or a control character", ErrInvalid)
 	}
 	if utf8.RuneCountInString(name) > maxName {
 		return fmt.Errorf("%w: the name is over %d characters", ErrInvalid, maxName)
@@ -130,9 +138,52 @@ func Propose(name string, brief Brief, byBotID, inConversationID string) (Projec
 	}, nil
 }
 
+// CanBecome is nil when a project in state s may move to next: done only
+// from active, archived from any state but archived (on a proposal it is
+// "Not now"). Confirming a proposal goes through Activate.
+func (s State) CanBecome(next State) error {
+	switch {
+	case next == Done && s == Active:
+		return nil
+	case next == Archived && s != Archived:
+		return nil
+	}
+	return fmt.Errorf("%w: it cannot go from %s to %s", ErrState, s, next)
+}
+
+// String is the state's word, for the owner and the log.
+func (s State) String() string {
+	switch s {
+	case Proposed:
+		return "proposed"
+	case Active:
+		return "active"
+	case Done:
+		return "done"
+	case Archived:
+		return "archived"
+	}
+	return fmt.Sprintf("state %d", int(s))
+}
+
+// Edit is p with the owner's edits applied: the name trimmed, the brief and
+// the target date replaced. It refuses what Validate refuses. The folder is
+// p's and stays.
+func Edit(p Project, name string, brief Brief, targetDate string) (Project, error) {
+	if err := Validate(name, brief, targetDate); err != nil {
+		return Project{}, err
+	}
+	p.Name, p.Brief, p.TargetDate = strings.TrimSpace(name), brief, targetDate
+	return p, nil
+}
+
 // Activate is p confirmed: State Active with the edits applied, the folder
 // and the conversation as New gives them. The id and the proposer are p's.
+// Only a proposed project may be confirmed.
 func Activate(p Project, name string, brief Brief, targetDate, root string) (Project, org.Conversation, error) {
+	if p.State != Proposed {
+		return Project{}, org.Conversation{}, fmt.Errorf("%w: only a proposal can be confirmed, this one is %s", ErrState, p.State)
+	}
 	n, conv, err := New(name, brief, targetDate, root)
 	if err != nil {
 		return Project{}, org.Conversation{}, err
