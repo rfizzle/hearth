@@ -29,8 +29,8 @@ func TestRegistry(t *testing.T) {
 		searcher web.Searcher
 		want     []string
 	}{
-		{"no web", nil, nil, []string{"files.read", "files.write", "ask_owner", "test.extra"}},
-		{"search only", nil, noSearch{}, []string{"files.read", "files.write", "ask_owner", "web.search", "test.extra"}},
+		{"no web", nil, nil, []string{"files.read", "files.write", "files.delete", "ask_owner", "test.extra"}},
+		{"search only", nil, noSearch{}, []string{"files.read", "files.write", "files.delete", "ask_owner", "web.search", "test.extra"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

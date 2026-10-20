@@ -21,7 +21,7 @@ import (
 // from the offset the notice names.
 const readCap = 64 << 10
 
-// Definitions is files.read and files.write.
+// Definitions is files.read, files.write and files.delete.
 func Definitions() []tools.Definition {
 	return []tools.Definition{
 		{
@@ -56,6 +56,7 @@ func Definitions() []tools.Definition {
 			Execute:  write,
 			Describe: describeWrite,
 		},
+		deleteDefinition(),
 	}
 }
 

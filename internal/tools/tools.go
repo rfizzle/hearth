@@ -18,14 +18,17 @@ const (
 	TierAct
 )
 
-// Call is one checked call as an executor receives it. Path and Folder are
-// set for a files capability only: Path is the requested path resolved to
-// an absolute path with its symlinks followed, and Folder the granted folder
-// it lies in, resolved the same way.
+// Call is one checked call as an executor receives it. Path, Folder and
+// Requested are set for a files capability only: Path is the requested path
+// resolved to an absolute path with its symlinks followed, Folder the
+// granted folder it lies in, resolved the same way, and Requested the path
+// as the call named it, made absolute and cleaned with no link followed,
+// for a tool that must not act through a link.
 type Call struct {
-	Args   json.RawMessage
-	Path   string
-	Folder string
+	Args      json.RawMessage
+	Path      string
+	Folder    string
+	Requested string
 }
 
 // Result is what a call produced: Text goes back to the model, Files are

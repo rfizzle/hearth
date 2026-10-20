@@ -2,7 +2,6 @@ package orchestrate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -15,38 +14,13 @@ import (
 	"github.com/rfizzle/hearth/internal/orchestrate/park"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
-	"github.com/rfizzle/hearth/internal/tools"
 )
 
-// deleteTool is a files.delete with no standing, standing in for the real
-// one: it removes the resolved path.
-func deleteTool() tools.Definition {
-	return tools.Definition{
-		Name:       string(org.FilesDelete),
-		Capability: org.FilesDelete,
-		Tier:       tools.TierRead,
-		NoStanding: true,
-		Parameters: json.RawMessage(`{"type":"object"}`),
-		Execute: func(_ context.Context, c tools.Call) (tools.Result, error) {
-			if err := os.Remove(c.Path); err != nil {
-				return tools.Result{}, err
-			}
-			return tools.Result{Text: "Deleted " + filepath.Base(c.Path) + "."}, nil
-		},
-		Describe: func(args json.RawMessage) string {
-			var a struct{ Path string }
-			_ = json.Unmarshal(args, &a)
-			return "Delete " + a.Path
-		},
-	}
-}
-
-// parkedFixture is a fixture with the delete tool and the given files in
-// the bot's folder.
+// parkedFixture is a fixture with the given files in the bot's folder, which
+// a new bot may delete only by asking.
 func parkedFixture(t *testing.T, files []string, steps ...step) *fixture {
 	t.Helper()
 	f := newFixture(t, steps...)
-	f.svc.extra = []tools.Definition{deleteTool()}
 	if err := os.MkdirAll(f.bot.FolderPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +102,7 @@ func TestApproval_ParkAndAllowOnce(t *testing.T) {
 	}
 	msgs := f.messages(t)
 	req := msgs[len(msgs)-1]
-	if req.Kind != org.MessageApprovalRequest || req.Content != "Delete Dana/brief.md" || req.RunID != parkedRun.ID {
+	if req.Kind != org.MessageApprovalRequest || req.Content != "Delete brief.md from Dana's folder" || req.RunID != parkedRun.ID {
 		t.Fatalf("last message = %+v, want the request in the describer's words", req)
 	}
 	if it.Kind != inbox.Approval || it.Effect != req.Content || it.MessageID != req.ID || it.Call.ID != "c2" {
@@ -333,7 +307,6 @@ func TestApproval_RelaunchLeavesTheWaitAsItWas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc.extra = f.svc.extra
 	f.svc = svc
 	if got := f.storedRun(t, r.ID); got.State != org.RunWaitingOwner {
 		t.Fatalf("run after relaunch = %+v, want still waiting", got)

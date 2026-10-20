@@ -50,8 +50,9 @@ type Checked struct {
 
 // Describe is the call in the owner's words with its path as the dispatcher
 // resolved it: the name of the granted folder it fell under, then the path
-// inside it. A path the model wrote through .. or a link reads as the folder
-// it lands in, never as the bot's paraphrase of it.
+// inside it, and that name again as the folder argument for a describer
+// that words the two apart. A path the model wrote through .. or a link
+// reads as the folder it lands in, never as the bot's paraphrase of it.
 // See docs/model.md#8-approvals.
 func (c Checked) Describe() string {
 	if c.Def.Describe == nil {
@@ -62,6 +63,7 @@ func (c Checked) Describe() string {
 		var fields map[string]json.RawMessage
 		if json.Unmarshal(args, &fields) == nil {
 			fields["path"], _ = json.Marshal(filepath.Join(filepath.Base(c.Granted), rel))
+			fields["folder"], _ = json.Marshal(filepath.Base(c.Granted))
 			if b, err := json.Marshal(fields); err == nil {
 				args = b
 			}
@@ -153,6 +155,7 @@ func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
 			return Checked{}, refuse(name, err.Error())
 		}
 		mode, c.Granted = g.Mode, g.Folder
+		c.Call.Requested = absolute(d.Root, requested)
 	}
 	c.Verdict = verdict(def, mode, d.allowanceCovers(def.Capability, c.Call.Path))
 	return c, nil
@@ -240,6 +243,15 @@ func pathArg(args json.RawMessage) (string, error) {
 	return a.Path, nil
 }
 
+// absolute is requested as a clean absolute path, joined to root when
+// relative, with no link followed.
+func absolute(root, requested string) string {
+	if !filepath.IsAbs(requested) {
+		requested = filepath.Join(root, requested)
+	}
+	return filepath.Clean(requested)
+}
+
 // errOutside ends a refusal for a path in none of the granted folders.
 var errOutside = errors.New("is outside the folders this bot may use")
 
@@ -283,13 +295,10 @@ func containPath(root string, folders []string, requested string) (path, folder 
 	if root != "" && !filepath.IsAbs(root) {
 		return "", "", 0, errors.New("this bot's folder is not an absolute path, so no file call can run")
 	}
-	abs := requested
-	if !filepath.IsAbs(abs) {
-		if root == "" {
-			return "", "", 0, fmt.Errorf("%s is relative and this bot has no folder", requested)
-		}
-		abs = filepath.Join(root, requested)
+	if root == "" && !filepath.IsAbs(requested) {
+		return "", "", 0, fmt.Errorf("%s is relative and this bot has no folder", requested)
 	}
+	abs := absolute(root, requested)
 	index = -1
 	for i, f := range folders {
 		realFolder, err := workspace.Resolve(f, ".")

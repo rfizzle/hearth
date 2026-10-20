@@ -117,7 +117,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, dra
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
   tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner)
-    files/            files.read and files.write inside a granted folder (exists)
+    files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
   memory/ handbook/ meter/ native/ secret/
