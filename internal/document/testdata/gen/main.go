@@ -12,6 +12,7 @@
 // locked.pdf is the same under the user password "hearth-test", which a
 // reader that does not know it refuses. The encryption is the standard
 // security handler of the PDF specification, section 7.6, written out here.
+// prev-loop.pdf is text3.pdf with a trailer that points at its own table.
 // long.pdf has twelve pages of about 8 KB of text each, deflated, so that a
 // read has more than one window of text to fill.
 package main
@@ -56,6 +57,7 @@ func main() {
 		"long.pdf":           textPDF(longPages(), nil, ""),
 		"scan.pdf":           scanPDF(),
 		"truncated.pdf":      plain[:len(plain)*6/10],
+		"prev-loop.pdf":      selfPrev(plain),
 		"empty-password.pdf": encrypted(""),
 		"locked.pdf":         encrypted("hearth-test"),
 	}
@@ -85,6 +87,22 @@ func textPDF(pages []string, c cipher, encrypt string) []byte {
 			textStream(text, n, c))
 	}
 	return assemble(objs, encrypt)
+}
+
+// selfPrev is a document whose trailer names its own cross-reference table as
+// the previous one, which a reader that follows the chain without a check
+// follows for ever. The trailer comes after the table, so no offset moves.
+func selfPrev(doc []byte) []byte {
+	i := bytes.LastIndex(doc, []byte("startxref\n"))
+	var xref int
+	if _, err := fmt.Sscanf(string(doc[i+len("startxref\n"):]), "%d", &xref); err != nil {
+		log.Fatal(err)
+	}
+	root := []byte("/Root 1 0 R")
+	j := bytes.LastIndex(doc, root) + len(root)
+	out := append([]byte{}, doc[:j]...)
+	out = append(out, fmt.Sprintf(" /Prev %d", xref)...)
+	return append(out, doc[j:]...)
 }
 
 // textStream is a page's content, deflated when it is long.

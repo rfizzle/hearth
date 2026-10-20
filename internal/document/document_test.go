@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/hearth/internal/document/pdftext"
 )
 
 // fixture is the path of a committed fixture.
@@ -134,9 +136,10 @@ func TestReadCaps(t *testing.T) {
 
 func TestReadStopsAtTheDeadline(t *testing.T) {
 	d, err := Read(context.Background(), fixture("text3.pdf"), Options{Limit: time.Nanosecond})
-	if err != nil || len(d.Pages) != 0 || !hasNotice(d, "[Reading stopped after 1 seconds at page 1 of 3.]") {
+	if err != nil || len(d.Pages) != 0 || !hasNotice(d, "[Reading stopped after 1 seconds, before any page was read.]") {
 		t.Errorf("expired: %+v, %v", d, err)
 	}
+	defer pdftext.UseSlots(2)() // the stuck parses below must not starve the other tests
 	// A page tree that points at itself sends the parser round for ever. The
 	// read still ends at its limit, with a notice.
 	loop := put(t, "loop.pdf", pdfOf([]string{"x"}, "<< /Type /Pages /Kids [2 0 R] /Count 5 >>"))
@@ -151,6 +154,36 @@ func TestReadStopsAtTheDeadline(t *testing.T) {
 		t.Errorf("a cancelled run: err = %v, want Canceled", err)
 	}
 }
+
+func TestReadEndsOnATrailerThatLoops(t *testing.T) {
+	defer pdftext.UseSlots(2)()
+	start := time.Now()
+	d, err := Read(context.Background(), fixture("prev-loop.pdf"), Options{Limit: 200 * time.Millisecond})
+	if err != nil || d.Text != "" || !hasNotice(d, "[Reading stopped after 1 seconds, before any page was read.]") || time.Since(start) > 10*time.Second {
+		t.Errorf("looping trailer: %+v, %v after %v", d, err, time.Since(start))
+	}
+}
+
+func TestReadWithNoFreeSlotEndsWithTheNotice(t *testing.T) {
+	// Stuck parses keep their slots (see the pdftext tests); with none free a
+	// read waits out its limit and returns the notice without parsing.
+	defer pdftext.UseSlots(0)()
+	d, err := Read(context.Background(), fixture("text3.pdf"), Options{Limit: 50 * time.Millisecond})
+	if err != nil || d.Text != "" || !hasNotice(d, "Reading stopped after") {
+		t.Errorf("no slot: %+v, %v; want the time-limit notice and no parse", d, err)
+	}
+}
+
+func TestReadNamesTheAppWhenOneIsSetButNotConsulted(t *testing.T) {
+	d, err := Read(context.Background(), fixture("scan.pdf"), Options{Recogniser: noRecogniser{}})
+	if err != nil || !hasNotice(d, "[Page 1 is a picture with no text; it could not be recognised.]") || hasNotice(d, "isn't open") {
+		t.Errorf("scan with a recogniser: %+v, %v", d, err)
+	}
+}
+
+type noRecogniser struct{}
+
+func (noRecogniser) Recognise(context.Context, string, []int) ([]Recognised, error) { return nil, nil }
 
 func TestReadRefusals(t *testing.T) {
 	ctx := context.Background()

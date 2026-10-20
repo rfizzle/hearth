@@ -22,8 +22,11 @@ func sniffPDF(head []byte) bool { return bytes.HasPrefix(head, []byte("%PDF-")) 
 // goes on.
 func readPDF(ctx context.Context, f io.ReaderAt, size int64, name string, o Options) (Document, error) {
 	doc := Document{Kind: KindPDF}
-	r, err := pdftext.Open(f, size)
+	r, err := pdftext.Open(ctx, f, size)
 	switch {
+	case ctx.Err() != nil: // the minute is up before the file was open
+		doc.Notices = []string{noticeTimeLimit(o.Limit, 0, 0)}
+		return doc, nil
 	case errors.Is(err, pdftext.ErrPassword):
 		doc.Notices = []string{noticePassword(name)}
 		return doc, nil
@@ -89,7 +92,7 @@ func readPDF(ctx context.Context, f io.ReaderAt, size int64, name string, o Opti
 	}
 	doc.Text = strings.TrimRight(body.String(), "\n")
 	if len(pictures) > 0 {
-		doc.Notices = append(doc.Notices, noticePictures(pictures))
+		doc.Notices = append(doc.Notices, noticePictures(pictures, o.Recogniser != nil))
 	}
 	if len(unread) > 0 {
 		doc.Notices = append(doc.Notices, noticeUnread(unread))

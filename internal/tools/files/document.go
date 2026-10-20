@@ -67,7 +67,7 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 	end := from + int64(len(window))
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "%s: %s, read from its text layer.\n\n%s", name, plural(doc.PageCount, "page"), window)
+	fmt.Fprintf(&out, "[File: %s, %s, read from its text layer.]\n\n%s", name, plural(doc.PageCount, "page"), window)
 	next := ""
 	if doc.Next > 0 {
 		next = fmt.Sprintf(`pages "%s"`, document.PagesHint(doc.Next, doc.PageCount))

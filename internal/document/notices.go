@@ -19,7 +19,15 @@ func noticeNoPages(name string) string {
 	return fmt.Sprintf("[%s has no pages Hearth can read.]", name)
 }
 
-func noticePictures(pages []int) string {
+// noticePictures names the picture pages. Without the app they could not be
+// read at all; with one they were offered to it and not recognised.
+func noticePictures(pages []int, app bool) string {
+	if app {
+		if len(pages) == 1 {
+			return fmt.Sprintf("[Page %s is a picture with no text; it could not be recognised.]", pageList(pages))
+		}
+		return fmt.Sprintf("[Pages %s are pictures with no text; they could not be recognised.]", pageList(pages))
+	}
 	if len(pages) == 1 {
 		return fmt.Sprintf("[Page %s is a picture with no text. Hearth isn't open, so it could not be read.]", pageList(pages))
 	}
@@ -33,8 +41,13 @@ func noticeUnread(pages []int) string {
 	return fmt.Sprintf("[Pages %s could not be read.]", pageList(pages))
 }
 
+// noticeTimeLimit says the read ran out of time at page at of total; at 0 it
+// had not yet opened the file.
 func noticeTimeLimit(limit time.Duration, at, total int) string {
 	secs := int((limit + time.Second - 1) / time.Second)
+	if at == 0 {
+		return fmt.Sprintf("[Reading stopped after %d seconds, before any page was read.]", secs)
+	}
 	return fmt.Sprintf("[Reading stopped after %d seconds at page %d of %d.]", secs, at, total)
 }
 

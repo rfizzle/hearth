@@ -21,7 +21,7 @@ func open(t *testing.T, name string) (*Reader, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Open(f, info.Size())
+	return Open(context.Background(), f, info.Size())
 }
 
 func TestOpen(t *testing.T) {
@@ -69,6 +69,45 @@ func TestPageText(t *testing.T) {
 	}
 	if got, err := r.Page(context.Background(), 1); err != nil || strings.TrimSpace(got) != "" {
 		t.Errorf("scan page = %q, %v; want no text", got, err)
+	}
+}
+
+func TestOpenEndsOnATrailerThatLoops(t *testing.T) {
+	defer UseSlots(2)()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	f, err := os.Open(filepath.Join("..", "testdata", "prev-loop.pdf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	if _, err := Open(ctx, f, info.Size()); !errors.Is(err, context.DeadlineExceeded) || time.Since(start) > 5*time.Second {
+		t.Errorf("Open = %v after %v, want the deadline", err, time.Since(start))
+	}
+}
+
+func TestStuckParsesHoldTheirSlots(t *testing.T) {
+	defer UseSlots(2)()
+	block := make(chan struct{})
+	t.Cleanup(func() { close(block) })
+	stuck := &Reader{parse: func(int) (string, error) { <-block; return "", nil }}
+	for range 2 {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		if _, err := stuck.Page(ctx, 1); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want the deadline", err)
+		}
+		cancel()
+	}
+	third := &Reader{parse: func(int) (string, error) { t.Error("the third parse ran"); return "", nil }}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	if _, err := third.Page(ctx, 1); !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("third: err = %v, want the deadline without a parse", err)
 	}
 }
 
