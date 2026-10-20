@@ -11,12 +11,17 @@ public enum ColorRole: String, CaseIterable, Sendable {
     case textPrimary = "text.primary"
     case textSecondary = "text.secondary"
     case surfacePrimary = "surface.primary"
+    /// A quieter surface set on the primary one: an avatar's disc, the
+    /// owner's message.
+    case surfaceSecondary = "surface.secondary"
 }
 
 /// Tokens by role.
 public enum Theme {
     /// Body text.
     public static let body: Font = .body
+    /// Small print beside body text: a time, a status line.
+    public static let caption: Font = .caption
 
     /// The colour for `role`, resolving to its light or dark value.
     public static func color(_ role: ColorRole) -> Color {
