@@ -7,6 +7,28 @@ import (
 	"time"
 )
 
+func TestFolders(t *testing.T) {
+	grants := []Grant{
+		{Capability: FilesRead, Mode: ModeAllowed, Folder: "/a"},
+		{Capability: FilesRead, Mode: ModeAsk, Folder: "/b"},
+		{Capability: FilesRead, Mode: ModeNotGranted, Folder: "/c"},
+		{Capability: FilesWrite, Mode: ModeAllowed, Folder: "/d"},
+		{Capability: FilesRead, Mode: ModeAllowed},
+	}
+	tests := []struct {
+		atLeast Mode
+		want    []string
+	}{
+		{ModeAsk, []string{"/a", "/b"}},
+		{ModeAllowed, []string{"/a"}},
+	}
+	for _, tt := range tests {
+		if got := Folders(grants, FilesRead, tt.atLeast); !slices.Equal(got, tt.want) {
+			t.Errorf("Folders at least %d = %v, want %v", tt.atLeast, got, tt.want)
+		}
+	}
+}
+
 func TestNewBot_GrantsTheDefaultsAndNothingElse(t *testing.T) {
 	root := filepath.Join("/", "Users", "me", "Hearth")
 	bot, grants, dm := NewBot("Research Analyst", "Analyst", "Finds things out.", TierBalanced, root)

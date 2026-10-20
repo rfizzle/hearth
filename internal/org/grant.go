@@ -11,6 +11,7 @@ const (
 	FilesDelete Capability = "files.delete"
 	WebFetch    Capability = "web.fetch"
 	WebSearch   Capability = "web.search"
+	AskOwner    Capability = "ask_owner"
 )
 
 // Mode is how a capability is granted. The zero value is not granted.
@@ -48,9 +49,16 @@ func Allowed(grants []Grant, capability Capability) Mode {
 // folder granted only in ask mode is left out, so a caller with no approval
 // gate refuses it rather than acting.
 func FolderGrants(grants []Grant, capability Capability) []string {
+	return Folders(grants, capability, ModeAllowed)
+}
+
+// Folders is the folders capability is granted in at atLeast or a more
+// permissive mode, in the order the grants are given. A grant with no folder
+// names none.
+func Folders(grants []Grant, capability Capability, atLeast Mode) []string {
 	var folders []string
 	for _, g := range grants {
-		if g.Capability == capability && g.Mode == ModeAllowed && g.Folder != "" {
+		if g.Capability == capability && g.Mode >= atLeast && g.Folder != "" {
 			folders = append(folders, g.Folder)
 		}
 	}

@@ -33,7 +33,9 @@ const (
 // is assigned when it is stored. AuthorBotID is empty for the owner. A tool
 // call message carries the calls the model made in ToolCalls; a tool result
 // carries the call it answers in ToolCallID. Streaming is true while the
-// text is still arriving.
+// text is still arriving. Widget is the JSON of the control a question asks
+// with and WidgetAnswer the JSON of the owner's answer to it; both are empty
+// for a message with none.
 type Message struct {
 	ID             string
 	ConversationID string
@@ -46,6 +48,8 @@ type Message struct {
 	Files          []FileRef
 	RunID          string
 	Streaming      bool
+	Widget         string
+	WidgetAnswer   string
 	CreatedAt      time.Time
 }
 
