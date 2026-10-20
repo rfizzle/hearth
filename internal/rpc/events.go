@@ -29,9 +29,9 @@ type CredentialChanged struct {
 // BotChanged is a bot as it is now: new, or changed.
 type BotChanged struct{ Bot org.Bot }
 
-// ConversationChanged is a conversation as it is now: its newest run or its
-// title changed.
-type ConversationChanged struct{ Conversation org.Conversation }
+// ConversationChanged is a conversation as it is now: its newest run, its
+// title or its summary changed. The orchestrator publishes it too.
+type ConversationChanged = orchestrate.ConversationChanged
 
 // eventToProto is the SubscribeResponse for a bus event, and false for a body
 // the contract has no message for.

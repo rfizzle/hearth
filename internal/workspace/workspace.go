@@ -22,11 +22,15 @@ func Ensure(root string) error {
 	if !filepath.IsAbs(root) {
 		return fmt.Errorf("workspace %q: not an absolute path", root)
 	}
-	if err := os.MkdirAll(filepath.Join(root, inbox), 0o755); err != nil {
+	if err := os.MkdirAll(Inbox(root), 0o755); err != nil {
 		return fmt.Errorf("workspace: %w", err)
 	}
 	return nil
 }
+
+// Inbox is the folder under root that files the owner drops in without a
+// home land in.
+func Inbox(root string) string { return filepath.Join(root, inbox) }
 
 // BotFolder is the folder a bot named name keeps its work in under root.
 func BotFolder(root, name string) string {

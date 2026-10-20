@@ -67,7 +67,7 @@ func TestQuestion_InWordsParksAndTheAnswerResumes(t *testing.T) {
 	if q := msgs[len(msgs)-1]; q.Kind != org.MessageQuestion || q.Content != "Which month?" || q.ID != it.MessageID {
 		t.Fatalf("last message = %+v, want the question", q)
 	}
-	if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hello?"); !errors.Is(err, ErrWaiting) {
+	if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hello?", nil); !errors.Is(err, ErrWaiting) {
 		t.Fatalf("Send while asked = %v, want ErrWaiting", err)
 	}
 

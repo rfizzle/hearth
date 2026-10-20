@@ -32,7 +32,7 @@ func (s *conversationService) Send(ctx context.Context, req *connect.Request[hea
 	if err := need("conversation_id", req.Msg.GetConversationId(), "text", req.Msg.GetText()); err != nil {
 		return nil, err
 	}
-	run, msg, err := s.opts.Orchestrator.Send(ctx, req.Msg.GetConversationId(), req.Msg.GetText())
+	run, msg, err := s.opts.Orchestrator.Send(ctx, req.Msg.GetConversationId(), req.Msg.GetText(), req.Msg.GetAttachmentPaths())
 	return reply(&hearthv1.SendResponse{Message: messageToProto(msg), Run: runToProto(run)}, err)
 }
 

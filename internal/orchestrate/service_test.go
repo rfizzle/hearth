@@ -142,7 +142,7 @@ func (f *fixture) send(t *testing.T, text string, stop func(Event) bool) (org.Ru
 	t.Helper()
 	ch, cancel := f.bus.Subscribe(0)
 	defer cancel()
-	r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, text)
+	r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, text, nil)
 	if err != nil {
 		t.Fatalf("Send: %v", err)
 	}
@@ -233,12 +233,12 @@ func TestService(t *testing.T) {
 		f := newFixture(t, tokenThenHang("Thinking"))
 		ch, cancel := f.bus.Subscribe(0)
 		defer cancel()
-		r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "first")
+		r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "first", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		until(t, ch, isDelta)
-		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "second"); !errors.Is(err, ErrBusy) {
+		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "second", nil); !errors.Is(err, ErrBusy) {
 			t.Fatalf("second Send = %v, want ErrBusy", err)
 		}
 		f.svc.Cancel(r.ID)
@@ -252,7 +252,7 @@ func TestService(t *testing.T) {
 		f := newFixture(t, tokenThenHang("Half a"))
 		ch, cancel := f.bus.Subscribe(0)
 		defer cancel()
-		r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "go")
+		r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "go", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -271,7 +271,7 @@ func TestService(t *testing.T) {
 		if f.svc.Cancel(r.ID) {
 			t.Error("Cancel stopped a run that had already ended")
 		}
-		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "again"); err != nil {
+		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "again", nil); err != nil {
 			t.Errorf("Send after the run ended = %v", err)
 		}
 	})

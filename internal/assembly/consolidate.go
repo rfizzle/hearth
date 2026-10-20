@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/framing"
@@ -16,9 +15,6 @@ import (
 // ErrMalformed is a reply that was not the list of notes that was asked for.
 // The notes are left as they were, and are tried again after the next run.
 var ErrMalformed = errors.New("the tidied notes came back in a form that could not be read")
-
-// wall ends a tidy that is taking too long.
-const wall = 90 * time.Second
 
 // Notes is the bot's notes as Consolidate reads and replaces them; the
 // store's *DB is one.
@@ -35,9 +31,10 @@ type Notes interface {
 // than framing.ConsolidateMax; anything else is ErrMalformed and changes
 // nothing, as does a model that cannot be reached. A bot with no unpinned
 // notes is left alone. A note written between the read and the replace is
-// replaced with the rest, so the caller runs it when the bot is not.
+// replaced with the rest, so the caller runs it when the bot is not. The
+// request's usage goes to side.Usage.
 // See docs/model.md#7-memory-writes.
-func Consolidate(ctx context.Context, db Notes, stream agent.Stream, botID string) (before, after int, err error) {
+func Consolidate(ctx context.Context, db Notes, side Side, botID string) (before, after int, err error) {
 	all, err := db.Notes(ctx, botID)
 	if err != nil {
 		return 0, 0, fmt.Errorf("read notes: %w", err)
@@ -54,17 +51,13 @@ func Consolidate(ctx context.Context, db Notes, stream agent.Stream, botID strin
 	if len(unpinned) == 0 {
 		return before, before, nil
 	}
-	out, err := agent.Run(ctx, agent.Input{
-		System:    framing.RenderConsolidate(pinned, unpinned),
-		Prompt:    "Tidy the notes.",
-		Stream:    stream,
-		MaxRounds: 1,
-		MaxWall:   wall,
-	})
+	// Text the bot wrote (its notes) enters the prompt here, only inside the
+	// labelled lists of consolidate.md.
+	reply, err := side.ask(ctx, framing.RenderConsolidate(pinned, unpinned), "Tidy the notes.")
 	if err != nil {
 		return before, before, fmt.Errorf("tidy notes: %s", agent.Explain(err))
 	}
-	texts, err := parseNotes(out.Text, min(len(unpinned), framing.ConsolidateMax(len(pinned))))
+	texts, err := parseNotes(reply, min(len(unpinned), framing.ConsolidateMax(len(pinned))))
 	if err != nil {
 		return before, before, err
 	}

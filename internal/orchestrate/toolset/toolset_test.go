@@ -7,7 +7,9 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/rfizzle/hearth/internal/orchestrate/bus"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
@@ -75,5 +77,34 @@ func TestRegistry(t *testing.T) {
 	}
 	if _, err := Registry(nil, nil, extra, extra); err == nil {
 		t.Fatal("a tool defined twice was accepted")
+	}
+}
+
+// notebook keeps notes in memory.
+type notebook struct{ notes []memory.Note }
+
+func (n *notebook) AddNote(_ context.Context, note memory.Note) (memory.Note, error) {
+	note.ID = "n1"
+	n.notes = append(n.notes, note)
+	return note, nil
+}
+
+func (n *notebook) Notes(context.Context, string) ([]memory.Note, error) { return n.notes, nil }
+
+func TestRemember(t *testing.T) {
+	db, b := &notebook{}, bus.New()
+	events, cancel := b.Subscribe(0)
+	defer cancel()
+	def := Remember(db, b, "bot", "conv", "msg")
+	res, err := def.Execute(context.Background(), tools.Call{Args: json.RawMessage(`{"text":"likes tea"}`)})
+	if err != nil || res.Text != "Noted." {
+		t.Fatalf("remember = %+v, %v", res, err)
+	}
+	want := memory.Note{ID: "n1", BotID: "bot", Text: "likes tea", ConversationID: "conv", MessageID: "msg"}
+	if len(db.notes) != 1 || db.notes[0] != want {
+		t.Fatalf("notes = %+v, want %+v", db.notes, want)
+	}
+	if e := <-events; e.Body != (bus.NoteChanged{BotID: "bot", Note: want}) {
+		t.Errorf("event = %+v, want the note published", e.Body)
 	}
 }

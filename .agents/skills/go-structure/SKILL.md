@@ -16,6 +16,7 @@ Dependencies point down only.
 cmd/hearthd            assembly only: flags, wiring, signal handling
 internal/rpc           Connect handlers: translate proto <-> domain, nothing else
 internal/orchestrate   tasks, runs, scheduler, budgets, waits
+internal/assembly      a run's context, dropped files, the summary and the notes' tidy
 internal/agent         one bot's turn: loop, tool rounds, retry, compaction
 internal/tools  memory  handbook  meter  provider  integration  native  (and secret, skill, framing)
 internal/org           domain types and pure functions

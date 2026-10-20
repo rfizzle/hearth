@@ -17,6 +17,9 @@ var dmText string
 //go:embed draft.md
 var draftText string
 
+//go:embed summary.md
+var summaryText string
+
 // render fills one of the embedded texts; the text and the data are both
 // ours, so a failure is a bug.
 func render(name, text string, data any) string {
@@ -49,6 +52,13 @@ type Input struct {
 
 // Render returns the system text for a direct conversation with the owner.
 func Render(in Input) string { return render("dm", dmText, in) }
+
+// RenderSummary returns the system text that asks for a conversation's
+// running summary to be rewritten with the messages after it, in the third
+// person, about the bot named botName.
+func RenderSummary(botName string) string {
+	return render("summary", summaryText, struct{ BotName string }{botName})
+}
 
 // consolidateRoom is how many notes under the cap the tidied set leaves free,
 // so the bot has room to write more before it is tidied again.

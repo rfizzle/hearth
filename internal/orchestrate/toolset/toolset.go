@@ -6,7 +6,8 @@
 // run the loop's calls through the dispatcher. Which tools a bot is offered,
 // and whether a call runs, is the dispatcher's, from the bot's grants.
 //
-// It imports agent, tools and the tool packages below it.
+// It imports agent, the bus, org/memory, tools and the tool packages below
+// it.
 package toolset
 
 import (
@@ -15,9 +16,12 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/orchestrate/bus"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/ask"
 	"github.com/rfizzle/hearth/internal/tools/files"
+	notes "github.com/rfizzle/hearth/internal/tools/memory"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
@@ -28,6 +32,33 @@ func Registry(fetcher *web.Fetcher, searcher web.Searcher, extra ...tools.Defini
 	defs := append(files.Definitions(), ask.Definition())
 	defs = append(defs, web.Definitions(fetcher, searcher)...)
 	return tools.NewRegistry(append(defs, extra...)...)
+}
+
+// Notes is where remember writes a bot's notes; the store's *DB is one.
+type Notes interface {
+	AddNote(ctx context.Context, n memory.Note) (memory.Note, error)
+	Notes(ctx context.Context, botID string) ([]memory.Note, error)
+}
+
+// Remember is the remember tool for the bot botID in the conversation
+// convID, linking each note to the message msgID, writing it to db and
+// publishing it on b.
+// See docs/model.md#7-memory-writes.
+func Remember(db Notes, b *bus.Bus, botID, convID, msgID string) tools.Definition {
+	return notes.Definition(notes.Store{
+		BotID: botID, ConversationID: convID, MessageID: msgID,
+		Add: func(ctx context.Context, n memory.Note) error {
+			stored, err := db.AddNote(ctx, n)
+			if err == nil {
+				b.Publish(bus.NoteChanged{BotID: botID, Note: stored})
+			}
+			return err
+		},
+		Count: func(ctx context.Context, botID string) (int, error) {
+			all, err := db.Notes(ctx, botID)
+			return len(all), err
+		},
+	})
 }
 
 // Execute runs a call through d, the one place its grants are checked, and

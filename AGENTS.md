@@ -109,9 +109,10 @@ rest is the target from `docs/architecture.md`. Skills for each side: `go-struct
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, orchestrate/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, org/, workspace/ and store/ exist so far
+internal/             dependencies point down only; only rpc/, orchestrate/, assembly/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, handbook/, meter/, org/, workspace/ and store/ exist so far
   rpc/                serves the org, bot (with grants), conversation (with retry), inbox, provider, integration and event services over the store, runs and accounts; the token check; widgetwire/ reads a stored control and answer into the contract; generated code under gen/ (exists)
-  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/ and toolset/ below it)
+  orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/ and toolset/ below it)
+  assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
   agent/              one bot's turn: tool rounds, retry, the caps, a sink; the loop is agentcore's (exists)
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists)
@@ -120,7 +121,6 @@ internal/             dependencies point down only; only rpc/, orchestrate/, dra
     files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
-  memory/ handbook/ meter/ native/ secret/
   org/                domain types, grant resolution, budget math (exists)
   workspace/          the Hearth folder's layout and path containment (exists)
   store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps

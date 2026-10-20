@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/assembly"
 	"github.com/rfizzle/hearth/internal/orchestrate/park"
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/org"
@@ -136,7 +137,7 @@ func (s *Service) decide(ctx context.Context, p parked, d inbox.Decision, reason
 	if d == inbox.Deny {
 		return park.Declined(reason), func() outcome { return outcome{text: park.Denial(reason)} }, nil
 	}
-	disp, err := s.dispatcher(ctx, p.bot, p.item.ConversationID)
+	disp, err := s.dispatcher(ctx, p.bot, p.item.ConversationID, "")
 	if err != nil {
 		return "", nil, err
 	}
@@ -239,7 +240,7 @@ func (s *Service) settle(ctx context.Context, p parked, owner org.Message, call 
 		s.abandon(ctx, p)
 		return fail(err)
 	}
-	note := org.Message{ConversationID: conv, Content: park.Note}
+	note := org.Message{ConversationID: conv, Content: assembly.Note}
 	r, runCtx, err := s.start(ctx, p.bot, note)
 	if err != nil {
 		return fail(err)

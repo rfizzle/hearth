@@ -11,7 +11,7 @@ import (
 
 	"github.com/rfizzle/llm"
 
-	"github.com/rfizzle/hearth/internal/orchestrate/park"
+	"github.com/rfizzle/hearth/internal/assembly"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 )
@@ -116,7 +116,7 @@ func TestApproval_ParkAndAllowOnce(t *testing.T) {
 	if !exists(brief) {
 		t.Fatal("brief.md was deleted before a decision")
 	}
-	if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hello?"); !errors.Is(err, ErrWaiting) {
+	if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hello?", nil); !errors.Is(err, ErrWaiting) {
 		t.Fatalf("Send while waiting = %v, want ErrWaiting", err)
 	}
 	if _, err := f.svc.Retry(context.Background(), f.bot.DMConversationID); !errors.Is(err, ErrWaiting) {
@@ -160,7 +160,7 @@ func TestApproval_ParkAndAllowOnce(t *testing.T) {
 	if tool.Role != llm.RoleTool || tool.ToolCallID != "c2" || tool.Content != "Deleted brief.md." {
 		t.Errorf("tool message = %+v, want the real result", tool)
 	}
-	if note.Role != llm.RoleUser || note.Content != park.Note {
+	if note.Role != llm.RoleUser || note.Content != assembly.Note {
 		t.Errorf("prompt = %+v, want the note", note)
 	}
 }
@@ -204,7 +204,7 @@ func TestApproval_AlwaysAllow(t *testing.T) {
 		if !exists(filepath.Join(f.bot.FolderPath, "brief.md")) {
 			t.Fatal("a refused decision ran the call")
 		}
-		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hm"); !errors.Is(err, ErrWaiting) {
+		if _, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "hm", nil); !errors.Is(err, ErrWaiting) {
 			t.Fatalf("Send = %v, want ErrWaiting: the conversation is still held by the item", err)
 		}
 	})

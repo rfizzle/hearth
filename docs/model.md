@@ -53,7 +53,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 
 **Message** (`Message`). Author (owner or bot), body (rich text with attachments), kind (`text`, `tool_call`, `tool_result`, `assignment`, `result`, `question`, `approval_request`, `approval_decision`, `system`), timestamps, cost attribution. Tool calls and results render as collapsed cards by default.
 
-**Attachment** (`Attachment`). A file reference (bookmark to a file in the Workspace or a granted folder) or an inline image/PDF. Dropped files are copied into the Workspace `Inbox` subfolder unless they already live in a granted folder.
+**Attachment** (`Attachment`). A file reference (bookmark to a file in the Workspace or a granted folder) or an inline image/PDF. Dropped files are copied into the Workspace `Inbox` subfolder unless the bot can already read them where they are; a folder, a missing file or a file inside hearth's own data folder cannot be attached. The bot is told each file's name, size and path with the message, and reads it with its tools.
 
 ### Work
 
@@ -108,7 +108,7 @@ The app watches the folder; files the owner adds are visible to bots with the fo
 
 | Capability | What it allows | Default for new bots |
 |---|---|---|
-| `files.read(<folder>)` | Read files under a folder (Workspace subfolders, or any folder the owner picks via the open panel, stored as a security-scoped bookmark) | own team's Workspace subfolder; an org-level bot's own folder |
+| `files.read(<folder>)` | Read files under a folder (Workspace subfolders, or any folder the owner picks via the open panel, stored as a security-scoped bookmark) | own team's Workspace subfolder; an org-level bot's own folder; and the Hearth folder's Inbox |
 | `files.write(<folder>)` | Create/replace files | own team's Workspace subfolder; an org-level bot's own folder |
 | `files.delete(<folder>)` | Delete files | ask me |
 | `web.fetch` | Fetch a URL (read-only, no cookies) | allowed |

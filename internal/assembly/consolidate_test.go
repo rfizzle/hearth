@@ -87,7 +87,7 @@ func TestConsolidate_ReplacesTheUnpinnedAndKeepsThePinned(t *testing.T) {
 	db, bot := fixture(t)
 	m := &model{reply: "Here you go:\n```json\n[\"likes tea, no milk\", \" works Tuesdays and Thursdays \"]\n```"}
 
-	before, after, err := assembly.Consolidate(t.Context(), db, m.stream, bot)
+	before, after, err := assembly.Consolidate(t.Context(), db, assembly.Side{Stream: m.stream}, bot)
 	if err != nil || before != 6 || after != 4 {
 		t.Fatalf("Consolidate = %d, %d, %v, want 6, 4, nil", before, after, err)
 	}
@@ -121,7 +121,7 @@ func TestConsolidate_ABadReplyChangesNothing(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			db, bot := fixture(t)
 			was := texts(t, db, bot)
-			before, after, err := assembly.Consolidate(t.Context(), db, (&model{reply: reply}).stream, bot)
+			before, after, err := assembly.Consolidate(t.Context(), db, assembly.Side{Stream: (&model{reply: reply}).stream}, bot)
 			if !errors.Is(err, assembly.ErrMalformed) || before != 6 || after != 6 {
 				t.Fatalf("Consolidate = %d, %d, %v, want 6, 6, ErrMalformed", before, after, err)
 			}
@@ -135,7 +135,7 @@ func TestConsolidate_ABadReplyChangesNothing(t *testing.T) {
 func TestConsolidate_AModelThatFailsChangesNothing(t *testing.T) {
 	db, bot := fixture(t)
 	was := texts(t, db, bot)
-	_, _, err := assembly.Consolidate(t.Context(), db, (&model{err: errors.New("offline")}).stream, bot)
+	_, _, err := assembly.Consolidate(t.Context(), db, assembly.Side{Stream: (&model{err: errors.New("offline")}).stream}, bot)
 	if err == nil || errors.Is(err, assembly.ErrMalformed) {
 		t.Fatalf("Consolidate = %v, want an error that is not ErrMalformed", err)
 	}

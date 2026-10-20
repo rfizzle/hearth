@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/agent"
-	"github.com/rfizzle/hearth/internal/meter"
-	"github.com/rfizzle/hearth/internal/orchestrate/park"
+	"github.com/rfizzle/hearth/internal/assembly"
+	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/store"
@@ -37,6 +37,18 @@ var ErrPaused = errors.New("this month's budget is spent; resume in Usage or rai
 // with.
 const quitReason = "hearth was quit while this was running"
 
+// ErrAttachment refuses a message with a dropped path that cannot be
+// attached: not absolute, missing, a folder, not a plain file, or inside a
+// folder hearth keeps for itself.
+var ErrAttachment = assembly.ErrAttachment
+
+// Meter is what records the usage of each request and says whether a bot's
+// budget is spent.
+type Meter interface {
+	record.Meter
+	Paused(ctx context.Context, botID string) (bool, error)
+}
+
 // Deps is what the service is handed.
 type Deps struct {
 	Store *store.DB
@@ -46,9 +58,11 @@ type Deps struct {
 	// usage each request is priced by; nil leaves them unnamed, and the
 	// requests unpriced.
 	Models func(org.Bot) agent.Model
-	// Meter records each request's usage and holds the budgets; nil meters
-	// nothing and pauses nothing. Its OnPause should be StopForBudget.
-	Meter *meter.Meter
+	// Meter records each request's usage, a run's and the summary's and the
+	// tidy's after it, and holds the budgets; nil meters nothing and pauses
+	// nothing. The meter package's is one; its OnPause should be
+	// StopForBudget.
+	Meter Meter
 	// Scrub is applied to every message the model is sent and every tool
 	// result; nil scrubs nothing.
 	Scrub agent.Scrub
@@ -63,7 +77,7 @@ type Deps struct {
 	Reserved []string
 	// Resume is how a run that continues a parked one is handed the round
 	// it parked in.
-	Resume park.Resume
+	Resume assembly.Resume
 	// Caps are the limits every run ends at; zero takes the defaults.
 	Caps org.Caps
 	// Log is where a run that panicked is reported, with its stack; nil is
@@ -83,6 +97,7 @@ type Service struct {
 	cancels map[string]context.CancelFunc // run id -> what stops it
 	spent   map[string]string             // run id -> why the budget stopped it
 	held    map[string]*held              // item id -> the answer waiting out its grace
+	summing map[string]bool               // conversation id -> its summary is being written
 
 	grace time.Duration      // answerGrace, shorter in a test
 	extra []tools.Definition // more tools, for a test
@@ -114,7 +129,7 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 		d.Log = log.Default()
 	}
 	return &Service{d: d, working: map[string]string{}, cancels: map[string]context.CancelFunc{}, spent: map[string]string{},
-		held: map[string]*held{}, grace: answerGrace}, nil
+		held: map[string]*held{}, summing: map[string]bool{}, grace: answerGrace}, nil
 }
 
 // Send stores text as the owner's message in the DM convID and starts the
@@ -123,8 +138,12 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 // while an earlier run in the conversation has not ended. If the run cannot
 // be stored the owner's message is removed again, so no message is left that
 // nothing answers. The Inbox items earlier failures in the conversation
-// left are closed: the new run answers the owner instead.
-func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.Message, error) {
+// left are closed: the new run answers the owner instead. The files the
+// owner dropped, at paths, are attached to the message: one the bot may not
+// read already is copied into the Hearth folder's Inbox first, and a path
+// that cannot be attached refuses the message with ErrAttachment.
+// See docs/model.md#conversations.
+func (s *Service) Send(ctx context.Context, convID, text string, paths []string) (org.Run, org.Message, error) {
 	bot, err := s.dmBot(ctx, convID)
 	if err != nil {
 		return org.Run{}, org.Message{}, err
@@ -135,7 +154,12 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 	if err := s.reserveIdle(ctx, convID); err != nil {
 		return org.Run{}, org.Message{}, err
 	}
-	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: convID, Kind: org.MessageText, Content: text})
+	files, err := s.attach(ctx, bot, paths)
+	if err != nil {
+		s.release(convID, "")
+		return org.Run{}, org.Message{}, err
+	}
+	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: convID, Kind: org.MessageText, Content: text, Attachments: files})
 	if err != nil {
 		s.release(convID, "")
 		return org.Run{}, org.Message{}, err
@@ -150,6 +174,24 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 	s.superseded(context.WithoutCancel(ctx), convID, "Closed: a new message was sent")
 	go s.run(runCtx, bot, r, ask{msg: m})
 	return r, m, nil
+}
+
+// attach is the files at paths as the owner's message carries them, copied
+// into the Inbox unless bot may read them where they are, never from a
+// folder hearth keeps for itself.
+func (s *Service) attach(ctx context.Context, bot org.Bot, paths []string) ([]org.FileRef, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	o, err := s.d.Store.Org(ctx)
+	if err != nil {
+		return nil, err
+	}
+	grants, err := s.d.Store.GrantsFor(ctx, bot.ID)
+	if err != nil {
+		return nil, err
+	}
+	return assembly.Attach(o.WorkspacePath, org.Folders(grants, org.FilesRead, org.ModeAllowed), s.d.Reserved, paths)
 }
 
 // Retry answers the owner's last message in the DM convID again, as a new

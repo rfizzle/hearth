@@ -8,16 +8,13 @@ import (
 	"path/filepath"
 
 	"github.com/rfizzle/hearth/internal/agent"
-	"github.com/rfizzle/hearth/internal/framing"
+	"github.com/rfizzle/hearth/internal/assembly"
 	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/orchestrate/toolset"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
-
-// historyPage is how many earlier messages a run's history is read from.
-const historyPage = 200
 
 // ask is what a run answers: the owner's message, or on a resume the app's
 // note, which is not stored, and the run that parked.
@@ -26,9 +23,10 @@ type ask struct {
 	parked string
 }
 
-// run answers prompt with one turn of bot's and records how it ended. ctx
-// ends when the run is cancelled; every write uses a context that does not,
-// so what a stopped run wrote is still saved.
+// run answers prompt with one turn of bot's and records how it ended, then
+// on a run that ended done does the work it leaves. ctx ends when the run
+// is cancelled; every write uses a context that does not, so what a stopped
+// run wrote is still saved.
 func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 	host := record.Host{Store: s.d.Store, Bus: s.d.Bus, Log: s.d.Log, Now: s.d.Now, Release: s.release}
 	if s.d.Meter != nil {
@@ -36,7 +34,8 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 	}
 	k := record.New(host, context.WithoutCancel(ctx), r, bot.ID, bot.Name)
 	k.Start()
-	out, err := s.guarded(ctx, k, bot, prompt)
+	var built assembly.Output
+	out, err := s.guarded(ctx, k, bot, prompt, &built)
 	if errors.Is(err, agent.ErrParked) && ctx.Err() != nil {
 		// Cancel reached the run as it parked: the owner stopped it, so it
 		// does not wait on them.
@@ -47,6 +46,9 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 		err = errors.New(reason)
 	}
 	k.Finish(out, err)
+	if k.Run().State == org.RunDone {
+		s.after(context.WithoutCancel(ctx), k, bot, built)
+	}
 }
 
 // takeSpent is the reason the budget stopped run runID, or "".
@@ -64,7 +66,7 @@ func (s *Service) takeSpent(runID string) string {
 // with its stack. A tool runs on a goroutine of its own, so its panic is
 // caught there, stops the turn, and is reported here.
 // See docs/model.md#9-failure-handling.
-func (s *Service) guarded(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask) (out agent.Outcome, err error) {
+func (s *Service) guarded(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask, built *assembly.Output) (out agent.Outcome, err error) {
 	ctx, stop := context.WithCancel(ctx)
 	defer stop()
 	k.SetStop(stop)
@@ -76,11 +78,12 @@ func (s *Service) guarded(ctx context.Context, k *record.Sink, bot org.Bot, prom
 			out, err = agent.Outcome{}, fmt.Errorf("something went wrong inside hearth: %v", p)
 		}
 	}()
-	return s.turn(ctx, k, bot, prompt)
+	return s.turn(ctx, k, bot, prompt, built)
 }
 
-// turn gathers what the bot's turn needs and runs it, reporting to k.
-func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask) (agent.Outcome, error) {
+// turn gathers what the bot's turn needs and runs it, reporting to k. The
+// context it built is left in built.
+func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask, built *assembly.Output) (agent.Outcome, error) {
 	wctx := context.WithoutCancel(ctx) // for reads; a stop does not cancel it
 	o, err := s.d.Store.Org(wctx)
 	if err != nil {
@@ -96,11 +99,19 @@ func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt 
 	if err := os.MkdirAll(folder, 0o755); err != nil {
 		return agent.Outcome{}, fmt.Errorf("could not create %s's folder: %w", bot.Name, err)
 	}
-	history, text, err := s.history(wctx, prompt)
+	conv, err := s.d.Store.Conversation(wctx, prompt.msg.ConversationID)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
-	disp, err := s.dispatcher(wctx, bot, prompt.msg.ConversationID)
+	// See docs/model.md#2-a-run.
+	*built, err = assembly.Build(wctx, s.d.Store, assembly.Input{
+		Org: o, Bot: bot, Conversation: conv, Prompt: prompt.msg,
+		Parked: prompt.parked, Resume: s.d.Resume, Tier: bot.Tier,
+	})
+	if err != nil {
+		return agent.Outcome{}, err
+	}
+	disp, err := s.dispatcher(wctx, bot, prompt.msg.ConversationID, prompt.msg.ID)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
@@ -118,13 +129,10 @@ func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt 
 		model = s.d.Models(bot)
 	}
 	return agent.Run(ctx, agent.Input{
-		Model: model,
-		System: framing.Render(framing.Input{
-			OrgName: o.Name, BotName: bot.Name, Role: bot.Role,
-			JobDescription: bot.JobDescription, FolderPath: folder,
-		}),
-		History: history,
-		Prompt:  text,
+		Model:   model,
+		System:  built.System,
+		History: built.History,
+		Prompt:  built.Prompt,
 		Tools:   offered,
 		Stream:  stream,
 		Execute: toolset.Execute(disp, k.Crash),
@@ -137,31 +145,27 @@ func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt 
 	})
 }
 
-// history is the conversation before prompt as the model reads it, and the
-// text of the prompt. A resumed run is handed the round it parked in after
-// the text before that round, and the app's note as its prompt.
-// See docs/model.md#2-a-run.
-func (s *Service) history(ctx context.Context, prompt ask) ([]agent.Message, string, error) {
-	msgs, _, err := s.d.Store.Messages(ctx, prompt.msg.ConversationID, prompt.msg.Seq, historyPage)
-	if err != nil {
-		return nil, "", err
-	}
-	return s.d.Resume.History(msgs, prompt.parked, prompt.msg.Content)
-}
-
-// dispatcher is what checks bot's calls in the conversation convID: every
-// tool configured now, the bot's grants and the conversation's allowances,
-// read fresh so a decision counts from the next call.
-func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID string) (tools.Dispatcher, error) {
+// dispatcher is what checks bot's calls in the conversation convID, made
+// in answer to the message msgID: every tool configured now, the bot's
+// grants with the read on the Inbox every bot has, and the conversation's
+// allowances, read fresh so a decision counts from the next call.
+func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID string) (tools.Dispatcher, error) {
 	grants, err := s.d.Store.GrantsFor(ctx, bot.ID)
 	if err != nil {
 		return tools.Dispatcher{}, err
+	}
+	o, err := s.d.Store.Org(ctx)
+	if err != nil {
+		return tools.Dispatcher{}, err
+	}
+	if g, ok := assembly.InboxGrant(o, bot.ID); ok {
+		grants = append(grants, g)
 	}
 	allowances, err := s.d.Store.Allowances(ctx, convID)
 	if err != nil {
 		return tools.Dispatcher{}, err
 	}
-	reg, err := s.registry()
+	reg, err := s.registry(bot.ID, convID, msgID)
 	if err != nil {
 		return tools.Dispatcher{}, err
 	}
@@ -169,14 +173,15 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID string) (t
 }
 
 // registry is every tool configured now: the file tools, asking the owner,
-// web.fetch when there is a fetcher, and web.search when a search service
-// has a key.
-func (s *Service) registry() (*tools.Registry, error) {
+// web.fetch when there is a fetcher, web.search when a search service has a
+// key, and remember for the bot botID in convID, linked to msgID.
+func (s *Service) registry(botID, convID, msgID string) (*tools.Registry, error) {
 	var searcher web.Searcher
 	if s.d.Searcher != nil {
 		if found, ok := s.d.Searcher(); ok {
 			searcher = found
 		}
 	}
-	return toolset.Registry(s.d.Fetcher.ForRun(), searcher, s.extra...)
+	extra := append([]tools.Definition{toolset.Remember(s.d.Store, s.d.Bus, botID, convID, msgID)}, s.extra...)
+	return toolset.Registry(s.d.Fetcher.ForRun(), searcher, extra...)
 }

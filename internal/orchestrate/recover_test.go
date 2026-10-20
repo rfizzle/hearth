@@ -116,7 +116,7 @@ func TestRetry_RefusesWhileARunIsWorking(t *testing.T) {
 	f := newFixture(t, tokenThenHang("Thinking"))
 	ch, cancel := f.bus.Subscribe(0)
 	defer cancel()
-	r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "go")
+	r, _, err := f.svc.Send(context.Background(), f.bot.DMConversationID, "go", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -118,6 +118,7 @@ Four layers, dependencies point down only. astimate's cross-package duplication 
 cmd/hearthd                      assembly only: flags, wiring, signal handling
 internal/rpc                     Connect handlers; translate proto <-> domain; no logic
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
+internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
 internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/integration  internal/native
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
@@ -159,13 +160,13 @@ Rules:
 | `internal/keystore` | Named secrets: the Store interface, the file store, the memory store the app syncs into | new |
 | `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
 | `internal/meter` | Usage ledger over llm's prices, month summary, budget rails (D29) | hearth's own ledger: agentcore's is in memory, this one survives relaunch |
-| `internal/memory` | Bot notes: bounded recall, consolidation, pins | new (D13; shhh's memory package stays in shhh) |
+| `internal/memory` | Bot notes: bounded recall, consolidation, pins; held by `org/memory`, `tools/memory` and `assembly` rather than a package of this name | new (D13; shhh's memory package stays in shhh) |
 | `internal/handbook` | Pages by scope, the refusal of a page that overfills a reader's context, the "Handbook" block a run carries | new |
 | `internal/secret` | Scrub tool results | lifted from shhh |
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
 | `internal/rpc` | Connect handlers, event stream, version handshake | new |
 | `internal/framing` | The fixed instructions wrapped around job descriptions (Chief of Staff, lead, member) as embedded text with tests that they render | new |
-| `internal/assembly` | Side runs around a run: tidying a bot's notes when they overflow (the run summary and the prompt join it later) | new |
+| `internal/assembly` | A run's context, built in a fixed order within byte caps (framing, handbook, notes, summary, window, the parked round, attachments); dropped files brought where the bot may read them; and the side runs after a run: the conversation's summary and tidying a bot's notes | new |
 | `cmd/hearthd` | Assembly, `--repl` harness for driving the core without the app | new |
 
 Each package states its contract the Go way: a `doc.go` whose package comment names the responsibility, the invariants the type system does not hold, and the seams it is handed. Behaviour that spans packages (assignment, approvals, budgets, schedules) is already written down in `model.md#orchestration`; code cites those headings. No per-package spec files and no approval states: shhh's convention, which has held up, rather than overwatch's, which became paperwork.

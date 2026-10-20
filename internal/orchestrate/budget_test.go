@@ -64,7 +64,7 @@ func TestBudget_HardLimitStopsTheRunAndRefusesTheNextMessage(t *testing.T) {
 		t.Fatalf("run = %v %q, want failed with %q", got.State, got.Failure, meter.SpentReason)
 	}
 
-	_, _, err := f.svc.Send(ctx, f.bot.DMConversationID, "again")
+	_, _, err := f.svc.Send(ctx, f.bot.DMConversationID, "again", nil)
 	if !errors.Is(err, ErrPaused) || !strings.Contains(err.Error(), "Dana is paused") {
 		t.Fatalf("Send while paused = %v, want ErrPaused naming Dana", err)
 	}
@@ -76,7 +76,7 @@ func TestBudget_HardLimitStopsTheRunAndRefusesTheNextMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.script.steps = append(f.script.steps, events(llm.StreamEvent{Token: "ok", Done: true}))
-	if _, _, err := f.svc.Send(ctx, f.bot.DMConversationID, "again"); err != nil {
+	if _, _, err := f.svc.Send(ctx, f.bot.DMConversationID, "again", nil); err != nil {
 		t.Fatalf("Send after Resume: %v", err)
 	}
 }

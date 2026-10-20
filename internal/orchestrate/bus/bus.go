@@ -7,6 +7,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
 
 const (
@@ -62,6 +63,20 @@ type InboxChanged struct {
 type GrantsChanged struct {
 	BotID  string
 	Grants []org.Grant
+}
+
+// ConversationChanged is a conversation as it is now: its newest run, its
+// title or its summary changed.
+type ConversationChanged struct {
+	Conversation org.Conversation
+}
+
+// NoteChanged is a note of the bot BotID added or tidied, or removed when
+// Deleted is set; a removed note carries its id.
+type NoteChanged struct {
+	BotID   string
+	Note    memory.Note
+	Deleted bool
 }
 
 // Resync tells a subscriber that events it asked for are no longer kept: it

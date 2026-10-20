@@ -82,6 +82,13 @@ func (k *Sink) Start() {
 	k.saveRunLocked()
 }
 
+// Run is the run as the sink last stored it.
+func (k *Sink) Run() org.Run {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	return k.run
+}
+
 // SetStop is what Crash calls to stop the turn.
 func (k *Sink) SetStop(stop context.CancelFunc) { k.stop = stop }
 

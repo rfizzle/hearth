@@ -1,4 +1,4 @@
-package park
+package assembly
 
 import (
 	"encoding/json"
@@ -141,4 +141,34 @@ func asText(r Round) string {
 		fmt.Fprintf(&b, "\n- %s with %s. The result: %s", c.Name, c.Arguments, r.result(c.ID))
 	}
 	return b.String()
+}
+
+// cutResult ends a result cut to fit the pending results' part.
+const cutResult = "\n(cut here: the result was too long to hand back whole)"
+
+// capped is r with its results cut, in the order of the calls, so the
+// round's text and results take no more than limit bytes and a marker each.
+// Every call has a result in it, NotRun for one that never ran.
+func (r Round) capped(limit int) Round {
+	left := max(limit-len(r.Text), 0)
+	results := make(map[string]string, len(r.Calls))
+	for _, c := range r.Calls {
+		res := r.result(c.ID)
+		if len(res) > left {
+			res = cut(res, left) + cutResult
+		}
+		left = max(left-len(res), 0)
+		results[c.ID] = res
+	}
+	r.Results = results
+	return r
+}
+
+// size is the bytes of what the round hands back: its text and its results.
+func (r Round) size() int {
+	n := len(r.Text)
+	for _, c := range r.Calls {
+		n += len(r.result(c.ID))
+	}
+	return n
 }
