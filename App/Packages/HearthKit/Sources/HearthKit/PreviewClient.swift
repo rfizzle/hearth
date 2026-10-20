@@ -285,7 +285,11 @@ extension PreviewClient {
     public func putPage(
         _ request: Hearth_V1_PutPageRequest
     ) async throws -> Hearth_V1_PutPageResponse {
-        .with {
+        // The core's refusal, in its words, so a store has one to show.
+        if request.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw PageRefusal(message: "a page needs a title")
+        }
+        return .with {
             $0.page = .with {
                 $0.id = request.id.isEmpty ? "page-new" : request.id
                 $0.title = request.title
@@ -356,4 +360,10 @@ extension PreviewClient {
     public func exportCredential(name: String) async throws -> Hearth_V1_Credential {
         .with { $0.name = name }
     }
+}
+
+/// A plain-words refusal, as the core's invalid_argument carries.
+struct PageRefusal: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }

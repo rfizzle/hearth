@@ -99,6 +99,7 @@ final class Session {
     @ObservationIgnored let relay: EventRelay
     @ObservationIgnored private var conversations: [String: ConversationStore] = [:]
     @ObservationIgnored private var noteStores: [String: NotesStore] = [:]
+    @ObservationIgnored private var handbookStores: [String: HandbookStore] = [:]
 
     init(client: any HearthClient, relay: EventRelay, selection: String?) {
         self.client = client
@@ -149,6 +150,15 @@ final class Session {
         if let store = noteStores[bot.id] { return store }
         let store = NotesStore(client: client, relay: relay, botID: bot.id)
         noteStores[bot.id] = store
+        return store
+    }
+
+    /// The handbook store for `bot`, kept for the same reason as its notes.
+    func handbook(for bot: Hearth_V1_Bot) -> HandbookStore {
+        if let store = handbookStores[bot.id] { return store }
+        let store = HandbookStore(
+            client: client, relay: relay, botID: bot.id, botName: bot.name)
+        handbookStores[bot.id] = store
         return store
     }
 }

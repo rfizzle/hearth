@@ -84,10 +84,12 @@ struct TeamView: View {
                 .id(bot.id)
                 .navigationSubtitle(bot.role)
                 .inspector(isPresented: $model.showsInspector) {
-                    InspectorView(notes: session.notes(for: bot))
-                        .inspectorColumnWidth(
-                            min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,
-                            max: Theme.Size.inspectorMax)
+                    InspectorView(
+                        notes: session.notes(for: bot), handbook: session.handbook(for: bot)
+                    )
+                    .inspectorColumnWidth(
+                        min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,
+                        max: Theme.Size.inspectorMax)
                 }
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
