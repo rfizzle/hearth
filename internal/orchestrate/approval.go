@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/orchestrate/park"
+	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/store"
@@ -292,7 +293,7 @@ func (s *Service) abandon(ctx context.Context, p parked) {
 	}
 	s.d.Bus.Publish(RunChanged{Run: p.run})
 	m, err := s.d.Store.AppendMessage(ctx, org.Message{ConversationID: p.item.ConversationID, AuthorBotID: p.bot.ID,
-		RunID: p.run.ID, Kind: org.MessageSystem, Content: sentence(abandonReason)})
+		RunID: p.run.ID, Kind: org.MessageSystem, Content: record.Sentence(abandonReason)})
 	if err != nil {
 		s.d.Log.Printf("orchestrate: run %s: %v", p.run.ID, err)
 		return

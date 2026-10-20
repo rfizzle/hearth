@@ -2,7 +2,6 @@ package orchestrate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -355,64 +354,5 @@ func TestOpen_FailsRunsAnEarlierLaunchLeftWorking(t *testing.T) {
 	got := f.storedRun(t, left.ID)
 	if got.State != org.RunFailed || got.Failure != "hearth was quit while this was running" {
 		t.Fatalf("run = %+v, want failed by the sweep", got)
-	}
-}
-
-// newSink is a sink on a working run of the fixture's bot.
-func newSink(t *testing.T, f *fixture) *sink {
-	t.Helper()
-	ctx := context.Background()
-	r, err := f.db.CreateRun(ctx, org.Run{ConversationID: f.bot.DMConversationID, BotID: f.bot.ID, State: org.RunWorking})
-	if err != nil {
-		t.Fatal(err)
-	}
-	f.svc.working[r.ConversationID] = r.ID
-	return &sink{s: f.svc, ctx: ctx, run: r, botID: f.bot.ID, calls: map[string]org.ToolCall{},
-		describe: map[string]func(json.RawMessage) string{}}
-}
-
-func TestSink_AToolRoundClosesTheTextBeforeIt(t *testing.T) {
-	f := newFixture(t)
-	k := newSink(t, f)
-	k.describe["files.write"] = func(json.RawMessage) string { return "Write a.md" }
-	k.Text("Let me write it.")
-	k.Usage("chatgpt", "gpt", agent.Usage{Prompt: 10}) // not recorded yet: no message
-	k.Round(1)
-	k.ToolCall("c1", "files.write", json.RawMessage(`{}`))
-	k.ToolResult("c1", agent.Result{Text: "Wrote a.md.", Files: []string{"/w/a.md"}}, nil, time.Second)
-	k.ToolCall("c2", "files.write", json.RawMessage(`{}`))
-	k.ToolResult("c2", agent.Result{}, errors.New("files.write refused: outside"), time.Second)
-	msgs := f.messages(t)
-	if len(msgs) != 5 || msgs[0].Content != "Let me write it." || msgs[0].Streaming {
-		t.Fatalf("messages = %+v, want the closed text first", msgs)
-	}
-	if msgs[1].ToolCalls[0].Summary != "Write a.md" || msgs[2].ToolCalls[0].Summary != "Write a.md" {
-		t.Errorf("call and result = %+v, %+v, want the summary on both", msgs[1], msgs[2])
-	}
-	if msgs[2].Files[0] != (org.FileRef{Path: "/w/a.md", Name: "a.md"}) {
-		t.Errorf("result files = %+v", msgs[2].Files)
-	}
-	if msgs[4].Content != "files.write refused: outside" {
-		t.Errorf("failed result = %q, want the error", msgs[4].Content)
-	}
-	if k.run.Steps != 1 {
-		t.Errorf("steps = %d, want 1", k.run.Steps)
-	}
-}
-
-func TestSink_RetryEmptiesTheStreamingMessage(t *testing.T) {
-	f := newFixture(t)
-	k := newSink(t, f)
-	r := k.run
-	k.Text("from the failed attempt")
-	k.Retry(1, 3, time.Second)
-	k.Text("Fresh")
-	k.finish(agent.Outcome{Text: "Fresh"}, nil)
-	msgs := f.messages(t)
-	if len(msgs) != 1 || msgs[0].Content != "Fresh" || msgs[0].Streaming {
-		t.Fatalf("messages = %+v, want only the retried reply", msgs)
-	}
-	if _, busy := f.svc.working[r.ConversationID]; busy {
-		t.Fatal("the conversation is still busy after the run ended")
 	}
 }

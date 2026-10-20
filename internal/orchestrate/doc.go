@@ -7,7 +7,8 @@
 // message, the reply as it streams, each tool call and its result, the step
 // count, and how the run ended. The bus it publishes on, in the bus package
 // below, numbers and keeps the events; park, beside it, holds the pure part
-// of a run that waits on the owner.
+// of a run that waits on the owner; record, beside them, is what one run
+// writes to the store and the bus as it goes.
 //
 // Invariants the types do not hold:
 //   - One run per conversation at a time. A message sent while one is

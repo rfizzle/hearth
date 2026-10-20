@@ -11,7 +11,6 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
 
-	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
@@ -66,25 +65,6 @@ func TestOpen_ClosesStreamingMessagesAndDeletesEmptyOnes(t *testing.T) {
 	msgs := f.messages(t)
 	if len(msgs) != 1 || msgs[0].ID != partial.ID || msgs[0].Streaming {
 		t.Fatalf("messages = %+v, want only the partial, closed (empty %s deleted)", msgs, empty.ID)
-	}
-}
-
-func TestRun_AFailedRetryLeavesNoEmptyBubble(t *testing.T) {
-	f := newFixture(t)
-	k := newSink(t, f)
-	k.Text("from the failed attempt")
-	k.Retry(1, 3, 0)
-	ch, cancel := f.bus.Subscribe(0)
-	defer cancel()
-	k.finish(agent.Outcome{}, errors.New("it broke"))
-	for _, m := range f.messages(t) {
-		if m.Kind == org.MessageText {
-			t.Fatalf("messages = %+v, want no empty bot text", f.messages(t))
-		}
-	}
-	evs := until(t, ch, func(e Event) bool { _, ok := e.Body.(MessageDeleted); return ok })
-	if len(evs) == 0 {
-		t.Fatal("no MessageDeleted published")
 	}
 }
 

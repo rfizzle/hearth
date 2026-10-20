@@ -2,7 +2,6 @@ package orchestrate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/framing"
+	"github.com/rfizzle/hearth/internal/orchestrate/record"
 	"github.com/rfizzle/hearth/internal/orchestrate/toolset"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/tools"
@@ -30,18 +30,16 @@ type ask struct {
 // ends when the run is cancelled; every write uses a context that does not,
 // so what a stopped run wrote is still saved.
 func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
-	k := &sink{s: s, ctx: context.WithoutCancel(ctx), run: r, botID: bot.ID, botName: bot.Name,
-		calls: map[string]org.ToolCall{}, describe: map[string]func(json.RawMessage) string{}}
-	k.run.State = org.RunWorking
-	k.run.StartedAt = s.d.Now()
-	k.saveRun()
+	k := record.New(record.Host{Store: s.d.Store, Bus: s.d.Bus, Log: s.d.Log, Now: s.d.Now, Release: s.release},
+		context.WithoutCancel(ctx), r, bot.ID, bot.Name)
+	k.Start()
 	out, err := s.guarded(ctx, k, bot, prompt)
 	if errors.Is(err, agent.ErrParked) && ctx.Err() != nil {
 		// Cancel reached the run as it parked: the owner stopped it, so it
 		// does not wait on them.
 		err = agent.ErrCancelled
 	}
-	k.finish(out, err)
+	k.Finish(out, err)
 }
 
 // guarded is the turn with a panic in it, the loop's or a tool's, turned
@@ -50,15 +48,15 @@ func (s *Service) run(ctx context.Context, bot org.Bot, r org.Run, prompt ask) {
 // with its stack. A tool runs on a goroutine of its own, so its panic is
 // caught there, stops the turn, and is reported here.
 // See docs/model.md#9-failure-handling.
-func (s *Service) guarded(ctx context.Context, k *sink, bot org.Bot, prompt ask) (out agent.Outcome, err error) {
+func (s *Service) guarded(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask) (out agent.Outcome, err error) {
 	ctx, stop := context.WithCancel(ctx)
 	defer stop()
-	k.stop = stop
+	k.SetStop(stop)
 	defer func() {
 		if p := recover(); p != nil {
-			k.crash(p)
+			k.Crash(p)
 		}
-		if p := k.crashed(); p != nil {
+		if p := k.Crashed(); p != nil {
 			out, err = agent.Outcome{}, fmt.Errorf("something went wrong inside hearth: %v", p)
 		}
 	}()
@@ -66,8 +64,9 @@ func (s *Service) guarded(ctx context.Context, k *sink, bot org.Bot, prompt ask)
 }
 
 // turn gathers what the bot's turn needs and runs it, reporting to k.
-func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (agent.Outcome, error) {
-	o, err := s.d.Store.Org(k.ctx)
+func (s *Service) turn(ctx context.Context, k *record.Sink, bot org.Bot, prompt ask) (agent.Outcome, error) {
+	wctx := context.WithoutCancel(ctx) // for reads; a stop does not cancel it
+	o, err := s.d.Store.Org(wctx)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
@@ -81,19 +80,18 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (a
 	if err := os.MkdirAll(folder, 0o755); err != nil {
 		return agent.Outcome{}, fmt.Errorf("could not create %s's folder: %w", bot.Name, err)
 	}
-	history, text, err := s.history(k.ctx, prompt)
+	history, text, err := s.history(wctx, prompt)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
-	disp, err := s.dispatcher(k.ctx, bot, prompt.msg.ConversationID)
+	disp, err := s.dispatcher(wctx, bot, prompt.msg.ConversationID)
 	if err != nil {
 		return agent.Outcome{}, err
 	}
-	k.disp = disp
+	k.Equip(disp)
 	var offered []agent.Tool
 	for _, d := range disp.Tools() {
 		offered = append(offered, agent.Tool{Name: d.Name, Description: d.Description, Parameters: d.Parameters})
-		k.describe[d.Name] = d.Describe
 	}
 	stream, err := s.d.Streams(bot.Tier)
 	if err != nil {
@@ -108,7 +106,7 @@ func (s *Service) turn(ctx context.Context, k *sink, bot org.Bot, prompt ask) (a
 		Prompt:  text,
 		Tools:   offered,
 		Stream:  stream,
-		Execute: toolset.Execute(disp, k.crash),
+		Execute: toolset.Execute(disp, k.Crash),
 		Gate:    disp.Gated,
 		// See docs/model.md#4-termination-guarantees.
 		MaxRounds: s.d.Caps.Steps,
