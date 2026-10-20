@@ -78,13 +78,14 @@ extension Catalog {
     static func sidebarWithInbox() -> GalleryState {
         let client = PreviewClient()
         let relay = EventRelay(client: client)
-        let bots = BotListStore(client: client, relay: relay)
-        bots.selected = .inbox
+        let sidebar = SidebarStore(
+            bots: BotListStore(client: client, relay: relay),
+            projects: ProjectsStore(client: client, relay: relay), selected: .inbox)
         let inbox = InboxStore(client: client, relay: relay)
         return GalleryState(
             name: "sidebar", width: Theme.Size.sidebarIdeal,
             view: AnyView(
-                BotList(store: bots, inbox: inbox, onHire: {}).frame(height: 220)))
+                SidebarList(store: sidebar, inbox: inbox).frame(height: 420)))
     }
 }
 

@@ -50,8 +50,12 @@ final class ProjectList: @unchecked Sendable {
     }
 
     /// An active project, or the proposal `request.proposalID` names, confirmed.
+    /// A name over 80 characters is refused in the core's words.
     func create(_ request: Hearth_V1_CreateProjectRequest) throws -> Hearth_V1_Project {
-        try lock.withLock {
+        guard request.name.count <= 80 else {
+            throw PageRefusal(message: "invalid project: the name is over 80 characters")
+        }
+        return try lock.withLock {
             var project: Hearth_V1_Project
             if request.proposalID.isEmpty {
                 made += 1

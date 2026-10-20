@@ -1,12 +1,11 @@
-// BotListStore holds the bots as the core last reported them and what the
-// sidebar has selected: the Inbox or a bot. It fetches the list, applies the
-// bot changes the relay delivers, refetches on a resync, and decides nothing;
-// the selection is what the sidebar highlights and the detail column opens.
+// BotListStore holds the bots as the core last reported them. It fetches the
+// list, applies the bot changes the relay delivers, refetches on a resync, and
+// decides nothing; what the sidebar has selected is SidebarStore's.
 // Each bot's row dot follows its conversation's latest run, read once per bot
 // from the core and moved by the run changes after: working, or waiting for
 // the owner in the attention tone. The org-level bots, the Chief of Staff
 // first, are the sidebar's Office and everyone else its team, by the scope
-// the core reports; with nothing selected yet, the Chief of Staff is.
+// the core reports.
 // See docs/model.md#8-approvals and docs/model.md#people
 
 import HearthKit
@@ -16,18 +15,8 @@ import Observation
 @MainActor
 @Observable
 public final class BotListStore {
-    /// What the sidebar can select.
-    public enum Selection: Hashable, Sendable {
-        /// What waits on the owner.
-        case inbox
-        /// The bot with this id.
-        case bot(String)
-    }
-
     /// Every bot, in the order the core sent them; new ones come last.
     public private(set) var bots: [Hearth_V1_Bot] = []
-    /// What the sidebar has selected, if anything.
-    public var selected: Selection?
     /// The last failed call's text, if one failed.
     public private(set) var error: String?
 
@@ -77,28 +66,6 @@ public final class BotListStore {
     /// Whether to offer hiring: the list has loaded and nobody is on the team.
     public var showsHireAffordance: Bool {
         loaded && team.isEmpty
-    }
-
-    /// Selects the first org-level bot, the Chief of Staff, when nothing is
-    /// selected; a selection the owner made stays.
-    public func selectOfficeIfNothingSelected() {
-        guard selected == nil, let first = office.first else { return }
-        selected = .bot(first.id)
-    }
-
-    /// The selected bot's id, if a bot is selected; setting it selects that
-    /// bot, or nothing.
-    public var selection: String? {
-        get {
-            guard case .bot(let id) = selected else { return nil }
-            return id
-        }
-        set { selected = newValue.map(Selection.bot) }
-    }
-
-    /// The selected bot, if it is still in the list.
-    public var selectedBot: Hearth_V1_Bot? {
-        bots.first { $0.id == selection }
     }
 
     /// What `bot`'s row dot says: waiting for the owner, working, paused, or

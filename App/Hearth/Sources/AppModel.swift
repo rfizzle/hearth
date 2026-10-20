@@ -25,6 +25,11 @@ final class AppModel {
     /// The bot whose Access sheet is open; the toolbar, the Team menu and a
     /// bot's context menu set it.
     var accessBotID: String?
+    /// Whether the new-project sheet is open; the toolbar and the File menu
+    /// set it.
+    var isCreatingProject = false
+    /// The project whose edit sheet is open; a project's context menu sets it.
+    var editingProjectID: String?
     /// Whether the inspector is open beside the conversation; the toolbar and
     /// the View menu set it.
     var showsInspector = false
@@ -35,7 +40,7 @@ final class AppModel {
     @ObservationIgnored private var relay: EventRelay?
     @ObservationIgnored private var lostSession = false
     @ObservationIgnored private var builtGeneration: Int?
-    @ObservationIgnored private var selection: String?
+    @ObservationIgnored private var selection: SidebarSelection?
 
     init(supervisor: HelperSupervisor, keychain: any KeychainStore = Keychain()) {
         self.supervisor = supervisor
@@ -52,9 +57,11 @@ final class AppModel {
     /// Builds the session for the supervisor's client, or drops it when the
     /// helper has gone.
     func helperChanged() {
-        if let current = session?.bots.selection { selection = current }
+        if let current = session?.sidebar.selected { selection = current }
         isHiring = false
         accessBotID = nil
+        isCreatingProject = false
+        editingProjectID = nil
         guard let client = supervisor.client else {
             lostSession = lostSession || session != nil
             session = nil
@@ -99,6 +106,11 @@ final class Session {
     let accounts: AccountsStore
     let onboarding: OnboardingStore
     let bots: BotListStore
+    /// The org's projects: one store for the session, which the sidebar,
+    /// the project sheet and the project conversations read.
+    let projects: ProjectsStore
+    /// What the sidebar has selected, over the bots and the projects.
+    let sidebar: SidebarStore
     /// What waits on the owner: one store for the session, which the sidebar
     /// row, the Inbox screen, the threads and the menu bar read.
     let inbox: InboxStore
@@ -117,7 +129,7 @@ final class Session {
     @ObservationIgnored private var noteStores: [String: NotesStore] = [:]
     @ObservationIgnored private var handbookStores: [String: HandbookStore] = [:]
 
-    init(client: any HearthClient, relay: EventRelay, selection: String?) {
+    init(client: any HearthClient, relay: EventRelay, selection: SidebarSelection?) {
         self.client = client
         self.relay = relay
         accounts = AccountsStore(client: client, relay: relay)
@@ -125,9 +137,10 @@ final class Session {
         usage = UsageStore(client: client, relay: relay)
         models = ModelsStore(client: client, relay: relay)
         bots = BotListStore(client: client, relay: relay)
+        projects = ProjectsStore(client: client, relay: relay)
+        sidebar = SidebarStore(bots: bots, projects: projects, selected: selection)
         inbox = InboxStore(client: client, relay: relay, usage: usage)
         bots.usage = usage
-        bots.selection = selection
     }
 
     /// The org, from the core or from onboarding just now.
@@ -152,14 +165,22 @@ final class Session {
         }
     }
 
-    /// The store for `bot`'s conversation, kept so a bot's transcript and run
-    /// survive selecting someone else and coming back.
-    func conversation(for bot: Hearth_V1_Bot) -> ConversationStore {
-        if let store = conversations[bot.dmConversationID] { return store }
+    /// The bot that answers project conversations, the Chief of Staff, if
+    /// the org names one and it is on the team.
+    var coordinator: Hearth_V1_Bot? {
+        guard let id = org?.coordinatorBotID, !id.isEmpty else { return nil }
+        return bots.bots.first { $0.id == id }
+    }
+
+    /// The store for the conversation with `conversationID`, a bot's DM or a
+    /// project's, kept so its transcript and run survive selecting something
+    /// else and coming back. `botID` is whose budget pauses it.
+    func conversation(for conversationID: String, botID: String?) -> ConversationStore {
+        if let store = conversations[conversationID] { return store }
         let store = ConversationStore(
-            client: client, relay: relay, conversationID: bot.dmConversationID,
-            inbox: inbox, usage: usage, botID: bot.id)
-        conversations[bot.dmConversationID] = store
+            client: client, relay: relay, conversationID: conversationID,
+            inbox: inbox, usage: usage, botID: botID)
+        conversations[conversationID] = store
         return store
     }
 

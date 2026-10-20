@@ -267,11 +267,16 @@ extension Catalog {
     }
 
     private static var sidebarInsert: MotionStep {
-        let feed = MotionFeed { BotListStore(client: PreviewClient(), relay: $0) }
+        let feed = MotionFeed { relay in
+            let client = PreviewClient()
+            return SidebarStore(
+                bots: BotListStore(client: client, relay: relay),
+                projects: ProjectsStore(client: client, relay: relay))
+        }
         struct Demo: View {
-            let feed: MotionFeed<BotListStore>
+            let feed: MotionFeed<SidebarStore>
             var body: some View {
-                BotList(store: feed.store, onHire: {})
+                SidebarList(store: feed.store)
                     .id(feed.generation)
                     .frame(width: Theme.Size.sidebarIdeal, height: 200)
             }
@@ -280,7 +285,7 @@ extension Catalog {
             "Bot appears in the sidebar", button: "Hire someone",
             note: "The row slides into the list under the move spring; pressing again starts over.",
             play: {
-                if feed.store.bots.count > 1 {
+                if feed.store.bots.bots.count > 1 {
                     feed.restart()
                 } else {
                     feed.deliver(

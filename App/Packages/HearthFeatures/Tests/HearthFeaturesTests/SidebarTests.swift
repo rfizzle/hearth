@@ -1,5 +1,6 @@
 // The sidebar: the Inbox row's count follows the open items, selecting the
-// Inbox or a bot is one selection, and the Office holds the Chief of Staff.
+// Inbox, a bot or a project is one selection, and the Office holds the Chief
+// of Staff.
 
 import HearthKit
 import Testing
@@ -25,21 +26,39 @@ import Testing
     #expect(InboxRow.spoken(inbox.openCount) == "1 item waiting")
 }
 
+/// A sidebar over the preview client's bots and projects.
 @MainActor
-@Test func theInboxAndABotShareOneSelection() async {
-    let client = PreviewClient()
-    let bots = BotListStore(client: client, relay: EventRelay(client: client))
-    await bots.load()
-    bots.selection = Fixtures.bot.id
-    #expect(bots.selected == .bot(Fixtures.bot.id))
-    #expect(bots.selectedBot?.id == Fixtures.bot.id)
+func makeSidebar(client: any HearthClient = PreviewClient()) -> SidebarStore {
+    let relay = EventRelay(client: client)
+    return SidebarStore(
+        bots: BotListStore(client: client, relay: relay),
+        projects: ProjectsStore(client: client, relay: relay))
+}
 
-    bots.selected = .inbox
-    #expect(bots.selection == nil)
-    #expect(bots.selectedBot == nil)
+@MainActor
+@Test func theInboxABotAndAProjectShareOneSelection() async {
+    let sidebar = makeSidebar()
+    await sidebar.bots.load()
+    await sidebar.projects.load()
+    sidebar.selected = .bot(Fixtures.bot.id)
+    #expect(sidebar.selected == .bot(Fixtures.bot.id))
+    #expect(sidebar.selectedBot?.id == Fixtures.bot.id)
+    #expect(sidebar.selectedProject == nil)
 
-    bots.selection = nil
-    #expect(bots.selected == nil)
+    sidebar.selected = .inbox
+    #expect(sidebar.selected == .inbox)
+    #expect(sidebar.selectedBot == nil)
+    #expect(sidebar.selectedProject == nil)
+
+    sidebar.selected = .project(Fixtures.projects[0].id)
+    #expect(sidebar.selected == .project(Fixtures.projects[0].id))
+    #expect(sidebar.selectedProject?.id == Fixtures.projects[0].id)
+    #expect(sidebar.selectedBot == nil)
+
+    sidebar.selected = nil
+    #expect(sidebar.selected == nil)
+    #expect(sidebar.selectedBot == nil)
+    #expect(sidebar.selectedProject == nil)
 }
 
 @MainActor
@@ -82,18 +101,20 @@ import Testing
 
 @MainActor
 @Test func theChiefOfStaffIsSelectedOnlyWhenNothingIs() async {
-    let client = PreviewClient()
-    let bots = BotListStore(client: client, relay: EventRelay(client: client))
-    bots.selectOfficeIfNothingSelected()
-    #expect(bots.selected == nil)
-    await bots.load()
-    bots.selectOfficeIfNothingSelected()
-    #expect(bots.selection == Fixtures.chiefOfStaff.id)
+    let sidebar = makeSidebar()
+    sidebar.selectOfficeIfNothingSelected()
+    #expect(sidebar.selected == nil)
+    await sidebar.bots.load()
+    sidebar.selectOfficeIfNothingSelected()
+    #expect(sidebar.selected == .bot(Fixtures.chiefOfStaff.id))
 
-    bots.selection = Fixtures.bot.id
-    bots.selectOfficeIfNothingSelected()
-    #expect(bots.selection == Fixtures.bot.id)
-    bots.selected = .inbox
-    bots.selectOfficeIfNothingSelected()
-    #expect(bots.selected == .inbox)
+    sidebar.selected = .bot(Fixtures.bot.id)
+    sidebar.selectOfficeIfNothingSelected()
+    #expect(sidebar.selected == .bot(Fixtures.bot.id))
+    sidebar.selected = .inbox
+    sidebar.selectOfficeIfNothingSelected()
+    #expect(sidebar.selected == .inbox)
+    sidebar.selected = .project(Fixtures.projects[0].id)
+    sidebar.selectOfficeIfNothingSelected()
+    #expect(sidebar.selected == .project(Fixtures.projects[0].id))
 }

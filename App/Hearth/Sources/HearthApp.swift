@@ -1,9 +1,9 @@
 // HearthApp is the app's entry point and its wiring: the app delegate owns the
 // helper supervisor so the helper is stopped when the app quits, and the model
 // that builds the stores over each helper. One main window, a Settings window
-// and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A, and
-// View carries Show Inspector on ⌥⌘I, so the New Window item a window group would
-// put there is removed.
+// and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A,
+// View carries Show Inspector on ⌥⌘I, and File carries New Project… on ⇧⌘N in
+// place of the New Window item a window group would put there.
 // See docs/design.md#window-anatomy
 
 import AppKit
@@ -30,14 +30,18 @@ struct HearthApp: App {
         }
         .defaultSize(width: 1040, height: 700)
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                Button("New Project…") { appDelegate.model.isCreatingProject = true }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
+                    .disabled(appDelegate.model.session?.phase != .team)
+            }
             SidebarCommands()
             CommandGroup(after: .sidebar) {
                 Button(appDelegate.model.showsInspector ? "Hide Inspector" : "Show Inspector") {
                     appDelegate.model.showsInspector.toggle()
                 }
                 .keyboardShortcut("i", modifiers: [.command, .option])
-                .disabled(appDelegate.model.session?.bots.selectedBot == nil)
+                .disabled(appDelegate.model.session?.sidebar.selectedBot == nil)
             }
             TeamCommands(model: appDelegate.model)
             DebugCommands()
@@ -58,9 +62,10 @@ struct TeamCommands: Commands {
             Button("Hire Someone…") { model.isHiring = true }
                 .keyboardShortcut("n")
                 .disabled(model.session?.phase != .team)
-            Button("Access…") { model.accessBotID = model.session?.bots.selection }
+            Button("Access…") { model.accessBotID = model.session?.sidebar.selectedBot?.id }
                 .keyboardShortcut("a", modifiers: [.command, .option])
-                .disabled(model.session?.phase != .team || model.session?.bots.selectedBot == nil)
+                .disabled(
+                    model.session?.phase != .team || model.session?.sidebar.selectedBot == nil)
         }
     }
 }

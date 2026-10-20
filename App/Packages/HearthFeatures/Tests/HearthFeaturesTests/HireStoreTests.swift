@@ -264,11 +264,14 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     var renamed = Fixtures.bot
     renamed.status = .working
     let store = botList()
+    let client = PreviewClient()
+    let sidebar = SidebarStore(
+        bots: store, projects: ProjectsStore(client: client, relay: EventRelay(client: client)))
     await store.load()
-    store.selection = Fixtures.bot.id
+    sidebar.selected = .bot(Fixtures.bot.id)
     await store.handle(botEvent(renamed))
     #expect(store.team.count == 1)
-    #expect(store.selectedBot?.status == .working)
+    #expect(sidebar.selectedBot?.status == .working)
 }
 
 @MainActor

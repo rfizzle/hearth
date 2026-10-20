@@ -16,6 +16,19 @@ import UniformTypeIdentifiers
     #expect(StatusDot.PreviewState.allCases.allSatisfy { !$0.label.isEmpty })
 }
 
+@Test func progressPieSaysItsThreeStates() {
+    #expect(ProgressPie.spoken(done: 3, total: 7) == "3 of 7 done")
+    #expect(ProgressPie.spoken(done: 0, total: 0) == "No tasks yet")
+    #expect(ProgressPie.spoken(done: 7, total: 7) == "All done")
+    #expect(ProgressPie.fraction(done: 3, total: 7) == 3.0 / 7.0)
+    #expect(ProgressPie.fraction(done: 0, total: 0) == 0)
+    #expect(ProgressPie.isComplete(done: 7, total: 7))
+    #expect(!ProgressPie.isComplete(done: 0, total: 0))
+    #expect(
+        ProgressPie.PreviewState.allCases.map { ProgressPie.spoken(done: $0.done, total: $0.total) }
+            == ["No tasks yet", "0 of 7 done", "3 of 7 done", "All done"])
+}
+
 @Test func pillDeclaresAStatePerTone() {
     #expect(Pill.PreviewState.allCases.map(\.tone) == Tone.allCases)
 }

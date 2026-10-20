@@ -72,8 +72,8 @@ Six spacing steps (4, 8, 12, 16, 24, 32 pt) and three corner radii (6, 10 and
 padding, gap and radius outside the design package comes from these; a number
 that fits none of them is a reason to change the scale, not to skip it.
 
-A few measures are shared: the avatar (28 pt, 44 pt large), the status dot, the
-file icon, a 24 pt minimum target, a readable column of 640 pt for the
+A few measures are shared: the avatar (28 pt, 44 pt large), the status dot, a
+project's progress pie (16 pt), the file icon, a 24 pt minimum target, a readable column of 640 pt for the
 transcript, 480 pt for a message bubble and a form, 560 pt for a sheet, and a
 sidebar of 200 to 320 pt. Long text never runs the width of a wide window.
 
@@ -86,11 +86,14 @@ sections about the selected bot, Notes first, then the Handbook and Usage; a not
 pinned or edited in place. Usage headlines the month's cost in dollars, with
 tokens under a disclosure, a quiet budget bar, and Paused with Resume.
 
-- **Sidebar.** "Your team": one row per bot with its mark, name and role. The
-  system gives it its glass and vibrancy.
+- **Sidebar.** "Your team": one row per bot with its mark, name and role. Then
+  "Projects": one row per active project, then the done ones, each with a small
+  pie of its tasks done as the mark, its name, and its light with the light's
+  word. The system gives it its glass and vibrancy.
 - **Hire.** A toolbar button over the sidebar and a Team menu command with the
   same name. Not at the bottom of the sidebar: critical actions do not live
-  there.
+  there. New Project is the same: a toolbar button beside Hire and a File menu
+  command.
 - **Conversation.** The transcript in a readable column, the composer bar below
   it. Its one toolbar button shows the bot's folder in Finder.
 - **Composer.** A bar of glass floating over the transcript's lower edge, one

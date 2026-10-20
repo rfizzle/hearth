@@ -21,8 +21,6 @@ extension Catalog {
             GalleryPage(
                 package: package, name: "HireSheet", states: [hireWithDraft(), hireWithTemplate()]),
             GalleryPage(
-                package: package, name: "BotList", states: botListStates),
-            GalleryPage(
                 package: package, name: "ConversationScreen",
                 states: [
                     conversationEmpty(), conversationAboutOpen(), conversationMidStream(),

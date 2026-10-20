@@ -1,13 +1,17 @@
-// TeamView is the window once the org exists: the bots in the sidebar and the
-// selected bot's conversation in the detail column, with Hire Someone… as an
-// icon-only toolbar item over the sidebar and the bot's folder as the one
-// item beside Access… and the inspector toggle over the conversation. The
-// inspector opens beside it with what the bot remembers. The Inbox row opens
-// the Inbox in the detail column. Nobody on the team shows the invitation in the
-// detail column; nobody selected says to choose. The hire sheet and the Access
-// sheet are presented here, and the helper notice sits over the top of the
-// detail column until the owner dismisses it. When the window first shows
-// the team with nothing selected, the Chief of Staff is.
+// TeamView is the window once the org exists: the Inbox, the bots and the
+// projects in the sidebar and the selected one in the detail column, with
+// Hire Someone… and New Project… as icon-only toolbar items over the sidebar,
+// and the bot's folder as the one item beside Access… and the inspector toggle
+// over a bot's conversation. The inspector opens beside it with what the bot
+// remembers. The Inbox row opens the Inbox in the detail column. A project
+// opens its own conversation in the same screen as a bot's, titled by the
+// project's name and answered by the Chief of Staff; with no Chief of Staff on
+// the team it says so instead. Nobody on the team shows the invitation in the
+// detail column; nothing selected says to choose. The hire, Access and project
+// sheets are presented here, and the helper notice sits over the top of the
+// detail column until the owner dismisses it. A new project is selected once
+// created. When the window first shows the team with nothing selected, the
+// Chief of Staff is.
 // See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
 import HearthDesign
@@ -25,10 +29,10 @@ struct TeamView: View {
     var body: some View {
         @Bindable var model = model
         NavigationSplitView {
-            BotList(
-                store: session.bots, inbox: session.inbox,
+            SidebarList(
+                store: session.sidebar, inbox: session.inbox,
                 onAccess: { model.accessBotID = $0.id },
-                onHire: { model.isHiring = true }
+                onEditProject: { model.editingProjectID = $0.id }
             )
             .navigationSplitViewColumnWidth(
                 min: Theme.Size.sidebarMin, ideal: Theme.Size.sidebarIdeal,
@@ -41,6 +45,13 @@ struct TeamView: View {
                     }
                     .labelStyle(.iconOnly)
                     .help("Hire someone")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("New Project…", systemImage: "folder.badge.plus") {
+                        model.isCreatingProject = true
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("New project")
                 }
             }
         } detail: {
@@ -57,7 +68,7 @@ struct TeamView: View {
         }
         .navigationSplitViewStyle(.balanced)
         .onChange(of: session.bots.office.first?.id, initial: true) {
-            session.bots.selectOfficeIfNothingSelected()
+            session.sidebar.selectOfficeIfNothingSelected()
         }
         .task { await session.usage.load() }
         .sheet(isPresented: $model.isHiring) {
@@ -66,6 +77,25 @@ struct TeamView: View {
         .sheet(isPresented: isChangingAccess) {
             if let bot = accessBot { AccessSheetHost(session: session, bot: bot) }
         }
+        .sheet(isPresented: $model.isCreatingProject) {
+            ProjectSheetHost(session: session, editing: nil)
+        }
+        .sheet(isPresented: isEditingProject) {
+            if let project = editingProject {
+                ProjectSheetHost(session: session, editing: project)
+            }
+        }
+    }
+
+    /// Whether the edit sheet is open for a project still listed.
+    private var isEditingProject: Binding<Bool> {
+        Binding(
+            get: { editingProject != nil },
+            set: { if !$0 { model.editingProjectID = nil } })
+    }
+
+    private var editingProject: Hearth_V1_Project? {
+        model.editingProjectID.flatMap { session.projects.project(id: $0) }
     }
 
     /// Whether the Access sheet is open for a bot still on the team.
@@ -82,44 +112,48 @@ struct TeamView: View {
     @ViewBuilder
     private var detail: some View {
         @Bindable var model = model
-        if session.bots.selected == .inbox {
+        if session.sidebar.selected == .inbox {
             InboxScreen(store: session.inbox, bots: session.bots.bots)
-        } else if let bot = session.bots.selectedBot {
-            ConversationScreen(store: session.conversation(for: bot), bot: bot)
-                .id(bot.id)
-                .navigationSubtitle(bot.role)
-                .inspector(isPresented: $model.showsInspector) {
-                    InspectorView(
-                        notes: session.notes(for: bot), handbook: session.handbook(for: bot),
-                        usage: session.usage, botName: bot.name
-                    )
-                    .inspectorColumnWidth(
-                        min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,
-                        max: Theme.Size.inspectorMax)
+        } else if let project = session.sidebar.selectedProject {
+            projectDetail(project)
+        } else if let bot = session.sidebar.selectedBot {
+            ConversationScreen(
+                store: session.conversation(for: bot.dmConversationID, botID: bot.id), bot: bot
+            )
+            .id(bot.id)
+            .navigationSubtitle(bot.role)
+            .inspector(isPresented: $model.showsInspector) {
+                InspectorView(
+                    notes: session.notes(for: bot), handbook: session.handbook(for: bot),
+                    usage: session.usage, botName: bot.name
+                )
+                .inspectorColumnWidth(
+                    min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,
+                    max: Theme.Size.inspectorMax)
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Access…", systemImage: "lock.open") {
+                        model.accessBotID = bot.id
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("What \(bot.name) can see and do")
                 }
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Access…", systemImage: "lock.open") {
-                            model.accessBotID = bot.id
-                        }
-                        .labelStyle(.iconOnly)
-                        .help("What \(bot.name) can see and do")
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Show Folder in Finder", systemImage: "folder") {
+                        revealInFinder(bot.folderPath)
                     }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Show Folder in Finder", systemImage: "folder") {
-                            revealInFinder(bot.folderPath)
-                        }
-                        .labelStyle(.iconOnly)
-                        .help("Show \(bot.name)'s folder in Finder")
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Show Inspector", systemImage: "sidebar.trailing") {
-                            model.showsInspector.toggle()
-                        }
-                        .labelStyle(.iconOnly)
-                        .help("Show or hide what \(bot.name) remembers")
-                    }
+                    .labelStyle(.iconOnly)
+                    .help("Show \(bot.name)'s folder in Finder")
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Show Inspector", systemImage: "sidebar.trailing") {
+                        model.showsInspector.toggle()
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("Show or hide what \(bot.name) remembers")
+                }
+            }
         } else if session.bots.showsHireAffordance {
             TeamEmptyView(onHire: { model.isHiring = true })
                 .navigationTitle(session.org?.name ?? "Hearth")
@@ -130,6 +164,71 @@ struct TeamView: View {
             )
             .navigationTitle(session.org?.name ?? "Hearth")
         }
+    }
+}
+
+extension TeamView {
+    /// A project's conversation, answered by the Chief of Staff. The bot's
+    /// introduction is not the project's, so the empty transcript shows the
+    /// plain hello rather than the bot's card.
+    @ViewBuilder
+    fileprivate func projectDetail(_ project: Hearth_V1_Project) -> some View {
+        if let coordinator = session.coordinator {
+            ConversationScreen(
+                store: session.conversation(for: project.conversationID, botID: coordinator.id),
+                bot: Self.withoutIntroduction(coordinator), title: project.name
+            )
+            .id(project.conversationID)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Show Folder in Finder", systemImage: "folder") {
+                        revealInFinder(project.folderPath)
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("Show the project's folder in Finder")
+                }
+            }
+        } else {
+            ContentUnavailableView {
+                Label("No one answers projects yet", systemImage: "folder")
+            } description: {
+                Text("Hire a Chief of Staff and this conversation wakes up.")
+            } actions: {
+                Button("Hire Someone…") { model.isHiring = true }
+            }
+            .navigationTitle(project.name)
+        }
+    }
+
+    private static func withoutIntroduction(_ bot: Hearth_V1_Bot) -> Hearth_V1_Bot {
+        var bot = bot
+        bot.clearIntroduction()
+        return bot
+    }
+}
+
+/// One presentation of the project sheet, new or editing, with a draft of
+/// its own each time; a new project is selected once the core has made it.
+private struct ProjectSheetHost: View {
+    let session: Session
+    let editing: Hearth_V1_Project?
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ProjectSheet(
+            store: session.projects, editing: editing,
+            onSaved: { project in
+                if editing == nil { session.sidebar.selected = .project(project.id) }
+                close()
+            },
+            onCancel: close
+        )
+        .onAppear { session.projects.clearSaveError() }
+    }
+
+    private func close() {
+        model.isCreatingProject = false
+        model.editingProjectID = nil
     }
 }
 
@@ -148,7 +247,7 @@ private struct HireSheetHost: View {
         HireSheet(
             store: store,
             onHired: { bot in
-                session.bots.selection = bot.id
+                session.sidebar.selected = .bot(bot.id)
                 model.isHiring = false
             },
             onCancel: { model.isHiring = false })

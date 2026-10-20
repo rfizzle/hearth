@@ -85,6 +85,8 @@ public enum Theme {
         public static let avatar: CGFloat = 28
         public static let avatarLarge: CGFloat = 44
         public static let statusDot: CGFloat = 8
+        /// A project's progress pie in a sidebar row.
+        public static let progressPie: CGFloat = 16
         public static let fileIcon: CGFloat = 20
         public static let minTarget: CGFloat = 24
         public static let readableWidth: CGFloat = 640

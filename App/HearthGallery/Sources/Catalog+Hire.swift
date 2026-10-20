@@ -23,8 +23,9 @@ extension Catalog {
         ]
     }
 
-    /// The sidebar with a team whose bots are idle, working and paused, and
-    /// the empty team: the header alone beside the detail column's invitation.
+    /// The sidebar with a team whose bots are idle, working and paused above
+    /// the projects, and the empty team with one project: the team's header
+    /// alone beside the detail column's invitation.
     @MainActor
     static var botListStates: [GalleryState] {
         var working = Fixtures.bot
@@ -52,23 +53,33 @@ extension Catalog {
                 continuation.onTermination = { _ in task.cancel() }
             }
         })
-        let team = BotListStore(client: PreviewClient(), relay: relay)
+        let client = PreviewClient()
+        let team = SidebarStore(
+            bots: BotListStore(client: client, relay: relay),
+            projects: ProjectsStore(client: client, relay: relay),
+            selected: .bot(Fixtures.bot.id))
         relay.start()
-        team.selection = Fixtures.bot.id
-        let empty = BotListStore(client: noBotsClient, relay: EventRelay(client: noBotsClient))
+        let emptyClient = noBotsClient
+        let emptyRelay = EventRelay(client: emptyClient)
+        let empty = SidebarStore(
+            bots: BotListStore(client: emptyClient, relay: emptyRelay),
+            projects: ProjectsStore(client: emptyClient, relay: emptyRelay))
+        Task {
+            for id in ["project-office", "project-tax"] { await empty.projects.archive(id: id) }
+        }
         return [
             GalleryState(
-                name: "the office, then the team idle, working, paused", width: 280,
-                view: AnyView(BotList(store: team, onHire: {}).frame(height: 320))),
+                name: "the office, the team idle, working, paused, then the projects", width: 280,
+                view: AnyView(SidebarList(store: team).frame(height: 520))),
             GalleryState(
-                name: "none", width: 640,
+                name: "nobody hired, one project", width: 640,
                 view: AnyView(
                     HStack(spacing: 0) {
-                        BotList(store: empty, onHire: {}).frame(width: Theme.Size.sidebarIdeal)
+                        SidebarList(store: empty).frame(width: Theme.Size.sidebarIdeal)
                         Divider()
                         TeamEmptyView(onHire: {})
                     }
-                    .frame(height: 280))),
+                    .frame(height: 320))),
         ]
     }
 }

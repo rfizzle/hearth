@@ -9,6 +9,8 @@
 // and a bot without one says hello instead; once it has messages the card
 // collapses to an "About <name>" row pinned under the title, which opens into
 // the same card, and a chip on the card fills the composer without sending.
+// The window is titled by the bot's name, or by the title given, as a
+// project's conversation is by the project's name.
 // Show in Finder reaches the revealInFinder action the app target sets. Only the owner's own send
 // moves in; everything from the core appears in place, and the empty state
 // fades out. An approval or a question the run parked on stands in the thread
@@ -33,6 +35,7 @@ import SwiftUI
 public struct ConversationScreen: View {
     let store: ConversationStore
     let bot: Hearth_V1_Bot
+    let title: String?
 
     /// Whether the first page has come back, so an empty transcript is known to
     /// be empty rather than not yet loaded.
@@ -40,10 +43,15 @@ public struct ConversationScreen: View {
     @State private var summaryOpen: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// A screen for `store`; `summaryOpen` starts the earlier-summary row open.
-    public init(store: ConversationStore, bot: Hearth_V1_Bot, summaryOpen: Bool = false) {
+    /// A screen for `store`; `summaryOpen` starts the earlier-summary row open,
+    /// and `title` names the window instead of the bot.
+    public init(
+        store: ConversationStore, bot: Hearth_V1_Bot, title: String? = nil,
+        summaryOpen: Bool = false
+    ) {
         self.store = store
         self.bot = bot
+        self.title = title
         _summaryOpen = State(initialValue: summaryOpen)
     }
 
@@ -55,7 +63,7 @@ public struct ConversationScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) { bar }
             .safeAreaBar(edge: .top) { aboutBar }
-            .navigationTitle(bot.name)
+            .navigationTitle(title ?? bot.name)
             .task(id: store.conversationID) {
                 await store.load()
                 loaded = true
