@@ -1,6 +1,8 @@
 // Projects: the pie, a project's sidebar row in each light, done and selected,
-// the whole sidebar with its sections, and the new-project sheet empty, filled,
-// refused by the core and editing.
+// the whole sidebar with its sections, the new-project sheet empty, filled,
+// refused by the core and editing, the header pinned over a project's
+// conversation in each light, all done, done and overdue, the proposal card,
+// and the project's conversation with a coordinator and without one.
 
 import HearthDesign
 import HearthFeatures
@@ -42,7 +44,61 @@ extension Catalog {
                     projectSheetRefused(),
                     projectSheet(name: "editing", editing: Fixtures.projects[0]),
                 ]),
+            GalleryPage(
+                package: "HearthUI", name: "ProjectHeader",
+                states: GalleryState.each(ProjectHeader.PreviewState.self, width: 560) {
+                    ProjectHeader(previewState: $0).padding(Theme.Spacing.lg)
+                }),
+            GalleryPage(
+                package: "HearthUI", name: "ProposalCard",
+                states: GalleryState.each(ProposalCard.PreviewState.self, width: 560) {
+                    ProposalCard(previewState: $0).padding(Theme.Spacing.lg)
+                }),
         ]
+    }
+
+    /// The project's conversation: empty and answered, with rows, with nobody
+    /// to answer, and the Chief of Staff's own conversation with the proposal.
+    static var projectConversationStates: [GalleryState] {
+        [
+            projectConversation(name: "project, empty", conversationID: "empty"),
+            projectConversation(
+                name: "project, with rows", conversationID: Fixtures.dmConversation.id),
+            projectConversation(
+                name: "project, no coordinator", conversationID: "empty", coordinator: nil),
+            proposalConversation(),
+        ]
+    }
+
+    private static func projectConversation(
+        name: String, conversationID: String, coordinator: Hearth_V1_Bot? = Fixtures.chiefOfStaff
+    ) -> GalleryState {
+        let client = PreviewClient()
+        let store = ConversationStore(
+            client: client, relay: EventRelay(client: client), conversationID: conversationID)
+        return GalleryState(
+            name: name, width: 560,
+            view: AnyView(
+                ConversationScreen(
+                    store: store, project: Fixtures.projects[0], coordinator: coordinator
+                )
+                .frame(height: 560)))
+    }
+
+    /// The Chief of Staff's conversation with the card for the proposal made
+    /// in it above the status line.
+    private static func proposalConversation() -> GalleryState {
+        let client = PreviewClient()
+        let store = ConversationStore(
+            client: client, relay: EventRelay(client: client),
+            conversationID: Fixtures.chiefOfStaff.dmConversationID)
+        return GalleryState(
+            name: "proposal card", width: 560,
+            view: AnyView(
+                ConversationScreen(
+                    store: store, bot: Fixtures.chiefOfStaff, proposals: [Fixtures.projects[3]]
+                )
+                .frame(height: 620)))
     }
 
     /// Everyone hired and no project yet: the "Projects" header alone.

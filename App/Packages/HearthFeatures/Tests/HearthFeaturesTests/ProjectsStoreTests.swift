@@ -126,3 +126,36 @@ import Testing
     #expect(request.targetDate == "2026-11-20")
     #expect(!ProjectForm(project: Fixtures.projects[1]).hasTargetDate)
 }
+
+@MainActor
+@Test func confirmingAProposalRemovesTheCardAndSelectsTheProject() async {
+    let sidebar = makeSidebar()
+    await sidebar.projects.load()
+    let proposal = Fixtures.projects[3]
+    #expect(sidebar.projects.proposals(in: proposal.proposedInConversationID).count == 1)
+
+    await sidebar.confirm(proposal)
+    #expect(sidebar.projects.proposals.isEmpty)
+    #expect(sidebar.selected == .project(proposal.id))
+    #expect(sidebar.selectedProject?.state == .active)
+    #expect(sidebar.selectedProject?.name == "Refresh the website")
+    #expect(sidebar.projects.error == nil)
+}
+
+@MainActor
+@Test func dismissingAProposalRemovesTheCardAndListsNothing() async {
+    let sidebar = makeSidebar()
+    await sidebar.projects.load()
+    await sidebar.projects.dismiss(Fixtures.projects[3])
+    #expect(sidebar.projects.proposals.isEmpty)
+    #expect(sidebar.projects.project(id: "project-website") == nil)
+    #expect(sidebar.selected == nil)
+}
+
+@MainActor
+@Test func aProposalBelongsToTheConversationItWasMadeIn() async {
+    let projects = makeSidebar().projects
+    await projects.load()
+    #expect(projects.proposals(in: Fixtures.chiefOfStaff.dmConversationID).count == 1)
+    #expect(projects.proposals(in: Fixtures.dmConversation.id).isEmpty)
+}

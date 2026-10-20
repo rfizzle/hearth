@@ -81,6 +81,37 @@ public final class ProjectsStore {
         await save { try await self.client.updateProject(request) }
     }
 
+    /// Confirms a proposal as it stands: the core makes it an active project
+    /// with the same id. Nil when the core refused, with its words in `error`.
+    public func confirm(_ proposal: Hearth_V1_Project) async -> Hearth_V1_Project? {
+        let request = Hearth_V1_CreateProjectRequest.with {
+            $0.proposalID = proposal.id
+            $0.name = proposal.name
+            $0.brief = proposal.brief
+            $0.targetDate = proposal.targetDate
+        }
+        do {
+            let project = try await client.createProject(request)
+            upsert(project)
+            error = nil
+            return project
+        } catch {
+            self.error = error.localizedDescription
+            return nil
+        }
+    }
+
+    /// Sets a proposal aside: it is archived and leaves the list.
+    public func dismiss(_ proposal: Hearth_V1_Project) async {
+        await archive(id: proposal.id)
+    }
+
+    /// The proposals made in the conversation with `conversationID`, oldest
+    /// first, so the newest sits last.
+    public func proposals(in conversationID: String) -> [Hearth_V1_Project] {
+        proposals.filter { $0.proposedInConversationID == conversationID }
+    }
+
     /// The owner's mark that the project with `id` is done.
     public func markDone(id: String) async {
         await change { try await self.client.markProjectDone(id: id) }

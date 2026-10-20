@@ -9,8 +9,14 @@
 // and a bot without one says hello instead; once it has messages the card
 // collapses to an "About <name>" row pinned under the title, which opens into
 // the same card, and a chip on the card fills the composer without sending.
-// The window is titled by the bot's name, or by the title given, as a
-// project's conversation is by the project's name.
+// The window is titled by the bot's name, or by the title given.
+// A project's conversation is the same screen with the ProjectHeader pinned
+// above the transcript, the Chief of Staff answering, the project's name as
+// the title and its light as the subtitle; it has no introduction card, an
+// empty one says nothing is here yet, and with no Chief of Staff the composer
+// is replaced by the invitation to hire one. A proposal the Chief of Staff
+// made in a conversation stands in its bottom bar as a ProposalCard above the
+// status line.
 // Show in Finder reaches the revealInFinder action the app target sets. Only the owner's own send
 // moves in; everything from the core appears in place, and the empty state
 // fades out. An approval or a question the run parked on stands in the thread
@@ -36,6 +42,13 @@ public struct ConversationScreen: View {
     let store: ConversationStore
     let bot: Hearth_V1_Bot
     let title: String?
+    let project: Hearth_V1_Project?
+    let hasAnswerer: Bool
+    let proposals: [Hearth_V1_Project]
+    let onCreateProposal: (Hearth_V1_Project) -> Void
+    let onDismissProposal: (Hearth_V1_Project) -> Void
+    let onMarkDone: () -> Void
+    let onHire: () -> Void
 
     /// Whether the first page has come back, so an empty transcript is known to
     /// be empty rather than not yet loaded.
@@ -47,12 +60,43 @@ public struct ConversationScreen: View {
     /// and `title` names the window instead of the bot.
     public init(
         store: ConversationStore, bot: Hearth_V1_Bot, title: String? = nil,
-        summaryOpen: Bool = false
+        summaryOpen: Bool = false, proposals: [Hearth_V1_Project] = [],
+        onCreateProposal: @escaping (Hearth_V1_Project) -> Void = { _ in },
+        onDismissProposal: @escaping (Hearth_V1_Project) -> Void = { _ in }
     ) {
         self.store = store
         self.bot = bot
         self.title = title
+        project = nil
+        hasAnswerer = true
+        self.proposals = proposals
+        self.onCreateProposal = onCreateProposal
+        self.onDismissProposal = onDismissProposal
+        onMarkDone = {}
+        onHire = {}
         _summaryOpen = State(initialValue: summaryOpen)
+    }
+
+    /// A screen for the conversation of `project`, answered by `coordinator`;
+    /// with none, the composer gives way to the invitation to hire someone.
+    public init(
+        store: ConversationStore, project: Hearth_V1_Project, coordinator: Hearth_V1_Bot?,
+        proposals: [Hearth_V1_Project] = [],
+        onCreateProposal: @escaping (Hearth_V1_Project) -> Void = { _ in },
+        onDismissProposal: @escaping (Hearth_V1_Project) -> Void = { _ in },
+        onMarkDone: @escaping () -> Void = {}, onHire: @escaping () -> Void = {}
+    ) {
+        self.store = store
+        bot = coordinator ?? Hearth_V1_Bot()
+        title = nil
+        self.project = project
+        hasAnswerer = coordinator != nil
+        self.proposals = proposals
+        self.onCreateProposal = onCreateProposal
+        self.onDismissProposal = onDismissProposal
+        self.onMarkDone = onMarkDone
+        self.onHire = onHire
+        _summaryOpen = State(initialValue: false)
     }
 
     public var body: some View {
@@ -63,7 +107,9 @@ public struct ConversationScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) { bar }
             .safeAreaBar(edge: .top) { aboutBar }
-            .navigationTitle(title ?? bot.name)
+            .safeAreaInset(edge: .top, spacing: 0) { projectBar }
+            .navigationTitle(project?.name ?? title ?? bot.name)
+            .modifier(LightSubtitle(text: project?.status.lightLabel))
             .task(id: store.conversationID) {
                 await store.load()
                 loaded = true
@@ -71,7 +117,7 @@ public struct ConversationScreen: View {
     }
 
     /// Whether the core sent the bot an introduction to show.
-    private var hasIntroduction: Bool { !bot.introduction.purpose.isEmpty }
+    private var hasIntroduction: Bool { project == nil && !bot.introduction.purpose.isEmpty }
 
     @ViewBuilder
     private var content: some View {
@@ -93,6 +139,18 @@ public struct ConversationScreen: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
+        } else if store.rows.isEmpty, project != nil {
+            if hasAnswerer {
+                ContentUnavailableView {
+                    Label("Nothing here yet", systemImage: "folder")
+                } description: {
+                    Text("Tell \(bot.name) what to do first.")
+                }
+                .transition(.opacity)
+            } else {
+                // The bar's invitation says it; nothing else would.
+                Color.clear
+            }
         } else if store.rows.isEmpty {
             ContentUnavailableView {
                 Label {
@@ -130,6 +188,18 @@ public struct ConversationScreen: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, Theme.Spacing.lg)
             .padding(.top, Theme.Spacing.sm)
+        }
+    }
+
+    /// The project's brief, pinned above the transcript.
+    @ViewBuilder
+    private var projectBar: some View {
+        if let project {
+            ProjectHeader(project: project, onMarkDone: onMarkDone)
+                .frame(maxWidth: Theme.Size.readableWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Theme.Spacing.lg)
+                .padding(.vertical, Theme.Spacing.sm)
         }
     }
 
@@ -173,30 +243,6 @@ public struct ConversationScreen: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
     }
 
-    private var summary: some View {
-        DisclosureRow(
-            isExpanded: $summaryOpen,
-            label: {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Earlier in this conversation")
-                    Text("What \(bot.name) remembers of the earlier part")
-                        .font(Theme.caption)
-                }
-            },
-            content: {
-                Text(store.summary)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.color(.textSecondary))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(Theme.Spacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
-                            .fill(Theme.color(.surfaceSecondary))
-                    )
-            })
-    }
-
     /// The owner's own message, which moves in; a system notice is the core's.
     private static func isSend(_ message: Hearth_V1_Message) -> Bool {
         message.authorBotID.isEmpty && message.kind == .text
@@ -205,8 +251,39 @@ public struct ConversationScreen: View {
     private static let sendTransition = AnyTransition.move(edge: .bottom)
         .combined(with: .opacity)
 
+    /// The proposals made in this conversation, newest last.
+    private var openProposals: [Hearth_V1_Project] {
+        proposals.filter { $0.proposedInConversationID == store.conversationID }
+    }
+
+    @ViewBuilder
     private var bar: some View {
+        if hasAnswerer { answeredBar } else { unansweredBar }
+    }
+
+    /// With no one to answer a project, the invitation stands where the
+    /// composer would.
+    private var unansweredBar: some View {
+        ContentUnavailableView {
+            Label("No one answers projects yet", systemImage: "folder")
+        } description: {
+            Text("Hire a Chief of Staff and this conversation wakes up.")
+        } actions: {
+            Button("Hire Someone…", action: onHire)
+        }
+        .frame(maxWidth: Theme.Size.readableWidth)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var answeredBar: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            ForEach(openProposals, id: \.id) { proposal in
+                ProposalCard(
+                    project: proposal, onCreate: { onCreateProposal(proposal) },
+                    onDismiss: { onDismissProposal(proposal) }
+                )
+                .padding(.horizontal, Theme.Spacing.lg)
+            }
             RunStatusLine(
                 run: store.run, botName: bot.name, isWaiting: store.isWaiting,
                 action: store.canRetry
@@ -234,5 +311,46 @@ public struct ConversationScreen: View {
         }
         .frame(maxWidth: Theme.Size.readableWidth)
         .frame(maxWidth: .infinity)
+    }
+}
+
+extension ConversationScreen {
+    private var summary: some View {
+        DisclosureRow(
+            isExpanded: $summaryOpen,
+            label: {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Earlier in this conversation")
+                    Text("What \(bot.name) remembers of the earlier part")
+                        .font(Theme.caption)
+                }
+            },
+            content: {
+                Text(store.summary)
+                    .font(Theme.body)
+                    .foregroundStyle(Theme.color(.textSecondary))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Theme.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
+                            .fill(Theme.color(.surfaceSecondary))
+                    )
+            })
+    }
+}
+
+/// The window's subtitle, set only when there is one so a bot's role set
+/// outside the screen stays.
+private struct LightSubtitle: ViewModifier {
+    let text: String?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let text {
+            content.navigationSubtitle(text)
+        } else {
+            content
+        }
     }
 }

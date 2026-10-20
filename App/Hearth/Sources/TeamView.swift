@@ -4,9 +4,12 @@
 // and the bot's folder as the one item beside Access… and the inspector toggle
 // over a bot's conversation. The inspector opens beside it with what the bot
 // remembers. The Inbox row opens the Inbox in the detail column. A project
-// opens its own conversation in the same screen as a bot's, titled by the
-// project's name and answered by the Chief of Staff; with no Chief of Staff on
-// the team it says so instead. Nobody on the team shows the invitation in the
+// opens its own conversation with its brief pinned, titled by the project's
+// name and answered by the Chief of Staff; with no Chief of Staff on the team
+// it says so instead. A project the Chief of Staff proposed is a card in the
+// conversation it was proposed in, and creating it selects it. A project's
+// toolbar has its folder and a menu to edit, mark done or archive it.
+// Nobody on the team shows the invitation in the
 // detail column; nothing selected says to choose. The hire, Access and project
 // sheets are presented here, and the helper notice sits over the top of the
 // detail column until the owner dismisses it. A new project is selected once
@@ -118,7 +121,14 @@ struct TeamView: View {
             projectDetail(project)
         } else if let bot = session.sidebar.selectedBot {
             ConversationScreen(
-                store: session.conversation(for: bot.dmConversationID, botID: bot.id), bot: bot
+                store: session.conversation(for: bot.dmConversationID, botID: bot.id), bot: bot,
+                proposals: session.projects.proposals,
+                onCreateProposal: { proposal in
+                    Task { await session.sidebar.confirm(proposal) }
+                },
+                onDismissProposal: { proposal in
+                    Task { await session.projects.dismiss(proposal) }
+                }
             )
             .id(bot.id)
             .navigationSubtitle(bot.role)
@@ -168,42 +178,46 @@ struct TeamView: View {
 }
 
 extension TeamView {
-    /// A project's conversation, answered by the Chief of Staff. The bot's
-    /// introduction is not the project's, so the empty transcript shows the
-    /// plain hello rather than the bot's card.
-    @ViewBuilder
+    /// A project's conversation, answered by the Chief of Staff.
     fileprivate func projectDetail(_ project: Hearth_V1_Project) -> some View {
-        if let coordinator = session.coordinator {
-            ConversationScreen(
-                store: session.conversation(for: project.conversationID, botID: coordinator.id),
-                bot: Self.withoutIntroduction(coordinator), title: project.name
-            )
-            .id(project.conversationID)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Show Folder in Finder", systemImage: "folder") {
-                        revealInFinder(project.folderPath)
-                    }
-                    .labelStyle(.iconOnly)
-                    .help("Show the project's folder in Finder")
+        ConversationScreen(
+            store: session.conversation(
+                for: project.conversationID, botID: session.coordinator?.id),
+            project: project, coordinator: session.coordinator,
+            proposals: session.projects.proposals,
+            onCreateProposal: { proposal in
+                Task { await session.sidebar.confirm(proposal) }
+            },
+            onDismissProposal: { proposal in
+                Task { await session.projects.dismiss(proposal) }
+            },
+            onMarkDone: { Task { await session.projects.markDone(id: project.id) } },
+            onHire: { model.isHiring = true }
+        )
+        .id(project.conversationID)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Show Folder in Finder", systemImage: "folder") {
+                    revealInFinder(project.folderPath)
                 }
+                .labelStyle(.iconOnly)
+                .help("Show the project's folder in Finder")
             }
-        } else {
-            ContentUnavailableView {
-                Label("No one answers projects yet", systemImage: "folder")
-            } description: {
-                Text("Hire a Chief of Staff and this conversation wakes up.")
-            } actions: {
-                Button("Hire Someone…") { model.isHiring = true }
+            ToolbarItem(placement: .primaryAction) {
+                Menu("Project", systemImage: "ellipsis.circle") {
+                    Button("Edit Project…") { model.editingProjectID = project.id }
+                    Button("Mark as Done") {
+                        Task { await session.projects.markDone(id: project.id) }
+                    }
+                    .disabled(project.state != .active)
+                    Button("Archive") {
+                        Task { await session.projects.archive(id: project.id) }
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .help("Edit, finish or archive the project")
             }
-            .navigationTitle(project.name)
         }
-    }
-
-    private static func withoutIntroduction(_ bot: Hearth_V1_Bot) -> Hearth_V1_Bot {
-        var bot = bot
-        bot.clearIntroduction()
-        return bot
     }
 }
 

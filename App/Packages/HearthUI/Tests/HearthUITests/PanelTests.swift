@@ -1,5 +1,7 @@
 // The panels, the template card and the tier picker declare the states the gallery shows.
 
+import Foundation
+import HearthDesign
 import HearthKit
 import Testing
 
@@ -50,4 +52,37 @@ import Testing
 
 @Test func tierPickerHasAStatePerTier() {
     #expect(TierPicker.PreviewState.allCases.map(\.tier) == [.fast, .balanced, .best])
+}
+
+@Test func aProjectHeaderSaysProgressAndTheDate() throws {
+    let utc = try #require(TimeZone(identifier: "UTC"))
+    let today = Date(timeIntervalSince1970: 1_792_486_800)  // 2026-10-20
+    let yellow = ProjectHeader.PreviewState.yellow.project
+    #expect(ProjectHeader.progress(yellow) == "3 of 7 done")
+    #expect(ProjectHeader.progress(ProjectHeader.PreviewState.noTasks.project) == "No tasks yet")
+    #expect(ProjectHeader.progress(ProjectHeader.PreviewState.allDone.project) == "All done")
+
+    let due = ProjectHeader.dateLine(of: yellow, today: today, timeZone: utc)
+    #expect(due?.text == "Due 20 Nov")
+    #expect(due?.tone == .neutral)
+
+    let late = ProjectHeader.dateLine(
+        of: ProjectHeader.PreviewState.overdue.project, today: today, timeZone: utc)
+    #expect(late?.text == "Was due 30 Sep")
+    #expect(late?.tone == .attention)
+
+    let done = ProjectHeader.dateLine(
+        of: ProjectHeader.PreviewState.done.project, today: today, timeZone: utc)
+    #expect(done?.text == "Done 20 Oct")
+    #expect(done?.tone == .positive)
+
+    #expect(
+        ProjectHeader.dateLine(
+            of: ProjectHeader.PreviewState.noTasks.project, today: today, timeZone: utc) == nil)
+}
+
+@Test func theHeadersLightFollowsTheCoreAsTheRowsDoes() {
+    let tones = ProjectHeader.PreviewState.allCases.map { ProjectRow.tone(of: $0.project) }
+    #expect(
+        tones == [.positive, .attention, .negative, .attention, .positive, nil, nil, .attention])
 }

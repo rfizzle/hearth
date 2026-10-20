@@ -25,7 +25,7 @@ extension Catalog {
                 states: [
                     conversationEmpty(), conversationAboutOpen(), conversationMidStream(),
                     conversationSummaryOpen(), conversationWaiting(),
-                ]),
+                ] + projectConversationStates),
         ]
     }
 

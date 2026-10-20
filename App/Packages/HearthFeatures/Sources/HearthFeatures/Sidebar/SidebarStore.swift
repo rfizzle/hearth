@@ -48,6 +48,11 @@ public final class SidebarStore {
         return projects.project(id: id)
     }
 
+    /// Confirms a proposal and selects the project it became.
+    public func confirm(_ proposal: Hearth_V1_Project) async {
+        if let project = await projects.confirm(proposal) { selected = .project(project.id) }
+    }
+
     /// Selects the first org-level bot, the Chief of Staff, when nothing is
     /// selected; a selection the owner made stays.
     public func selectOfficeIfNothingSelected() {
