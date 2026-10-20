@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -21,6 +22,9 @@ import (
 	"github.com/rfizzle/hearth/internal/rpc/books"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/store"
+	"github.com/rfizzle/hearth/internal/tools"
+	"github.com/rfizzle/hearth/internal/tools/files"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 func TestDrafter_ANoModelIsUnavailableAndAReplyIsAProposal(t *testing.T) {
@@ -139,7 +143,7 @@ func TestOpenCore_TheDataFolderIsReservedForGrantsAndTools(t *testing.T) {
 		t.Fatalf("openCore: %v", err)
 	}
 	t.Cleanup(closeCore)
-	if len(opts.ReservedFolders) == 0 || opts.ReservedFolders[0] != dir {
+	if len(opts.ReservedFolders()) == 0 || opts.ReservedFolders()[0] != dir {
 		t.Errorf("ReservedFolders = %v, want the data folder", opts.ReservedFolders)
 	}
 	if got := reservedFolders(filepath.Join(dir, "x", "..")); got[0] != dir {
@@ -168,7 +172,7 @@ func TestOpenCore_TheTemplatesFolderIsReservedAndTheMeasuresAreWired(t *testing.
 		t.Fatalf("openCore: %v", err)
 	}
 	t.Cleanup(closeCore)
-	if !slices.Contains(opts.ReservedFolders, filepath.Join(root, "Templates")) {
+	if !slices.Contains(opts.ReservedFolders(), filepath.Join(root, "Templates")) {
 		t.Errorf("ReservedFolders = %v, want the Templates folder of the Hearth folder", opts.ReservedFolders)
 	}
 	if got := opts.Deliverables.Root(); got != root {
@@ -178,6 +182,46 @@ func TestOpenCore_TheTemplatesFolderIsReservedAndTheMeasuresAreWired(t *testing.
 	vals, err := opts.Deliverables.Measures.Read(ctx, ids)
 	if err != nil || len(vals) != 3 || vals[0].Missing != "" || vals[2].Missing != "" {
 		t.Errorf("Read = %+v, %v, want the core's own figures", vals, err)
+	}
+}
+
+// Naming the Hearth folder reserves its Templates folder in the same launch,
+// before the folder exists: a write into it is refused at once.
+func TestOpenCore_TheTemplatesFolderIsReservedTheMomentTheOrgNamesIt(t *testing.T) {
+	dir := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	opts, closeCore, err := openCore(ctx, dir, nil)
+	if err != nil {
+		t.Fatalf("openCore: %v", err)
+	}
+	t.Cleanup(closeCore)
+	root := filepath.Join(t.TempDir(), "Hearth")
+	reg, err := tools.NewRegistry(files.Definitions(files.Options{Reserved: opts.ReservedFolders})...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := tools.Dispatcher{
+		Defs:     reg,
+		Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: root}},
+		Root:     root,
+		Reserved: opts.ReservedFolders,
+	}
+	args := json.RawMessage(`{"path":"Templates/x.md","content":"x"}`)
+	if slices.Contains(opts.ReservedFolders(), filepath.Join(root, "Templates")) {
+		t.Fatal("the Templates folder is reserved before the org names a folder")
+	}
+	if err := workspace.Ensure(root); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Check("files.write", args); err != nil {
+		t.Fatalf("before the org names the folder, a write to Templates = %v, want it allowed", err)
+	}
+	if err := opts.Store.PutOrg(ctx, org.Org{Name: "Acme", WorkspacePath: root}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Check("files.write", args); !errors.Is(err, tools.ErrRefused) {
+		t.Errorf("after the org names the folder, a write to Templates = %v, want a refusal in the same launch", err)
 	}
 }
 

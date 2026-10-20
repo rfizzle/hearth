@@ -68,6 +68,19 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestValidate_RefusesAnInvisibleCharacterInTheName(t *testing.T) {
+	def := Definition(func(context.Context, string, project.Brief) (project.Project, error) {
+		t.Error("the proposer ran")
+		return project.Project{}, nil
+	})
+	for _, name := range []string{"Launch\u200b page", "Launch\u202e page", "Launch\U000e0041 page"} {
+		err := def.Validate(call(name, "g", "c", "l", "w"))
+		if err == nil || !strings.Contains(err.Error(), "invisible character") {
+			t.Errorf("%q: validate = %v, want a refusal naming an invisible character", name, err)
+		}
+	}
+}
+
 func TestExecute_HandsTheTextOverAsWritten(t *testing.T) {
 	var name string
 	var brief project.Brief

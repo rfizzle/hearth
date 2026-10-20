@@ -54,7 +54,7 @@ type Options struct {
 	Templates        Loader
 	Measures         Measures
 	BotID, ProjectID string
-	Reserved         []string
+	Reserved         workspace.Reserved
 }
 
 // tool is one run's deliverables.write.
@@ -62,7 +62,7 @@ type tool struct {
 	templates []template.Template
 	measures  Measures
 	scope     measure.Scope
-	reserved  []string
+	reserved  workspace.Reserved
 }
 
 // Definition is deliverables.write for one run. It is checked against the
@@ -370,7 +370,7 @@ func (t tool) draw(call tools.Call, spec deliverable.Spec) (outs []output, notYe
 		shown = filepath.ToSlash(rel)
 	}
 	for _, ext := range []string{specExt, pageExt, pdfExt} {
-		for _, r := range t.reserved {
+		for _, r := range t.reserved.Folders() {
 			if workspace.Inside(r, stem+ext) {
 				return nil, false, fmt.Errorf("%s is in a folder Hearth keeps for itself", shown+ext)
 			}

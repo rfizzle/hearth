@@ -144,7 +144,7 @@ func TestRender_Refusals(t *testing.T) {
 func TestRender_Images(t *testing.T) {
 	b := newBot(t, org.FilesWrite)
 	reserved := filepath.Join(b.folder, "kept")
-	reg, err := tools.NewRegistry(Definitions(Options{Reserved: []string{reserved}})...)
+	reg, err := tools.NewRegistry(Definitions(Options{Reserved: func() []string { return []string{reserved} }})...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestRender_Images(t *testing.T) {
 			t.Errorf("result %q is missing %q", res.Text, w)
 		}
 	}
-	opened := Options{Reserved: []string{reserved}}.images(tools.Call{Folder: b.folder, Path: filepath.Join(b.folder, "r.md")})
+	opened := Options{Reserved: func() []string { return []string{reserved} }}.images(tools.Call{Folder: b.folder, Path: filepath.Join(b.folder, "r.md")})
 	for _, rel := range []string{"../elsewhere/out.png", "link.png", "kept/inside.png"} {
 		if f, err := opened(rel); err == nil {
 			f.Close()

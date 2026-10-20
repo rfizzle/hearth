@@ -223,7 +223,7 @@ func newRigWith(t *testing.T, coordinated bool, steps ...step) *rig {
 			Drafter:         drafterOver(func(org.Bot) (agent.Stream, error) { return sc.stream, nil }, nil),
 			ProjectDrafter:  projectDrafterOver(func(org.Bot) (agent.Stream, error) { return sc.stream, nil }, nil),
 			Bus:             bus,
-			ReservedFolders: []string{filepath.Join(dir, "data")},
+			ReservedFolders: func() []string { return []string{filepath.Join(dir, "data")} },
 			EnsureWorkspace: workspace.Ensure,
 			Handbook:        pages,
 			Meter:           ledger,

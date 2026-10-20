@@ -13,6 +13,7 @@ import (
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
 	"github.com/rfizzle/hearth/internal/store"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 const (
@@ -45,7 +46,7 @@ type Deps struct {
 	Templates []org.RoleTemplate
 	// ReservedFolders are the folders hearth keeps its own files in; a grant
 	// that contains or lies inside one is refused.
-	ReservedFolders []string
+	ReservedFolders workspace.Reserved
 	// Drafter proposes a bot from the owner's words; unset, a draft is
 	// unavailable.
 	Drafter Drafter

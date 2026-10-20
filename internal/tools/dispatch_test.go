@@ -463,7 +463,7 @@ func TestDispatcher_NoGrantReachesAReservedFolder(t *testing.T) {
 		Defs:     registry(t, &recorder{}),
 		Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: home}},
 		Root:     filepath.Join(home, "Documents"),
-		Reserved: []string{data},
+		Reserved: func() []string { return []string{data} },
 	}
 	for name, path := range map[string]string{
 		"the data folder":      filepath.Join(data, "hearth.db"),
@@ -503,7 +503,7 @@ func TestDispatcher_AReservedFolderCountsBeforeItExists(t *testing.T) {
 			Defs:     registry(t, &recorder{}),
 			Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: folder}},
 			Root:     folder,
-			Reserved: []string{reserved},
+			Reserved: func() []string { return []string{reserved} },
 		}
 		_, err := d.Check("files.write", json.RawMessage(`{"path":"`+path+`"}`))
 		return err

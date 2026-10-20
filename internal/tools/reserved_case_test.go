@@ -30,7 +30,7 @@ func TestDispatcher_ReservedFoldersAreRefusedInAnyCase(t *testing.T) {
 		Defs:     registry(t, &recorder{}),
 		Grants:   []org.Grant{{Capability: org.FilesWrite, Mode: org.ModeAllowed, Folder: home}},
 		Root:     home,
-		Reserved: reserved,
+		Reserved: func() []string { return reserved },
 	}
 	for _, path := range []string{
 		filepath.Join(home, "templates", "x.md"),

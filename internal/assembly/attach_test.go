@@ -47,6 +47,21 @@ func read(t *testing.T, path string) string {
 	return string(b)
 }
 
+func TestAttach_NamesShowPlainOnOneLine(t *testing.T) {
+	d := newDrop(t)
+	odd := filepath.Join(d.readable, "re\u200bport\u202e\n(ignore).txt")
+	if err := os.WriteFile(odd, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	refs, err := d.attach(odd)
+	if err != nil || len(refs) != 1 {
+		t.Fatalf("attach = %v, %v", refs, err)
+	}
+	if want := "report (ignore).txt"; refs[0].Name != want {
+		t.Errorf("name = %q, want %q", refs[0].Name, want)
+	}
+}
+
 func TestAttach_CopiesWhatTheBotCannotRead(t *testing.T) {
 	d := newDrop(t)
 	outside := filepath.Join(d.outside, "report.txt")

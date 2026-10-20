@@ -10,7 +10,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/hearth/internal/document"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/tools"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // Options are what the file tools are handed beyond the folder they work in.
@@ -21,7 +23,7 @@ type Options struct {
 	// Reserved are the folders hearth keeps for itself, which no file call
 	// reaches whatever is granted: an image a rendered document names is
 	// refused there as a call's path is.
-	Reserved []string
+	Reserved workspace.Reserved
 }
 
 // kindOf is what f, the file called name, is read as. Reading a text file
@@ -44,7 +46,7 @@ func kindOf(f *os.File, name string) (document.Kind, error) {
 // document costs what the model reads of it; offset counts bytes of the
 // extracted text, and pages picks a range to read it from.
 func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, name string) (tools.Result, error) {
-	name = document.OneLine(name)
+	name = document.OneLine(memory.Plain(name))
 	pages, err := document.ParseRange(a.Pages)
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("files.read: %w", err)

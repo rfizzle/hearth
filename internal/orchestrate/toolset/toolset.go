@@ -29,6 +29,7 @@ import (
 	notes "github.com/rfizzle/hearth/internal/tools/memory"
 	"github.com/rfizzle/hearth/internal/tools/propose"
 	"github.com/rfizzle/hearth/internal/tools/web"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // Registry is every tool configured now: the file tools, asking the owner,
@@ -79,7 +80,7 @@ type (
 // aliases me and this mean them. templates is called once, now; no output
 // lands in a reserved folder.
 // See docs/decisions.md for D44.
-func Deliverables(templates Templates, measures Measures, botID, projectID string, reserved []string) tools.Definition {
+func Deliverables(templates Templates, measures Measures, botID, projectID string, reserved workspace.Reserved) tools.Definition {
 	return deliverables.Definition(deliverables.Options{
 		Templates: templates, Measures: measures, BotID: botID, ProjectID: projectID, Reserved: reserved,
 	})

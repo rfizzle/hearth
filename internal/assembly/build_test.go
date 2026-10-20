@@ -193,6 +193,23 @@ func TestBuild_TheWindowStopsAtTheSummary(t *testing.T) {
 	}
 }
 
+func TestBuild_TheOrgNameDropsInvisibleCharacters(t *testing.T) {
+	w := newWorld(t)
+	o := w.org
+	o.Name = "Ac\u200bme\u202e Co"
+	prompt, err := w.db.AppendMessage(t.Context(), org.Message{ConversationID: w.convID, Kind: org.MessageText, Content: "hi"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := assembly.Build(t.Context(), w.db, assembly.Input{Org: o, Bot: w.dana, Conversation: w.conversation(t), Prompt: prompt, Tier: org.TierFast})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.System, "Acme Co") || strings.ContainsAny(out.System, "\u200b\u202e") {
+		t.Errorf("the system prompt holds the org name with an invisible character:\n%s", out.System)
+	}
+}
+
 func TestBuild_NotesAndAttachmentsStayOnTheirLines(t *testing.T) {
 	w := newWorld(t)
 	ctx := t.Context()

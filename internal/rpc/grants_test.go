@@ -122,8 +122,8 @@ func TestSetGrants_RefusesWhatItMust(t *testing.T) {
 		{"a capability the contract leaves unspecified", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_UNSPECIFIED, hearthv1.GrantMode_GRANT_MODE_ASK), connect.CodeInvalidArgument},
 		{"a folder that is not a full path", bot.GetId(), []*hearthv1.Grant{{Capability: hearthv1.Capability_CAPABILITY_FILES_READ, Mode: hearthv1.GrantMode_GRANT_MODE_ASK, Folder: "../etc"}}, connect.CodeInvalidArgument},
 		{"a mode left unspecified", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_FILES_READ, hearthv1.GrantMode_GRANT_MODE_UNSPECIFIED), connect.CodeInvalidArgument},
-		{"the folder hearth keeps its files in", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_FILES_WRITE, hearthv1.GrantMode_GRANT_MODE_ASK, r.opts.ReservedFolders[0]), connect.CodeInvalidArgument},
-		{"a folder that holds it", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_FILES_WRITE, hearthv1.GrantMode_GRANT_MODE_ASK, filepath.Dir(r.opts.ReservedFolders[0])), connect.CodeInvalidArgument},
+		{"the folder hearth keeps its files in", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_FILES_WRITE, hearthv1.GrantMode_GRANT_MODE_ASK, r.opts.ReservedFolders()[0]), connect.CodeInvalidArgument},
+		{"a folder that holds it", bot.GetId(), grant(hearthv1.Capability_CAPABILITY_FILES_WRITE, hearthv1.GrantMode_GRANT_MODE_ASK, filepath.Dir(r.opts.ReservedFolders()[0])), connect.CodeInvalidArgument},
 		{"no bot named", "", nil, connect.CodeInvalidArgument},
 		{"an unknown bot", "nope", grant(hearthv1.Capability_CAPABILITY_FILES_READ, hearthv1.GrantMode_GRANT_MODE_ASK), connect.CodeNotFound},
 	}

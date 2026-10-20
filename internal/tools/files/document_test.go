@@ -146,6 +146,16 @@ func TestReadDocumentNameWithANewlineStaysOnOneLine(t *testing.T) {
 	}
 }
 
+func TestReadDocumentNameWithInvisibleCharactersIsShownPlain(t *testing.T) {
+	b := newBot(t, org.FilesRead)
+	name := "br\u200bief\u202e.pdf"
+	b.fixture(t, name, "text3.pdf")
+	res, err := b.call("files.read", map[string]any{"path": name})
+	if err != nil || !strings.HasPrefix(res.Text, "[File: brief.pdf, 3 pages") {
+		t.Errorf("text = %q, %v; want the name without its invisible characters", tail(res.Text), err)
+	}
+}
+
 func TestReadDocumentPagesInTheDescription(t *testing.T) {
 	read := Definitions(Options{})[0]
 	for _, want := range []string{"PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) and RTF", `"pages":`, `"sheet":`} {

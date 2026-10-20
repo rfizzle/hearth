@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 	"github.com/rfizzle/hearth/internal/workspace"
 )
 
@@ -108,14 +109,14 @@ func attach(inbox string, readable, reserved []string, p string) (org.FileRef, e
 	name := filepath.Base(filepath.Clean(p))
 	for _, f := range readable {
 		if inside(f, real) {
-			return org.FileRef{Path: real, Name: name}, nil
+			return org.FileRef{Path: real, Name: memory.OneLine(memory.Plain(name))}, nil
 		}
 	}
 	dest, err := copyInto(inbox, real, name)
 	if err != nil {
 		return org.FileRef{}, fmt.Errorf("copy %s into the Inbox: %w", p, err)
 	}
-	return org.FileRef{Path: dest, Name: filepath.Base(dest)}, nil
+	return org.FileRef{Path: dest, Name: memory.OneLine(memory.Plain(filepath.Base(dest)))}, nil
 }
 
 // inside reports whether the resolved path real is folder, as it resolves

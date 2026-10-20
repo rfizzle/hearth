@@ -79,6 +79,9 @@ func parse(raw json.RawMessage) (string, project.Brief, error) {
 	if memory.OneLine(a.Name) != a.Name {
 		return "", project.Brief{}, errors.New("the name holds a line break or another control character; write it on one line as plain text")
 	}
+	if memory.Plain(a.Name) != a.Name {
+		return "", project.Brief{}, errors.New("the name holds an invisible character, such as a zero-width space or a text direction mark; write it as plain text")
+	}
 	if err := project.Validate(a.Name, brief, ""); err != nil {
 		return "", project.Brief{}, err
 	}

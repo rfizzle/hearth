@@ -39,6 +39,9 @@ func (s *orgService) UpdateOrg(ctx context.Context, req *connect.Request[hearthv
 	if err := wire.Need("name", m.GetName(), "workspace_path", m.GetWorkspacePath()); err != nil {
 		return nil, err
 	}
+	if err := wire.PlainName(m.GetName()); err != nil {
+		return nil, err
+	}
 	if s.opts.EnsureWorkspace == nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("no way to create the Hearth folder is set"))
 	}

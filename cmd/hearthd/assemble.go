@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/document"
@@ -41,18 +42,12 @@ func openCore(ctx context.Context, dataDir string, recogniser func() document.Re
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return rpc.Options{}, nil, err
 	}
-	reserved := reservedFolders(dataDir)
 	provider.Init()
 	db, err := store.Open(filepath.Join(dataDir, "hearth.db"))
 	if err != nil {
 		return rpc.Options{}, nil, err
 	}
-	// The owner's templates are the owner's alone. The Hearth folder is
-	// known once the org is named, so a folder named in this launch is
-	// reserved from the next.
-	if o, found, err := db.FindOrg(ctx); err == nil && found && o.WorkspacePath != "" {
-		reserved = append(reserved, templatesFolders(o.WorkspacePath)...)
-	}
+	reserved := reservedList(db, dataDir)
 	accounts, err := provider.Open(dataDir, nil)
 	if err != nil {
 		_ = db.Close()
@@ -164,6 +159,20 @@ func reservedFolders(dir string) []string {
 		out = append(out, real)
 	}
 	return out
+}
+
+// reservedList is asked at every check: the data folder, and the owner's
+// templates in the Hearth folder once the org names one, so a folder named
+// while the core runs is reserved at once. The org is one row.
+func reservedList(db *store.DB, dataDir string) workspace.Reserved {
+	data := reservedFolders(dataDir)
+	return func() []string {
+		o, found, err := db.FindOrg(context.Background())
+		if err != nil || !found || o.WorkspacePath == "" {
+			return data
+		}
+		return append(slices.Clone(data), templatesFolders(o.WorkspacePath)...)
+	}
 }
 
 // drafter proposes a bot with the model the Fast tier resolves to. A model

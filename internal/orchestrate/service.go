@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/web"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // ErrBusy refuses a message to a conversation whose bot is still answering
@@ -92,7 +93,7 @@ type Deps struct {
 	// org-level bot.
 	Coordinator func(ctx context.Context) (org.Bot, bool)
 	// Reserved are folders no tool may touch, whatever a bot is granted.
-	Reserved []string
+	Reserved workspace.Reserved
 	// Templates are the deliverable templates a run is offered, and
 	// Measures the office's figures a deliverable binds; nil Measures leaves
 	// deliverables.write out.
@@ -214,7 +215,7 @@ func (s *Service) attach(ctx context.Context, bot org.Bot, paths []string) ([]or
 	if err != nil {
 		return nil, err
 	}
-	return assembly.Attach(o.WorkspacePath, org.Folders(grants, org.FilesRead, org.ModeAllowed), s.d.Reserved, paths)
+	return assembly.Attach(o.WorkspacePath, org.Folders(grants, org.FilesRead, org.ModeAllowed), s.d.Reserved.Folders(), paths)
 }
 
 // Retry answers the owner's last message in the DM convID again, as a new

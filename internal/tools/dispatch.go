@@ -27,7 +27,7 @@ type Dispatcher struct {
 	Root       string
 	// Reserved are folders no files call may reach whatever is granted, such
 	// as the folder hearth keeps its own files in.
-	Reserved []string
+	Reserved workspace.Reserved
 }
 
 // Verdict is what the grants say about a call that may run.
@@ -153,7 +153,7 @@ func (d Dispatcher) Check(name string, args json.RawMessage) (Checked, error) {
 			return Checked{}, refuse(name, err.Error())
 		}
 		var g org.Grant
-		g, c.Call.Path, c.Call.Folder, err = place(d.Root, d.Reserved, d.Grants, def.Capability, requested)
+		g, c.Call.Path, c.Call.Folder, err = place(d.Root, d.Reserved.Folders(), d.Grants, def.Capability, requested)
 		if err != nil {
 			return Checked{}, refuse(name, err.Error())
 		}

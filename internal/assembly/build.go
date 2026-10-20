@@ -101,7 +101,7 @@ func Build(ctx context.Context, db *store.DB, in Input) (Output, error) {
 	// Owner-supplied text: the org's name and the bot's name, role and job
 	// description, in the places framing's dm.md gives them.
 	fin := framing.Input{
-		OrgName: in.Org.Name, BotName: memory.OneLine(memory.Plain(in.Bot.Name)), Role: memory.OneLine(memory.Plain(in.Bot.Role)),
+		OrgName: memory.OneLine(memory.Plain(in.Org.Name)), BotName: memory.OneLine(memory.Plain(in.Bot.Name)), Role: memory.OneLine(memory.Plain(in.Bot.Role)),
 		JobDescription: memory.Plain(in.Bot.JobDescription), FolderPath: in.Bot.FolderPath,
 	}
 	if p := in.Project; p != nil {

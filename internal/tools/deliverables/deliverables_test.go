@@ -364,7 +364,7 @@ func TestWrite_RefusesALinkAtAnOutput(t *testing.T) {
 func TestWrite_RefusesAReservedOutput(t *testing.T) {
 	spec := map[string]any{"version": 1, "kind": "report", "title": "T", "sections": []any{map[string]any{"widgets": []any{map[string]any{"kind": "text", "markdown": "x"}}}}}
 	r := newRig(t, org.ModeAllowed, "")
-	def := Definition(Options{Reserved: []string{filepath.Join(r.folder, "kept.html")}})
+	def := Definition(Options{Reserved: func() []string { return []string{filepath.Join(r.folder, "kept.html")} }})
 	raw, _ := json.Marshal(map[string]any{"path": "kept", "spec": spec})
 	_, err := def.Execute(context.Background(), tools.Call{Args: raw, Path: filepath.Join(r.folder, "kept"), Folder: r.folder})
 	if err == nil || !strings.Contains(err.Error(), "kept.html is in a folder Hearth keeps for itself") {
