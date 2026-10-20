@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/workspace"
@@ -119,14 +120,14 @@ func drafterOver(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub)
 	return func(ctx context.Context, r DraftRequest) (Draft, error) {
 		stream, err := streams(org.Bot{Tier: org.TierFast})
 		if err != nil {
-			return Draft{}, Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+			return Draft{}, wire.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
 		}
 		d, err := draft.Draft(ctx, draft.Input{
 			Description: r.Description, TemplateID: r.TemplateID, Tier: r.Tier,
 			Templates: skill.Templates(), Stream: stream, Scrub: scrub,
 		})
 		if errors.Is(err, draft.ErrUnavailable) {
-			err = Unavailable(err)
+			err = wire.Unavailable(err)
 		}
 		return Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
 	}

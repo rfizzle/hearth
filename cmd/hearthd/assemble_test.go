@@ -13,13 +13,14 @@ import (
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/rpc"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
 func TestDrafter_ANoModelIsUnavailableAndAReplyIsAProposal(t *testing.T) {
 	none := func(org.Bot) (agent.Stream, error) { return nil, errors.New("no account is signed in") }
 	_, err := drafter(nil, none, nil)(t.Context(), rpc.DraftRequest{Description: "help", Tier: org.TierFast})
-	if !errors.Is(err, rpc.ErrUnavailable) || !strings.Contains(err.Error(), "no account is signed in") {
+	if !errors.Is(err, wire.ErrUnavailable) || !strings.Contains(err.Error(), "no account is signed in") {
 		t.Errorf("err = %v, want unavailable in the owner's words", err)
 	}
 

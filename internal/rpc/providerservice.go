@@ -6,13 +6,13 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
 
 func (s *providerService) ListAccounts(_ context.Context, _ *connect.Request[hearthv1.ListAccountsRequest]) (*connect.Response[hearthv1.ListAccountsResponse], error) {
-	return reply(&hearthv1.ListAccountsResponse{Accounts: each(s.opts.Accounts.List(), accountToProto)}, nil)
+	return wire.Reply(&hearthv1.ListAccountsResponse{Accounts: wire.Each(s.opts.Accounts.List(), accountToProto)}, nil)
 }
 
 // SetAPIKey keeps a key, or for an OpenAI-compatible service the key and
@@ -21,7 +21,7 @@ func (s *providerService) ListAccounts(_ context.Context, _ *connect.Request[hea
 // See docs/model.md#providers-and-models
 func (s *providerService) SetAPIKey(ctx context.Context, req *connect.Request[hearthv1.SetAPIKeyRequest]) (*connect.Response[hearthv1.SetAPIKeyResponse], error) {
 	m := req.Msg
-	p, err := fromProto(providerNames, m.GetProvider())
+	p, err := wire.FromProto(wire.ProviderNames, m.GetProvider())
 	if err != nil {
 		return nil, err
 	}
@@ -29,32 +29,32 @@ func (s *providerService) SetAPIKey(ctx context.Context, req *connect.Request[he
 		acct, err := s.opts.Accounts.SaveProfile(ctx, provider.Profile{ID: m.GetProfile(), Name: m.GetDisplayName(), BaseURL: m.GetBaseUrl(), DefaultModel: m.GetDefaultModel()}, m.GetKey())
 		if err != nil && !errors.Is(err, provider.ErrNoProfile) {
 			// The provider words, for the person, what to fix.
-			err = invalid("%v", err)
+			err = wire.Invalid("%v", err)
 		}
-		return reply(&hearthv1.SetAPIKeyResponse{Account: accountToProto(acct)}, err)
+		return wire.Reply(&hearthv1.SetAPIKeyResponse{Account: accountToProto(acct)}, err)
 	}
-	if err := need("key", m.GetKey()); err != nil {
+	if err := wire.Need("key", m.GetKey()); err != nil {
 		return nil, err
 	}
 	if err := s.opts.Accounts.SetKey(p, m.GetKey()); err != nil {
 		// The provider words, for the person, why it cannot take this key.
-		return nil, invalid("%v", err)
+		return nil, wire.Invalid("%v", err)
 	}
-	return reply(&hearthv1.SetAPIKeyResponse{Account: s.account(p)}, nil)
+	return wire.Reply(&hearthv1.SetAPIKeyResponse{Account: s.account(p)}, nil)
 }
 
 func (s *providerService) ClearCredential(ctx context.Context, req *connect.Request[hearthv1.ClearCredentialRequest]) (*connect.Response[hearthv1.ClearCredentialResponse], error) {
-	p, err := fromProto(providerNames, req.Msg.GetProvider())
+	p, err := wire.FromProto(wire.ProviderNames, req.Msg.GetProvider())
 	if err != nil {
 		return nil, err
 	}
 	if p == provider.Compatible {
-		if err := need("profile", req.Msg.GetProfile()); err != nil {
+		if err := wire.Need("profile", req.Msg.GetProfile()); err != nil {
 			return nil, err
 		}
-		return reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.ClearProfile(req.Msg.GetProfile()))
+		return wire.Reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.ClearProfile(req.Msg.GetProfile()))
 	}
-	return reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.Clear(ctx, p))
+	return wire.Reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.Clear(ctx, p))
 }
 
 // StartChatGPTLogin returns the page to sign in on at once; the sign-in
@@ -85,33 +85,29 @@ func (s *providerService) account(p provider.Provider) *hearthv1.ProviderAccount
 // error text and no event does.
 // See docs/architecture.md#2-responsibilities
 func (s *providerService) SyncCredentials(_ context.Context, req *connect.Request[hearthv1.SyncCredentialsRequest]) (*connect.Response[hearthv1.SyncCredentialsResponse], error) {
-	in := make([]keystore.Credential, 0, len(req.Msg.GetRecords()))
-	for _, r := range req.Msg.GetRecords() {
-		in = append(in, keystore.Credential{Name: r.GetName(), Value: r.GetValue()})
-	}
-	out, err := s.opts.Accounts.Sync(in)
+	out, err := s.opts.Accounts.Sync(wire.CredentialsFromProto(req.Msg.GetRecords()))
 	if err != nil {
-		return nil, invalid("%v", err)
+		return nil, wire.Invalid("%v", err)
 	}
-	return connect.NewResponse(&hearthv1.SyncCredentialsResponse{RecordsToStore: each(out, credentialToProto)}), nil
+	return connect.NewResponse(&hearthv1.SyncCredentialsResponse{RecordsToStore: wire.Each(out, wire.CredentialToProto)}), nil
 }
 
 // ExportCredential is the one reply that carries a credential value outside
 // a sync: the record under one name, for the app to store after a
 // credential_changed event.
 func (s *providerService) ExportCredential(_ context.Context, req *connect.Request[hearthv1.ExportCredentialRequest]) (*connect.Response[hearthv1.ExportCredentialResponse], error) {
-	if err := need("name", req.Msg.GetName()); err != nil {
+	if err := wire.Need("name", req.Msg.GetName()); err != nil {
 		return nil, err
 	}
 	rec, err := s.opts.Accounts.Export(req.Msg.GetName())
 	if err != nil {
-		return nil, fail(err)
+		return nil, wire.Fail(err)
 	}
-	return connect.NewResponse(&hearthv1.ExportCredentialResponse{Record: credentialToProto(rec)}), nil
+	return connect.NewResponse(&hearthv1.ExportCredentialResponse{Record: wire.CredentialToProto(rec)}), nil
 }
 
 // ListKnownServices is the provider's table of services, for the app's
 // picker.
 func (s *providerService) ListKnownServices(context.Context, *connect.Request[hearthv1.ListKnownServicesRequest]) (*connect.Response[hearthv1.ListKnownServicesResponse], error) {
-	return reply(&hearthv1.ListKnownServicesResponse{Services: each(provider.KnownServices(), knownServiceToProto)}, nil)
+	return wire.Reply(&hearthv1.ListKnownServicesResponse{Services: wire.Each(provider.KnownServices(), knownServiceToProto)}, nil)
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/provider/models"
 	"github.com/rfizzle/hearth/internal/rpc"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 	"github.com/rfizzle/hearth/internal/skill"
 	"github.com/rfizzle/hearth/internal/store"
 	"github.com/rfizzle/hearth/internal/tools/web"
@@ -118,14 +119,14 @@ func drafter(templates []org.RoleTemplate, streams func(org.Bot) (agent.Stream, 
 	return func(ctx context.Context, r rpc.DraftRequest) (rpc.Draft, error) {
 		stream, err := streams(org.Bot{Tier: org.TierFast})
 		if err != nil {
-			return rpc.Draft{}, rpc.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+			return rpc.Draft{}, wire.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
 		}
 		d, err := draft.Draft(ctx, draft.Input{
 			Description: r.Description, TemplateID: r.TemplateID, Tier: r.Tier,
 			Templates: templates, Stream: stream, Scrub: scrub,
 		})
 		if errors.Is(err, draft.ErrUnavailable) {
-			err = rpc.Unavailable(err)
+			err = wire.Unavailable(err)
 		}
 		return rpc.Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
 	}

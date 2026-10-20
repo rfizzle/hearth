@@ -14,7 +14,8 @@
 //     is a code: a store.ErrNotFound is not_found, a run in progress is
 //     failed_precondition, a folder another bot has is already_exists, an
 //     empty required field is invalid_argument. Every domain error picks its
-//     code in one function, never in a handler.
+//     code in one function, wire.Fail, never in a handler; wire holds the
+//     translation more than one service needs.
 //   - A handler never widens access: a grant is stored as the owner set it,
 //     after the inbox package has refused a mode its capability never has,
 //     and a decision on an item goes to the orchestrator, which refuses one

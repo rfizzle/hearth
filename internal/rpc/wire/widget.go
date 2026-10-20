@@ -1,7 +1,6 @@
-package widgetwire
+package wire
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,9 +18,9 @@ import (
 // in words alone.
 type Control struct{ spec widget.Spec }
 
-// Of reads the stored spec. A spec the widget package cannot read was never
+// ControlOf reads the stored spec. A spec the widget package cannot read was never
 // stored by the core, so it is taken as none rather than failing the thread.
-func Of(stored string) Control {
+func ControlOf(stored string) Control {
 	if stored == "" {
 		return Control{}
 	}
@@ -37,8 +36,8 @@ const maxWords = 4096
 
 // Words refuses text the owner typed, named what in the refusal, that is
 // longer than a reply needs or holds a control character other than a line
-// break or a tab: the answer field is a multi-line one. The refusal is one
-// Invalid is true for.
+// break or a tab: the answer field is a multi-line one. The refusal wraps
+// widget.ErrInvalid.
 func Words(what, text string) error {
 	if n := utf8.RuneCountInString(text); n > maxWords {
 		return fmt.Errorf("%w: %s is %d characters; keep it to %d or fewer", widget.ErrInvalid, what, n, maxWords)
@@ -48,10 +47,6 @@ func Words(what, text string) error {
 	}
 	return nil
 }
-
-// Invalid is true for a refusal by the widget package: an answer its control
-// does not allow.
-func Invalid(err error) bool { return errors.Is(err, widget.ErrInvalid) }
 
 // Proto is the control in the contract's form, or nil for none.
 func (c Control) Proto() *hearthv1.Widget {

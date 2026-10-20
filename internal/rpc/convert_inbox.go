@@ -6,7 +6,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
-	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
 
 // The conversions for the Inbox and the grants. Every enum goes through a
@@ -66,11 +66,11 @@ var inboxStates = map[hearthv1.InboxState]inbox.State{
 // The folder is not judged here: the store keeps the bot's own, and the
 // tools check every path against what is granted.
 func grantFromProto(g *hearthv1.Grant) (org.Grant, error) {
-	c, err := fromProto(capabilities, g.GetCapability())
+	c, err := wire.FromProto(capabilities, g.GetCapability())
 	if err != nil {
 		return org.Grant{}, err
 	}
-	m, err := fromProto(grantModes, g.GetMode())
+	m, err := wire.FromProto(grantModes, g.GetMode())
 	if err != nil {
 		return org.Grant{}, err
 	}
@@ -93,7 +93,7 @@ func grantsToProto(grants []org.Grant, own string) []*hearthv1.Grant {
 		for _, g := range grants {
 			if g.Capability == c {
 				one := &hearthv1.Grant{Capability: row.Capability, Title: row.Title, CanAllow: row.CanAllow, Folder: g.Folder}
-				one.Mode = toProto(grantModes, g.Mode)
+				one.Mode = wire.ToProto(grantModes, g.Mode)
 				one.OwnFolder = g.Folder != "" && g.Folder == own
 				out = append(out, one)
 			}
@@ -117,8 +117,8 @@ func (o Options) grantsOf(ctx context.Context, botID string, grants []org.Grant)
 func (o Options) itemToProto(ctx context.Context, it inbox.Item) *hearthv1.InboxItem {
 	out := &hearthv1.InboxItem{
 		Id:               it.ID,
-		Kind:             toProto(inboxKinds, it.Kind),
-		State:            toProto(inboxStates, it.State),
+		Kind:             wire.ToProto(inboxKinds, it.Kind),
+		State:            wire.ToProto(inboxStates, it.State),
 		BotId:            it.BotID,
 		ConversationId:   it.ConversationID,
 		RunId:            it.RunID,
@@ -127,16 +127,16 @@ func (o Options) itemToProto(ctx context.Context, it inbox.Item) *hearthv1.Inbox
 		Effect:           it.Effect,
 		Question:         it.Question,
 		SuggestedAnswers: it.Suggested,
-		CreatedAt:        timestamp(it.CreatedAt),
-		ClosedAt:         timestamp(it.ClosedAt),
-		Decision:         toProto(decisions, it.Decision),
+		CreatedAt:        wire.Timestamp(it.CreatedAt),
+		ClosedAt:         wire.Timestamp(it.ClosedAt),
+		Decision:         wire.ToProto(decisions, it.Decision),
 		Answer:           it.Answer,
 		Outcome:          it.Outcome,
 	}
 	if it.Call != nil {
 		out.Call = &hearthv1.ToolCall{CallId: it.Call.ID, Name: it.Call.Name, ArgumentsJson: it.Call.Arguments, Summary: it.Call.Summary}
 	}
-	control := widgetwire.Of(it.Widget)
+	control := wire.ControlOf(it.Widget)
 	out.Widget, out.AnswerValue = control.Proto(), control.AnswerProto(it.WidgetAnswer)
 	if out.ConversationId == "" && it.RunID != "" {
 		if r, err := o.Store.Run(ctx, it.RunID); err == nil {

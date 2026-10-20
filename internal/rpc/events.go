@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
+	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
 
 // The bodies rpc publishes on the bus beside orchestrate's: a change to an
@@ -72,7 +73,7 @@ func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearth
 	case CredentialChanged:
 		out.Event = &hearthv1.SubscribeResponse_CredentialChanged{CredentialChanged: &hearthv1.CredentialChanged{Name: b.Name, Deleted: b.Deleted}}
 	case BotChanged:
-		out.Event = &hearthv1.SubscribeResponse_BotChanged{BotChanged: &hearthv1.BotChanged{Bot: botToProto(b.Bot)}}
+		out.Event = &hearthv1.SubscribeResponse_BotChanged{BotChanged: &hearthv1.BotChanged{Bot: wire.BotToProto(b.Bot)}}
 	default:
 		return nil, false
 	}

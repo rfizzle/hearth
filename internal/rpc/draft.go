@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"errors"
 
 	"github.com/rfizzle/hearth/internal/org"
 )
@@ -26,19 +25,6 @@ type Draft struct {
 // Drafter makes a proposal from the owner's words, at the Fast tier. Its
 // owner sets it, so the package that talks to a model is the one that is
 // handed the model: a draft that could not be made because no model was
-// reachable wraps ErrUnavailable, through Unavailable.
+// reachable wraps wire.ErrUnavailable, through wire.Unavailable.
 // See docs/architecture.md#1-layering
 type Drafter func(ctx context.Context, r DraftRequest) (Draft, error)
-
-// ErrUnavailable marks a draft that could not be made because no model was
-// reachable: the owner has not signed in, or the provider failed.
-var ErrUnavailable = errors.New("no model could be reached")
-
-// Unavailable marks err as ErrUnavailable and keeps its words, so the owner
-// reads what to do.
-func Unavailable(err error) error { return unavailable{err} }
-
-type unavailable struct{ error }
-
-func (u unavailable) Unwrap() error        { return u.error }
-func (u unavailable) Is(target error) bool { return target == ErrUnavailable }

@@ -1,6 +1,7 @@
-package widgetwire
+package wire
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -59,8 +60,8 @@ func TestWords_AreShortPlainText(t *testing.T) {
 		strings.Repeat("a", 4096): true, strings.Repeat("a", 4097): false,
 	} {
 		err := Words("the answer", text)
-		if (err == nil) != want || (err != nil && !Invalid(err)) {
-			t.Errorf("Words(%.12q) = %v, want ok %v and an Invalid refusal", text, err, want)
+		if (err == nil) != want || (err != nil && !errors.Is(err, widget.ErrInvalid)) {
+			t.Errorf("Words(%.12q) = %v, want ok %v and a widget refusal", text, err, want)
 		}
 	}
 }
@@ -175,23 +176,23 @@ func TestControl_EveryKindReadsIntoTheContract(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if w := Of(tt.stored).Proto(); w == nil || !tt.has(w) {
+			if w := ControlOf(tt.stored).Proto(); w == nil || !tt.has(w) {
 				t.Errorf("Proto = %v", w)
 			}
 		})
 	}
 	for _, none := range []string{"", "not json", `{"kind":"nonsense"}`} {
-		if w := Of(none).Proto(); w != nil {
-			t.Errorf("Of(%q).Proto() = %v, want none", none, w)
+		if w := ControlOf(none).Proto(); w != nil {
+			t.Errorf("ControlOf(%q).Proto() = %v, want none", none, w)
 		}
 	}
-	if ans := Of(`{"kind":"yes_no"}`).AnswerProto(`{"kind":"yes_no","yes":true}`); ans.GetTextForm() != "The owner said: Yes" || !ans.GetYes() {
+	if ans := ControlOf(`{"kind":"yes_no"}`).AnswerProto(`{"kind":"yes_no","yes":true}`); ans.GetTextForm() != "The owner said: Yes" || !ans.GetYes() {
 		t.Errorf("AnswerProto = %v", ans)
 	}
-	if Of("").ReadAnswer(nil) != nil {
+	if ControlOf("").ReadAnswer(nil) != nil {
 		t.Error("no value read as an answer")
 	}
-	if !Invalid(widget.Check(widget.Spec{Kind: widget.Date}, widget.Answer{Kind: widget.YesNo})) {
-		t.Error("a refusal by the widget package is not Invalid")
+	if !errors.Is(widget.Check(widget.Spec{Kind: widget.Date}, widget.Answer{Kind: widget.YesNo}), widget.ErrInvalid) {
+		t.Error("a refusal by the widget package does not wrap ErrInvalid")
 	}
 }
