@@ -28,17 +28,13 @@ public struct OnboardingScreen: View {
     }
 
     public var body: some View {
-        VStack(spacing: Theme.Spacing.xl) {
-            GeometryReader { proxy in
-                ScrollView {
-                    content
-                        .frame(maxWidth: Theme.Size.formWidth)
-                        .frame(maxWidth: .infinity, minHeight: proxy.size.height)
-                }
-                .scrollBounceBehavior(.basedOnSize)
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(maxWidth: Theme.Size.formWidth)
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            buttons
-                .frame(maxWidth: Theme.Size.formWidth)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .padding(Theme.Spacing.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -47,7 +43,8 @@ public struct OnboardingScreen: View {
         .task { await store.accounts.load() }
     }
 
-    /// The step's content, centred in the space above the buttons.
+    /// The step's content, centred in the window; the buttons follow it so
+    /// they never float alone at the window's edge.
     private var content: some View {
         VStack(alignment: store.step == .welcome ? .center : .leading, spacing: Theme.Spacing.xl) {
             header
@@ -61,6 +58,7 @@ public struct OnboardingScreen: View {
                     .font(Theme.callout)
                     .foregroundStyle(Theme.color(.toneNegative))
             }
+            buttons
         }
         .padding(.vertical, Theme.Spacing.lg)
     }
@@ -186,12 +184,14 @@ public struct OnboardingScreen: View {
         }
     }
 
+    /// Welcome has one centred, large Continue; later steps put Back leading
+    /// and Continue or Done trailing on one row under the content.
     private var buttons: some View {
         HStack {
             if store.step != .welcome {
                 Button("Back") { store.back() }
+                Spacer()
             }
-            Spacer()
             if store.step == .nameAndFolder {
                 Button("Done") { Task { await store.done() } }
                     .buttonStyle(.borderedProminent)
@@ -204,5 +204,7 @@ public struct OnboardingScreen: View {
                     .disabled(!store.canContinue)
             }
         }
+        .controlSize(store.step == .welcome ? .large : .regular)
+        .frame(maxWidth: .infinity, alignment: store.step == .welcome ? .center : .trailing)
     }
 }
