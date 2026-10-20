@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "dashboard",
+  "title": "Office this week",
+  "subtitle": "Week of 13 October 2026",
+  "sections": [
+    {"heading": "The numbers", "columns": 3, "widgets": [
+      {"kind": "metric", "label": "Spent this month", "value": 12.4, "format": "currency", "delta": {"value": -3.1, "good": true}, "caption": "Budget $40", "measure": "usage.cost/me/current", "as_of": "2026-10-20T09:30Z"},
+      {"kind": "progress", "label": "Launch the newsletter", "done": 3, "total": 7, "caption": "3 of 7 tasks done", "measure": "project.tasks/this"},
+      {"kind": "light", "label": "Launch the newsletter", "tone": "attention", "word": "Waiting on you", "measure": "project.light/this"}
+    ]},
+    {"heading": "Trends", "columns": 2, "widgets": [
+      {"kind": "line", "title": "Cost per week", "categories": ["W40", "W41", "W42", "W43"], "series": [{"name": "Dana", "values": [3.2, 4.1, 2.8, 5.0]}, {"name": "Sam", "values": [1, 1.5, 1.2, 2]}], "format": "currency", "y_label": "USD", "span": 2},
+      {"kind": "bar", "title": "Tasks by state", "categories": ["Done", "Working", "Waiting", "Failed"], "series": [{"name": "Tasks", "values": [3, 2, 1, 1]}], "stacked": false},
+      {"kind": "pie", "title": "Spend by employee", "slices": [{"label": "Dana", "value": 12.4}, {"label": "Sam", "value": 6.1}], "format": "currency"}
+    ]},
+    {"heading": "Open items", "columns": 1, "widgets": [
+      {"kind": "table", "title": "Open items", "columns": [{"header": "Item", "align": "left"}, {"header": "Owner"}, {"header": "Due", "align": "right"}], "rows": [["Newsletter copy", "Dana", "Fri"], ["Venue shortlist", "Sam", 3]], "footer": ["Total", "", 2]},
+      {"kind": "list", "title": "Next week", "style": "check", "items": [{"text": "Send the first issue", "done": false}, {"text": "Book the venue", "done": true, "detail": "Confirmed Tuesday"}]}
+    ]},
+    {"heading": "Notes", "widgets": [
+      {"kind": "callout", "tone": "attention", "title": "Needs you", "markdown": "Two tasks are waiting on an answer. **Open the Inbox** to unblock them."},
+      {"kind": "text", "markdown": "# What happened\n\nThe first issue went out to 240 people, see [the plan](https://example.com/plan) or write to <mailto:dana@example.com>.\n\n- one\n- two\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"}
+    ]}
+  ]
+}

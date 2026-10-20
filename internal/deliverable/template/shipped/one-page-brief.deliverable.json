@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "report",
+  "title": "One-page brief",
+  "template": {"id": "one-page-brief", "name": "One-page brief", "when": "A decision on one page: the ask, the context, the options and a recommendation."},
+  "sections": [
+    {"heading": "The ask", "columns": 1, "allow": ["text"], "hint": "One or two sentences on the decision wanted and by when.", "widgets": [
+      {"kind": "text", "markdown": "State the decision you need and the date it is needed by."}
+    ]},
+    {"heading": "Context", "columns": 1, "allow": ["text", "list"], "hint": "What the reader must know to decide; no more than five points.", "widgets": [
+      {"kind": "list", "items": [{"text": "The fact that matters most"}, {"text": "The constraint that limits the choice"}]}
+    ]},
+    {"heading": "Options", "columns": 1, "allow": ["table", "list"], "hint": "Two to four options side by side with cost and risk.", "widgets": [
+      {"kind": "table", "columns": [{"header": "Option"}, {"header": "Cost", "align": "right"}, {"header": "Risk"}], "rows": [["Do nothing", 0, "Falls behind"], ["Do it now", 1200, "Tight timing"]]}
+    ]},
+    {"heading": "Recommendation", "columns": 1, "allow": ["callout", "text"], "hint": "The option you would pick and the reason in a sentence.", "widgets": [
+      {"kind": "callout", "tone": "positive", "title": "Recommended", "markdown": "Name the option and the reason that decides it."}
+    ]}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "kind": "report",
+  "title": "Report",
+  "template": {"id": "report", "name": "Report", "when": "A finding and a recommendation: what was looked at, what it showed, what to do about it."},
+  "sections": [
+    {"heading": "Summary", "columns": 1, "allow": ["text", "callout"], "hint": "Two to four sentences: the finding and what it means.", "widgets": [
+      {"kind": "text", "markdown": "Say what you looked at and what you found, in a few plain sentences."}
+    ]},
+    {"heading": "Findings", "columns": 1, "allow": ["text", "table", "list", "bar", "line", "pie"], "hint": "The evidence: a table, a chart or a short list, each with a sentence on what to see in it.", "widgets": [
+      {"kind": "table", "title": "What the numbers say", "columns": [{"header": "Item"}, {"header": "Result", "align": "right"}], "rows": [["First measure", 12], ["Second measure", 7]]},
+      {"kind": "list", "title": "Also worth knowing", "items": [{"text": "A point that does not fit a table"}]}
+    ]},
+    {"heading": "Recommendation", "columns": 1, "allow": ["text", "list", "callout"], "hint": "What to do next, and why. Say who decides.", "widgets": [
+      {"kind": "callout", "tone": "positive", "title": "Recommended", "markdown": "Say what you would do and the one reason that decides it."}
+    ]}
+  ]
+}

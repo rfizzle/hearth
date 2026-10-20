@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "report",
+  "title": "Comparison",
+  "template": {"id": "comparison", "name": "Comparison", "when": "Two or more things set side by side: what they are, how they differ and which wins."},
+  "sections": [
+    {"heading": "What is compared", "columns": 1, "allow": ["text"], "hint": "Name the things and say why they are being compared.", "widgets": [
+      {"kind": "text", "markdown": "Name each thing compared and the question the comparison answers."}
+    ]},
+    {"heading": "Side by side", "columns": 1, "allow": ["table"], "hint": "One row per aspect, one column per thing.", "widgets": [
+      {"kind": "table", "columns": [{"header": "Aspect"}, {"header": "First"}, {"header": "Second"}], "rows": [["Price", "$40 a month", "$55 a month"], ["Setup", "An hour", "A day"]]}
+    ]},
+    {"heading": "Where they differ", "columns": 1, "allow": ["bar", "list"], "hint": "A chart of the one number that differs most, or the differences that matter in a short list.", "widgets": [
+      {"kind": "bar", "title": "Monthly cost", "categories": ["First", "Second"], "series": [{"name": "Cost", "values": [40, 55]}], "format": "currency"}
+    ]},
+    {"heading": "Verdict", "columns": 1, "allow": ["callout", "text"], "hint": "Which one and why, in a sentence or two.", "widgets": [
+      {"kind": "callout", "tone": "positive", "title": "Verdict", "markdown": "Name the winner and the reason that decides it."}
+    ]}
+  ]
+}

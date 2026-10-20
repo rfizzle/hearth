@@ -133,7 +133,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document exists; render, measure, deliverable and native are planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document and internal/deliverable exist; render, measure and native are planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -183,8 +183,8 @@ Rules:
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
 | `internal/document` | Reads the common document kinds as text: kind by header, the caps, the notices and the picture-page rule; pure Go | new |
 | `internal/render` (planned) | Renders a Markdown file to PDF or Word, deterministically, for `files.render` | new |
-| `internal/deliverable` (planned) | The spec of a shaped deliverable, the closed catalogue of ten widgets, the refusals in words, the canonical form; stdlib only | new |
-| `internal/deliverable/template` (planned) | The five shipped templates and the owner's from `Templates/`; the positional check | new |
+| `internal/deliverable` | The spec of a shaped deliverable, the closed catalogue of ten widgets, the refusals in words, the canonical form; stdlib only | new |
+| `internal/deliverable/template` | The five shipped templates and the owner's from `Templates/`; the positional check | new |
 | `internal/measure` (planned) | The closed registry of measure ids and one read over the store, the meter and the project rule | new |
 | `internal/render/chart` (planned) | One deterministic chart layout feeding the SVG and the PDF; the six hues | new |
 | `internal/render/html` (planned) | A spec to a self-contained web page, no script, with a content-security-policy | new |

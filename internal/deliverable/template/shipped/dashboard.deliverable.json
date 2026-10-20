@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "kind": "dashboard",
+  "title": "Dashboard",
+  "template": {"id": "dashboard", "name": "Dashboard", "when": "The office's own numbers at a glance, kept live: status, trends, open items and notes."},
+  "sections": [
+    {"heading": "Status", "columns": 3, "allow": ["light", "progress", "metric"], "hint": "The few figures to read first; bind each to a measure so it stays live.", "widgets": [
+      {"kind": "light", "label": "Newsletter", "tone": "positive", "word": "On track"},
+      {"kind": "progress", "label": "Launch the newsletter", "done": 3, "total": 7, "caption": "3 of 7 tasks done"},
+      {"kind": "metric", "label": "Spent this month", "value": 12.4, "format": "currency", "caption": "Budget $40"}
+    ]},
+    {"heading": "Trends", "columns": 2, "allow": ["line", "bar", "pie"], "hint": "Up to three charts; one idea each.", "widgets": [
+      {"kind": "line", "title": "Cost per week", "categories": ["W40", "W41", "W42", "W43"], "series": [{"name": "Spend", "values": [3.2, 4.1, 2.8, 5]}], "format": "currency"},
+      {"kind": "pie", "title": "Spend by employee", "slices": [{"label": "Dana", "value": 12.4}, {"label": "Sam", "value": 6.1}], "format": "currency"}
+    ]},
+    {"heading": "Open items", "columns": 1, "allow": ["table", "list"], "hint": "What is waiting, with an owner and a date.", "widgets": [
+      {"kind": "table", "columns": [{"header": "Item"}, {"header": "Owner"}, {"header": "Due", "align": "right"}], "rows": [["Newsletter copy", "Dana", "Fri"], ["Venue shortlist", "Sam", "Mon"]]}
+    ]},
+    {"heading": "Notes", "columns": 1, "allow": ["callout", "text"], "hint": "Anything the numbers do not say.", "widgets": [
+      {"kind": "callout", "tone": "attention", "title": "Needs you", "markdown": "Say what is waiting on a person and what unblocks it."}
+    ]}
+  ]
+}
