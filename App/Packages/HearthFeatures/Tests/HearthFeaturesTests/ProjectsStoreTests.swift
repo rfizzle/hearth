@@ -1,7 +1,7 @@
 // The projects in the sidebar: the list loads without the proposal, a new
 // project is the last active one and selectable, done moves a row after the
 // active ones, archive drops it, an event from the core replaces a row, a
-// resync refetches, and the sheet's one check is that every field is typed.
+// resync refetches, and a refused create keeps the core's words.
 
 import Foundation
 import HearthKit
@@ -25,13 +25,16 @@ import Testing
 @Test func aCreatedProjectFollowsTheActiveOnesAndIsSelected() async throws {
     let sidebar = makeSidebar()
     await sidebar.projects.load()
-    var form = ProjectForm()
-    form.name = "Plan the summer party"
-    form.goal = "A party for the studio and its clients."
-    form.context = "Last year's was in the courtyard."
-    form.doneLooksLike = "A date, a venue and the invitations sent."
-    form.doneWhen = "The invitations have gone out."
-    let created = try #require(await sidebar.projects.create(form.createRequest))
+    let request = Hearth_V1_CreateProjectRequest.with {
+        $0.name = "Plan the summer party"
+        $0.brief = .with {
+            $0.goal = "A party for the studio and its clients."
+            $0.context = "Last year's was in the courtyard."
+            $0.doneLooksLike = "A date, a venue and the invitations sent."
+            $0.doneWhen = "The invitations have gone out."
+        }
+    }
+    let created = try #require(await sidebar.projects.create(request))
     #expect(
         sidebar.projects.listed.map(\.id) == [
             "project-newsletter", "project-office", created.id, "project-tax",
@@ -46,9 +49,10 @@ import Testing
 @Test func aRefusedCreateKeepsTheCoresWords() async {
     let store = makeSidebar().projects
     await store.load()
-    var form = ProjectForm()
-    form.name = String(repeating: "a", count: 81)
-    #expect(await store.create(form.createRequest) == nil)
+    let request = Hearth_V1_CreateProjectRequest.with {
+        $0.name = String(repeating: "a", count: 81)
+    }
+    #expect(await store.create(request) == nil)
     #expect(store.saveError == "invalid project: the name is over 80 characters")
     #expect(store.listed.count == 3)
     store.clearSaveError()
@@ -97,34 +101,6 @@ import Testing
 
     await store.handle(.with { $0.event = .resync(.init()) })
     #expect(store.listed.count == 3)
-}
-
-@Test func theSheetSavesOnceEveryFieldIsTyped() {
-    var form = ProjectForm()
-    #expect(!form.canSave)
-    form.name = "Launch the newsletter"
-    form.goal = "Send the first issue."
-    form.context = "400 subscribers."
-    form.doneLooksLike = "A template and a first issue."
-    #expect(!form.canSave)
-    form.doneWhen = "  "
-    #expect(!form.canSave)
-    form.doneWhen = "The first issue is out."
-    #expect(form.canSave)
-    #expect(form.createRequest.targetDate.isEmpty)
-}
-
-@Test func anEditedProjectKeepsItsBriefAndDate() throws {
-    let project = Fixtures.projects[0]
-    let form = ProjectForm(project: project)
-    #expect(form.canSave)
-    #expect(form.hasTargetDate)
-    let request = form.updateRequest(id: project.id)
-    #expect(request.id == project.id)
-    #expect(request.name == project.name)
-    #expect(request.brief == project.brief)
-    #expect(request.targetDate == "2026-11-20")
-    #expect(!ProjectForm(project: Fixtures.projects[1]).hasTargetDate)
 }
 
 @MainActor

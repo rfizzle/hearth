@@ -60,8 +60,7 @@ and capsules for pills. Every padding, gap and radius outside the design package
 a number that fits none is a reason to change the scale, not to skip it.
 
 Shared measures: the avatar (28 pt, 44 pt large), the status dot, a project's progress pie (16 pt),
-the file icon, a 24 pt minimum target, a readable column of 640 pt for the transcript, 480 pt for a
-message bubble and a form, 560 pt for a sheet, a sidebar of 200 to 320 pt, an inspector of 260 to 380.
+the file icon, a 24 pt minimum target, a readable column of 640 pt, 480 pt for a bubble and a form, 560 for a sheet.
 
 ## Window anatomy
 
@@ -111,10 +110,11 @@ the choice in words where the control was.
 
 Forms are the system's grouped form. A sheet has a heading, a lead sentence, the form, and a row
 of buttons: Cancel on the left bound to Escape, and the one prominent button bound to Return, never
-two prominent buttons. Hiring is a sheet at a fixed width and no fixed height. Settings is the
-standard settings window (Command-comma) with a tab per pane: Accounts, Models, Web Search, Usage.
-Models is a row per tier, Fast, Balanced and Best, each with a menu of the models it may use; a
-model for one bot is pinned under a collapsed Advanced in its Access sheet, nowhere else.
+two prominent buttons. Hiring and a new project open instead as one question from the Chief of
+Staff with a text box; a draft fills a card the person edits, with at most three concerns beside
+its fields, and "Just show me the form" is remembered per sheet. Settings is the standard settings
+window (Command-comma) with a tab per pane: Accounts, Models, Web Search, Usage. Models is a row
+per tier with a menu of the models it may use; a bot's own model is pinned under Advanced in its Access sheet.
 
 ## Empty states and first run
 

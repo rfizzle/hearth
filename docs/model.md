@@ -77,7 +77,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 | result | The assignee's final message, returned to the assigner's thread |
 | schedule | Optional recurrence (see Recurring) |
 
-**Project** (`Project`). An outcome that takes more than one task, often across teams. Teams are the standing responsibilities; a project ends. Created by the owner, or proposed by the Chief of Staff and confirmed by the owner in one click; nothing is assigned under a proposal until it is confirmed.
+**Project** (`Project`). An outcome that takes more than one task, often across teams. Teams are the standing responsibilities; a project ends. Created by the owner in the guided sheet, or proposed by the Chief of Staff and confirmed by the owner in one click; nothing is assigned under a proposal until it is confirmed.
 
 | Field | Meaning |
 |---|---|

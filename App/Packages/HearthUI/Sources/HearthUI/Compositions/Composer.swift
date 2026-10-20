@@ -167,11 +167,7 @@ public struct Composer: View {
             .foregroundStyle(Theme.color(.textPrimary))
             .accessibilityLabel(waitingPrompt ?? label)
             .disabled(waitingPrompt != nil)
-            .onKeyPress(keys: [.return], phases: .down) { press in
-                if press.modifiers.contains(.shift) { return .ignored }
-                send()
-                return .handled
-            }
+            .submitOnReturn(send)
     }
 
     private var canSend: Bool {

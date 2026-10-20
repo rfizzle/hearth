@@ -185,8 +185,20 @@ extension HearthClient {
     }
 }
 
-/// A reply from the core the client cannot use.
+/// A reply from the core the client cannot use, or one it could not give.
 public enum HearthClientError: Error, Equatable {
     /// The sign-in page the core returned is not a URL.
     case invalidAuthorizeURL(String)
+    /// The core cannot do this now, in its words: the preview client's stand-in
+    /// for the core's `unavailable` (no model to draft with).
+    case unavailable(String)
+}
+
+extension HearthClientError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .invalidAuthorizeURL: nil
+        case .unavailable(let words): words
+        }
+    }
 }

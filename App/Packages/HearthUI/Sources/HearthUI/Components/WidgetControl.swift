@@ -9,8 +9,9 @@
 // (graphical for a day, a field with a time), a row with the path, the
 // system's icon and Choose… through the pickFolder action, and a segmented
 // Picker of a scale's steps with its end labels beneath. Each control keeps
-// its system label for VoiceOver even where the label is not drawn. The
-// owner's answer is a WidgetDraft binding, presentation state the card sends.
+// its system label for VoiceOver even where the label is not drawn; a text
+// field is "Your answer" unless the caller names it. The owner's answer is a
+// WidgetDraft binding, presentation state the card sends.
 // See docs/design.md#the-transcript
 
 import HearthDesign
@@ -23,11 +24,16 @@ public struct WidgetControl: View {
     @Binding var draft: WidgetDraft
     /// Whether the control shows an answer that can no longer change.
     var isLocked = false
+    let label: String
 
-    /// The control for `widget`, holding the owner's answer in `draft`.
-    public init(widget: Hearth_V1_Widget, draft: Binding<WidgetDraft>) {
+    /// The control for `widget`, holding the owner's answer in `draft`; a
+    /// text field or editor is called `label` for VoiceOver.
+    public init(
+        widget: Hearth_V1_Widget, draft: Binding<WidgetDraft>, label: String = "Your answer"
+    ) {
         self.widget = widget
         _draft = draft
+        self.label = label
     }
 
     public var body: some View {
@@ -41,7 +47,7 @@ public struct WidgetControl: View {
         switch widget.kind {
         case .singleChoice(let spec): SingleChoiceControl(spec: spec, draft: $draft)
         case .multipleChoice(let spec): MultipleChoiceControl(spec: spec, draft: $draft)
-        case .freeText(let spec): FreeTextControl(spec: spec, text: $draft.text)
+        case .freeText(let spec): FreeTextControl(spec: spec, label: label, text: $draft.text)
         case .yesNo(let spec): YesNoControl(spec: spec, yes: $draft.yes)
         case .date(let spec):
             DateControl(spec: spec, isRequired: widget.required, date: $draft.date)
@@ -144,30 +150,9 @@ private struct MultipleChoiceControl: View {
     }
 }
 
-extension WidgetControl {
-    /// A multiple choice's bounds and the live count: "Choose up to 3 · 2
-    /// chosen"; nil when it has no bounds.
-    nonisolated static func caption(_ spec: Hearth_V1_MultipleChoice, chosen: Int) -> String? {
-        let rule: String
-        switch (spec.min, spec.max) {
-        case (0, 0): return nil
-        case (0, let max): rule = "Choose up to \(max)"
-        case (let min, 0): rule = "Choose at least \(min)"
-        case (let min, let max) where min == max: rule = "Choose \(min)"
-        case (let min, let max): rule = "Choose \(min) to \(max)"
-        }
-        return "\(rule) · \(chosen) chosen"
-    }
-
-    /// The free text's count once it nears its limit, "812/1000"; nil before.
-    nonisolated static func count(_ text: String, _ spec: Hearth_V1_FreeText) -> String? {
-        let limit = WidgetDraft.limit(spec)
-        return text.count * 5 >= limit * 4 ? "\(text.count)/\(limit)" : nil
-    }
-}
-
 private struct FreeTextControl: View {
     let spec: Hearth_V1_FreeText
+    let label: String
     @Binding var text: String
 
     @ScaledMetric(relativeTo: .body) private var editorHeight: CGFloat = Theme.Size.avatarLarge * 2
@@ -198,8 +183,6 @@ private struct FreeTextControl: View {
             }
         }
     }
-
-    private var label: String { "Your answer" }
 
     private var prompt: String {
         spec.placeholder.isEmpty ? "Type your answer" : spec.placeholder

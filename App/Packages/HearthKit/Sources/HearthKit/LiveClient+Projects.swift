@@ -41,3 +41,13 @@ extension LiveClient {
         return try await projects.archiveProject(request: request).value().project
     }
 }
+
+extension HearthClientError {
+    /// Whether `error` is the core saying it cannot do this now (`unavailable`):
+    /// no model is signed in, or the provider is down. Its words are the
+    /// error's description.
+    public static func isUnavailable(_ error: any Error) -> Bool {
+        if case .unavailable? = error as? HearthClientError { return true }
+        return (error as? ConnectError)?.code == .unavailable
+    }
+}

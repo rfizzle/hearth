@@ -14,7 +14,10 @@ extension PreviewClient {
     }
 
     public func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse {
-        Fixtures.projectDraft
+        guard !modelUnavailable else {
+            throw HearthClientError.unavailable("no model is set up; sign in to one in Settings")
+        }
+        return Fixtures.projectDraft
     }
 
     /// The past-date rule in the core's words, before the fixtures' today; the
@@ -130,4 +133,10 @@ final class ProjectList: @unchecked Sendable {
 /// What the preview client refuses.
 enum PreviewError: Error, Equatable {
     case projectNotFound(String)
+}
+
+/// A plain-words refusal, as the core's invalid_argument carries.
+struct PageRefusal: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }

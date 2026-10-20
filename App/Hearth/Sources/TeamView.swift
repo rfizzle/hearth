@@ -10,8 +10,9 @@
 // conversation it was proposed in, and creating it selects it. A project's
 // toolbar has its folder and a menu to edit, mark done or archive it.
 // Nobody on the team shows the invitation in the
-// detail column; nothing selected says to choose. The hire, Access and project
-// sheets are presented here, and the helper notice sits over the top of the
+// detail column; nothing selected says to choose. The hire, Access and setup
+// sheets are presented here (a new project is the Chief of Staff's guided
+// setup, an edit its form), and the helper notice sits over the top of the
 // detail column until the owner dismisses it. A new project is selected once
 // created. When the window first shows the team with nothing selected, the
 // Chief of Staff is.
@@ -81,11 +82,11 @@ struct TeamView: View {
             if let bot = accessBot { AccessSheetHost(session: session, bot: bot) }
         }
         .sheet(isPresented: $model.isCreatingProject) {
-            ProjectSheetHost(session: session, editing: nil)
+            SetupSheetHost(session: session, script: .project, editing: nil)
         }
         .sheet(isPresented: isEditingProject) {
             if let project = editingProject {
-                ProjectSheetHost(session: session, editing: project)
+                SetupSheetHost(session: session, script: .project, editing: project)
             }
         }
     }
@@ -221,23 +222,43 @@ extension TeamView {
     }
 }
 
-/// One presentation of the project sheet, new or editing, with a draft of
-/// its own each time; a new project is selected once the core has made it.
-private struct ProjectSheetHost: View {
+/// One presentation of a setup sheet, new or editing, over a store of its own
+/// each time, asked by the Chief of Staff; a new project is selected once the
+/// core has made it. Until the accounts have loaded the sheet assumes a model
+/// may draft, and the core's `unavailable` says otherwise.
+private struct SetupSheetHost: View {
     let session: Session
     let editing: Hearth_V1_Project?
     @Environment(AppModel.self) private var model
+    @State private var store: SetupStore
+
+    init(session: Session, script: SetupScript, editing: Hearth_V1_Project?) {
+        self.session = session
+        self.editing = editing
+        _store = State(
+            initialValue: SetupStore(
+                script: script, client: session.client, projects: session.projects,
+                canDraft: Self.canDraft(session), editing: editing))
+    }
 
     var body: some View {
-        ProjectSheet(
-            store: session.projects, editing: editing,
-            onSaved: { project in
-                if editing == nil { session.sidebar.selected = .project(project.id) }
+        SetupSheet(
+            store: store, chief: session.coordinator,
+            onDone: { outcome in
+                if editing == nil, case .project(let project) = outcome {
+                    session.sidebar.selected = .project(project.id)
+                }
                 close()
             },
             onCancel: close
         )
         .onAppear { session.projects.clearSaveError() }
+        .task { await session.accounts.load() }
+        .onChange(of: Self.canDraft(session)) { _, canDraft in store.canDraft = canDraft }
+    }
+
+    private static func canDraft(_ session: Session) -> Bool {
+        session.accounts.accounts.isEmpty || session.accounts.hasSignedInAccount
     }
 
     private func close() {

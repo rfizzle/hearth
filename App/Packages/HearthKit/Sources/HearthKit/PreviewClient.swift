@@ -20,10 +20,18 @@ public struct PreviewClient: HearthClient {
     /// How the credential calls answer; without one they answer with nothing.
     public let credentials: CredentialScript?
 
+    /// Whether a project draft answers as the core does with no model signed
+    /// in: `unavailable`, in its words.
+    public let modelUnavailable: Bool
+
     /// A client whose DM reports `latestRun`.
-    public init(latestRun: Hearth_V1_Run? = nil, credentials: CredentialScript? = nil) {
+    public init(
+        latestRun: Hearth_V1_Run? = nil, credentials: CredentialScript? = nil,
+        modelUnavailable: Bool = false
+    ) {
         self.latestRun = latestRun
         self.credentials = credentials
+        self.modelUnavailable = modelUnavailable
     }
 
     let projectList = ProjectList()
@@ -388,10 +396,4 @@ extension PreviewClient {
     public func exportCredential(name: String) async throws -> Hearth_V1_Credential {
         credentials?.export(name) ?? .with { $0.name = name }
     }
-}
-
-/// A plain-words refusal, as the core's invalid_argument carries.
-struct PageRefusal: LocalizedError {
-    let message: String
-    var errorDescription: String? { message }
 }

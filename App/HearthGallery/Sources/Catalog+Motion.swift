@@ -121,7 +121,7 @@ extension Catalog {
         }
     }
 
-    private static func step<Content: View>(
+    static func step<Content: View>(
         _ name: String, button: String, note: String,
         play: @escaping @MainActor () -> Void, @ViewBuilder content: () -> Content
     ) -> MotionStep {
@@ -135,8 +135,8 @@ extension Catalog {
     }
 
     static let motionSteps: [MotionStep] = [
-        disclosure, keyField, cardState, onboardingStep, hireDraft, composerSwap, statusDot,
-        sidebarInsert, transcriptSend, emptyState,
+        disclosure, keyField, cardState, onboardingStep, setupStepMotion, concernMotion,
+        composerSwap, statusDot, sidebarInsert, transcriptSend, emptyState,
     ]
 
     private static var disclosure: MotionStep {
@@ -214,22 +214,6 @@ extension Catalog {
             note: "The step cross-fades while the column's height moves with it.",
             play: { store.step == .signIn ? store.next() : store.back() },
             content: { OnboardingScreen(store: store).frame(height: 600) })
-    }
-
-    private static var hireDraft: MotionStep {
-        let store = HireStore(client: PreviewClient())
-        let flag = MotionFlag()
-        Task {
-            await store.load()
-            if let template = store.templates.first { store.pick(template) }
-        }
-        return step(
-            "Hire sheet draft appears", button: "Improve this or Keep mine",
-            note: "The suggestion fades in beside the owner's text; typing never animates.",
-            play: {
-                flag.isOn.toggle()
-                if flag.isOn { Task { await store.improve() } } else { store.keepMine() }
-            }, content: { HireSheet(store: store, onHired: { _ in }, onCancel: {}) })
     }
 
     private static var composerSwap: MotionStep {
