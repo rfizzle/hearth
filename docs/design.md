@@ -111,6 +111,11 @@ with the Finder's own icon for their type. There is one signal that the bot is
 working, a status line with a pulsing dot (steady under Reduce Motion), and no
 streaming cursor.
 
+A bot's question is a card with the question, the control it asked for (a
+choice, a date, a folder) and one prominent button to answer, so choosing is
+a click rather than a sentence. An answered card goes quiet: no stroke, no
+buttons, the choice in words where the control was.
+
 ## Forms, sheets and settings
 
 Forms are the system's grouped form. A sheet has a heading, a lead sentence, the

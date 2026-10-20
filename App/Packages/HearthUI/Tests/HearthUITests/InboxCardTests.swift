@@ -31,13 +31,14 @@ import Testing
 
 @MainActor
 @Test func aSuggestionFillsTheReplyAndABlankReplyIsNotSent() {
-    let chosen = QuestionCard.PreviewState.suggestionChosen
+    let chosen = PromptCard.PreviewState.suggestionChosen
     #expect(chosen.reply == Fixtures.question.suggestedAnswers[0])
-    #expect(QuestionCard.canReply(chosen.reply))
-    #expect(!QuestionCard.canReply(" \n"))
-    #expect(QuestionCard.answer("  Both kinds\n") == "Both kinds")
-    #expect(QuestionCard.PreviewState.withControl.item.hasWidget)
-    #expect(!QuestionCard.PreviewState.open.item.hasWidget)
+    #expect(WidgetDraft().canAnswer(nil, prose: chosen.reply))
+    #expect(!WidgetDraft().canAnswer(nil, prose: " \n"))
+    #expect(PromptCard.prose("  Both kinds\n") == "Both kinds")
+    #expect(PromptCard(previewState: .unknownControl).item.hasWidget)
+    #expect(PromptCard(previewState: .unknownControl).widget == nil)
+    #expect(!PromptCard(previewState: .prose).item.hasWidget)
 }
 
 @MainActor
@@ -69,4 +70,22 @@ import Testing
     #expect(MessageRow.PreviewState.askedQuestion.message.kind == .question)
     #expect(MessageRow.PreviewState.decision.message.kind == .approvalDecision)
     #expect(MessageRow(previewState: .decision).isOwner)
+}
+
+@MainActor
+@Test func theCardAsksWithTheControlAndGoesQuietOnceAnswered() {
+    #expect(PromptCard.PreviewState.allCases.count == 17)
+    #expect(PromptCard(previewState: .empty).widget != nil)
+    #expect(PromptCard.answerText(PromptCard.PreviewState.answered.item) == "Two pages")
+    #expect(PromptCard.answerText(PromptCard.PreviewState.answeredInWords.item) == "Both kinds")
+    #expect(PromptCard(previewState: .answered).isQuiet)
+    #expect(!PromptCard(previewState: .valid).isQuiet)
+    // The thread's form of an answered question carries the choice.
+    var message = Fixtures.dmMessages[0]
+    message.kind = .question
+    message.authorBotID = Fixtures.bot.id
+    message.widget = WidgetSample.widget(.scale)
+    message.answer = .with { $0.scale = 3 }
+    let quiet = PromptCard(message: message, bot: Fixtures.bot)
+    #expect(PromptCard.answerText(quiet.item) == "3 of 5")
 }

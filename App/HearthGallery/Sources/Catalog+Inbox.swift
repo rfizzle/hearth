@@ -1,5 +1,6 @@
 // What waits on the owner: the decision bar in its wide and narrow layouts,
-// the approval, question and failure cards in each state, the Inbox with
+// the approval and failure cards in each state (the question's card is with
+// the widgets), the Inbox with
 // items, empty and as the sidebar's row, and a conversation whose run waits
 // on the owner with the card in the thread.
 
@@ -26,11 +27,6 @@ extension Catalog {
                     ApprovalCard(previewState: $0)
                 }),
             GalleryPage(
-                package: package, name: "QuestionCard",
-                states: GalleryState.each(QuestionCard.PreviewState.self, width: 600) {
-                    QuestionCard(previewState: $0)
-                }),
-            GalleryPage(
                 package: package, name: "FailureCard",
                 states: GalleryState.each(FailureCard.PreviewState.self, width: 600) {
                     FailureCard(previewState: $0)
@@ -41,14 +37,14 @@ extension Catalog {
         ]
     }
 
-    /// PreviewClient's three open items.
+    /// PreviewClient's four open items, one a question with a control.
     static func inboxWithItems() -> GalleryState {
         let client = PreviewClient()
         let store = InboxStore(client: client, relay: EventRelay(client: client))
         return GalleryState(
             name: "items", width: 680,
             view: AnyView(
-                InboxScreen(store: store, bots: [Fixtures.bot]).frame(height: 900)))
+                InboxScreen(store: store, bots: [Fixtures.bot]).frame(height: 1180)))
     }
 
     /// Every item closes after the screen's own fetch, as it would live.

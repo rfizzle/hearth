@@ -1,8 +1,9 @@
 // InboxItemCard picks the card for an Inbox item and wires its buttons to the
-// store: an ApprovalCard with the four decisions, a QuestionCard with the
-// reply, a FailureCard with Retry and OK (OK alone for a budget until resuming
-// is a call). The Inbox screen and the conversation draw the same card through
-// it, so an item looks and acts alike in both places.
+// store: an ApprovalCard with the four decisions, a PromptCard with the
+// question's control and the reply, a FailureCard with Retry and OK (OK
+// alone for a budget until resuming is a call). The Inbox screen and the
+// conversation draw the same card through it, so an item looks and acts
+// alike in both places.
 // See docs/model.md#owner-interaction
 
 import HearthKit
@@ -28,9 +29,9 @@ struct InboxItemCard: View {
                     Task { await store.decide(item, decision, reason: reason) }
                 })
         case .question:
-            QuestionCard(
+            PromptCard(
                 item: item, bot: bot, state: state, isDefault: isDefault,
-                onAnswer: { text in Task { await store.answer(item, text) } })
+                onAnswer: { text, _ in Task { await store.answer(item, text) } })
         default:
             FailureCard(
                 item: item, bot: bot, state: state, isDefault: isDefault,
