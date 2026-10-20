@@ -1,9 +1,9 @@
 // BotList is the sidebar's list of bots, one row each with an avatar, the name
 // and the role, and the store's selection. With nobody hired it offers the
-// hire button instead. An avatar that is plain ASCII is an SF Symbol name, any
-// other text is an emoji, and an empty one shows the name's initials. Rows are
-// List rows, so selection, keyboard and VoiceOver are the system's.
+// hire button instead. Each row's avatar is HearthUI's Avatar for the bot.
+// Rows are List rows, so selection, keyboard and VoiceOver are the system's.
 
+import HearthDesign
 import HearthKit
 import HearthUI
 import SwiftUI
@@ -44,23 +44,12 @@ private struct BotRow: View {
 
     var body: some View {
         HStack {
-            avatar.frame(width: 28)
+            Avatar(bot: bot)
             VStack(alignment: .leading) {
                 Text(bot.name).font(.headline)
                 Text(bot.role).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder
-    private var avatar: some View {
-        if bot.avatar.isEmpty {
-            Text(String(bot.name.prefix(1)).uppercased())
-        } else if bot.avatar.allSatisfy(\.isASCII) {
-            Image(systemName: bot.avatar)
-        } else {
-            Text(bot.avatar)
-        }
     }
 }

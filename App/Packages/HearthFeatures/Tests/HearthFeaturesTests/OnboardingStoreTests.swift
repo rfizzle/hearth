@@ -1,5 +1,5 @@
-// Store tests for onboarding and accounts, against PreviewClient and a
-// scripted stream of core events.
+// Store tests for onboarding and accounts, against PreviewClient and core
+// events handed to the store as the relay hands them.
 
 import Foundation
 import HearthKit
@@ -8,17 +8,20 @@ import Testing
 @testable import HearthFeatures
 
 @MainActor
-private func stores(
-    events: [Hearth_V1_SubscribeResponse] = []
-) -> (accounts: AccountsStore, onboarding: OnboardingStore) {
-    let stream = AsyncStream<Hearth_V1_SubscribeResponse> { continuation in
-        for event in events { continuation.yield(event) }
-        continuation.finish()
-    }
-    let accounts = AccountsStore(client: PreviewClient(), events: stream)
+private func stores() -> (accounts: AccountsStore, onboarding: OnboardingStore) {
+    let relay = EventRelay(client: PreviewClient())
+    let accounts = AccountsStore(client: PreviewClient(), relay: relay)
     let onboarding = OnboardingStore(
         client: PreviewClient(), accounts: accounts, home: URL(filePath: "/Users/test"))
     return (accounts, onboarding)
+}
+
+/// Hands `events` to `accounts` one at a time, as the relay does.
+@MainActor
+private func replay(_ events: [Hearth_V1_SubscribeResponse], into accounts: AccountsStore) async {
+    for event in events {
+        await accounts.handle(event)
+    }
 }
 
 private func accountEvent(
@@ -51,11 +54,11 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
 
 @MainActor
 @Test func continueWaitsForASignedInAccount() async {
-    let (accounts, onboarding) = stores(events: [accountEvent(.signedOut), accountEvent(.signedIn)])
+    let (accounts, onboarding) = stores()
     onboarding.next()
     #expect(onboarding.step == .signIn)
     #expect(!onboarding.canContinue)
-    await accounts.run()
+    await replay([accountEvent(.signedOut), accountEvent(.signedIn)], into: accounts)
     #expect(onboarding.canContinue)
     onboarding.next()
     #expect(onboarding.step == .nameAndFolder)
@@ -63,9 +66,9 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
 
 @MainActor
 @Test func anIntegrationAloneDoesNotEnableContinue() async {
-    let (accounts, onboarding) = stores(events: [integrationEvent()])
+    let (accounts, onboarding) = stores()
     onboarding.next()
-    await accounts.run()
+    await replay([integrationEvent()], into: accounts)
     #expect(accounts.integrations.first?.configured == true)
     #expect(!onboarding.canContinue)
     onboarding.next()
@@ -74,8 +77,8 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
 
 @MainActor
 @Test func aSignInFailureShowsItsText() async {
-    let (accounts, _) = stores(events: [accountEvent(.signedOut, failure: "The page was closed.")])
-    await accounts.run()
+    let (accounts, _) = stores()
+    await replay([accountEvent(.signedOut, failure: "The page was closed.")], into: accounts)
     #expect(accounts.signInFailure == "The page was closed.")
 }
 
@@ -109,9 +112,9 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
 
 @MainActor
 @Test func doneSendsTheNameAndFolder() async {
-    let (accounts, onboarding) = stores(events: [accountEvent(.signedIn)])
+    let (accounts, onboarding) = stores()
     #expect(onboarding.path == "/Users/test/Documents/Hearth")
-    await accounts.run()
+    await replay([accountEvent(.signedIn)], into: accounts)
     onboarding.next()
     onboarding.next()
     #expect(onboarding.step == .nameAndFolder)
@@ -122,4 +125,26 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
     #expect(onboarding.org?.name == "Harbor Street Studio")
     #expect(onboarding.org?.workspacePath == "/Users/test/Elsewhere")
     #expect(onboarding.error == nil)
+}
+
+@MainActor
+@Test func aResyncFromTheRelayRefetchesTheAccounts() async throws {
+    let relay = EventRelay(subscribe: { _ in
+        AsyncThrowingStream { continuation in
+            continuation.yield(
+                .with {
+                    $0.sequence = 1
+                    $0.event = .resync(Hearth_V1_Resync())
+                })
+        }
+    })
+    let accounts = AccountsStore(client: PreviewClient(), relay: relay)
+    #expect(accounts.accounts.isEmpty)
+    relay.start()
+    for _ in 0..<400 where accounts.accounts.isEmpty {
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    relay.stop()
+    #expect(accounts.accounts == Fixtures.accounts)
+    #expect(accounts.integrations == Fixtures.integrations)
 }

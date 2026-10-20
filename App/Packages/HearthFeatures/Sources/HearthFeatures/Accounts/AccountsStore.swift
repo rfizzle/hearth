@@ -1,7 +1,8 @@
 // AccountsStore holds the provider accounts and the integrations as the core
 // last reported them, and turns the owner's intents into calls. It caches and
-// applies the account and integration changes the core announces; it decides
-// nothing. Onboarding uses it now and Settings reuses it later.
+// applies the account and integration changes the relay delivers, and
+// refetches both lists on a resync; it decides nothing. Onboarding uses it now
+// and Settings reuses it later.
 
 import Foundation
 import HearthKit
@@ -23,12 +24,18 @@ public final class AccountsStore {
     public private(set) var integrationError: String?
 
     private let client: any HearthClient
-    private let events: AsyncStream<Hearth_V1_SubscribeResponse>
+    @ObservationIgnored private let relay: EventRelay
+    @ObservationIgnored private var registration: EventRelay.Registration?
 
-    /// A store over `client`; `events` is the relay's stream of core events.
-    public init(client: any HearthClient, events: AsyncStream<Hearth_V1_SubscribeResponse>) {
+    /// A store over `client`, fed by `relay`.
+    public init(client: any HearthClient, relay: EventRelay) {
         self.client = client
-        self.events = events
+        self.relay = relay
+        registration = relay.register { [weak self] event in await self?.handle(event) }
+    }
+
+    isolated deinit {
+        if let registration { relay.unregister(registration) }
     }
 
     /// Whether any provider account is signed in. An integration never counts.
@@ -50,13 +57,6 @@ public final class AccountsStore {
             error = nil
         } catch {
             self.error = error.localizedDescription
-        }
-    }
-
-    /// Applies account and integration changes until the stream ends.
-    public func run() async {
-        for await event in events {
-            apply(event)
         }
     }
 
@@ -119,10 +119,12 @@ public final class AccountsStore {
         }
     }
 
-    private func apply(_ event: Hearth_V1_SubscribeResponse) {
+    /// Applies one event from the relay.
+    func handle(_ event: Hearth_V1_SubscribeResponse) async {
         switch event.event {
         case .accountChanged(let change): upsert(change.account)
         case .integrationChanged(let change): upsert(change.integration)
+        case .resync: await load()
         default: break
         }
     }

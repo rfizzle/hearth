@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "HearthFeatures", targets: ["HearthFeatures"])
     ],
     dependencies: [
+        .package(path: "../HearthDesign"),
         .package(path: "../HearthUI"),
         .package(path: "../HearthKit"),
     ],
@@ -18,6 +19,7 @@ let package = Package(
         .target(
             name: "HearthFeatures",
             dependencies: [
+                .product(name: "HearthDesign", package: "HearthDesign"),
                 .product(name: "HearthUI", package: "HearthUI"),
                 .product(name: "HearthKit", package: "HearthKit"),
             ]

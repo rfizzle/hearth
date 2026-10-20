@@ -35,7 +35,6 @@ public struct OnboardingScreen: View {
         .padding()
         .frame(maxWidth: 520)
         .task { await store.accounts.load() }
-        .task { await store.accounts.run() }
     }
 
     private var welcome: some View {
