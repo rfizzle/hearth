@@ -1,7 +1,7 @@
 //go:build ignore
 
-// Command gen writes the PDF fixtures the document tests read, so no document
-// is downloaded and each file can be rebuilt. From the repository root:
+// Command gen writes the fixtures the document tests read, so no document is
+// downloaded and each file can be rebuilt. From the repository root:
 //
 //	go run internal/document/testdata/gen/main.go
 //
@@ -15,15 +15,27 @@
 // prev-loop.pdf is text3.pdf with a trailer that points at its own table.
 // long.pdf has twelve pages of about 8 KB of text each, deflated, so that a
 // read has more than one window of text to fill.
+//
+// notes.docx has a heading, a paragraph with bold, italic, a tab and a line
+// break, a bulleted and a numbered list, a table with a pipe in a cell, and a
+// closing paragraph with a drawing and a footnote reference. deck.pptx has
+// three slides whose files are numbered 1, 3 and 2 in the order the deck shows
+// them, and a speaker note that must not be read. rows.csv has a header and
+// 200 rows, each with a quoted comma. bomb.docx is a Word file whose
+// [Content_Types].xml header claims a terabyte; deep.docx has a document part
+// nested 150 levels deep. Each is a few kilobytes.
 package main
 
 import (
+	"archive/zip"
 	"bytes"
+	"compress/flate"
 	"compress/zlib"
 	"crypto/md5"
 	"crypto/rc4"
 	"flag"
 	"fmt"
+	"hash/crc32"
 	"log"
 	"os"
 	"path/filepath"
@@ -60,6 +72,11 @@ func main() {
 		"prev-loop.pdf":      selfPrev(plain),
 		"empty-password.pdf": encrypted(""),
 		"locked.pdf":         encrypted("hearth-test"),
+		"notes.docx":         notesDocx(),
+		"deck.pptx":          deckPptx(),
+		"rows.csv":           rowsCSV(),
+		"bomb.docx":          bombDocx(),
+		"deep.docx":          deepDocx(),
 	}
 	for name, data := range files {
 		if err := os.WriteFile(filepath.Join(*out, name), data, 0o644); err != nil {
@@ -199,4 +216,169 @@ func rc4Sum(key, data []byte) []byte {
 	out := make([]byte, len(data))
 	c.XORKeyStream(out, data)
 	return out
+}
+
+const (
+	wns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+	ans = "http://schemas.openxmlformats.org/drawingml/2006/main"
+	pns = "http://schemas.openxmlformats.org/presentationml/2006/main"
+	rns = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+	xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n"
+)
+
+// part is one entry of a zip.
+type part struct{ name, body string }
+
+// zipOf writes the parts as a zip, deflated, with no times so that the bytes
+// do not change from one run to the next.
+func zipOf(parts []part) []byte {
+	var b bytes.Buffer
+	w := zip.NewWriter(&b)
+	for _, p := range parts {
+		f, err := w.CreateHeader(&zip.FileHeader{Name: p.name, Method: zip.Deflate})
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err := f.Write([]byte(p.body)); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		log.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+const (
+	wordMain  = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+	slideMain = "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
+)
+
+// contentTypes names the main part of a Word or PowerPoint file.
+func contentTypes(partName, typ string) part {
+	return part{"[Content_Types].xml", xml + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+		`<Default Extension="xml" ContentType="application/xml"/>` +
+		fmt.Sprintf(`<Override PartName="%s" ContentType="%s"/></Types>`, partName, typ)}
+}
+
+func wordP(style, runs string) string {
+	ppr := ""
+	if style != "" {
+		ppr = `<w:pPr><w:pStyle w:val="` + style + `"/></w:pPr>`
+	}
+	return "<w:p>" + ppr + runs + "</w:p>"
+}
+
+func wordR(text string, b, i bool) string {
+	rpr := ""
+	if b || i {
+		rpr = "<w:rPr>"
+		if b {
+			rpr += "<w:b/>"
+		}
+		if i {
+			rpr += "<w:i/>"
+		}
+		rpr += "</w:rPr>"
+	}
+	return "<w:r>" + rpr + `<w:t xml:space="preserve">` + text + "</w:t></w:r>"
+}
+
+func listP(numID, text string) string {
+	return `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="` + numID + `"/></w:numPr></w:pPr>` + wordR(text, false, false) + "</w:p>"
+}
+
+func cellP(text string) string { return "<w:tc>" + wordP("", wordR(text, false, false)) + "</w:tc>" }
+
+func notesDocx() []byte {
+	body := wordP("Heading1", wordR("Quarterly notes", false, false)) +
+		wordP("", wordR("Plain, ", false, false)+wordR("bold", true, false)+wordR(" and ", false, false)+wordR("italic", false, true)+
+			`<w:r><w:tab/><w:t>tabbed</w:t></w:r><w:r><w:br/><w:t>second line</w:t></w:r>`) +
+		listP("1", "first point") + listP("1", "second point") + listP("2", "step one") +
+		"<w:tbl><w:tr>" + cellP("Item") + cellP("Cost") + "</w:tr><w:tr>" + cellP("a|b") + cellP("12") + "</w:tr></w:tbl>" +
+		wordP("", wordR("Closing words.", false, false)+`<w:r><w:drawing/></w:r><w:r><w:footnoteReference w:id="2"/></w:r>`)
+	return zipOf([]part{
+		contentTypes("/word/document.xml", wordMain),
+		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
+		{"word/numbering.xml", xml + `<w:numbering xmlns:w="` + wns + `">` +
+			`<w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>` +
+			`<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl></w:abstractNum>` +
+			`<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num><w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num></w:numbering>`},
+	})
+}
+
+// slide is a slide of one text shape: the first line, then lines one level in.
+func slide(lines ...string) string {
+	var ps string
+	for i, l := range lines {
+		lvl := ""
+		if i > 0 {
+			lvl = ` lvl="1"`
+		}
+		ps += `<a:p><a:pPr` + lvl + `/><a:r><a:t>` + l + `</a:t></a:r></a:p>`
+	}
+	return xml + `<p:sld xmlns:a="` + ans + `" xmlns:p="` + pns + `"><p:cSld><p:spTree><p:sp><p:txBody>` + ps + `</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+}
+
+func deckPptx() []byte {
+	rel := func(id, file string) string {
+		return fmt.Sprintf(`<Relationship Id="%s" Type="%s/slide" Target="slides/%s"/>`, id, rns, file)
+	}
+	return zipOf([]part{
+		contentTypes("/ppt/presentation.xml", slideMain),
+		{"ppt/presentation.xml", xml + `<p:presentation xmlns:p="` + pns + `" xmlns:r="` + rns + `"><p:sldIdLst>` +
+			`<p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId3"/><p:sldId id="258" r:id="rId4"/></p:sldIdLst></p:presentation>`},
+		{"ppt/_rels/presentation.xml.rels", xml + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			rel("rId2", "slide1.xml") + rel("rId3", "slide3.xml") + rel("rId4", "slide2.xml") + `</Relationships>`},
+		{"ppt/slides/slide1.xml", slide("Welcome")},
+		{"ppt/slides/slide2.xml", slide("Questions", "Ask away")},
+		{"ppt/slides/slide3.xml", slide("The plan", "First step", "Second step")},
+		{"ppt/notesSlides/notesSlide1.xml", slide("Speaker notes that stay out")},
+	})
+}
+
+func rowsCSV() []byte {
+	var b bytes.Buffer
+	b.WriteString("id,name,note\n")
+	for i := 1; i <= 200; i++ {
+		fmt.Fprintf(&b, "%d,\"Doe, Jo %d\",ok\n", i, i)
+	}
+	return b.Bytes()
+}
+
+// bombDocx is a Word file whose first part is a few bytes of XML under a
+// header that claims a terabyte, which a reader that believes the header
+// would allocate for.
+func bombDocx() []byte {
+	content := []byte(xml + "<Types/>")
+	var z bytes.Buffer
+	fw, err := flate.NewWriter(&z, flate.BestCompression)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fw.Write(content)
+	fw.Close()
+	var b bytes.Buffer
+	w := zip.NewWriter(&b)
+	f, err := w.CreateRaw(&zip.FileHeader{
+		Name: "[Content_Types].xml", Method: zip.Deflate, CRC32: crc32.ChecksumIEEE(content),
+		CompressedSize64: uint64(z.Len()), UncompressedSize64: 1 << 40,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	f.Write(z.Bytes())
+	if err := w.Close(); err != nil {
+		log.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+// deepDocx is a Word file whose document part nests paragraphs 150 deep.
+func deepDocx() []byte {
+	body := strings.Repeat("<w:p>", 150) + strings.Repeat("</w:p>", 150)
+	return zipOf([]part{
+		contentTypes("/word/document.xml", wordMain),
+		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
+	})
 }

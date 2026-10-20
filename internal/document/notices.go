@@ -34,29 +34,31 @@ func noticePictures(pages []int, app bool) string {
 	return fmt.Sprintf("[Pages %s are pictures with no text. Hearth isn't open, so they could not be read.]", pageList(pages))
 }
 
-func noticeUnread(pages []int) string {
-	if len(pages) == 1 {
-		return fmt.Sprintf("[Page %s could not be read.]", pageList(pages))
+// noticeUnreadOf is the notice for the parts of a document, called noun in the
+// singular, that could not be read.
+func noticeUnreadOf(parts []int, noun string) string {
+	if len(parts) == 1 {
+		return fmt.Sprintf("[%s %s could not be read.]", capital(noun), pageList(parts))
 	}
-	return fmt.Sprintf("[Pages %s could not be read.]", pageList(pages))
+	return fmt.Sprintf("[%ss %s could not be read.]", capital(noun), pageList(parts))
 }
 
-// noticeTimeLimit says the read ran out of time at page at of total; at 0 it
-// had not yet opened the file.
-func noticeTimeLimit(limit time.Duration, at, total int) string {
+func capital(s string) string { return strings.ToUpper(s[:1]) + s[1:] }
+
+func noticeTimeLimitOf(limit time.Duration, at, total int, noun string) string {
 	secs := int((limit + time.Second - 1) / time.Second)
 	if at == 0 {
-		return fmt.Sprintf("[Reading stopped after %d seconds, before any page was read.]", secs)
+		return fmt.Sprintf("[Reading stopped after %d seconds, before any %s was read.]", secs, noun)
 	}
-	return fmt.Sprintf("[Reading stopped after %d seconds at page %d of %d.]", secs, at, total)
+	return fmt.Sprintf("[Reading stopped after %d seconds at %s %d of %d.]", secs, noun, at, total)
 }
 
-func noticeTooManyPages(from, to int) string {
-	return fmt.Sprintf(`[Pages %d to %d were not read; call files.read with pages "%s".]`, from, to, PagesHint(from, to))
+func noticeTooManyOf(from, to int, noun string) string {
+	return fmt.Sprintf(`[%ss %d to %d were not read; call files.read with pages "%s".]`, capital(noun), from, to, PagesHint(from, to))
 }
 
-func noticeTextCap(at, to int) string {
-	return fmt.Sprintf(`[Reading stopped at %d MB of text, after page %d. To read on, call files.read with pages "%s".]`, MaxText>>20, at, PagesHint(at+1, to))
+func noticeTextCapOf(at, to int, noun string) string {
+	return fmt.Sprintf(`[Reading stopped at %d MB of text, after %s %d. To read on, call files.read with pages "%s".]`, MaxText>>20, noun, at, PagesHint(at+1, to))
 }
 
 // PagesHint is the range to pass as pages to read on from page from, at most
@@ -85,4 +87,43 @@ func pageList(pages []int) string {
 		return parts[0]
 	}
 	return strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
+}
+
+func noticeEmpty(name string) string {
+	return fmt.Sprintf("[%s has no text.]", name)
+}
+
+// noticeUnreadFile is a file whose reader gave up on it part way.
+func noticeUnreadFile(name string) string {
+	return fmt.Sprintf("[%s could not be read all the way through.]", name)
+}
+
+// noticeTimeLimitWhole says a read of a file without pages ran out of time.
+func noticeTimeLimitWhole(limit time.Duration) string {
+	return fmt.Sprintf("[Reading stopped after %d seconds.]", int((limit+time.Second-1)/time.Second))
+}
+
+// noticeTextStop says a file without pages was cut at the text cap.
+func noticeTextStop() string {
+	return fmt.Sprintf("[Reading stopped at %d MB of text.]", MaxText>>20)
+}
+
+// noticeLeftOut says what a Word file has that is not read.
+func noticeLeftOut(images, footnotes bool) string {
+	switch {
+	case images && footnotes:
+		return "[The document has images and footnotes; they were left out.]"
+	case images:
+		return "[The document has images; they were left out.]"
+	}
+	return "[The document has footnotes; they were left out.]"
+}
+
+// noticeCellCap says a table was cut at the cell cap.
+func noticeCellCap(cells int) string {
+	n := strconv.Itoa(cells)
+	if len(n) > 3 {
+		n = n[:len(n)-3] + "," + n[len(n)-3:]
+	}
+	return fmt.Sprintf("[The table has more than %s cells; only the first rows, up to %s cells, are shown. Ask the owner for a smaller file.]", n, n)
 }

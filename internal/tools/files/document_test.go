@@ -27,8 +27,12 @@ func TestReadDocument(t *testing.T) {
 	b.fixture(t, "scan.pdf", "scan.pdf")
 	b.fixture(t, "locked.pdf", "locked.pdf")
 	b.fixture(t, "cut.pdf", "truncated.pdf")
+	b.fixture(t, "notes.docx", "notes.docx")
+	b.fixture(t, "deck.pptx", "deck.pptx")
+	b.fixture(t, "rows.csv", "rows.csv")
 	b.put(t, "fake.pdf", []byte("only words"))
 	b.put(t, "plain.md", []byte("# Plain\n"))
+	b.fixture(t, "wrong.docx", "deck.pptx")
 	b.put(t, "old.pages", []byte("x"))
 
 	cases := []struct {
@@ -62,6 +66,16 @@ func TestReadDocument(t *testing.T) {
 		{"pages past the end", map[string]any{"path": "brief.pdf", "pages": "4-9"}, nil, nil, "brief.pdf has 3 pages"},
 		{"pages that are not a range", map[string]any{"path": "brief.pdf", "pages": "x"}, nil, nil, `such as "4-12"`},
 		{"an offset past the text", map[string]any{"path": "brief.pdf", "offset": 5000}, nil, nil, "past the end"},
+		{"a word file reads as markdown", map[string]any{"path": "notes.docx"},
+			[]string{"[File: notes.docx, a Word document, read as text.]\n\n# Quarterly notes", "| a\\|b | 12 |", "[The document has images and footnotes; they were left out.]"}, []string{"[Page"}, ""},
+		{"a deck reads slide by slide", map[string]any{"path": "deck.pptx"},
+			[]string{"[File: deck.pptx, 3 slides,", "## Slide 1\nWelcome", "## Slide 3"}, nil, ""},
+		{"pages picks a slide", map[string]any{"path": "deck.pptx", "pages": "2"},
+			[]string{"## Slide 2\nThe plan"}, []string{"## Slide 1"}, ""},
+		{"a csv is a table", map[string]any{"path": "rows.csv"},
+			[]string{"[File: rows.csv, a table, read as text.]", "| 1 | Doe, Jo 1 | ok |"}, nil, ""},
+		{"pages on a word file", map[string]any{"path": "notes.docx", "pages": "1"}, nil, nil, "has no pages to pick"},
+		{"a deck named as a word file", map[string]any{"path": "wrong.docx"}, nil, nil, "wrong.docx does not look like a Word document."},
 		{"pages on a text file", map[string]any{"path": "plain.md", "pages": "1"}, nil, nil, "pages applies to PDF"},
 	}
 	for _, tc := range cases {

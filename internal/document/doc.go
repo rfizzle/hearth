@@ -1,5 +1,6 @@
-// Package document reads the text out of a file a bot is pointed at: a PDF
-// today, the other common kinds as their readers land.
+// Package document reads the text out of a file a bot is pointed at: a PDF,
+// a Word file, a PowerPoint deck or a CSV today, the other common kinds as
+// their readers land.
 //
 // Responsibility: decide what kind of file it is from its name and its first
 // bytes, read it within fixed caps, and return its text with page markers
@@ -30,9 +31,11 @@
 //     picture that could not be read.
 //
 // A kind is one row in kinds.go: its name, extensions, the check its first
-// bytes must pass, and its reader. A new kind is a new row and a sub-package.
+// bytes must pass, and its reader. A new kind is a new row and a sub-package. A Word or PowerPoint file is a
+// zip read by office under limits on entries, bytes and XML depth; a CSV is
+// read here into a Markdown table of at most 10,000 cells.
 //
 // See docs/decisions.md#hearth--decisions
 //
-// It imports pdftext and the standard library.
+// It imports pdftext, office and the standard library.
 package document

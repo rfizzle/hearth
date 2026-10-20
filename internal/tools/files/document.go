@@ -50,7 +50,7 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("files.read: %w", err)
 	}
-	if doc.PageCount == 0 {
+	if doc.Text == "" { // a refusal in notices: a password, an empty file, a time limit
 		return tools.Result{Text: strings.Join(doc.Notices, "\n")}, nil
 	}
 	text := doc.Text
@@ -67,7 +67,7 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 	end := from + int64(len(window))
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "[File: %s, %s, read from its text layer.]\n\n%s", name, plural(doc.PageCount, "page"), window)
+	fmt.Fprintf(&out, "[File: %s, %s.]\n\n%s", name, describe(doc), window)
 	next := ""
 	if doc.Next > 0 {
 		next = fmt.Sprintf(`pages "%s"`, document.PagesHint(doc.Next, doc.PageCount))
@@ -86,6 +86,20 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 		out.WriteString("\n\n" + n)
 	}
 	return tools.Result{Text: out.String()}, nil
+}
+
+// describe is what the first line says of a document: its size and where the
+// text came from.
+func describe(doc document.Document) string {
+	switch doc.Kind {
+	case document.KindPPTX:
+		return plural(doc.PageCount, "slide") + ", read from the slides' text"
+	case document.KindDocx:
+		return "a Word document, read as text"
+	case document.KindCSV:
+		return "a table, read as text"
+	}
+	return plural(doc.PageCount, "page") + ", read from its text layer"
 }
 
 func plural(n int, noun string) string {

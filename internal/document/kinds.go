@@ -21,6 +21,9 @@ type row struct {
 // rows is every kind, one line each. Append; do not reorder.
 var rows = []row{
 	{KindPDF, "a PDF", []string{".pdf"}, sniffPDF, readPDF},
+	{KindDocx, labelDocx, []string{".docx"}, sniffDocx, readDocx},
+	{KindPPTX, labelPPTX, []string{".pptx"}, sniffPPTX, readPPTX},
+	{KindCSV, "a CSV file", []string{".csv", ".tsv"}, sniffCSV, readCSV},
 }
 
 // unsupported are formats that are not read; Detect says to export them.
@@ -28,6 +31,10 @@ var unsupported = map[string]bool{
 	".doc": true, ".xls": true, ".ppt": true,
 	".pages": true, ".numbers": true, ".key": true,
 }
+
+// notSniffed are kinds a name must give: their bytes are plain text, so a file
+// with no extension is never taken for one.
+var notSniffed = map[Kind]bool{KindCSV: true}
 
 // refusal is a refusal written as a sentence for the model to read, so it
 // begins with a capital and ends with a full stop as an error string does not.
@@ -65,7 +72,7 @@ func Detect(name string, head []byte) (Kind, error) {
 	}
 	if ext == "" {
 		for _, r := range rows {
-			if r.sniff(head) {
+			if !notSniffed[r.kind] && r.sniff(head) {
 				return r.kind, nil
 			}
 		}
