@@ -126,13 +126,35 @@ public final class AccountsStore {
 
     /// The model ids the service at `address` serves for `key`, so the card
     /// can offer them before Save; nil when the list could not be read, and
-    /// the card then takes a typed id.
+    /// the card then takes a typed id. With no key typed, an address that is
+    /// one saved service's asks that service by its id, so the core uses the
+    /// key it holds and the app never has it.
     public func serviceModels(_ address: String, key: String) async -> [String]? {
-        try? await client.listServiceModels(
+        let saved = key.isEmpty ? savedService(at: address) : nil
+        return try? await client.listServiceModels(
             .with {
-                $0.baseURL = address
-                $0.key = key
+                if let saved {
+                    $0.profile = saved.profile
+                } else {
+                    $0.baseURL = address
+                    $0.key = key
+                }
             })
+    }
+
+    /// The one saved service whose address is `address`, ignoring a trailing
+    /// slash; none when no service or several have it.
+    private func savedService(at address: String) -> Hearth_V1_ProviderAccount? {
+        func plain(_ text: String) -> String {
+            var text = text.trimmingCharacters(in: .whitespaces)
+            while text.hasSuffix("/") { text.removeLast() }
+            return text
+        }
+        let found = accounts.filter {
+            $0.provider == .openaiCompatible && !$0.profile.isEmpty
+                && plain($0.baseURL) == plain(address)
+        }
+        return found.count == 1 ? found[0] : nil
     }
 
     /// Forgets the last add-a-service failure, when the owner closes the card.

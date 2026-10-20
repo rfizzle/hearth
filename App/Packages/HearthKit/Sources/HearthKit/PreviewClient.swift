@@ -355,10 +355,23 @@ extension PreviewClient {
         tiers
     }
 
+    /// Answers as the core does: a saved service by its id, any other by the
+    /// address and key in the request, where a service on the internet is
+    /// refused without a key.
     public func listServiceModels(
         _ request: Hearth_V1_ListServiceModelsRequest
     ) async throws -> [String] {
-        Fixtures.ollamaModels
+        if request.profile.isEmpty {
+            let host = URL(string: request.baseURL)?.host() ?? ""
+            let local = ["localhost", "127.0.0.1", "::1"].contains(host)
+            guard !request.baseURL.isEmpty else {
+                throw PageRefusal(message: "enter the service's address, the field was empty")
+            }
+            guard local || !request.key.isEmpty else {
+                throw PageRefusal(message: "The key was refused.")
+            }
+        }
+        return Fixtures.ollamaModels
     }
 
     public func syncCredentials(

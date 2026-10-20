@@ -105,11 +105,3 @@ func (s *providerService) ExportCredential(_ context.Context, req *connect.Reque
 	}
 	return connect.NewResponse(&hearthv1.ExportCredentialResponse{Record: wire.CredentialToProto(rec)}), nil
 }
-
-// ListServiceModels answers unimplemented for now. Asking a saved service
-// needs its stored address and key, and asking an unsaved one needs the
-// provider's check that a key never goes to another machine over plain
-// http; neither is exported by the provider yet.
-func (s *providerService) ListServiceModels(context.Context, *connect.Request[hearthv1.ListServiceModelsRequest]) (*connect.Response[hearthv1.ListServiceModelsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("listing a service's models is not served yet"))
-}

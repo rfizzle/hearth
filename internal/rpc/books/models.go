@@ -21,6 +21,17 @@ func (s Models) ListKnownServices(ctx context.Context, _ *connect.Request[hearth
 	return connect.NewResponse(&hearthv1.ListKnownServicesResponse{Services: wire.Each(found, knownServiceToProto)}), nil
 }
 
+// ListServiceModels asks a service which models it serves, so the card can
+// offer a picker before the key is saved. A saved service is asked by its
+// id; any other by the address and key in the request, which are used for
+// this call and kept nowhere.
+// See docs/model.md#providers-and-models
+func (s Models) ListServiceModels(ctx context.Context, req *connect.Request[hearthv1.ListServiceModelsRequest]) (*connect.Response[hearthv1.ListServiceModelsResponse], error) {
+	m := req.Msg
+	ids, err := s.Accounts.ServiceModels(ctx, m.GetProfile(), m.GetBaseUrl(), m.GetKey())
+	return wire.Reply(&hearthv1.ListServiceModelsResponse{Models: ids}, err)
+}
+
 // Tiers is the owner's mapping and every model the accounts offer, the
 // runtimes on this Mac among them.
 func (s Models) Tiers(ctx context.Context, _ *connect.Request[hearthv1.TiersRequest]) (*connect.Response[hearthv1.TiersResponse], error) {

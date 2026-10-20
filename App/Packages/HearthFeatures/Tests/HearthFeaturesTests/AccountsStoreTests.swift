@@ -74,3 +74,36 @@ private func changed(_ account: Hearth_V1_ProviderAccount) -> Hearth_V1_Subscrib
     await accounts.handle(changed(removed))
     #expect(accounts.accounts.isEmpty)
 }
+
+@MainActor
+@Test func aSavedServiceListsItsModelsWithNoKeyTyped() async throws {
+    let accounts = accountsStore()
+    let address = "https://llm.acme.example/v1"
+    await accounts.saveService(
+        .with {
+            $0.displayName = "Acme gateway"
+            $0.baseURL = address
+            $0.defaultModel = "acme-large"
+            $0.key = "gw-secret-9c4e"
+        })
+
+    // The saved service is asked by its id: no key is typed and none is sent.
+    let listed = await accounts.serviceModels(address + "/", key: "")
+    #expect(listed == Fixtures.ollamaModels)
+
+    // An address that is not saved needs a key; with one it is asked as typed.
+    #expect(await accounts.serviceModels("https://other.example/v1", key: "") == nil)
+    #expect(
+        await accounts.serviceModels("https://other.example/v1", key: "k-1")
+            == Fixtures.ollamaModels)
+
+    // Two services at one address leave no way to say which key is meant.
+    await accounts.saveService(
+        .with {
+            $0.displayName = "Acme again"
+            $0.baseURL = address
+            $0.defaultModel = "acme-small"
+            $0.key = "gw-secret-1111"
+        })
+    #expect(await accounts.serviceModels(address, key: "") == nil)
+}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -100,6 +101,15 @@ type gateway struct {
 	mu     sync.Mutex
 	status int
 	body   string
+	// seen is each request's address and authorization header, in order.
+	seen []string
+}
+
+// asked is what the service was asked, in order.
+func (g *gateway) asked() []string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return slices.Clone(g.seen)
 }
 
 func (g *gateway) set(status int, body string) {
@@ -109,9 +119,10 @@ func (g *gateway) set(status int, body string) {
 }
 
 func (g *gateway) client() *http.Client {
-	return &http.Client{Transport: gatewayFunc(func(*http.Request) (*http.Response, error) {
+	return &http.Client{Transport: gatewayFunc(func(r *http.Request) (*http.Response, error) {
 		g.mu.Lock()
 		defer g.mu.Unlock()
+		g.seen = append(g.seen, r.URL.String()+" "+r.Header.Get("Authorization"))
 		return &http.Response{StatusCode: g.status, Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(g.body))}, nil
 	})}
 }

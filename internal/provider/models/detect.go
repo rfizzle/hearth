@@ -36,7 +36,7 @@ func Detect(ctx context.Context, a *provider.Accounts) []Service {
 		func() {
 			ctx, cancel := context.WithTimeout(ctx, probeWait)
 			defer cancel()
-			if ids, err := a.ListModels(ctx, k.BaseURL, ""); err == nil {
+			if ids, err := a.ServiceModels(ctx, "", k.BaseURL, ""); err == nil {
 				out[i].Detected, out[i].Models = true, ids
 			}
 		}()

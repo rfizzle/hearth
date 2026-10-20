@@ -187,7 +187,8 @@ public struct ServicePicker: View {
 }
 
 /// Reads the models a service serves from its address and key; nil when it
-/// could not.
+/// could not. An empty key asks for a saved service at that address by the key
+/// the core holds.
 public typealias ModelLister = @Sendable (String, String) async -> [String]?
 
 extension ServicePicker {

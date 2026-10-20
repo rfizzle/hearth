@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/org/widget"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/provider/gateway"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
@@ -38,6 +39,8 @@ func Fail(err error) error {
 		{connect.CodeInvalidArgument, []error{orchestrate.ErrMismatch, orchestrate.ErrAttachment, org.ErrReservedName, widget.ErrInvalid}},
 		{connect.CodeInvalidArgument, []error{inbox.ErrNoStanding, inbox.ErrBadFolder, inbox.ErrReservedFolder}},
 		{connect.CodeInvalidArgument, []error{integration.ErrEmptyKey, integration.ErrUnknown}},
+		{connect.CodeInvalidArgument, []error{gateway.ErrAddress}},
+		{connect.CodeUnavailable, []error{gateway.ErrList}},
 		{connect.CodeInvalidArgument, []error{handbook.ErrNoTitle, handbook.ErrFull, store.ErrBadScope}},
 		{connect.CodeUnavailable, []error{ErrUnavailable}},
 	}

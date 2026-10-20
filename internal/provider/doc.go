@@ -39,6 +39,9 @@
 //   - Saving a service first asks its address for models with its key and
 //     refuses, in plain words, anything that is not a model list; nothing
 //     is stored then. The words never hold the key or what the service sent.
+//   - Listing a service's models before it is saved (ServiceModels) uses the
+//     key it is handed for that call only and stores nothing; a saved service
+//     is listed by its id with the key already held, never one from the caller.
 //
 // Seams it is handed: the http client that reaches the authorization server,
 // the function that opens the browser, the directory the credentials live in,

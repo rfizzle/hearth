@@ -154,13 +154,25 @@ struct ServiceFields: View {
         }
         models = nil
         isListing = false
-        guard let onListModels, !address.isEmpty, !key.isEmpty || isLocal else { return }
+        guard let onListModels, !address.isEmpty, !key.isEmpty || isLocal || isStoredAddress
+        else { return }
         do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
         isListing = true
         let listed = await onListModels(address, key)
         guard !Task.isCancelled else { return }
         isListing = false
         models = listed?.isEmpty == false ? listed : nil
+    }
+
+    /// Whether the address is the saved service's own, so the core can list its
+    /// models with the key it holds and none need be typed.
+    private var isStoredAddress: Bool {
+        guard let account else { return false }
+        func plain(_ text: String) -> String {
+            text.trimmingCharacters(in: .whitespaces).trimmingCharacters(
+                in: CharacterSet(charactersIn: "/"))
+        }
+        return plain(address) == plain(account.baseURL)
     }
 
     /// Save waits for what every service needs; whether a key is needed is

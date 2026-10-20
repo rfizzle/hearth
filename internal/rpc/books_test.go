@@ -257,9 +257,6 @@ func TestListKnownServices_FillsDetection(t *testing.T) {
 			t.Errorf("%s: detected %v with %v; a runtime answering on this Mac is detected with its models", s.GetId(), s.GetDetected(), s.GetModels())
 		}
 	}
-	if err := errOf(t, c.prov.ListServiceModels, &hearthv1.ListServiceModelsRequest{Profile: "p"}); code(err) != connect.CodeUnimplemented {
-		t.Errorf("ListServiceModels = %v, want unimplemented", err)
-	}
 }
 
 func TestUpdateBot_EditsWithAnOverride(t *testing.T) {
