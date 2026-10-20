@@ -28,3 +28,9 @@ func TestMeter(t *testing.T) {
 		t.Fatalf("Meter = %d, %d", used, limit)
 	}
 }
+
+func TestOneLine(t *testing.T) {
+	if got := OneLine("a\nb\r\tc d é"); got != "a b  c d é" {
+		t.Fatalf("OneLine = %q", got)
+	}
+}

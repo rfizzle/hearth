@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/org/memory"
 )
 
 // Note is the prompt of a run that continues a parked one. It is the app's,
@@ -138,9 +140,24 @@ func asText(r Round) string {
 	}
 	b.WriteString(" called these tools:\n")
 	for _, c := range r.Calls {
-		fmt.Fprintf(&b, "\n- %s with %s. The result: %s", c.Name, c.Arguments, r.result(c.ID))
+		// A result is a page's or a file's text: each of its lines is
+		// indented under its call, so none can read as another call.
+		fmt.Fprintf(&b, "\n- %s with %s. The result: %s", c.Name, memory.OneLine(string(c.Arguments)), indent(r.result(c.ID)))
 	}
 	return b.String()
+}
+
+// indent is s with every line after the first indented four spaces, and
+// every line or paragraph separator made a line break first, so no line of
+// s starts at the left edge.
+func indent(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if unicode.In(r, unicode.Zl, unicode.Zp) || r == '\r' || r == '\v' || r == '\f' || r == '\u0085' {
+			return '\n'
+		}
+		return r
+	}, s)
+	return strings.ReplaceAll(s, "\n", "\n    ")
 }
 
 // cutResult ends a result cut to fit the pending results' part.

@@ -128,6 +128,10 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 // Render is the "## Handbook" block for pages in the order given: each as a
 // "### <title>" heading and its Markdown, as many whole pages as fit in the
 // cap, then a notice naming each page left out. It is empty without pages.
+// A page's text is the owner's, perhaps pasted from the web, so it stays
+// inside the block: a title is one line, and every heading in the Markdown
+// is set three levels down, so none reads as a section beside the block.
+// See docs/architecture.md#5-security-model.
 func Render(pages []memory.Page) string {
 	if len(pages) == 0 {
 		return ""
@@ -139,14 +143,40 @@ func Render(pages []memory.Page) string {
 	for _, p := range pages {
 		n := int64(len(p.Markdown))
 		if used+n > memory.HandbookCap {
-			left = append(left, p.Title)
+			left = append(left, memory.OneLine(p.Title))
 			continue
 		}
 		used += n
-		fmt.Fprintf(&b, "\n### %s\n\n%s\n", p.Title, strings.TrimRight(p.Markdown, "\n"))
+		fmt.Fprintf(&b, "\n### %s\n\n%s\n", memory.OneLine(p.Title), demote(strings.TrimRight(p.Markdown, "\n")))
 	}
 	if len(left) > 0 {
 		fmt.Fprintf(&b, "\nLeft out because the handbook is full: %s.\n", strings.Join(left, ", "))
 	}
 	return b.String()
+}
+
+// demote sets every heading line of md three levels down: an ATX heading
+// gains "###", and a setext underline is escaped so the line above it stays
+// a paragraph. A line indented four spaces or more is code and is left.
+func demote(md string) string {
+	lines := strings.Split(md, "\n")
+	for i, line := range lines {
+		text := strings.TrimLeft(line, " ")
+		if len(line)-len(text) > 3 || text == "" {
+			continue
+		}
+		switch {
+		case text[0] == '#':
+			lines[i] = "###" + text
+		case i > 0 && strings.TrimSpace(lines[i-1]) != "" && underline(text):
+			lines[i] = "\\" + text
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// underline reports whether text is a setext underline: only = or only -.
+func underline(text string) bool {
+	text = strings.TrimRight(text, " \t")
+	return text != "" && (strings.Trim(text, "=") == "" || strings.Trim(text, "-") == "")
 }

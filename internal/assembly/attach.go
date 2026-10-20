@@ -20,6 +20,10 @@ import (
 // inside a folder hearth keeps for itself.
 var ErrAttachment = errors.New("that cannot be attached")
 
+// maxAttach is the largest file a message may carry: the copy runs while
+// the conversation waits, and a larger one is better shared as a folder.
+const maxAttach = 64 << 20
+
 // maxCopies is how many files of one name the Inbox may hold before a drop
 // of another is refused.
 const maxCopies = 1000
@@ -93,6 +97,8 @@ func attach(inbox string, readable, reserved []string, p string) (org.FileRef, e
 		return refuse("is a folder; attach the files in it")
 	case !info.Mode().IsRegular():
 		return refuse("is not a file")
+	case info.Size() > maxAttach:
+		return org.FileRef{}, fmt.Errorf("%s is larger than 64 MB; share a folder instead: %w", filepath.Base(p), ErrAttachment)
 	}
 	for _, r := range reserved {
 		if inside(r, real) {

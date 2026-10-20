@@ -7,7 +7,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/rfizzle/hearth/internal/agent"
@@ -247,16 +246,44 @@ func withSummary(hist []agent.Message, summary string) ([]agent.Message, int) {
 }
 
 // handbookBlock is the "## Handbook" block for pages, cut at its cap with a
-// notice should the headings take it over.
+// notice should the headings take it over. The cut is at the end of a line
+// and closes a code fence left open, so the notice and the notes after the
+// block are never read as part of a page's code.
 func handbookBlock(pages []memory.Page) string {
 	// Owner-supplied text, which may be pasted from a web page: the pages'
 	// titles and Markdown, under the "## Handbook" heading.
 	b := handbook.Render(pages)
 	const notice = "\n(The handbook was cut here: it is over its size.)\n"
-	if len(b) > handbookCap {
-		b = cut(b, handbookCap-len(notice)) + notice
+	if len(b) <= handbookCap {
+		return b
 	}
-	return b
+	b = cut(b, handbookCap-len(notice)-len("```\n"))
+	b = b[:strings.LastIndex(b, "\n")+1]
+	if fence := openFence(b); fence != "" {
+		b += fence + "\n"
+	}
+	return b + notice
+}
+
+// openFence is the fence ("```" or "~~~") of a code block md ends inside,
+// or "" when it ends outside one.
+func openFence(md string) string {
+	open := ""
+	for _, line := range strings.Split(md, "\n") {
+		t := strings.TrimLeft(line, " ")
+		if len(line)-len(t) > 3 {
+			continue
+		}
+		for _, f := range []string{"```", "~~~"} {
+			switch {
+			case open == "" && strings.HasPrefix(t, f):
+				open = f
+			case open == f && strings.HasPrefix(t, f):
+				open = ""
+			}
+		}
+	}
+	return open
 }
 
 // notesBlock is the "## Your notes" block: pinned notes first, then the
@@ -282,7 +309,7 @@ func notesBlock(notes []memory.Note) string {
 	for i, n := range ordered {
 		// Bot-written text, which the owner may edit: each note on one line
 		// under "## Your notes".
-		line := "- " + n.CreatedAt.Format("2006-01-02") + ": " + oneLine(n.Text) + "\n"
+		line := "- " + n.CreatedAt.Format("2006-01-02") + ": " + memory.OneLine(n.Text) + "\n"
 		if b.Len()+len(line) > notesCap-room {
 			fmt.Fprintf(&b, "(and %d older notes)\n", len(ordered)-i)
 			break
@@ -300,7 +327,7 @@ func attachLines(refs []org.FileRef) string {
 	for i, f := range refs {
 		// Owner-supplied text: the dropped file's name and where it is, on
 		// one line.
-		line := fmt.Sprintf("File attached: %s (%s) at %s\n", oneLine(f.Name), size(f.Path), oneLine(f.Path))
+		line := fmt.Sprintf("File attached: %s (%s) at %s\n", memory.OneLine(f.Name), size(f.Path), memory.OneLine(f.Path))
 		if b.Len()+len(line) > attachCap-room {
 			fmt.Fprintf(&b, "(and %d more files)\n", len(refs)-i)
 			break
@@ -322,18 +349,6 @@ func size(path string) string {
 		return fmt.Sprintf("%d KB", (info.Size()+1<<10-1)>>10)
 	}
 	return fmt.Sprintf("%.1f MB", float64(info.Size())/(1<<20))
-}
-
-// oneLine is s with every control character and line or paragraph
-// separator, a line break among them, made a space, so a note or a file name
-// cannot start a line of its own.
-func oneLine(s string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp) {
-			return ' '
-		}
-		return r
-	}, s)
 }
 
 // cut is s cut to at most n bytes on a character boundary.

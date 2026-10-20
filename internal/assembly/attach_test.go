@@ -105,6 +105,13 @@ func TestAttach_NeverWritesThroughALink(t *testing.T) {
 
 func TestAttach_Refuses(t *testing.T) {
 	d := newDrop(t)
+	big := filepath.Join(d.outside, "disk.img")
+	if err := os.WriteFile(big, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Truncate(big, 64<<20+1); err != nil { // sparse: no disk used
+		t.Fatal(err)
+	}
 	link := filepath.Join(d.outside, "shortcut.txt")
 	if err := os.Symlink(filepath.Join(d.reserved, "report.txt"), link); err != nil {
 		t.Fatal(err)
@@ -116,6 +123,7 @@ func TestAttach_Refuses(t *testing.T) {
 		"a reserved file":       filepath.Join(d.reserved, "report.txt"),
 		"a link to a reserved":  link,
 		"a reserved via dotdot": filepath.Join(d.outside, "..", "Support", "report.txt"),
+		"a file over 64 MB":     big,
 	}
 	for name, p := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -124,6 +132,9 @@ func TestAttach_Refuses(t *testing.T) {
 				t.Fatalf("Attach = %+v, %v; want ErrAttachment and nothing", refs, err)
 			}
 		})
+	}
+	if _, err := d.attach(big); err == nil || err.Error() != "disk.img is larger than 64 MB; share a folder instead: "+assembly.ErrAttachment.Error() {
+		t.Errorf("a large file is refused with %v", err)
 	}
 	if _, err := assembly.Attach("", nil, nil, []string{filepath.Join(d.outside, "report.txt")}); err == nil {
 		t.Error("attached with no Hearth folder")

@@ -13,7 +13,11 @@
 // See docs/model.md#7-memory-writes.
 package memory
 
-import "time"
+import (
+	"strings"
+	"time"
+	"unicode"
+)
 
 // The limits: how many notes a bot keeps before it is asked to tidy them,
 // and how many bytes of handbook go into every run.
@@ -71,4 +75,16 @@ func Meter(pages []Page) (used, limit int64) {
 		used += int64(len(p.Markdown))
 	}
 	return used, HandbookCap
+}
+
+// OneLine is s with every control character and line or paragraph
+// separator, a line break among them, made a space, so text from a note, a
+// page title or a file name cannot start a line of its own where it is put.
+func OneLine(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp) {
+			return ' '
+		}
+		return r
+	}, s)
 }

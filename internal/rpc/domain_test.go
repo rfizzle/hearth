@@ -183,6 +183,10 @@ func TestErrorsCarryTheCodeTheAppReads(t *testing.T) {
 			_, err := c.bot.CreateBot(ctx, connect.NewRequest(&hearthv1.CreateBotRequest{Name: "Eli", JobDescription: "Help."}))
 			return err
 		}, connect.CodeInvalidArgument},
+		{"hire a bot whose folder would be the Inbox", func() error {
+			_, err := c.bot.CreateBot(ctx, connect.NewRequest(&hearthv1.CreateBotRequest{Name: "inbox", JobDescription: "Help.", Tier: hearthv1.Tier_TIER_FAST}))
+			return err
+		}, connect.CodeInvalidArgument},
 		{"hire into a folder another bot has", func() error {
 			_, err := c.bot.CreateBot(ctx, connect.NewRequest(&hearthv1.CreateBotRequest{Name: "dana", JobDescription: "Help.", Tier: hearthv1.Tier_TIER_FAST}))
 			return err

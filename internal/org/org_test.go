@@ -1,6 +1,7 @@
 package org
 
 import (
+	"errors"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -140,5 +141,18 @@ func TestEnumValuesAreStable(t *testing.T) {
 	want := []int{1, 2, 3, 1, 2, 1, 1, 2, 3, 9, 1, 2, 4, 5, 6, 0, 1, 2}
 	if !slices.Equal(got, want) {
 		t.Fatalf("enum values = %v, want %v", got, want)
+	}
+}
+
+func TestCheckName(t *testing.T) {
+	for _, name := range []string{"Inbox", "inbox", " INBOX ", ".Inbox"} {
+		if err := CheckName(name); !errors.Is(err, ErrReservedName) {
+			t.Errorf("CheckName(%q) = %v, want ErrReservedName", name, err)
+		}
+	}
+	for _, name := range []string{"Dana", "Inbox Bot", "Inboxer"} {
+		if err := CheckName(name); err != nil {
+			t.Errorf("CheckName(%q) = %v, want nil", name, err)
+		}
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 // inbox is the folder files the owner drops in without a home land in.
-const inbox = "Inbox"
+const inbox = org.InboxFolder
 
 // ErrOutside is returned when a requested path resolves outside the root.
 var ErrOutside = errors.New("the path is outside the folder")

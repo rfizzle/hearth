@@ -28,6 +28,9 @@ func (s *botService) CreateBot(ctx context.Context, req *connect.Request[hearthv
 	if err := need("name", m.GetName(), "job_description", m.GetJobDescription()); err != nil {
 		return nil, err
 	}
+	if err := org.CheckName(m.GetName()); err != nil {
+		return nil, fail(err)
+	}
 	o, err := s.opts.Store.Org(ctx)
 	if err != nil {
 		return nil, fail(err)

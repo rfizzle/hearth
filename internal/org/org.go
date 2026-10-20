@@ -1,6 +1,8 @@
 package org
 
 import (
+	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -89,6 +91,24 @@ func NewBot(name, role, desc string, tier Tier, workspaceRoot string) (Bot, []Gr
 	}
 	dm := Conversation{Kind: ConversationDM, Title: name}
 	return bot, grants, dm
+}
+
+// InboxFolder is the name of the folder in the Hearth folder that dropped
+// files land in. Every bot may read it, so no bot may own it.
+const InboxFolder = "Inbox"
+
+// ErrReservedName refuses a bot whose folder would be the Hearth folder's
+// Inbox.
+var ErrReservedName = errors.New("that name is taken by the Hearth folder's Inbox, where dropped files go; choose another")
+
+// CheckName is ErrReservedName for a bot name whose folder would be the
+// Inbox, in any case, since the Mac's disk does not tell the two apart.
+// See docs/model.md#access.
+func CheckName(name string) error {
+	if strings.EqualFold(FolderName(name), InboxFolder) {
+		return fmt.Errorf("%q: %w", name, ErrReservedName)
+	}
+	return nil
 }
 
 // FolderName is the form of a bot's name its folder is created under: path

@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/orchestrate"
+	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
@@ -32,7 +33,7 @@ func fail(err error) error {
 		code = connect.CodeAlreadyExists
 	case errors.Is(err, orchestrate.ErrBusy), errors.Is(err, orchestrate.ErrWaiting), errors.Is(err, orchestrate.ErrPaused), errors.Is(err, orchestrate.ErrClosed):
 		code = connect.CodeFailedPrecondition
-	case errors.Is(err, orchestrate.ErrMismatch), errors.Is(err, orchestrate.ErrAttachment), widgetwire.Invalid(err), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder), errors.Is(err, inbox.ErrReservedFolder):
+	case errors.Is(err, orchestrate.ErrMismatch), errors.Is(err, orchestrate.ErrAttachment), errors.Is(err, org.ErrReservedName), widgetwire.Invalid(err), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder), errors.Is(err, inbox.ErrReservedFolder):
 		code = connect.CodeInvalidArgument
 	case errors.Is(err, ErrUnavailable):
 		code = connect.CodeUnavailable
