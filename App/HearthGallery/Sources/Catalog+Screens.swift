@@ -22,7 +22,8 @@ extension Catalog {
             GalleryPage(
                 package: package, name: "BotList", states: botListStates),
             GalleryPage(
-                package: package, name: "ConversationScreen", states: [conversationMidStream()]),
+                package: package, name: "ConversationScreen",
+                states: [conversationMidStream(), conversationEmpty()]),
         ]
     }
 
@@ -77,7 +78,19 @@ extension Catalog {
         return GalleryState(
             name: "mid-stream", width: 560,
             view: AnyView(
-                ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 520)))
+                ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 360)))
+    }
+}
+
+extension Catalog {
+    /// A conversation nobody has written in yet: the id matches no messages.
+    fileprivate static func conversationEmpty() -> GalleryState {
+        let client = PreviewClient()
+        let relay = EventRelay(client: client)
+        let store = ConversationStore(client: client, relay: relay, conversationID: "empty")
+        return GalleryState(
+            name: "empty", width: 560,
+            view: AnyView(ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 360)))
     }
 }
 

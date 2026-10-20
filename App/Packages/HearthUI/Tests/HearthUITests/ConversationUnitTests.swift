@@ -14,7 +14,9 @@ import Testing
     #expect(Composer.canSend(draft: "Add a section.", isWorking: false))
     #expect(!Composer.showsStop(isWorking: false))
     #expect(!Composer.canSend(draft: " \n", isWorking: false))
-    #expect(Composer.PreviewState.allCases.count == 3)
+    #expect(Composer.PreviewState.allCases.count == 4)
+    #expect(Composer.PreviewState.threeLines.draft.split(separator: "\n").count == 3)
+    #expect(Composer.PreviewState.empty.draft.isEmpty)
 }
 
 @MainActor

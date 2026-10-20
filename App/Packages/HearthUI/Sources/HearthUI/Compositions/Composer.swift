@@ -1,12 +1,17 @@
-// Composer is where the owner writes to a bot: a TextEditor, a Send button,
-// and a Stop button while the bot is working. Return sends and Shift-Return
-// starts a new line; Command-Period stops. Send is disabled while a run works,
-// since the core takes one run per conversation at a time, and while the draft
-// is blank. It composes a system TextEditor and Buttons, so keyboard and
-// VoiceOver behaviour is theirs; the editor's label names the bot. The draft
-// is presentation state and clears once the send succeeds, so a refused
-// message is still there to try again. A TextEditor until attachments
-// need an NSTextView.
+// Composer is where the owner writes to a bot: a text field on a pane of
+// Liquid Glass with a round Send button beside it, which becomes a round Stop
+// button while the bot is working. It is the one custom glass hearth draws:
+// the control layer floating over the scrolling transcript, mounted by the
+// screen as a bottom bar. Return sends and Shift-Return starts a new line;
+// Command-Period stops. Send is disabled while a run works, since the core
+// takes one run per conversation at a time, and while the draft is blank. It
+// composes a system TextField and Buttons, so keyboard and VoiceOver
+// behaviour is theirs; the field's label names the bot. The field is a
+// vertical-axis TextField that grows to eight lines, not a TextEditor, which
+// has no height of its own and fills the whole bar. The draft is presentation
+// state and clears once the send succeeds, so a refused message is still
+// there to try again.
+// See docs/design.md#materials
 
 import HearthDesign
 import SwiftUI
@@ -19,8 +24,6 @@ public struct Composer: View {
     let onStop: () -> Void
 
     @State private var draft: String
-    @ScaledMetric(relativeTo: .body) private var minHeight: CGFloat = 36
-    @ScaledMetric(relativeTo: .body) private var maxHeight: CGFloat = 160
 
     /// A composer labelled `label` ("Message Dana"); `isWorking` while the
     /// conversation's run has not ended.
@@ -39,30 +42,47 @@ public struct Composer: View {
     }
 
     public var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            TextEditor(text: $draft)
-                .font(Theme.body)
-                .foregroundStyle(Theme.color(.textPrimary))
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: minHeight, maxHeight: maxHeight)
-                .padding(6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8).fill(Theme.color(.surfaceSecondary))
-                )
-                .accessibilityLabel(label)
-                .onKeyPress(keys: [.return], phases: .down) { press in
-                    if press.modifiers.contains(.shift) { return .ignored }
-                    send()
-                    return .handled
+        GlassEffectContainer(spacing: Theme.Spacing.sm) {
+            HStack(alignment: .bottom, spacing: Theme.Spacing.sm) {
+                editor
+                if Self.showsStop(isWorking: isWorking) {
+                    Button("Stop", systemImage: "stop.fill", action: onStop)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .labelStyle(.iconOnly)
+                        .controlSize(.large)
+                        .keyboardShortcut(".", modifiers: .command)
+                        .help("Stop (⌘.)")
+                } else {
+                    Button("Send", systemImage: "arrow.up", action: send)
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .labelStyle(.iconOnly)
+                        .controlSize(.large)
+                        .disabled(!Self.canSend(draft: draft, isWorking: isWorking))
+                        .help("Send (Return)")
                 }
-            if Self.showsStop(isWorking: isWorking) {
-                Button("Stop", action: onStop)
-                    .keyboardShortcut(".", modifiers: .command)
             }
-            Button("Send", action: send)
-                .buttonStyle(.borderedProminent)
-                .disabled(!Self.canSend(draft: draft, isWorking: isWorking))
         }
+        .padding(.horizontal, Theme.Spacing.lg)
+        .padding(.bottom, Theme.Spacing.md)
+    }
+
+    private var editor: some View {
+        TextField(label, text: $draft, axis: .vertical)
+            .textFieldStyle(.plain)
+            .lineLimit(1...8)
+            .font(Theme.body)
+            .foregroundStyle(Theme.color(.textPrimary))
+            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.vertical, Theme.Spacing.sm)
+            .glassEffect(.regular, in: .rect(cornerRadius: Theme.Radius.lg))
+            .accessibilityLabel(label)
+            .onKeyPress(keys: [.return], phases: .down) { press in
+                if press.modifiers.contains(.shift) { return .ignored }
+                send()
+                return .handled
+            }
     }
 
     private func send() {
@@ -92,10 +112,16 @@ extension Composer {
     public enum PreviewState: String, CaseIterable, Sendable {
         case empty
         case drafted
+        case threeLines
         case working
 
         var draft: String {
-            self == .empty ? "" : "Add a section on running costs."
+            switch self {
+            case .empty: ""
+            case .drafted, .working: "Add a section on running costs."
+            case .threeLines:
+                "Add a section on running costs.\nKeep it to one paragraph.\nUse pounds, not dollars."
+            }
         }
     }
 
@@ -109,4 +135,5 @@ extension Composer {
 
 #Preview("Empty") { Composer(previewState: .empty).padding() }
 #Preview("Drafted") { Composer(previewState: .drafted).padding() }
+#Preview("Three lines") { Composer(previewState: .threeLines).padding() }
 #Preview("Working") { Composer(previewState: .working).padding() }
