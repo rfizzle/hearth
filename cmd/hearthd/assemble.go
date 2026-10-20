@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
@@ -36,6 +38,10 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		_ = db.Close()
 		return rpc.Options{}, nil, err
 	}
+	if _, err := db.BackfillAskOwner(ctx); err != nil {
+		_ = db.Close()
+		return rpc.Options{}, nil, fmt.Errorf("give older bots the right to ask: %w", err)
+	}
 	integrations := &integration.Integrations{Keys: accounts.Keys}
 	bus := orchestrate.NewBus()
 	go bus.Heartbeats(ctx)
@@ -59,10 +65,29 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		Accounts:     accounts,
 		Integrations: integrations,
 		Templates:    skill.Templates(),
-		Streams:      deps.Streams,
-		Scrub:        deps.Scrub,
+		Drafter:      drafter(skill.Templates(), deps.Streams, deps.Scrub),
 		Bus:          bus,
 	}, func() { _ = db.Close() }, nil
+}
+
+// drafter proposes a bot with the model the Fast tier resolves to. A model
+// that cannot be opened, or that fails, is unavailable to the app, in the
+// words the owner reads; a reply that cannot be read is not.
+func drafter(templates []org.RoleTemplate, streams func(org.Tier) (agent.Stream, error), scrub agent.Scrub) rpc.Drafter {
+	return func(ctx context.Context, r rpc.DraftRequest) (rpc.Draft, error) {
+		stream, err := streams(org.TierFast)
+		if err != nil {
+			return rpc.Draft{}, rpc.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+		}
+		d, err := draft.Draft(ctx, draft.Input{
+			Description: r.Description, TemplateID: r.TemplateID, Tier: r.Tier,
+			Templates: templates, Stream: stream, Scrub: scrub,
+		})
+		if errors.Is(err, draft.ErrUnavailable) {
+			err = rpc.Unavailable(err)
+		}
+		return rpc.Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
+	}
 }
 
 // withModels gives the orchestrator its models and its scrub from the

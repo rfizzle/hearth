@@ -29,6 +29,16 @@ func TestDraftBot_ProposesAndStoresNothing(t *testing.T) {
 	}
 }
 
+func TestDraftBot_WithNoDrafterIsUnavailable(t *testing.T) {
+	r := newRig(t)
+	r.opts.Drafter = nil
+	c := newClients(serve(t, r.opts), testToken)
+	_, err := c.bot.DraftBot(t.Context(), connect.NewRequest(&hearthv1.DraftBotRequest{Description: "help", Tier: hearthv1.Tier_TIER_FAST}))
+	if connect.CodeOf(err) != connect.CodeUnavailable || !strings.Contains(err.Error(), "sign in") {
+		t.Errorf("err = %v, want unavailable in plain words", err)
+	}
+}
+
 func TestDraftBot_ErrorsAreInPlainWords(t *testing.T) {
 	t.Run("a reply that cannot be read", func(t *testing.T) {
 		r := newRig(t, answer("Sure, I would hire a friendly person."))
@@ -40,7 +50,7 @@ func TestDraftBot_ErrorsAreInPlainWords(t *testing.T) {
 	})
 	t.Run("no model", func(t *testing.T) {
 		r := newRig(t)
-		r.opts.Streams = func(org.Tier) (agent.Stream, error) { return nil, errors.New("no account is signed in") }
+		r.opts.Drafter = drafterOver(func(org.Tier) (agent.Stream, error) { return nil, errors.New("no account is signed in") }, nil)
 		c := newClients(serve(t, r.opts), testToken)
 		_, err := c.bot.DraftBot(t.Context(), connect.NewRequest(&hearthv1.DraftBotRequest{Description: "help", Tier: hearthv1.Tier_TIER_FAST}))
 		if connect.CodeOf(err) != connect.CodeUnavailable || !strings.Contains(err.Error(), "no account is signed in") {

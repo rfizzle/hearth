@@ -2,12 +2,10 @@ package rpc
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"connectrpc.com/connect"
 
-	"github.com/rfizzle/hearth/internal/agent"
-	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
@@ -72,16 +70,10 @@ func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1
 	if err != nil {
 		return nil, err
 	}
-	in := draft.Input{
-		Description: m.GetDescription(), TemplateID: m.GetTemplateId(), Tier: tier,
-		Templates: s.opts.Templates, Scrub: s.opts.Scrub,
+	if s.opts.Drafter == nil {
+		return nil, fail(Unavailable(errors.New("no model is set up; sign in to one in Settings")))
 	}
-	if s.opts.Streams != nil {
-		if in.Stream, err = s.opts.Streams(org.TierFast); err != nil {
-			return nil, fail(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
-		}
-	}
-	d, err := draft.Draft(ctx, in)
+	d, err := s.opts.Drafter(ctx, DraftRequest{Description: m.GetDescription(), TemplateID: m.GetTemplateId(), Tier: tier})
 	return reply(&hearthv1.DraftBotResponse{
 		Name: d.Name, Role: d.Role, JobDescription: d.JobDescription,
 		WorkingStyle: d.WorkingStyle, Tier: hearthv1.Tier(d.Tier),

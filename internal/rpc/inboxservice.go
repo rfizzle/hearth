@@ -6,8 +6,8 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/rfizzle/hearth/internal/org/inbox"
-	"github.com/rfizzle/hearth/internal/org/widget"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
+	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
 )
 
 // inboxService is InboxService: what waits on the owner. The orchestrator
@@ -49,17 +49,15 @@ func (s *inboxService) Answer(ctx context.Context, req *connect.Request[hearthv1
 	if err := need("item_id", m.GetItemId()); err != nil {
 		return nil, err
 	}
-	var value *widget.Answer
+	var control widgetwire.Control
 	if m.GetValue() != nil {
 		asked, err := s.opts.Store.InboxItem(ctx, m.GetItemId())
 		if err != nil {
 			return nil, fail(err)
 		}
-		_, spec := widgetOf(asked.Widget)
-		a := answerFromProto(m.GetValue(), spec)
-		value = &a
+		control = widgetwire.Of(asked.Widget)
 	}
-	it, run, err := s.opts.Orchestrator.Answer(ctx, m.GetItemId(), m.GetAnswer(), value)
+	it, run, err := s.opts.Orchestrator.Answer(ctx, m.GetItemId(), m.GetAnswer(), control.ReadAnswer(m.GetValue()))
 	if err != nil {
 		return nil, fail(err)
 	}

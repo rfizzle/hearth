@@ -1,6 +1,7 @@
-package rpc
+package widgetwire
 
 import (
+	"errors"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -9,49 +10,43 @@ import (
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
-// The conversions between the widget package's values and the contract's.
-// A message and an Inbox item hold the control and the owner's answer as
-// JSON; these turn it into messages, and an answer back. The core validates
-// and checks in the widget package; nothing here judges a value.
-// See docs/model.md#owner-interaction.
+// Control is the control a question asks the owner to answer with, read from
+// the spec a message or an item stores. The zero value is a question asked
+// in words alone.
+type Control struct{ spec widget.Spec }
 
-// widgetOf is the control the stored spec describes, and the spec read, or
-// nil when there is none. A spec the widget package cannot read was never
-// stored by the core, so it is left off rather than failing the thread.
-func widgetOf(stored string) (*hearthv1.Widget, widget.Spec) {
+// Of reads the stored spec. A spec the widget package cannot read was never
+// stored by the core, so it is taken as none rather than failing the thread.
+func Of(stored string) Control {
 	if stored == "" {
-		return nil, widget.Spec{}
+		return Control{}
 	}
 	spec, err := widget.ParseSpec([]byte(stored))
-	if err != nil {
-		return nil, widget.Spec{}
+	if err != nil || !widget.Known(spec.Kind) {
+		return Control{}
 	}
-	return widgetToProto(spec), spec
+	return Control{spec}
 }
 
-// answerOf is the owner's stored answer to the control spec describes, in
-// the words the bot read, or nil when there is none.
-func answerOf(stored string, spec widget.Spec) *hearthv1.WidgetAnswer {
-	if stored == "" {
-		return nil
-	}
-	a, err := widget.ParseAnswer([]byte(stored))
-	if err != nil {
-		return nil
-	}
-	return answerToProto(a, widget.Render(spec, a))
-}
+// Invalid is true for a refusal by the widget package: an answer its control
+// does not allow.
+func Invalid(err error) bool { return errors.Is(err, widget.ErrInvalid) }
 
-func widgetToProto(s widget.Spec) *hearthv1.Widget {
+// Proto is the control in the contract's form, or nil for none.
+func (c Control) Proto() *hearthv1.Widget {
+	s := c.spec
+	if s.Kind == "" {
+		return nil
+	}
 	out := &hearthv1.Widget{Required: s.Required}
 	switch {
 	case s.Single != nil:
 		out.Kind = &hearthv1.Widget_SingleChoice{SingleChoice: &hearthv1.SingleChoice{
-			Options: each(s.Single.Options, choiceToProto), AllowOther: s.Single.AllowOther,
+			Options: choices(s.Single.Options), AllowOther: s.Single.AllowOther,
 		}}
 	case s.Multiple != nil:
 		out.Kind = &hearthv1.Widget_MultipleChoice{MultipleChoice: &hearthv1.MultipleChoice{
-			Options: each(s.Multiple.Options, choiceToProto), Min: int32(s.Multiple.MinChoices), Max: int32(s.Multiple.MaxChoices),
+			Options: choices(s.Multiple.Options), Min: int32(s.Multiple.MinChoices), Max: int32(s.Multiple.MaxChoices),
 		}}
 	case s.FreeText != nil:
 		out.Kind = &hearthv1.Widget_FreeText{FreeText: &hearthv1.FreeText{
@@ -75,8 +70,12 @@ func widgetToProto(s widget.Spec) *hearthv1.Widget {
 	return out
 }
 
-func choiceToProto(o widget.Option) *hearthv1.Choice {
-	return &hearthv1.Choice{Id: o.ID, Label: o.Label, Detail: o.Detail}
+func choices(opts []widget.Option) []*hearthv1.Choice {
+	out := make([]*hearthv1.Choice, 0, len(opts))
+	for _, o := range opts {
+		out = append(out, &hearthv1.Choice{Id: o.ID, Label: o.Label, Detail: o.Detail})
+	}
+	return out
 }
 
 // A date the owner picks travels as a timestamp and is kept as text, in
@@ -112,6 +111,19 @@ func dateFromProto(t *timestamppb.Timestamp, withTime bool) string {
 	return at.Format(widget.DateTimeLayout)
 }
 
+// AnswerProto is the owner's stored answer to the control in the contract's
+// form, with the words the bot read for it, or nil when there is none.
+func (c Control) AnswerProto(stored string) *hearthv1.WidgetAnswer {
+	if stored == "" {
+		return nil
+	}
+	a, err := widget.ParseAnswer([]byte(stored))
+	if err != nil {
+		return nil
+	}
+	return answerToProto(a, widget.Render(c.spec, a))
+}
+
 func answerToProto(a widget.Answer, textForm string) *hearthv1.WidgetAnswer {
 	out := &hearthv1.WidgetAnswer{Other: a.Other, TextForm: textForm}
 	switch a.Kind {
@@ -141,11 +153,14 @@ func answerToProto(a widget.Answer, textForm string) *hearthv1.WidgetAnswer {
 	return out
 }
 
-// answerFromProto is the answer the owner sent to the control spec, for the
-// widget package to check. The value names the kind; an answer with no value
-// is "Other" when it has text for it, and otherwise a control left empty, of
-// the control's own kind.
-func answerFromProto(v *hearthv1.WidgetAnswer, spec widget.Spec) widget.Answer {
+// ReadAnswer is the answer the owner sent to the control, for the widget
+// package to check, and nil when they sent none. The value names the kind;
+// an answer with no value is "Other" when it has text for it, and otherwise
+// the control left empty, of the control's own kind.
+func (c Control) ReadAnswer(v *hearthv1.WidgetAnswer) *widget.Answer {
+	if v == nil {
+		return nil
+	}
 	a := widget.Answer{Other: v.GetOther()}
 	switch x := v.GetValue().(type) {
 	case *hearthv1.WidgetAnswer_ChoiceId:
@@ -157,17 +172,17 @@ func answerFromProto(v *hearthv1.WidgetAnswer, spec widget.Spec) widget.Answer {
 	case *hearthv1.WidgetAnswer_Yes:
 		a.Kind, a.Yes = widget.YesNo, &x.Yes
 	case *hearthv1.WidgetAnswer_Date:
-		a.Kind, a.Date = widget.Date, dateFromProto(x.Date, spec.Date != nil && spec.Date.WithTime)
+		a.Kind, a.Date = widget.Date, dateFromProto(x.Date, c.spec.Date != nil && c.spec.Date.WithTime)
 	case *hearthv1.WidgetAnswer_Path:
 		a.Kind, a.Path = widget.Path, x.Path
 	case *hearthv1.WidgetAnswer_Scale:
 		n := int(x.Scale)
 		a.Kind, a.Value = widget.Scale, &n
 	case nil:
-		a.Kind = spec.Kind
+		a.Kind = c.spec.Kind
 		if a.Other != "" {
 			a.Kind = widget.SingleChoice
 		}
 	}
-	return a
+	return &a
 }

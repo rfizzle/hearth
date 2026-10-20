@@ -8,9 +8,9 @@ import (
 
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/org"
-	"github.com/rfizzle/hearth/internal/org/widget"
 	"github.com/rfizzle/hearth/internal/provider"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
+	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
 )
 
 // The conversions between org values and proto messages. An enum that org
@@ -87,9 +87,8 @@ func messageToProto(m org.Message) *hearthv1.Message {
 		RunId:          m.RunID,
 		Streaming:      m.Streaming,
 	}
-	var spec widget.Spec
-	out.Widget, spec = widgetOf(m.Widget)
-	out.Answer = answerOf(m.WidgetAnswer, spec)
+	control := widgetwire.Of(m.Widget)
+	out.Widget, out.Answer = control.Proto(), control.AnswerProto(m.WidgetAnswer)
 	// A tool message carries one call; the contract has room for one. A
 	// result names the call it answers.
 	switch {

@@ -7,12 +7,11 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org/inbox"
-	"github.com/rfizzle/hearth/internal/org/widget"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
@@ -32,9 +31,9 @@ func fail(err error) error {
 		code = connect.CodeAlreadyExists
 	case errors.Is(err, orchestrate.ErrBusy), errors.Is(err, orchestrate.ErrWaiting), errors.Is(err, orchestrate.ErrClosed):
 		code = connect.CodeFailedPrecondition
-	case errors.Is(err, orchestrate.ErrMismatch), errors.Is(err, widget.ErrInvalid), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder):
+	case errors.Is(err, orchestrate.ErrMismatch), widgetwire.Invalid(err), errors.Is(err, inbox.ErrNoStanding), errors.Is(err, inbox.ErrBadFolder):
 		code = connect.CodeInvalidArgument
-	case errors.Is(err, draft.ErrUnavailable):
+	case errors.Is(err, ErrUnavailable):
 		code = connect.CodeUnavailable
 	case errors.Is(err, integration.ErrEmptyKey), errors.Is(err, integration.ErrUnknown):
 		code = connect.CodeInvalidArgument

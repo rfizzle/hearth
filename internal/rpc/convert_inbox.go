@@ -6,6 +6,7 @@ import (
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
+	"github.com/rfizzle/hearth/internal/rpc/widgetwire"
 )
 
 // The conversions for the Inbox and the grants. Every enum goes through a
@@ -135,8 +136,8 @@ func (o Options) itemToProto(ctx context.Context, it inbox.Item) *hearthv1.Inbox
 	if it.Call != nil {
 		out.Call = &hearthv1.ToolCall{CallId: it.Call.ID, Name: it.Call.Name, ArgumentsJson: it.Call.Arguments, Summary: it.Call.Summary}
 	}
-	w, s := widgetOf(it.Widget)
-	out.Widget, out.AnswerValue = w, answerOf(it.WidgetAnswer, s)
+	control := widgetwire.Of(it.Widget)
+	out.Widget, out.AnswerValue = control.Proto(), control.AnswerProto(it.WidgetAnswer)
 	if out.ConversationId == "" && it.RunID != "" {
 		if r, err := o.Store.Run(ctx, it.RunID); err == nil {
 			out.ConversationId = r.ConversationID

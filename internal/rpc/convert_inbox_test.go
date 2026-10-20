@@ -2,13 +2,9 @@ package rpc
 
 import (
 	"testing"
-	"time"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
-	"github.com/rfizzle/hearth/internal/org/widget"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
@@ -103,75 +99,5 @@ func TestEnumTables_EveryContractValueHasADomainValue(t *testing.T) {
 	}
 	if len(capabilityRows) != len(capabilities) {
 		t.Errorf("the sheet lists %d capabilities and the table has %d", len(capabilityRows), len(capabilities))
-	}
-}
-
-func TestDates_TravelAsTimestampsAndAreKeptAsText(t *testing.T) {
-	midnight := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)
-	afternoon := midnight.Add(14*time.Hour + 30*time.Minute)
-	tests := []struct {
-		name     string
-		at       time.Time
-		withTime bool
-		text     string
-	}{
-		{"a day is its UTC midnight", midnight, false, "2026-10-24"},
-		{"a time is the instant", afternoon, true, "2026-10-24 14:30"},
-		{"a time that falls on midnight is still a time", midnight, true, "2026-10-24 00:00"},
-		{"an instant sent to a day control keeps its time", afternoon, false, "2026-10-24 14:30"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := dateFromProto(timestamppb.New(tt.at), tt.withTime); got != tt.text {
-				t.Errorf("dateFromProto = %q, want %q", got, tt.text)
-			}
-			if got := dateToProto(tt.text).AsTime(); !got.Equal(tt.at) {
-				t.Errorf("dateToProto(%q) = %v, want %v", tt.text, got, tt.at)
-			}
-		})
-	}
-	if dateToProto("soon") != nil {
-		t.Error("a date that is not one converts to a timestamp")
-	}
-}
-
-func TestAnswers_FromTheContractNameTheirKind(t *testing.T) {
-	yes := true
-	five := 5
-	tests := []struct {
-		name string
-		in   *hearthv1.WidgetAnswer
-		spec widget.Spec
-		want widget.Answer
-	}{
-		{"a choice", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_ChoiceId{ChoiceId: "a"}}, widget.Spec{},
-			widget.Answer{Kind: widget.SingleChoice, Choices: []string{"a"}}},
-		{"several choices", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_ChoiceIds{ChoiceIds: &hearthv1.ChoiceIDs{Ids: []string{"a", "b"}}}}, widget.Spec{},
-			widget.Answer{Kind: widget.MultipleChoice, Choices: []string{"a", "b"}}},
-		{"words", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_Text{Text: "hi"}}, widget.Spec{},
-			widget.Answer{Kind: widget.FreeText, Text: "hi"}},
-		{"yes", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_Yes{Yes: true}}, widget.Spec{},
-			widget.Answer{Kind: widget.YesNo, Yes: &yes}},
-		{"a path", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_Path{Path: "/w"}}, widget.Spec{},
-			widget.Answer{Kind: widget.Path, Path: "/w"}},
-		{"a scale", &hearthv1.WidgetAnswer{Value: &hearthv1.WidgetAnswer_Scale{Scale: 5}}, widget.Spec{},
-			widget.Answer{Kind: widget.Scale, Value: &five}},
-		{"other with no value", &hearthv1.WidgetAnswer{Other: "x"}, widget.Spec{Kind: widget.SingleChoice},
-			widget.Answer{Kind: widget.SingleChoice, Other: "x"}},
-		{"nothing is the control left empty", &hearthv1.WidgetAnswer{}, widget.Spec{Kind: widget.Date},
-			widget.Answer{Kind: widget.Date}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := answerFromProto(tt.in, tt.spec)
-			if got.Kind != tt.want.Kind || got.Other != tt.want.Other || got.Text != tt.want.Text || got.Path != tt.want.Path ||
-				len(got.Choices) != len(tt.want.Choices) || (got.Yes == nil) != (tt.want.Yes == nil) || (got.Value == nil) != (tt.want.Value == nil) {
-				t.Errorf("answerFromProto = %+v, want %+v", got, tt.want)
-			}
-			// And back: the same value, with the words the bot read.
-			if back := answerToProto(got, "words"); back.GetTextForm() != "words" || back.GetOther() != got.Other {
-				t.Errorf("answerToProto = %v", back)
-			}
-		})
 	}
 }

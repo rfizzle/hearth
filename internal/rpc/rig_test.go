@@ -2,6 +2,8 @@ package rpc
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"github.com/rfizzle/llm"
 
 	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
@@ -109,6 +112,25 @@ type gatewayFunc func(*http.Request) (*http.Response, error)
 
 func (f gatewayFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+// drafterOver is the drafter hearthd sets, over a stream source: a model that
+// cannot be opened or reached is unavailable, in the words the owner reads.
+func drafterOver(streams func(org.Tier) (agent.Stream, error), scrub agent.Scrub) Drafter {
+	return func(ctx context.Context, r DraftRequest) (Draft, error) {
+		stream, err := streams(org.TierFast)
+		if err != nil {
+			return Draft{}, Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+		}
+		d, err := draft.Draft(ctx, draft.Input{
+			Description: r.Description, TemplateID: r.TemplateID, Tier: r.Tier,
+			Templates: skill.Templates(), Stream: stream, Scrub: scrub,
+		})
+		if errors.Is(err, draft.ErrUnavailable) {
+			err = Unavailable(err)
+		}
+		return Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
+	}
+}
+
 func newRig(t *testing.T, steps ...step) *rig {
 	t.Helper()
 	provider.Init()
@@ -144,7 +166,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 			Accounts:     accounts,
 			Integrations: &integration.Integrations{Keys: accounts.Keys},
 			Templates:    skill.Templates(),
-			Streams:      func(org.Tier) (agent.Stream, error) { return sc.stream, nil },
+			Drafter:      drafterOver(func(org.Tier) (agent.Stream, error) { return sc.stream, nil }, nil),
 			Bus:          bus,
 		},
 	}
