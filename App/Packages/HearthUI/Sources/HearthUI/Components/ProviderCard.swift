@@ -7,8 +7,10 @@
 // it, saying where it is and which model it answers with, and only Clear. The card is a
 // container of system buttons and a SecureField, so keyboard and VoiceOver
 // behaviour is theirs; the card itself is one labelled group. It has no hover
-// fill and no selected stroke: it holds controls and is not a choice.
-// See docs/design.md#forms-sheets-and-settings
+// fill and no selected stroke: it holds controls and is not a choice. The key
+// field slides in and out as a layout move; the pill and the Add Key and Clear
+// swap replace themselves in place.
+// See docs/design.md#forms-sheets-and-settings and docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -22,6 +24,8 @@ public struct ProviderCard: View {
     let onSignIn: () -> Void
     let onSetKey: (String) -> Void
     let onClear: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         account: Hearth_V1_ProviderAccount,
@@ -58,6 +62,9 @@ public struct ProviderCard: View {
                             .foregroundStyle(Theme.color(.textPrimary))
                         Spacer()
                         state
+                            .animation(
+                                Theme.motion(Theme.quick, reduceMotion: reduceMotion),
+                                value: account.state)
                     }
                     Text(account.gives)
                         .font(Theme.callout)
@@ -75,14 +82,15 @@ public struct ProviderCard: View {
     @ViewBuilder
     private var state: some View {
         if isSignedIn {
-            Pill("Signed in", tone: .positive)
+            Pill("Signed in", tone: .positive).transition(.blurReplace)
         } else if isWaiting {
             HStack(spacing: Theme.Spacing.sm) {
                 ProgressView().controlSize(.small)
                 Text("Waiting for the browser…").font(Theme.callout)
             }
+            .transition(.blurReplace)
         } else if provider == .chatgpt && problem != nil {
-            Pill("Didn't finish", tone: .negative)
+            Pill("Didn't finish", tone: .negative).transition(.blurReplace)
         }
     }
 
@@ -213,6 +221,7 @@ struct KeyActions: View {
                     Button("Clear", action: onClear)
                         .accessibilityLabel("Clear \(name) key")
                 }
+                .transition(.blurReplace)
             } else if isEditing {
                 field
                 if let failure { FailureLabel(text: failure) }
@@ -220,8 +229,11 @@ struct KeyActions: View {
                 if let failure { FailureLabel(text: failure) }
                 Button("Add Key") { setEditing(true) }
                     .focused($focus, equals: .addKey)
+                    .transition(.blurReplace)
             }
         }
+        .animation(Theme.motion(Theme.move, reduceMotion: reduceMotion), value: isEditing)
+        .animation(Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: keyEnd)
         .onChange(of: keyEnd) { _, stored in
             if stored != nil { setEditing(false, refocus: false) }
         }
@@ -245,7 +257,9 @@ struct KeyActions: View {
                     .disabled(key.isEmpty)
             }
         }
-        .transition(.opacity)
+        .transition(
+            .asymmetric(
+                insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))
     }
 
     private func save() {
@@ -254,9 +268,7 @@ struct KeyActions: View {
     }
 
     private func setEditing(_ editing: Bool, refocus: Bool = true) {
-        withAnimation(reduceMotion ? nil : Theme.quick) {
-            isEditing = editing
-        }
+        isEditing = editing
         if !editing { key = "" }
         if refocus { focus = editing ? .key : .addKey }
     }

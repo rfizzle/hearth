@@ -7,8 +7,8 @@
 // VoiceOver behaviour is theirs; the card is one labelled group. Like the
 // provider cards it has no hover fill: it holds controls and is not a choice.
 // The core decides whether what was typed is a service it can use; Save sends
-// it as it is.
-// See docs/design.md#forms-sheets-and-settings
+// it as it is. Each stage is a layout move.
+// See docs/design.md#forms-sheets-and-settings and docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -150,7 +150,7 @@ public struct ServicePicker: View {
     }
 
     private func setStage(_ next: Stage?) {
-        withAnimation(reduceMotion ? nil : Theme.quick) {
+        withAnimation(Theme.motion(Theme.move, reduceMotion: reduceMotion)) {
             stage = next
         }
         if next == nil { query = "" }

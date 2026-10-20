@@ -10,8 +10,9 @@
 // vertical-axis TextField that grows to eight lines, not a TextEditor, which
 // has no height of its own and fills the whole bar. The draft is presentation
 // state and clears once the send succeeds, so a refused message is still
-// there to try again.
-// See docs/design.md#materials
+// there to try again. Send and Stop are one round button whose symbol replaces
+// itself, so the pointer target stays put.
+// See docs/design.md#materials and docs/design.md#motion
 
 import HearthDesign
 import SwiftUI
@@ -24,6 +25,7 @@ public struct Composer: View {
     let onStop: () -> Void
 
     @State private var draft: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A composer labelled `label` ("Message Dana"); `isWorking` while the
     /// conversation's run has not ended.
@@ -42,28 +44,26 @@ public struct Composer: View {
     }
 
     public var body: some View {
-        GlassEffectContainer(spacing: Theme.Spacing.sm) {
+        let stops = Self.showsStop(isWorking: isWorking)
+        return GlassEffectContainer(spacing: Theme.Spacing.sm) {
             HStack(alignment: .bottom, spacing: Theme.Spacing.sm) {
                 editor
-                if Self.showsStop(isWorking: isWorking) {
-                    Button("Stop", systemImage: "stop.fill", action: onStop)
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.circle)
-                        .labelStyle(.iconOnly)
-                        .controlSize(.large)
-                        .keyboardShortcut(".", modifiers: .command)
-                        .help("Stop (⌘.)")
-                } else {
-                    Button("Send", systemImage: "arrow.up", action: send)
-                        .buttonStyle(.glassProminent)
-                        .buttonBorderShape(.circle)
-                        .labelStyle(.iconOnly)
-                        .controlSize(.large)
-                        .disabled(!Self.canSend(draft: draft, isWorking: isWorking))
-                        .help("Send (Return)")
-                }
+                Button(
+                    stops ? "Stop" : "Send", systemImage: stops ? "stop.fill" : "arrow.up",
+                    action: stops ? onStop : send
+                )
+                .buttonStyle(.glass)
+                .tint(stops ? nil : .accentColor)
+                .buttonBorderShape(.circle)
+                .labelStyle(.iconOnly)
+                .controlSize(.large)
+                .contentTransition(.symbolEffect(.replace))
+                .keyboardShortcut(stops ? KeyboardShortcut(".", modifiers: .command) : nil)
+                .disabled(!stops && !Self.canSend(draft: draft, isWorking: isWorking))
+                .help(stops ? "Stop (⌘.)" : "Send (Return)")
             }
         }
+        .animation(Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: isWorking)
         .padding(.horizontal, Theme.Spacing.lg)
         .padding(.bottom, Theme.Spacing.md)
     }

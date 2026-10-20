@@ -2,8 +2,11 @@
 // bot's turn. It wraps DisclosureGroup, so the arrow, the click target, the
 // keyboard (Space and the arrow keys) and the VoiceOver expanded and collapsed
 // state are the system's. This only sets the label in secondary callout type,
-// keeps it at least a minimum target tall, and insets the content.
-// See docs/design.md#the-transcript
+// keeps it at least a minimum target tall, and insets the content. Opening
+// and closing moves the height with the layout move while the body fades in,
+// and the container moves its children as one so siblings slide rather than
+// jump.
+// See docs/design.md#the-transcript and docs/design.md#motion
 
 import SwiftUI
 
@@ -14,6 +17,7 @@ public struct DisclosureRow<Label: View, Content: View>: View {
     let content: Content
 
     @ScaledMetric(relativeTo: .callout) private var minHeight: CGFloat = Theme.Size.minTarget
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         isExpanded: Binding<Bool>,
@@ -29,12 +33,15 @@ public struct DisclosureRow<Label: View, Content: View>: View {
         DisclosureGroup(isExpanded: $isExpanded) {
             content
                 .padding(.leading, Theme.Spacing.lg)
+                .transition(.opacity)
         } label: {
             label
                 .font(Theme.callout)
                 .foregroundStyle(Theme.color(.textSecondary))
                 .frame(minHeight: minHeight, alignment: .leading)
         }
+        .animation(Theme.motion(Theme.move, reduceMotion: reduceMotion), value: isExpanded)
+        .geometryGroup()
     }
 }
 
