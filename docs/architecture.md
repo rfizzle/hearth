@@ -56,11 +56,11 @@ One `hearth.v1` proto package. Services, not exhaustive:
 
 ```
 OrgService        GetOrg, UpdateOrg, ExportOrg, ImportOrg
-BotService        List, Create, Update, Delete, ListTemplates, SetGrants, ListNotes, EditNote
+BotService        List, Create, Update, Delete, ListTemplates, ListGrants, SetGrants, ListNotes, EditNote
 TeamService       List, Create, Update, Delete
-ConversationService  List, ListMessages (paged), Send(returns run), Cancel
+ConversationService  List, Get (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-InboxService      List, Decide(approval), Answer(question), Acknowledge
+InboxService      ListInbox, Decide(approval), Answer(question, or a widget), Acknowledge
 UsageService      Summary(by bot/team/month), SetBudgets
 ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), Tiers, SetTiers
 IntegrationService  List, SetKey, Clear (web search backends)
