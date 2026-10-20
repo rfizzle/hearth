@@ -121,11 +121,7 @@ func attach(inbox string, readable, reserved []string, p string) (org.FileRef, e
 // inside reports whether the resolved path real is folder, as it resolves
 // on disk, or under it. A folder that does not exist holds nothing.
 func inside(folder, real string) bool {
-	if !filepath.IsAbs(folder) {
-		return false
-	}
-	_, err := workspace.Resolve(folder, real)
-	return err == nil
+	return workspace.Inside(folder, real)
 }
 
 // copyInto copies the plain file src into the folder dir as name, or as the

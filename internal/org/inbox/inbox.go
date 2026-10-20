@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/workspace"
 )
 
 // Kind is what an item asks of the owner.
@@ -158,8 +159,8 @@ func covers(granted, folder string) bool {
 	if granted == "" {
 		return true
 	}
-	if folder == granted {
-		return true
+	if filepath.IsAbs(granted) && filepath.IsAbs(folder) {
+		return workspace.Within(granted, folder)
 	}
-	return strings.HasPrefix(folder, strings.TrimRight(granted, string(filepath.Separator))+string(filepath.Separator))
+	return folder == granted || strings.HasPrefix(folder, strings.TrimRight(granted, string(filepath.Separator))+string(filepath.Separator))
 }

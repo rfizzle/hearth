@@ -316,7 +316,7 @@ func containPath(root string, reserved, folders []string, requested string) (pat
 		return "", "", 0, fmt.Errorf("%s %w", requested, errOutside)
 	}
 	for _, r := range reserved {
-		if _, err := workspace.Resolve(r, path); err == nil {
+		if workspace.Inside(r, path) {
 			return "", "", 0, fmt.Errorf("%s is in a folder hearth keeps for itself", requested)
 		}
 	}

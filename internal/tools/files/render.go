@@ -165,7 +165,7 @@ func (o Options) images(call tools.Call) paper.Opener {
 			return nil, err
 		}
 		for _, r := range o.Reserved {
-			if _, err := workspace.Resolve(r, p); err == nil {
+			if workspace.Inside(r, p) {
 				return nil, workspace.ErrOutside
 			}
 		}
