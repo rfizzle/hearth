@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -264,6 +263,7 @@ func (a *Accounts) buildProfile(p Profile) (llm.Provider, error) {
 	}
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = p.BaseURL
-	cfg.HTTPClient = cmp.Or(a.client, &http.Client{})
-	return compat.NewNamed(openai.NewClientWithConfig(cfg), p.DefaultModel, p.BaseURL, p.Name), nil
+	cfg.HTTPClient = peeking(a.client)
+	prov := compat.NewNamed(openai.NewClientWithConfig(cfg), p.DefaultModel, p.BaseURL, p.Name)
+	return checked{Provider: prov, name: p.Name, scrub: func(s string) string { return a.vault().ScrubMessage(llm.Message{Content: s}).Content }}, nil
 }

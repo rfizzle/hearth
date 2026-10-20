@@ -28,6 +28,9 @@
 //     (name, address, model) beside it under another, so the key is never in
 //     the settings; the settings are not a secret and the scrub skips them.
 //     A key is never sent to another machine over plain http.
+//   - An added service that ends a completion with nothing said, from a body
+//     with no choices in it, is an error naming the service and quoting the
+//     first of the body with secrets removed, never a silent empty reply.
 //
 // Seams it is handed: the http client that reaches the authorization server,
 // the function that opens the browser, the directory the credentials live in,
