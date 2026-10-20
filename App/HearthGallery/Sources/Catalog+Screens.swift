@@ -20,15 +20,14 @@ extension Catalog {
                 ]),
             GalleryPage(package: package, name: "HireSheet", states: [hireWithTemplate()]),
             GalleryPage(
-                package: package, name: "BotList",
-                states: [
-                    botList(PreviewClient(), name: "one bot"),
-                    botList(NoBotsClient(), name: "none"),
-                ]),
+                package: package, name: "BotList", states: botListStates),
             GalleryPage(
                 package: package, name: "ConversationScreen", states: [conversationMidStream()]),
         ]
     }
+
+    /// A client that employs nobody, for the empty team.
+    static var noBotsClient: any HearthClient { NoBotsClient() }
 
     private static func onboarding(_ step: OnboardingStore.Step, name: String) -> GalleryState {
         let client = PreviewClient()
@@ -53,14 +52,6 @@ extension Catalog {
         return GalleryState(
             name: "template picked", width: 560,
             view: AnyView(HireSheet(store: store, onHired: { _ in }, onCancel: {})))
-    }
-
-    private static func botList(_ client: any HearthClient, name: String) -> GalleryState {
-        let store = BotListStore(client: client, events: AsyncStream { $0.finish() })
-        store.selection = Fixtures.bot.id
-        return GalleryState(
-            name: name, width: 280,
-            view: AnyView(BotList(store: store, onHire: {}).frame(height: 240)))
     }
 
     /// The reply has opened and two words have arrived; the stream stays open.
