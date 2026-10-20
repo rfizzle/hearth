@@ -3,8 +3,9 @@
 // owner wrote it, where its deliverables go, and how to treat what it takes
 // in.
 //
-// Responsibility: render that text and nothing else. The text is embedded so
-// it is versioned with the code and tested to render.
+// Responsibility: render that text, and the separate text that asks the model
+// to propose a bot from an owner's description, and nothing else. Both are
+// embedded so they are versioned with the code and tested to render.
 //
 // Invariants the types do not hold: the job description appears verbatim,
 // never altered or escaped; the text names no tool, because the toolset

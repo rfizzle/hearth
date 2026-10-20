@@ -310,6 +310,10 @@ func TestEveryRPCWithoutTheTokenIsUnauthenticated(t *testing.T) {
 				_, err := c.bot.ListBots(ctx, connect.NewRequest(&hearthv1.ListBotsRequest{}))
 				return err
 			},
+			"DraftBot": func() error {
+				_, err := c.bot.DraftBot(ctx, connect.NewRequest(&hearthv1.DraftBotRequest{}))
+				return err
+			},
 			"GetBot": func() error { _, err := c.bot.GetBot(ctx, connect.NewRequest(&hearthv1.GetBotRequest{})); return err },
 			"ListConversations": func() error {
 				_, err := c.conv.ListConversations(ctx, connect.NewRequest(&hearthv1.ListConversationsRequest{}))

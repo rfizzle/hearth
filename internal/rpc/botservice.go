@@ -2,9 +2,12 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/agent"
+	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/org"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
@@ -54,8 +57,31 @@ func (s *botService) GetBot(ctx context.Context, req *connect.Request[hearthv1.G
 	return reply(&hearthv1.GetBotResponse{Bot: botToProto(bot)}, err)
 }
 
-// DraftBot is declared by the contract before the model run behind it
-// exists.
-func (s *botService) DraftBot(context.Context, *connect.Request[hearthv1.DraftBotRequest]) (*connect.Response[hearthv1.DraftBotResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, nil)
+// DraftBot asks the model, at the Fast tier, to propose a bot from the
+// owner's words. It stores nothing: the app shows the proposal and sends
+// CreateBot with whatever the owner settles on.
+// See docs/model.md#people
+func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1.DraftBotRequest]) (*connect.Response[hearthv1.DraftBotResponse], error) {
+	m := req.Msg
+	if err := need("description", m.GetDescription()); err != nil {
+		return nil, err
+	}
+	tier, err := tierFromProto(m.GetTier())
+	if err != nil {
+		return nil, err
+	}
+	in := draft.Input{
+		Description: m.GetDescription(), TemplateID: m.GetTemplateId(), Tier: tier,
+		Templates: s.opts.Templates, Scrub: s.opts.Scrub,
+	}
+	if s.opts.Streams != nil {
+		if in.Stream, err = s.opts.Streams(org.TierFast); err != nil {
+			return nil, fail(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+		}
+	}
+	d, err := draft.Draft(ctx, in)
+	return reply(&hearthv1.DraftBotResponse{
+		Name: d.Name, Role: d.Role, JobDescription: d.JobDescription,
+		WorkingStyle: d.WorkingStyle, Tier: hearthv1.Tier(d.Tier),
+	}, err)
 }

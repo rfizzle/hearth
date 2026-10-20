@@ -22,6 +22,25 @@ func TestRender(t *testing.T) {
 	}
 }
 
+func TestRenderDraft(t *testing.T) {
+	blank := framing.RenderDraft(framing.DraftInput{})
+	for _, want := range []string{"job_description", "working_style", `"tier"`, "one JSON object"} {
+		if !strings.Contains(blank, want) {
+			t.Errorf("draft text is missing %q:\n%s", want, blank)
+		}
+	}
+	if strings.Contains(blank, "ready-made") {
+		t.Error("a blank start mentions a template")
+	}
+	start := "Summarise {{.Weekly}} reports."
+	got := framing.RenderDraft(framing.DraftInput{Role: "Writer", Starting: start})
+	for _, want := range []string{"ready-made Writer role", start} {
+		if !strings.Contains(got, want) {
+			t.Errorf("draft text is missing %q:\n%s", want, got)
+		}
+	}
+}
+
 func TestRenderNamesNoTool(t *testing.T) {
 	// The job description is the owner's; only the fixed text is checked.
 	got := framing.Render(framing.Input{OrgName: "O", BotName: "B", Role: "R", JobDescription: "J", FolderPath: "/f"})

@@ -113,6 +113,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 			Accounts:     accounts,
 			Integrations: &integration.Integrations{Keys: accounts.Keys},
 			Templates:    skill.Templates(),
+			Streams:      func(org.Tier) (agent.Stream, error) { return sc.stream, nil },
 			Bus:          bus,
 		},
 	}

@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
@@ -58,6 +59,10 @@ type Options struct {
 	Integrations *integration.Integrations
 	// Templates are the role templates BotService lists.
 	Templates []org.RoleTemplate
+	// Streams opens the model a tier resolves to, and Scrub redacts what the
+	// model is sent; BotService drafts a bot with them, at the Fast tier.
+	Streams func(org.Tier) (agent.Stream, error)
+	Scrub   agent.Scrub
 	// Bus is what EventService streams and the handlers publish to.
 	Bus *orchestrate.Bus
 }

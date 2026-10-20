@@ -22,6 +22,6 @@
 //
 // Seams it is handed (Options): the version string Ping reports, the word
 // list StreamHello cycles through and the interval between words; the store,
-// the orchestrator, the accounts, the integrations, the role templates and
-// the event bus. See docs/architecture.md#1-layering
+// the orchestrator, the accounts, the integrations, the role templates, the
+// stream source and scrub a bot draft uses, and the event bus. See docs/architecture.md#1-layering
 package rpc

@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/store"
@@ -28,6 +29,8 @@ func fail(err error) error {
 		code = connect.CodeAlreadyExists
 	case errors.Is(err, orchestrate.ErrBusy):
 		code = connect.CodeFailedPrecondition
+	case errors.Is(err, draft.ErrUnavailable):
+		code = connect.CodeUnavailable
 	case errors.Is(err, integration.ErrEmptyKey), errors.Is(err, integration.ErrUnknown):
 		code = connect.CodeInvalidArgument
 	}

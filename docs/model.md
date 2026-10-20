@@ -16,7 +16,7 @@ The things in the system, how they relate, and the rules that govern how work fl
 |---|---|---|
 | name, avatar | Identity shown everywhere | Owner |
 | role | Short title ("Research Lead") | Owner, from template or free text |
-| job description | Plain-language paragraph(s): what they do, how they work, what good looks like. Rendered into the model's instructions together with hearth's fixed framing; the owner never sees the framing on the main path. | Owner |
+| job description | Plain-language paragraph(s): what they do, how they work, what good looks like. Rendered into the model's instructions together with hearth's fixed framing; the owner never sees the framing on the main path. It may carry a working style line ("Direct and brief; asks before guessing"), and the draft step that can suggest the description and the line only proposes: the owner's own text is never altered unless they accept the proposal. | Owner |
 | scope | `team(<id>)` or `org` | Owner |
 | is lead | True for exactly one bot per team | Owner |
 | access grants | The tools this bot may use and the folders it may touch (see Access) | Owner |

@@ -39,7 +39,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 	integrations := &integration.Integrations{Keys: accounts.Keys}
 	bus := orchestrate.NewBus()
 	go bus.Heartbeats(ctx)
-	svc, err := orchestrate.Open(ctx, withModels(orchestrate.Deps{
+	deps := withModels(orchestrate.Deps{
 		Store:   db,
 		Fetcher: web.NewFetcher(),
 		Searcher: func() (web.Searcher, bool) {
@@ -47,7 +47,8 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 			return s, s != nil
 		},
 		Bus: bus,
-	}, accounts))
+	}, accounts)
+	svc, err := orchestrate.Open(ctx, deps)
 	if err != nil {
 		_ = db.Close()
 		return rpc.Options{}, nil, fmt.Errorf("open the orchestrator: %w", err)
@@ -58,6 +59,8 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		Accounts:     accounts,
 		Integrations: integrations,
 		Templates:    skill.Templates(),
+		Streams:      deps.Streams,
+		Scrub:        deps.Scrub,
 		Bus:          bus,
 	}, func() { _ = db.Close() }, nil
 }
