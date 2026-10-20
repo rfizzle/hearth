@@ -279,6 +279,47 @@ public nonisolated struct Hearth_V1_GetBotResponse: Sendable {
   fileprivate var _bot: Hearth_V1_Bot? = nil
 }
 
+public nonisolated struct Hearth_V1_DraftBotRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// What the owner typed, in their own words.
+  public var description_p: String = String()
+
+  /// The template the owner started from, if any; empty for a blank start.
+  public var templateID: String = String()
+
+  /// The tier the owner has picked; the proposal may suggest another.
+  public var tier: Hearth_V1_Tier = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_DraftBotResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var name: String = String()
+
+  public var role: String = String()
+
+  /// Plain sentences: what they do, how they work, what good looks like.
+  public var jobDescription: String = String()
+
+  /// One line, such as "Direct and brief; leads with the answer".
+  public var workingStyle: String = String()
+
+  public var tier: Hearth_V1_Tier = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "hearth.v1"
@@ -652,6 +693,96 @@ nonisolated extension Hearth_V1_GetBotResponse: SwiftProtobuf.Message, SwiftProt
 
   public static func ==(lhs: Hearth_V1_GetBotResponse, rhs: Hearth_V1_GetBotResponse) -> Bool {
     if lhs._bot != rhs._bot {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_DraftBotRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DraftBotRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}description\0\u{3}template_id\0\u{1}tier\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.description_p) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.templateID) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.tier) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.description_p.isEmpty {
+      try visitor.visitSingularStringField(value: self.description_p, fieldNumber: 1)
+    }
+    if !self.templateID.isEmpty {
+      try visitor.visitSingularStringField(value: self.templateID, fieldNumber: 2)
+    }
+    if self.tier != .unspecified {
+      try visitor.visitSingularEnumField(value: self.tier, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_DraftBotRequest, rhs: Hearth_V1_DraftBotRequest) -> Bool {
+    if lhs.description_p != rhs.description_p {return false}
+    if lhs.templateID != rhs.templateID {return false}
+    if lhs.tier != rhs.tier {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_DraftBotResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DraftBotResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}role\0\u{3}job_description\0\u{3}working_style\0\u{1}tier\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.role) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.jobDescription) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.workingStyle) }()
+      case 5: try { try decoder.decodeSingularEnumField(value: &self.tier) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    if !self.role.isEmpty {
+      try visitor.visitSingularStringField(value: self.role, fieldNumber: 2)
+    }
+    if !self.jobDescription.isEmpty {
+      try visitor.visitSingularStringField(value: self.jobDescription, fieldNumber: 3)
+    }
+    if !self.workingStyle.isEmpty {
+      try visitor.visitSingularStringField(value: self.workingStyle, fieldNumber: 4)
+    }
+    if self.tier != .unspecified {
+      try visitor.visitSingularEnumField(value: self.tier, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_DraftBotResponse, rhs: Hearth_V1_DraftBotResponse) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.role != rhs.role {return false}
+    if lhs.jobDescription != rhs.jobDescription {return false}
+    if lhs.workingStyle != rhs.workingStyle {return false}
+    if lhs.tier != rhs.tier {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

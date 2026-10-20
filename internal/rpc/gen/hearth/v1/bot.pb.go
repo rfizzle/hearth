@@ -685,6 +685,147 @@ func (x *GetBotResponse) GetBot() *Bot {
 	return nil
 }
 
+type DraftBotRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// What the owner typed, in their own words.
+	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	// The template the owner started from, if any; empty for a blank start.
+	TemplateId string `protobuf:"bytes,2,opt,name=template_id,json=templateId,proto3" json:"template_id,omitempty"`
+	// The tier the owner has picked; the proposal may suggest another.
+	Tier          Tier `protobuf:"varint,3,opt,name=tier,proto3,enum=hearth.v1.Tier" json:"tier,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DraftBotRequest) Reset() {
+	*x = DraftBotRequest{}
+	mi := &file_hearth_v1_bot_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DraftBotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DraftBotRequest) ProtoMessage() {}
+
+func (x *DraftBotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_bot_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DraftBotRequest.ProtoReflect.Descriptor instead.
+func (*DraftBotRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DraftBotRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *DraftBotRequest) GetTemplateId() string {
+	if x != nil {
+		return x.TemplateId
+	}
+	return ""
+}
+
+func (x *DraftBotRequest) GetTier() Tier {
+	if x != nil {
+		return x.Tier
+	}
+	return Tier_TIER_UNSPECIFIED
+}
+
+type DraftBotResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Role  string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	// Plain sentences: what they do, how they work, what good looks like.
+	JobDescription string `protobuf:"bytes,3,opt,name=job_description,json=jobDescription,proto3" json:"job_description,omitempty"`
+	// One line, such as "Direct and brief; leads with the answer".
+	WorkingStyle  string `protobuf:"bytes,4,opt,name=working_style,json=workingStyle,proto3" json:"working_style,omitempty"`
+	Tier          Tier   `protobuf:"varint,5,opt,name=tier,proto3,enum=hearth.v1.Tier" json:"tier,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DraftBotResponse) Reset() {
+	*x = DraftBotResponse{}
+	mi := &file_hearth_v1_bot_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DraftBotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DraftBotResponse) ProtoMessage() {}
+
+func (x *DraftBotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_bot_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DraftBotResponse.ProtoReflect.Descriptor instead.
+func (*DraftBotResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DraftBotResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DraftBotResponse) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *DraftBotResponse) GetJobDescription() string {
+	if x != nil {
+		return x.JobDescription
+	}
+	return ""
+}
+
+func (x *DraftBotResponse) GetWorkingStyle() string {
+	if x != nil {
+		return x.WorkingStyle
+	}
+	return ""
+}
+
+func (x *DraftBotResponse) GetTier() Tier {
+	if x != nil {
+		return x.Tier
+	}
+	return Tier_TIER_UNSPECIFIED
+}
+
 var File_hearth_v1_bot_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_bot_proto_rawDesc = "" +
@@ -724,7 +865,18 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\rGetBotRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"2\n" +
 	"\x0eGetBotResponse\x12 \n" +
-	"\x03bot\x18\x01 \x01(\v2\x0e.hearth.v1.BotR\x03bot*M\n" +
+	"\x03bot\x18\x01 \x01(\v2\x0e.hearth.v1.BotR\x03bot\"y\n" +
+	"\x0fDraftBotRequest\x12 \n" +
+	"\vdescription\x18\x01 \x01(\tR\vdescription\x12\x1f\n" +
+	"\vtemplate_id\x18\x02 \x01(\tR\n" +
+	"templateId\x12#\n" +
+	"\x04tier\x18\x03 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\"\xad\x01\n" +
+	"\x10DraftBotResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12'\n" +
+	"\x0fjob_description\x18\x03 \x01(\tR\x0ejobDescription\x12#\n" +
+	"\rworking_style\x18\x04 \x01(\tR\fworkingStyle\x12#\n" +
+	"\x04tier\x18\x05 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier*M\n" +
 	"\x04Tier\x12\x14\n" +
 	"\x10TIER_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tTIER_FAST\x10\x01\x12\x11\n" +
@@ -735,13 +887,14 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\x0fBOT_STATUS_IDLE\x10\x01\x12\x16\n" +
 	"\x12BOT_STATUS_WORKING\x10\x02\x12\x15\n" +
 	"\x11BOT_STATUS_PAUSED\x10\x03\x12\x17\n" +
-	"\x13BOT_STATUS_DISABLED\x10\x042\xb4\x02\n" +
+	"\x13BOT_STATUS_DISABLED\x10\x042\xfb\x02\n" +
 	"\n" +
 	"BotService\x12T\n" +
 	"\rListTemplates\x12\x1f.hearth.v1.ListTemplatesRequest\x1a .hearth.v1.ListTemplatesResponse\"\x00\x12H\n" +
 	"\tCreateBot\x12\x1b.hearth.v1.CreateBotRequest\x1a\x1c.hearth.v1.CreateBotResponse\"\x00\x12E\n" +
 	"\bListBots\x12\x1a.hearth.v1.ListBotsRequest\x1a\x1b.hearth.v1.ListBotsResponse\"\x00\x12?\n" +
-	"\x06GetBot\x12\x18.hearth.v1.GetBotRequest\x1a\x19.hearth.v1.GetBotResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
+	"\x06GetBot\x12\x18.hearth.v1.GetBotRequest\x1a\x19.hearth.v1.GetBotResponse\"\x00\x12E\n" +
+	"\bDraftBot\x12\x1a.hearth.v1.DraftBotRequest\x1a\x1b.hearth.v1.DraftBotResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
 
 var (
 	file_hearth_v1_bot_proto_rawDescOnce sync.Once
@@ -756,7 +909,7 @@ func file_hearth_v1_bot_proto_rawDescGZIP() []byte {
 }
 
 var file_hearth_v1_bot_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hearth_v1_bot_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_hearth_v1_bot_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_hearth_v1_bot_proto_goTypes = []any{
 	(Tier)(0),                     // 0: hearth.v1.Tier
 	(BotStatus)(0),                // 1: hearth.v1.BotStatus
@@ -770,6 +923,8 @@ var file_hearth_v1_bot_proto_goTypes = []any{
 	(*ListBotsResponse)(nil),      // 9: hearth.v1.ListBotsResponse
 	(*GetBotRequest)(nil),         // 10: hearth.v1.GetBotRequest
 	(*GetBotResponse)(nil),        // 11: hearth.v1.GetBotResponse
+	(*DraftBotRequest)(nil),       // 12: hearth.v1.DraftBotRequest
+	(*DraftBotResponse)(nil),      // 13: hearth.v1.DraftBotResponse
 }
 var file_hearth_v1_bot_proto_depIdxs = []int32{
 	0,  // 0: hearth.v1.Bot.tier:type_name -> hearth.v1.Tier
@@ -780,19 +935,23 @@ var file_hearth_v1_bot_proto_depIdxs = []int32{
 	2,  // 5: hearth.v1.CreateBotResponse.bot:type_name -> hearth.v1.Bot
 	2,  // 6: hearth.v1.ListBotsResponse.bots:type_name -> hearth.v1.Bot
 	2,  // 7: hearth.v1.GetBotResponse.bot:type_name -> hearth.v1.Bot
-	4,  // 8: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
-	6,  // 9: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
-	8,  // 10: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
-	10, // 11: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
-	5,  // 12: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
-	7,  // 13: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
-	9,  // 14: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
-	11, // 15: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
-	12, // [12:16] is the sub-list for method output_type
-	8,  // [8:12] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	0,  // 8: hearth.v1.DraftBotRequest.tier:type_name -> hearth.v1.Tier
+	0,  // 9: hearth.v1.DraftBotResponse.tier:type_name -> hearth.v1.Tier
+	4,  // 10: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
+	6,  // 11: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
+	8,  // 12: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
+	10, // 13: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
+	12, // 14: hearth.v1.BotService.DraftBot:input_type -> hearth.v1.DraftBotRequest
+	5,  // 15: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
+	7,  // 16: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
+	9,  // 17: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
+	11, // 18: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
+	13, // 19: hearth.v1.BotService.DraftBot:output_type -> hearth.v1.DraftBotResponse
+	15, // [15:20] is the sub-list for method output_type
+	10, // [10:15] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_bot_proto_init() }
@@ -806,7 +965,7 @@ func file_hearth_v1_bot_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_bot_proto_rawDesc), len(file_hearth_v1_bot_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

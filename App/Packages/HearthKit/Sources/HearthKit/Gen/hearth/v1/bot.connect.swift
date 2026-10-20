@@ -10,7 +10,8 @@ import Foundation
 import SwiftProtobuf
 
 /// BotService creates and lists the org's bots and the role templates they
-/// start from. Grants, notes and deletion arrive with later milestones.
+/// start from, and drafts a bot from a description. Grants, notes and deletion
+/// arrive with later milestones.
 public protocol Hearth_V1_BotServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
@@ -24,6 +25,11 @@ public protocol Hearth_V1_BotServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
     func `getBot`(request: Hearth_V1_GetBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_GetBotResponse>
+
+    /// DraftBot asks the model to propose a bot from a description. It only
+    /// proposes: nothing is stored until the owner sends CreateBot.
+    @available(iOS 13, *)
+    func `draftBot`(request: Hearth_V1_DraftBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_DraftBotResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_BotServiceClientInterface`.
@@ -54,12 +60,18 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
         return await self.client.unary(path: "/hearth.v1.BotService/GetBot", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `draftBot`(request: Hearth_V1_DraftBotRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_DraftBotResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/DraftBot", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listTemplates = Connect.MethodSpec(name: "ListTemplates", service: "hearth.v1.BotService", type: .unary)
             public static let createBot = Connect.MethodSpec(name: "CreateBot", service: "hearth.v1.BotService", type: .unary)
             public static let listBots = Connect.MethodSpec(name: "ListBots", service: "hearth.v1.BotService", type: .unary)
             public static let getBot = Connect.MethodSpec(name: "GetBot", service: "hearth.v1.BotService", type: .unary)
+            public static let draftBot = Connect.MethodSpec(name: "DraftBot", service: "hearth.v1.BotService", type: .unary)
         }
     }
 }

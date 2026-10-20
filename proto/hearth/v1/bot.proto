@@ -5,12 +5,16 @@ package hearth.v1;
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
 // BotService creates and lists the org's bots and the role templates they
-// start from. Grants, notes and deletion arrive with later milestones.
+// start from, and drafts a bot from a description. Grants, notes and deletion
+// arrive with later milestones.
 service BotService {
   rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {}
   rpc CreateBot(CreateBotRequest) returns (CreateBotResponse) {}
   rpc ListBots(ListBotsRequest) returns (ListBotsResponse) {}
   rpc GetBot(GetBotRequest) returns (GetBotResponse) {}
+  // DraftBot asks the model to propose a bot from a description. It only
+  // proposes: nothing is stored until the owner sends CreateBot.
+  rpc DraftBot(DraftBotRequest) returns (DraftBotResponse) {}
 }
 
 // Tier is the quality tier the org maps to a provider and model.
@@ -83,4 +87,23 @@ message GetBotRequest {
 
 message GetBotResponse {
   Bot bot = 1;
+}
+
+message DraftBotRequest {
+  // What the owner typed, in their own words.
+  string description = 1;
+  // The template the owner started from, if any; empty for a blank start.
+  string template_id = 2;
+  // The tier the owner has picked; the proposal may suggest another.
+  Tier tier = 3;
+}
+
+message DraftBotResponse {
+  string name = 1;
+  string role = 2;
+  // Plain sentences: what they do, how they work, what good looks like.
+  string job_description = 3;
+  // One line, such as "Direct and brief; leads with the answer".
+  string working_style = 4;
+  Tier tier = 5;
 }

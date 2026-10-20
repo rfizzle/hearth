@@ -53,3 +53,9 @@ func (s *botService) GetBot(ctx context.Context, req *connect.Request[hearthv1.G
 	bot, err := s.opts.Store.Bot(ctx, id)
 	return reply(&hearthv1.GetBotResponse{Bot: botToProto(bot)}, err)
 }
+
+// DraftBot is declared by the contract before the model run behind it
+// exists.
+func (s *botService) DraftBot(context.Context, *connect.Request[hearthv1.DraftBotRequest]) (*connect.Response[hearthv1.DraftBotResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, nil)
+}

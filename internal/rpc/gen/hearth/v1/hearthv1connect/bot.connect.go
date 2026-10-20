@@ -42,6 +42,8 @@ const (
 	BotServiceListBotsProcedure = "/hearth.v1.BotService/ListBots"
 	// BotServiceGetBotProcedure is the fully-qualified name of the BotService's GetBot RPC.
 	BotServiceGetBotProcedure = "/hearth.v1.BotService/GetBot"
+	// BotServiceDraftBotProcedure is the fully-qualified name of the BotService's DraftBot RPC.
+	BotServiceDraftBotProcedure = "/hearth.v1.BotService/DraftBot"
 )
 
 // BotServiceClient is a client for the hearth.v1.BotService service.
@@ -50,6 +52,9 @@ type BotServiceClient interface {
 	CreateBot(context.Context, *connect.Request[v1.CreateBotRequest]) (*connect.Response[v1.CreateBotResponse], error)
 	ListBots(context.Context, *connect.Request[v1.ListBotsRequest]) (*connect.Response[v1.ListBotsResponse], error)
 	GetBot(context.Context, *connect.Request[v1.GetBotRequest]) (*connect.Response[v1.GetBotResponse], error)
+	// DraftBot asks the model to propose a bot from a description. It only
+	// proposes: nothing is stored until the owner sends CreateBot.
+	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
 }
 
 // NewBotServiceClient constructs a client for the hearth.v1.BotService service. By default, it uses
@@ -87,6 +92,12 @@ func NewBotServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(botServiceMethods.ByName("GetBot")),
 			connect.WithClientOptions(opts...),
 		),
+		draftBot: connect.NewClient[v1.DraftBotRequest, v1.DraftBotResponse](
+			httpClient,
+			baseURL+BotServiceDraftBotProcedure,
+			connect.WithSchema(botServiceMethods.ByName("DraftBot")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -96,6 +107,7 @@ type botServiceClient struct {
 	createBot     *connect.Client[v1.CreateBotRequest, v1.CreateBotResponse]
 	listBots      *connect.Client[v1.ListBotsRequest, v1.ListBotsResponse]
 	getBot        *connect.Client[v1.GetBotRequest, v1.GetBotResponse]
+	draftBot      *connect.Client[v1.DraftBotRequest, v1.DraftBotResponse]
 }
 
 // ListTemplates calls hearth.v1.BotService.ListTemplates.
@@ -118,12 +130,20 @@ func (c *botServiceClient) GetBot(ctx context.Context, req *connect.Request[v1.G
 	return c.getBot.CallUnary(ctx, req)
 }
 
+// DraftBot calls hearth.v1.BotService.DraftBot.
+func (c *botServiceClient) DraftBot(ctx context.Context, req *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error) {
+	return c.draftBot.CallUnary(ctx, req)
+}
+
 // BotServiceHandler is an implementation of the hearth.v1.BotService service.
 type BotServiceHandler interface {
 	ListTemplates(context.Context, *connect.Request[v1.ListTemplatesRequest]) (*connect.Response[v1.ListTemplatesResponse], error)
 	CreateBot(context.Context, *connect.Request[v1.CreateBotRequest]) (*connect.Response[v1.CreateBotResponse], error)
 	ListBots(context.Context, *connect.Request[v1.ListBotsRequest]) (*connect.Response[v1.ListBotsResponse], error)
 	GetBot(context.Context, *connect.Request[v1.GetBotRequest]) (*connect.Response[v1.GetBotResponse], error)
+	// DraftBot asks the model to propose a bot from a description. It only
+	// proposes: nothing is stored until the owner sends CreateBot.
+	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
 }
 
 // NewBotServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -157,6 +177,12 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(botServiceMethods.ByName("GetBot")),
 		connect.WithHandlerOptions(opts...),
 	)
+	botServiceDraftBotHandler := connect.NewUnaryHandler(
+		BotServiceDraftBotProcedure,
+		svc.DraftBot,
+		connect.WithSchema(botServiceMethods.ByName("DraftBot")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.BotService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BotServiceListTemplatesProcedure:
@@ -167,6 +193,8 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 			botServiceListBotsHandler.ServeHTTP(w, r)
 		case BotServiceGetBotProcedure:
 			botServiceGetBotHandler.ServeHTTP(w, r)
+		case BotServiceDraftBotProcedure:
+			botServiceDraftBotHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -190,4 +218,8 @@ func (UnimplementedBotServiceHandler) ListBots(context.Context, *connect.Request
 
 func (UnimplementedBotServiceHandler) GetBot(context.Context, *connect.Request[v1.GetBotRequest]) (*connect.Response[v1.GetBotResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.GetBot is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.DraftBot is not implemented"))
 }
