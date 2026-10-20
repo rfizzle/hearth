@@ -141,7 +141,7 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
     let accounts = AccountsStore(client: PreviewClient(), relay: relay)
     #expect(accounts.accounts.isEmpty)
     relay.start()
-    for _ in 0..<400 where accounts.accounts.isEmpty {
+    for _ in 0..<400 where accounts.accounts.isEmpty || accounts.integrations.isEmpty {
         try await Task.sleep(for: .milliseconds(5))
     }
     relay.stop()
