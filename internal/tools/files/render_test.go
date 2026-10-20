@@ -64,6 +64,42 @@ func TestRender(t *testing.T) {
 	}
 }
 
+func TestRender_Word(t *testing.T) {
+	b := newBot(t, org.FilesWrite)
+	b.put(t, "drafts/report.md", []byte("# Report\n\nText with [a link](https://example.com).\n\n![Chart](chart.png)\n![Gone](gone.png)\n\n<p>html</p>\n"))
+	b.put(t, "drafts/chart.png", pngFile(t))
+	res, err := b.call("files.render", map[string]string{"path": "drafts/report.md", "to": "docx", "paper": "a4"})
+	if err != nil {
+		t.Fatalf("files.render: %v", err)
+	}
+	src, out := filepath.Join(b.folder, "drafts/report.md"), filepath.Join(b.folder, "drafts/report.docx")
+	want := []org.FileRef{{Path: src, Name: "report.md"}, {Path: out, Name: "report.docx"}}
+	if !slices.Equal(res.Files, want) {
+		t.Errorf("Files = %+v, want %+v", res.Files, want)
+	}
+	first, err := os.ReadFile(out)
+	if err != nil || !bytes.HasPrefix(first, []byte("PK\x03\x04")) {
+		t.Fatalf("report.docx: %v, %q", err, first[:min(len(first), 4)])
+	}
+	for _, w := range []string{"Rendered drafts/report.md to drafts/report.docx (", "[drafts/report.md had HTML in it; it was left out of the Word file.]", "[drafts/report.md has images that could not be used"} {
+		if !strings.Contains(res.Text, w) {
+			t.Errorf("result %q is missing %q", res.Text, w)
+		}
+	}
+	if strings.Contains(res.Text, "page") || strings.Contains(res.Text, b.folder) {
+		t.Errorf("result %q names pages, or an absolute path reached the model", res.Text)
+	}
+	if _, err := b.call("files.render", map[string]string{"path": "drafts/report.md", "to": "docx", "paper": "a4"}); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := os.ReadFile(out); !bytes.Equal(first, again) {
+		t.Error("rendering the same file twice gave different bytes")
+	}
+	if _, err := os.Lstat(filepath.Join(b.folder, "drafts/report.pdf")); err == nil {
+		t.Error("a Word render wrote a PDF")
+	}
+}
+
 func TestRender_Refusals(t *testing.T) {
 	b := newBot(t, org.FilesWrite)
 	b.put(t, "notes.txt", []byte("plain"))
@@ -82,8 +118,7 @@ func TestRender_Refusals(t *testing.T) {
 		want string
 	}{
 		{map[string]string{"path": "notes.txt", "to": "pdf"}, "is not a Markdown file"},
-		{map[string]string{"path": "a.md", "to": "docx"}, "not yet available"},
-		{map[string]string{"path": "a.md", "to": "html"}, "to must be pdf"},
+		{map[string]string{"path": "a.md", "to": "html"}, "to must be pdf or docx"},
 		{map[string]string{"path": "a.md", "to": "pdf", "paper": "legal"}, "paper must be letter or a4"},
 		{map[string]string{"path": "big.md", "to": "pdf"}, "is over 1 MB"},
 		{map[string]string{"path": "alias.md", "to": "pdf"}, "not Markdown"},
@@ -145,6 +180,8 @@ func TestRender_Describe(t *testing.T) {
 	cases := []struct{ args, want string }{
 		{`{"path":"report.md","to":"pdf"}`, "Render report.md as PDF"},
 		{`{"path":"Dana/report.md","to":"pdf","folder":"Dana"}`, "Render report.md as PDF in Dana's folder"},
+		{`{"path":"report.md","to":"docx"}`, "Render report.md as Word"},
+		{`{"path":"Dana/report.md","to":"DOCX","folder":"Dana"}`, "Render report.md as Word in Dana's folder"},
 		{`nope`, "Render  as PDF"},
 	}
 	for _, tc := range cases {
@@ -173,6 +210,11 @@ func TestRender_Describe(t *testing.T) {
 		t.Fatal(err)
 	}
 	if c.Verdict != tools.Gated || c.Describe() != "Render drafts/report.md as PDF in Dana's folder" {
+		t.Errorf("verdict %v, card %q", c.Verdict, c.Describe())
+	}
+	if c, err = d.Check("files.render", json.RawMessage(`{"path":"drafts/report.md","to":"docx"}`)); err != nil {
+		t.Fatal(err)
+	} else if c.Verdict != tools.Gated || c.Describe() != "Render drafts/report.md as Word in Dana's folder" {
 		t.Errorf("verdict %v, card %q", c.Verdict, c.Describe())
 	}
 	if c.Def.Capability != org.FilesWrite || !c.Def.Standing() {

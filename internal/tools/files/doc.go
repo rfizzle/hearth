@@ -7,8 +7,8 @@
 // document package, with the pages or sheet it was asked for and the
 // notices it returned; create or replace a
 // file, creating the folders above it, and hand the written file back for the
-// owner to open; render a Markdown file as a PDF beside it through the paper
-// package; and delete one file once the owner has allowed it.
+// owner to open; render a Markdown file as a PDF or a Word file beside it through the
+// paper and docx packages; and delete one file once the owner has allowed it.
 //
 // Invariants the types do not hold:
 //

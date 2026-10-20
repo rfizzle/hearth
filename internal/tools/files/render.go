@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/render/docx"
 	"github.com/rfizzle/hearth/internal/render/paper"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/workspace"
@@ -26,13 +27,14 @@ import (
 func (o Options) renderDefinition() tools.Definition {
 	return tools.Definition{
 		Name: "files.render",
-		Description: "Turn a Markdown file in your folder into a PDF beside it, set in Hearth's print style: report.md becomes report.pdf, " +
-			"replacing an older one. Paths are relative to your folder. Save the Markdown first; headings, lists, tables, code, quotes and links carry over, " +
+		Description: "Turn a Markdown file in your folder into a PDF or a Word file beside it: report.md becomes report.pdf or report.docx, " +
+			"replacing an older one. A PDF is set in Hearth's print style; a Word file uses Word's own styles, so the person can edit it. " +
+			"Paths are relative to your folder. Save the Markdown first; headings, lists, tables, code, quotes and links carry over, " +
 			"and so do PNG or JPEG images saved in the same folder and named by their path. " +
 			"Then name both files in your reply.",
 		Parameters: json.RawMessage(`{"type":"object","properties":{` +
 			`"path":{"type":"string","description":"The Markdown file, relative to your folder, for example report.md."},` +
-			`"to":{"type":"string","enum":["pdf"],"description":"The kind of file to make: pdf."},` +
+			`"to":{"type":"string","enum":["pdf","docx"],"description":"The kind of file to make: pdf, or docx for a Word file."},` +
 			`"paper":{"type":"string","enum":["letter","a4"],"description":"The paper size. Leave it out for US Letter."}` +
 			`},"required":["path","to"]}`),
 		Capability: org.FilesWrite,
@@ -50,7 +52,7 @@ type renderArgs struct {
 }
 
 // validateRender refuses a source that is not Markdown, a kind that is not
-// a PDF and an unknown paper, before the call is placed or put to the owner.
+// a PDF or Word file and an unknown paper, before the call is placed or put to the owner.
 func validateRender(args json.RawMessage) error {
 	var a renderArgs
 	if err := json.Unmarshal(args, &a); err != nil {
@@ -60,11 +62,9 @@ func validateRender(args json.RawMessage) error {
 		return fmt.Errorf("%s is not a Markdown file; save the text as a .md file first, then render that", a.Path)
 	}
 	switch strings.ToLower(a.To) {
-	case "pdf":
-	case "docx":
-		return errors.New("a Word file is not yet available; render a PDF instead")
+	case "pdf", "docx":
 	default:
-		return fmt.Errorf("to must be pdf, not %q", a.To)
+		return fmt.Errorf("to must be pdf or docx, not %q", a.To)
 	}
 	_, err := paper.ParsePaper(a.Paper)
 	return err
@@ -79,8 +79,8 @@ func markdown(name string) bool {
 	return false
 }
 
-// render draws the Markdown at call.Path as a PDF with the same stem beside
-// it. The output's name is derived from the source's resolved path, never
+// render draws the Markdown at call.Path as a PDF or a Word file with the
+// same stem beside it. The output's name is derived from the source's resolved path, never
 // from anything else the model sent, and it is written through
 // openForWrite like any file files.write makes.
 func (o Options) render(ctx context.Context, call tools.Call) (tools.Result, error) {
@@ -95,22 +95,17 @@ func (o Options) render(ctx context.Context, call tools.Call) (tools.Result, err
 		return tools.Result{}, err
 	}
 	sheet, _ := paper.ParsePaper(a.Paper)
-	pdf, rep, err := paper.Markdown(ctx, src, paper.Options{
-		Paper: sheet, Name: name, Modified: modified, Image: o.images(call),
-	})
-	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		return tools.Result{}, fmt.Errorf("files.render: rendering %s took longer than a minute and stopped; nothing was written", name)
-	case err != nil:
-		return tools.Result{}, fmt.Errorf("files.render: %s: %w; nothing was written", name, err)
-	}
-	target := strings.TrimSuffix(call.Path, filepath.Ext(call.Path)) + ".pdf"
-	targetName := strings.TrimSuffix(name, filepath.Ext(name)) + ".pdf"
-	if err := writeFile("files.render", call.Folder, target, targetName, pdf); err != nil {
+	out, err := o.draw(ctx, strings.ToLower(a.To), src, modified, sheet, name, o.images(call))
+	if err != nil {
 		return tools.Result{}, err
 	}
-	text := fmt.Sprintf("Rendered %s to %s (%s, %s).", name, targetName, plural(rep.Pages, "page"), size(rep.Bytes))
-	for _, n := range rep.Notices {
+	target := strings.TrimSuffix(call.Path, filepath.Ext(call.Path)) + out.ext
+	targetName := strings.TrimSuffix(name, filepath.Ext(name)) + out.ext
+	if err := writeFile("files.render", call.Folder, target, targetName, out.data); err != nil {
+		return tools.Result{}, err
+	}
+	text := fmt.Sprintf("Rendered %s to %s (%s).", name, targetName, out.summary)
+	for _, n := range out.notices {
 		text += "\n" + n
 	}
 	return tools.Result{
@@ -120,6 +115,41 @@ func (o Options) render(ctx context.Context, call tools.Call) (tools.Result, err
 			{Path: target, Name: filepath.Base(target)},
 		},
 	}, nil
+}
+
+// drawn is a rendered file: its extension, its bytes, what the result says of
+// it in brackets, and the notices for what was left out.
+type drawn struct {
+	ext     string
+	data    []byte
+	summary string
+	notices []string
+}
+
+// draw renders src as a PDF or a Word file. A deadline is the same refusal
+// for both.
+func (o Options) draw(ctx context.Context, to string, src []byte, modified time.Time, sheet paper.Paper, name string, open paper.Opener) (drawn, error) {
+	var out drawn
+	var err error
+	switch to {
+	case "docx":
+		var rep docx.Report
+		out.ext = ".docx"
+		out.data, rep, err = docx.Write(ctx, src, docx.Options{A4: sheet == paper.A4, Name: name, Image: open})
+		out.summary, out.notices = size(rep.Bytes), rep.Notices
+	default:
+		var rep paper.Report
+		out.ext = ".pdf"
+		out.data, rep, err = paper.Markdown(ctx, src, paper.Options{Paper: sheet, Name: name, Modified: modified, Image: open})
+		out.summary, out.notices = plural(rep.Pages, "page")+", "+size(rep.Bytes), rep.Notices
+	}
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return drawn{}, fmt.Errorf("files.render: rendering %s took longer than a minute and stopped; nothing was written", name)
+	case err != nil:
+		return drawn{}, fmt.Errorf("files.render: %s: %w; nothing was written", name, err)
+	}
+	return out, nil
 }
 
 // readSource reads the Markdown at path, a regular file of at most
@@ -191,9 +221,9 @@ func describeRender(args json.RawMessage) string {
 		Folder string `json:"folder"`
 	}
 	_ = json.Unmarshal(args, &a) // as describeRead
-	kind := strings.ToUpper(a.To)
-	if kind == "" {
-		kind = "PDF"
+	kind := "PDF"
+	if strings.EqualFold(a.To, "docx") {
+		kind = "Word"
 	}
 	file, ok := strings.CutPrefix(filepath.ToSlash(a.Path), a.Folder+"/")
 	if a.Folder == "" || !ok || file == "" {

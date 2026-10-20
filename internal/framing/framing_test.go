@@ -166,10 +166,10 @@ func TestRenderCoversTheBlocksBelowIt(t *testing.T) {
 	}
 }
 
-func TestRenderSaysHowAPDFIsMade(t *testing.T) {
+func TestRenderSaysHowAPDFOrWordFileIsMade(t *testing.T) {
 	got := framing.Render(framing.Input{OrgName: "O", BotName: "B", Role: "R", JobDescription: "J", FolderPath: "/f"})
-	want := "When the person asks for a PDF, put the work in a Markdown file in your folder first, then have Hearth render that file as a PDF beside it, and name both files in your reply."
+	want := "When the person asks for a PDF or a Word file, put the work in a Markdown file in your folder first, then have Hearth render that file as a PDF or a Word file beside it, and name both files in your reply."
 	if !strings.Contains(got, want) {
-		t.Errorf("framing does not say how a PDF is made:\n%s", got)
+		t.Errorf("framing does not say how a PDF or a Word file is made:\n%s", got)
 	}
 }
