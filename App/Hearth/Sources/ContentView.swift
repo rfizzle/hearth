@@ -4,7 +4,8 @@
 // cross-fade is not motion, so Reduce Motion keeps it but the animation is
 // dropped there. The window is titled by what it shows: Welcome, the org, or
 // the selected bot; never the app's name.
-// See docs/design.md#window-anatomy and docs/design.md#empty-states-and-first-run
+// See docs/design.md#window-anatomy, docs/design.md#empty-states-and-first-run
+// and docs/design.md#motion
 
 import HearthDesign
 import HearthFeatures
@@ -59,7 +60,7 @@ private struct SessionView: View {
                 TeamView(session: session).transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : Theme.quick, value: session.phase)
+        .animation(Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: session.phase)
         .task { await session.loadOrg() }
     }
 }

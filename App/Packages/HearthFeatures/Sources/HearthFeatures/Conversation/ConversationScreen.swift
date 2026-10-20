@@ -6,8 +6,11 @@
 // older messages in. The status line and the composer are a bar on the
 // transcript's bottom edge, so messages scroll beneath the glass. A
 // conversation with nothing in it says hello instead. Show in Finder reaches
-// the revealInFinder action the app target sets.
-// See docs/design.md#the-transcript and docs/design.md#empty-states-and-first-run
+// the revealInFinder action the app target sets. Only the owner's own send
+// moves in; everything from the core appears in place, and the empty state
+// fades out.
+// See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run
+// and docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -22,6 +25,7 @@ public struct ConversationScreen: View {
     /// Whether the first page has come back, so an empty transcript is known to
     /// be empty rather than not yet loaded.
     @State private var loaded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(store: ConversationStore, bot: Hearth_V1_Bot) {
         self.store = store
@@ -30,6 +34,9 @@ public struct ConversationScreen: View {
 
     public var body: some View {
         content
+            .animation(
+                Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: store.rows.isEmpty
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) { bar }
             .navigationTitle(bot.name)
@@ -63,6 +70,7 @@ public struct ConversationScreen: View {
                     "\(bot.name) is your \(bot.role). Ask for something and watch the work happen here."
                 )
             }
+            .transition(.opacity)
         } else {
             transcript
         }
@@ -80,19 +88,34 @@ public struct ConversationScreen: View {
                     switch row {
                     case .message(let message):
                         MessageRow(
-                            message: message, author: message.authorBotID.isEmpty ? nil : bot)
+                            message: message, author: message.authorBotID.isEmpty ? nil : bot
+                        )
+                        .transition(Self.isSend(message) ? Self.sendTransition : .identity)
                     case .tool(let call, _, let result):
                         ToolCallRow(call: call, result: result)
+                            .transition(.identity)
                     }
                 }
             }
+            .animation(
+                Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: store.rows.last?.id
+            )
             .frame(maxWidth: Theme.Size.readableWidth)
             .padding(.horizontal, Theme.Spacing.lg)
             .padding(.vertical, Theme.Spacing.lg)
             .frame(maxWidth: .infinity)
         }
         .defaultScrollAnchor(.bottom)
+        .defaultScrollAnchor(.bottom, for: .sizeChanges)
     }
+
+    /// The owner's own message, which moves in; a system notice is the core's.
+    private static func isSend(_ message: Hearth_V1_Message) -> Bool {
+        message.authorBotID.isEmpty && message.kind != .system
+    }
+
+    private static let sendTransition = AnyTransition.move(edge: .bottom)
+        .combined(with: .opacity)
 
     private var bar: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {

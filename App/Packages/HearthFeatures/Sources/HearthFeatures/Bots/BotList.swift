@@ -5,8 +5,8 @@
 // element. The role uses the system's .secondary style rather than the text
 // token so sidebar vibrancy applies over the glass pane. With nobody hired the
 // sidebar shows only the header; the invitation to hire is TeamEmptyView, which
-// the window shows in the detail column.
-// See docs/design.md#window-anatomy
+// the window shows in the detail column. A new bot slides into the list.
+// See docs/design.md#window-anatomy and docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -17,6 +17,8 @@ import SwiftUI
 public struct BotList: View {
     let store: BotListStore
     let onHire: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(store: BotListStore, onHire: @escaping () -> Void) {
         self.store = store
@@ -33,6 +35,9 @@ public struct BotList: View {
             }
         }
         .listStyle(.sidebar)
+        .animation(
+            Theme.motion(Theme.move, reduceMotion: reduceMotion), value: store.bots.map(\.id)
+        )
         .task { await store.load() }
     }
 }

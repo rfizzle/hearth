@@ -7,8 +7,10 @@
 // row of working-style chips adds one sentence to the suggestion's job
 // description, in plain view. "Use this" moves the suggestion into the
 // form and "Keep mine" drops it; nothing reaches the form any other way, so
-// Create sends the text the owner has seen.
-// See docs/model.md#people and docs/design.md#forms-sheets-and-settings
+// Create sends the text the owner has seen. The suggestion fades in; the
+// owner's own typing never animates.
+// See docs/model.md#people, docs/design.md#forms-sheets-and-settings and
+// docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -20,12 +22,19 @@ struct DraftPanel: View {
     /// Four lines of body text, so the suggestion has room to be edited.
     @ScaledMetric(relativeTo: .body) private var editorHeight: CGFloat = 96
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        if store.proposal != nil {
-            suggestion(proposalBinding)
-        } else {
-            offer
+        Group {
+            if store.proposal != nil {
+                suggestion(proposalBinding).transition(.opacity)
+            } else {
+                offer.transition(.opacity)
+            }
         }
+        .animation(
+            Theme.motion(Theme.quick, reduceMotion: reduceMotion),
+            value: store.proposal != nil)
     }
 
     /// A binding that stays safe after "Keep mine" drops the proposal: the

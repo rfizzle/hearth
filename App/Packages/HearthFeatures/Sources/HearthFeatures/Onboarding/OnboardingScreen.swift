@@ -5,8 +5,9 @@
 // folder is picked with the system file importer limited to directories, so
 // the owner sees the standard sheet and keyboard access is the system's. The
 // screen is a function of store state; its only local state is whether the
-// importer is open and whether the web-search disclosure is.
-// See docs/design.md#empty-states-and-first-run
+// importer is open and whether the web-search disclosure is. A step change
+// cross-fades while the column's height moves with it.
+// See docs/design.md#empty-states-and-first-run and docs/design.md#motion
 
 import HearthDesign
 import HearthKit
@@ -20,6 +21,7 @@ public struct OnboardingScreen: View {
 
     @State private var isChoosingFolder = false
     @State private var isWebSearchOpen = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .largeTitle) private var markSize: CGFloat = 72
     @ScaledMetric(relativeTo: .title) private var iconColumn: CGFloat = 36
 
@@ -49,9 +51,9 @@ public struct OnboardingScreen: View {
         VStack(alignment: store.step == .welcome ? .center : .leading, spacing: Theme.Spacing.xl) {
             header
             switch store.step {
-            case .welcome: outline
-            case .signIn: signIn
-            case .nameAndFolder: nameAndFolder
+            case .welcome: outline.transition(.opacity)
+            case .signIn: signIn.transition(.opacity)
+            case .nameAndFolder: nameAndFolder.transition(.opacity)
             }
             if let error = store.error {
                 Label(error, systemImage: "exclamationmark.triangle")
@@ -61,6 +63,8 @@ public struct OnboardingScreen: View {
             buttons
         }
         .padding(.vertical, Theme.Spacing.lg)
+        .animation(Theme.motion(Theme.move, reduceMotion: reduceMotion), value: store.step)
+        .geometryGroup()
     }
 
     private var header: some View {
@@ -158,8 +162,11 @@ public struct OnboardingScreen: View {
                     onClear: { integration in Task { await accounts.clear(integration) } }
                 )
                 .padding(.top, Theme.Spacing.sm)
+                .transition(.opacity)
             }
             .font(Theme.callout)
+            .animation(
+                Theme.motion(Theme.move, reduceMotion: reduceMotion), value: isWebSearchOpen)
         }
     }
 
