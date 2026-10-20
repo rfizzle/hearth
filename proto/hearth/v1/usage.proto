@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// UsageService is what the org's bots cost: tokens and an estimated price
+// per run, summed by bot and month, and the budgets that pause work.
+// See docs/model.md#usage.
+service UsageService {
+  rpc Summary(SummaryRequest) returns (SummaryResponse) {}
+  rpc SetBudgets(SetBudgetsRequest) returns (SetBudgetsResponse) {}
+  // Resume lets a paused bot, or the whole org, work again this month.
+  rpc Resume(ResumeRequest) returns (ResumeResponse) {}
+}
+
+message UsageTotals {
+  int64 requests = 1;
+  int64 steps = 2;
+  int64 prompt_tokens = 3;
+  int64 completion_tokens = 4;
+  int64 cached_tokens = 5;
+  // Tokens a plan paid for, which no price applies to.
+  int64 plan_tokens = 6;
+  // Estimated cost in US micro-dollars; priced is false when no model was
+  // in the price table, which the app shows as tokens, not as $0.
+  int64 cost_micros = 7;
+  bool priced = 8;
+}
+
+message BotUsage {
+  string bot_id = 1;
+  UsageTotals totals = 2;
+  // The bot's monthly budget in cents; 0 means none.
+  int64 budget_cents = 3;
+  bool paused = 4;
+}
+
+message SummaryRequest {
+  // "2026-10"; empty is this month.
+  string month = 1;
+}
+
+message SummaryResponse {
+  string month = 1;
+  UsageTotals org = 2;
+  repeated BotUsage bots = 3;
+  int64 org_budget_cents = 4;
+  bool org_paused = 5;
+  // Months with any usage, newest first, for the picker.
+  repeated string months = 6;
+}
+
+message BotBudget {
+  string bot_id = 1;
+  int64 cents = 2;
+}
+
+message SetBudgetsRequest {
+  int64 org_cents = 1;
+  repeated BotBudget bots = 2;
+}
+
+message SetBudgetsResponse {
+  SummaryResponse summary = 1;
+}
+
+message ResumeRequest {
+  // Empty resumes the org.
+  string bot_id = 1;
+}
+
+message ResumeResponse {
+  SummaryResponse summary = 1;
+}

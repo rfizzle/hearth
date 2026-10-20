@@ -33,115 +33,149 @@ public nonisolated struct Hearth_V1_SubscribeRequest: Sendable {
   public init() {}
 }
 
-public nonisolated struct Hearth_V1_SubscribeResponse: @unchecked Sendable {
+public nonisolated struct Hearth_V1_SubscribeResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var sequence: UInt64 {
-    get {_storage._sequence}
-    set {_uniqueStorage()._sequence = newValue}
-  }
+  public var sequence: UInt64 = 0
 
-  public var event: OneOf_Event? {
-    get {return _storage._event}
-    set {_uniqueStorage()._event = newValue}
-  }
+  public var event: Hearth_V1_SubscribeResponse.OneOf_Event? = nil
 
   public var messageDelta: Hearth_V1_MessageDelta {
     get {
-      if case .messageDelta(let v)? = _storage._event {return v}
+      if case .messageDelta(let v)? = event {return v}
       return Hearth_V1_MessageDelta()
     }
-    set {_uniqueStorage()._event = .messageDelta(newValue)}
+    set {event = .messageDelta(newValue)}
   }
 
   public var messageUpserted: Hearth_V1_MessageUpserted {
     get {
-      if case .messageUpserted(let v)? = _storage._event {return v}
+      if case .messageUpserted(let v)? = event {return v}
       return Hearth_V1_MessageUpserted()
     }
-    set {_uniqueStorage()._event = .messageUpserted(newValue)}
+    set {event = .messageUpserted(newValue)}
   }
 
   public var runChanged: Hearth_V1_RunChanged {
     get {
-      if case .runChanged(let v)? = _storage._event {return v}
+      if case .runChanged(let v)? = event {return v}
       return Hearth_V1_RunChanged()
     }
-    set {_uniqueStorage()._event = .runChanged(newValue)}
+    set {event = .runChanged(newValue)}
   }
 
   public var accountChanged: Hearth_V1_AccountChanged {
     get {
-      if case .accountChanged(let v)? = _storage._event {return v}
+      if case .accountChanged(let v)? = event {return v}
       return Hearth_V1_AccountChanged()
     }
-    set {_uniqueStorage()._event = .accountChanged(newValue)}
+    set {event = .accountChanged(newValue)}
   }
 
   public var botChanged: Hearth_V1_BotChanged {
     get {
-      if case .botChanged(let v)? = _storage._event {return v}
+      if case .botChanged(let v)? = event {return v}
       return Hearth_V1_BotChanged()
     }
-    set {_uniqueStorage()._event = .botChanged(newValue)}
+    set {event = .botChanged(newValue)}
   }
 
   public var resync: Hearth_V1_Resync {
     get {
-      if case .resync(let v)? = _storage._event {return v}
+      if case .resync(let v)? = event {return v}
       return Hearth_V1_Resync()
     }
-    set {_uniqueStorage()._event = .resync(newValue)}
+    set {event = .resync(newValue)}
   }
 
   public var heartbeat: Hearth_V1_Heartbeat {
     get {
-      if case .heartbeat(let v)? = _storage._event {return v}
+      if case .heartbeat(let v)? = event {return v}
       return Hearth_V1_Heartbeat()
     }
-    set {_uniqueStorage()._event = .heartbeat(newValue)}
+    set {event = .heartbeat(newValue)}
   }
 
   public var integrationChanged: Hearth_V1_IntegrationChanged {
     get {
-      if case .integrationChanged(let v)? = _storage._event {return v}
+      if case .integrationChanged(let v)? = event {return v}
       return Hearth_V1_IntegrationChanged()
     }
-    set {_uniqueStorage()._event = .integrationChanged(newValue)}
+    set {event = .integrationChanged(newValue)}
   }
 
   public var inboxChanged: Hearth_V1_InboxChanged {
     get {
-      if case .inboxChanged(let v)? = _storage._event {return v}
+      if case .inboxChanged(let v)? = event {return v}
       return Hearth_V1_InboxChanged()
     }
-    set {_uniqueStorage()._event = .inboxChanged(newValue)}
+    set {event = .inboxChanged(newValue)}
   }
 
   public var messageDeleted: Hearth_V1_MessageDeleted {
     get {
-      if case .messageDeleted(let v)? = _storage._event {return v}
+      if case .messageDeleted(let v)? = event {return v}
       return Hearth_V1_MessageDeleted()
     }
-    set {_uniqueStorage()._event = .messageDeleted(newValue)}
+    set {event = .messageDeleted(newValue)}
   }
 
   public var grantsChanged: Hearth_V1_GrantsChanged {
     get {
-      if case .grantsChanged(let v)? = _storage._event {return v}
+      if case .grantsChanged(let v)? = event {return v}
       return Hearth_V1_GrantsChanged()
     }
-    set {_uniqueStorage()._event = .grantsChanged(newValue)}
+    set {event = .grantsChanged(newValue)}
   }
 
   public var conversationChanged: Hearth_V1_ConversationChanged {
     get {
-      if case .conversationChanged(let v)? = _storage._event {return v}
+      if case .conversationChanged(let v)? = event {return v}
       return Hearth_V1_ConversationChanged()
     }
-    set {_uniqueStorage()._event = .conversationChanged(newValue)}
+    set {event = .conversationChanged(newValue)}
+  }
+
+  public var usageTick: Hearth_V1_UsageTick {
+    get {
+      if case .usageTick(let v)? = event {return v}
+      return Hearth_V1_UsageTick()
+    }
+    set {event = .usageTick(newValue)}
+  }
+
+  public var noteChanged: Hearth_V1_NoteChanged {
+    get {
+      if case .noteChanged(let v)? = event {return v}
+      return Hearth_V1_NoteChanged()
+    }
+    set {event = .noteChanged(newValue)}
+  }
+
+  public var handbookChanged: Hearth_V1_HandbookChanged {
+    get {
+      if case .handbookChanged(let v)? = event {return v}
+      return Hearth_V1_HandbookChanged()
+    }
+    set {event = .handbookChanged(newValue)}
+  }
+
+  public var credentialChanged: Hearth_V1_CredentialChanged {
+    get {
+      if case .credentialChanged(let v)? = event {return v}
+      return Hearth_V1_CredentialChanged()
+    }
+    set {event = .credentialChanged(newValue)}
+  }
+
+  public var tiersChanged: Hearth_V1_TiersChanged {
+    get {
+      if case .tiersChanged(let v)? = event {return v}
+      return Hearth_V1_TiersChanged()
+    }
+    set {event = .tiersChanged(newValue)}
   }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -159,12 +193,15 @@ public nonisolated struct Hearth_V1_SubscribeResponse: @unchecked Sendable {
     case messageDeleted(Hearth_V1_MessageDeleted)
     case grantsChanged(Hearth_V1_GrantsChanged)
     case conversationChanged(Hearth_V1_ConversationChanged)
+    case usageTick(Hearth_V1_UsageTick)
+    case noteChanged(Hearth_V1_NoteChanged)
+    case handbookChanged(Hearth_V1_HandbookChanged)
+    case credentialChanged(Hearth_V1_CredentialChanged)
+    case tiersChanged(Hearth_V1_TiersChanged)
 
   }
 
   public init() {}
-
-  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// MessageDelta is text appended to a streaming message.
@@ -370,6 +407,124 @@ public nonisolated struct Hearth_V1_ConversationChanged: Sendable {
   fileprivate var _conversation: Hearth_V1_Conversation? = nil
 }
 
+/// UsageTick is one bot's usage and the org's after a run finished, for the
+/// month it counts in.
+public nonisolated struct Hearth_V1_UsageTick: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var bot: Hearth_V1_BotUsage {
+    get {_storage._bot ?? Hearth_V1_BotUsage()}
+    set {_uniqueStorage()._bot = newValue}
+  }
+  /// Returns true if `bot` has been explicitly set.
+  public var hasBot: Bool {_storage._bot != nil}
+  /// Clears the value of `bot`. Subsequent reads from it will return its default value.
+  public mutating func clearBot() {_uniqueStorage()._bot = nil}
+
+  public var org: Hearth_V1_UsageTotals {
+    get {_storage._org ?? Hearth_V1_UsageTotals()}
+    set {_uniqueStorage()._org = newValue}
+  }
+  /// Returns true if `org` has been explicitly set.
+  public var hasOrg: Bool {_storage._org != nil}
+  /// Clears the value of `org`. Subsequent reads from it will return its default value.
+  public mutating func clearOrg() {_uniqueStorage()._org = nil}
+
+  public var month: String {
+    get {_storage._month}
+    set {_uniqueStorage()._month = newValue}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+/// NoteChanged is a note saved, edited or pinned, or removed when deleted is
+/// set (the note then carries only its id).
+public nonisolated struct Hearth_V1_NoteChanged: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var note: Hearth_V1_Note {
+    get {_note ?? Hearth_V1_Note()}
+    set {_note = newValue}
+  }
+  /// Returns true if `note` has been explicitly set.
+  public var hasNote: Bool {self._note != nil}
+  /// Clears the value of `note`. Subsequent reads from it will return its default value.
+  public mutating func clearNote() {self._note = nil}
+
+  public var deleted: Bool = false
+
+  public var botID: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _note: Hearth_V1_Note? = nil
+}
+
+/// HandbookChanged is a page saved, or removed when deleted is set.
+public nonisolated struct Hearth_V1_HandbookChanged: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var page: Hearth_V1_HandbookPage {
+    get {_page ?? Hearth_V1_HandbookPage()}
+    set {_page = newValue}
+  }
+  /// Returns true if `page` has been explicitly set.
+  public var hasPage: Bool {self._page != nil}
+  /// Clears the value of `page`. Subsequent reads from it will return its default value.
+  public mutating func clearPage() {self._page = nil}
+
+  public var deleted: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _page: Hearth_V1_HandbookPage? = nil
+}
+
+/// CredentialChanged says a credential was stored or removed. It carries the
+/// name only, never the value; the app asks for the record with
+/// ProviderService.ExportCredential.
+public nonisolated struct Hearth_V1_CredentialChanged: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var name: String = String()
+
+  public var deleted: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// TiersChanged is the tier mapping after the owner or a sign-in changed it.
+public nonisolated struct Hearth_V1_TiersChanged: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var tiers: [Hearth_V1_TierChoice] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Resync says the requested sequence is older than the core keeps; the
 /// app refetches its lists and continues from this event's sequence.
 public nonisolated struct Hearth_V1_Resync: Sendable {
@@ -429,279 +584,326 @@ nonisolated extension Hearth_V1_SubscribeRequest: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Hearth_V1_SubscribeResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SubscribeResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sequence\0\u{3}message_delta\0\u{3}message_upserted\0\u{3}run_changed\0\u{3}account_changed\0\u{3}bot_changed\0\u{1}resync\0\u{1}heartbeat\0\u{3}integration_changed\0\u{3}inbox_changed\0\u{3}message_deleted\0\u{3}grants_changed\0\u{3}conversation_changed\0")
-
-  fileprivate class _StorageClass {
-    var _sequence: UInt64 = 0
-    var _event: Hearth_V1_SubscribeResponse.OneOf_Event?
-
-      // This property is used as the initial default value for new instances of the type.
-      // The type itself is protecting the reference to its storage via CoW semantics.
-      // This will force a copy to be made of this reference when the first mutation occurs;
-      // hence, it is safe to mark this as `nonisolated(unsafe)`.
-      static nonisolated(unsafe) let defaultInstance = _StorageClass()
-
-    private init() {}
-
-    init(copying source: _StorageClass) {
-      _sequence = source._sequence
-      _event = source._event
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sequence\0\u{3}message_delta\0\u{3}message_upserted\0\u{3}run_changed\0\u{3}account_changed\0\u{3}bot_changed\0\u{1}resync\0\u{1}heartbeat\0\u{3}integration_changed\0\u{3}inbox_changed\0\u{3}message_deleted\0\u{3}grants_changed\0\u{3}conversation_changed\0\u{3}usage_tick\0\u{3}note_changed\0\u{3}handbook_changed\0\u{3}credential_changed\0\u{3}tiers_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        // The use of inline closures is to circumvent an issue where the compiler
-        // allocates stack space for every case branch when no optimizations are
-        // enabled. https://github.com/apple/swift-protobuf/issues/1034
-        switch fieldNumber {
-        case 1: try { try decoder.decodeSingularUInt64Field(value: &_storage._sequence) }()
-        case 2: try {
-          var v: Hearth_V1_MessageDelta?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .messageDelta(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .messageDelta(v)
-          }
-        }()
-        case 3: try {
-          var v: Hearth_V1_MessageUpserted?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .messageUpserted(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .messageUpserted(v)
-          }
-        }()
-        case 4: try {
-          var v: Hearth_V1_RunChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .runChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .runChanged(v)
-          }
-        }()
-        case 5: try {
-          var v: Hearth_V1_AccountChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .accountChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .accountChanged(v)
-          }
-        }()
-        case 6: try {
-          var v: Hearth_V1_BotChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .botChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .botChanged(v)
-          }
-        }()
-        case 7: try {
-          var v: Hearth_V1_Resync?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .resync(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .resync(v)
-          }
-        }()
-        case 8: try {
-          var v: Hearth_V1_Heartbeat?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .heartbeat(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .heartbeat(v)
-          }
-        }()
-        case 9: try {
-          var v: Hearth_V1_IntegrationChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .integrationChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .integrationChanged(v)
-          }
-        }()
-        case 10: try {
-          var v: Hearth_V1_InboxChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .inboxChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .inboxChanged(v)
-          }
-        }()
-        case 11: try {
-          var v: Hearth_V1_MessageDeleted?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .messageDeleted(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .messageDeleted(v)
-          }
-        }()
-        case 12: try {
-          var v: Hearth_V1_GrantsChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .grantsChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .grantsChanged(v)
-          }
-        }()
-        case 13: try {
-          var v: Hearth_V1_ConversationChanged?
-          var hadOneofValue = false
-          if let current = _storage._event {
-            hadOneofValue = true
-            if case .conversationChanged(let m) = current {v = m}
-          }
-          try decoder.decodeSingularMessageField(value: &v)
-          if let v = v {
-            if hadOneofValue {try decoder.handleConflictingOneOf()}
-            _storage._event = .conversationChanged(v)
-          }
-        }()
-        default: break
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.sequence) }()
+      case 2: try {
+        var v: Hearth_V1_MessageDelta?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .messageDelta(let m) = current {v = m}
         }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .messageDelta(v)
+        }
+      }()
+      case 3: try {
+        var v: Hearth_V1_MessageUpserted?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .messageUpserted(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .messageUpserted(v)
+        }
+      }()
+      case 4: try {
+        var v: Hearth_V1_RunChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .runChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .runChanged(v)
+        }
+      }()
+      case 5: try {
+        var v: Hearth_V1_AccountChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .accountChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .accountChanged(v)
+        }
+      }()
+      case 6: try {
+        var v: Hearth_V1_BotChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .botChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .botChanged(v)
+        }
+      }()
+      case 7: try {
+        var v: Hearth_V1_Resync?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .resync(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .resync(v)
+        }
+      }()
+      case 8: try {
+        var v: Hearth_V1_Heartbeat?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .heartbeat(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .heartbeat(v)
+        }
+      }()
+      case 9: try {
+        var v: Hearth_V1_IntegrationChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .integrationChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .integrationChanged(v)
+        }
+      }()
+      case 10: try {
+        var v: Hearth_V1_InboxChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .inboxChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .inboxChanged(v)
+        }
+      }()
+      case 11: try {
+        var v: Hearth_V1_MessageDeleted?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .messageDeleted(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .messageDeleted(v)
+        }
+      }()
+      case 12: try {
+        var v: Hearth_V1_GrantsChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .grantsChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .grantsChanged(v)
+        }
+      }()
+      case 13: try {
+        var v: Hearth_V1_ConversationChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .conversationChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .conversationChanged(v)
+        }
+      }()
+      case 14: try {
+        var v: Hearth_V1_UsageTick?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .usageTick(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .usageTick(v)
+        }
+      }()
+      case 15: try {
+        var v: Hearth_V1_NoteChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .noteChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .noteChanged(v)
+        }
+      }()
+      case 16: try {
+        var v: Hearth_V1_HandbookChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .handbookChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .handbookChanged(v)
+        }
+      }()
+      case 17: try {
+        var v: Hearth_V1_CredentialChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .credentialChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .credentialChanged(v)
+        }
+      }()
+      case 18: try {
+        var v: Hearth_V1_TiersChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .tiersChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .tiersChanged(v)
+        }
+      }()
+      default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every if/case branch local when no optimizations
-      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-      // https://github.com/apple/swift-protobuf/issues/1182
-      if _storage._sequence != 0 {
-        try visitor.visitSingularUInt64Field(value: _storage._sequence, fieldNumber: 1)
-      }
-      switch _storage._event {
-      case .messageDelta?: try {
-        guard case .messageDelta(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-      }()
-      case .messageUpserted?: try {
-        guard case .messageUpserted(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-      }()
-      case .runChanged?: try {
-        guard case .runChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
-      }()
-      case .accountChanged?: try {
-        guard case .accountChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
-      }()
-      case .botChanged?: try {
-        guard case .botChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
-      }()
-      case .resync?: try {
-        guard case .resync(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-      }()
-      case .heartbeat?: try {
-        guard case .heartbeat(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
-      }()
-      case .integrationChanged?: try {
-        guard case .integrationChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
-      }()
-      case .inboxChanged?: try {
-        guard case .inboxChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
-      }()
-      case .messageDeleted?: try {
-        guard case .messageDeleted(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
-      }()
-      case .grantsChanged?: try {
-        guard case .grantsChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
-      }()
-      case .conversationChanged?: try {
-        guard case .conversationChanged(let v)? = _storage._event else { preconditionFailure() }
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
-      }()
-      case nil: break
-      }
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.sequence != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 1)
+    }
+    switch self.event {
+    case .messageDelta?: try {
+      guard case .messageDelta(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .messageUpserted?: try {
+      guard case .messageUpserted(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .runChanged?: try {
+      guard case .runChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case .accountChanged?: try {
+      guard case .accountChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case .botChanged?: try {
+      guard case .botChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    }()
+    case .resync?: try {
+      guard case .resync(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    }()
+    case .heartbeat?: try {
+      guard case .heartbeat(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+    }()
+    case .integrationChanged?: try {
+      guard case .integrationChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+    }()
+    case .inboxChanged?: try {
+      guard case .inboxChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    }()
+    case .messageDeleted?: try {
+      guard case .messageDeleted(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
+    }()
+    case .grantsChanged?: try {
+      guard case .grantsChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+    }()
+    case .conversationChanged?: try {
+      guard case .conversationChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
+    }()
+    case .usageTick?: try {
+      guard case .usageTick(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 14)
+    }()
+    case .noteChanged?: try {
+      guard case .noteChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
+    }()
+    case .handbookChanged?: try {
+      guard case .handbookChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
+    }()
+    case .credentialChanged?: try {
+      guard case .credentialChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
+    }()
+    case .tiersChanged?: try {
+      guard case .tiersChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
+    }()
+    case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Hearth_V1_SubscribeResponse, rhs: Hearth_V1_SubscribeResponse) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._sequence != rhs_storage._sequence {return false}
-        if _storage._event != rhs_storage._event {return false}
-        return true
-      }
-      if !storagesAreEqual {return false}
-    }
+    if lhs.sequence != rhs.sequence {return false}
+    if lhs.event != rhs.event {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1055,6 +1257,238 @@ nonisolated extension Hearth_V1_ConversationChanged: SwiftProtobuf.Message, Swif
 
   public static func ==(lhs: Hearth_V1_ConversationChanged, rhs: Hearth_V1_ConversationChanged) -> Bool {
     if lhs._conversation != rhs._conversation {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_UsageTick: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UsageTick"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}bot\0\u{1}org\0\u{1}month\0")
+
+  fileprivate class _StorageClass {
+    var _bot: Hearth_V1_BotUsage? = nil
+    var _org: Hearth_V1_UsageTotals? = nil
+    var _month: String = String()
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _bot = source._bot
+      _org = source._org
+      _month = source._month
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._bot) }()
+        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._org) }()
+        case 3: try { try decoder.decodeSingularStringField(value: &_storage._month) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._bot {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      try { if let v = _storage._org {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      } }()
+      if !_storage._month.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._month, fieldNumber: 3)
+      }
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_UsageTick, rhs: Hearth_V1_UsageTick) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._bot != rhs_storage._bot {return false}
+        if _storage._org != rhs_storage._org {return false}
+        if _storage._month != rhs_storage._month {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_NoteChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".NoteChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}note\0\u{1}deleted\0\u{3}bot_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._note) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.deleted) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.botID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._note {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if self.deleted != false {
+      try visitor.visitSingularBoolField(value: self.deleted, fieldNumber: 2)
+    }
+    if !self.botID.isEmpty {
+      try visitor.visitSingularStringField(value: self.botID, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_NoteChanged, rhs: Hearth_V1_NoteChanged) -> Bool {
+    if lhs._note != rhs._note {return false}
+    if lhs.deleted != rhs.deleted {return false}
+    if lhs.botID != rhs.botID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_HandbookChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".HandbookChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}page\0\u{1}deleted\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._page) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.deleted) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._page {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if self.deleted != false {
+      try visitor.visitSingularBoolField(value: self.deleted, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_HandbookChanged, rhs: Hearth_V1_HandbookChanged) -> Bool {
+    if lhs._page != rhs._page {return false}
+    if lhs.deleted != rhs.deleted {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_CredentialChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CredentialChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}deleted\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.deleted) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    if self.deleted != false {
+      try visitor.visitSingularBoolField(value: self.deleted, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_CredentialChanged, rhs: Hearth_V1_CredentialChanged) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.deleted != rhs.deleted {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_TiersChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".TiersChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}tiers\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.tiers) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.tiers.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.tiers, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_TiersChanged, rhs: Hearth_V1_TiersChanged) -> Bool {
+    if lhs.tiers != rhs.tiers {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

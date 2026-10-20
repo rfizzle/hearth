@@ -56,15 +56,16 @@ One `hearth.v1` proto package. Services, not exhaustive:
 
 ```
 OrgService        GetOrg, UpdateOrg, ExportOrg, ImportOrg
-BotService        List, Create, Update, Delete, ListTemplates, ListGrants, SetGrants, ListNotes, EditNote
+BotService        List, Create, Update, Delete, ListTemplates, ListGrants, SetGrants, ListNotes, EditNote, DeleteNote, PinNote
+HandbookService   ListPages, PutPage, DeletePage (the pages every bot reads, with a context meter)
 TeamService       List, Create, Update, Delete
 ConversationService  List, Get (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
 InboxService      ListInbox, Decide(approval), Answer(question, or a widget), Acknowledge
-UsageService      Summary(by bot/team/month), SetBudgets
-ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), Tiers, SetTiers
+UsageService      Summary(by bot/team/month), SetBudgets, Resume
+ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), ListServiceModels (before or after a key is saved), Tiers, SetTiers, SyncCredentials, ExportCredential
 IntegrationService  List, SetKey, Clear (web search backends)
-EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, usage ticks
+EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, usage ticks, note, handbook, credential (name only) and tier changes
 NativeToolService (served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 

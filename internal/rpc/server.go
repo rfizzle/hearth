@@ -117,13 +117,19 @@ func NewHandler(o Options) http.Handler {
 
 // The services, one per file beside this one.
 type (
-	service             struct{ opts Options } // the spike: Ping and StreamHello
-	orgService          struct{ opts Options } // OrgService: the org's name and the Hearth folder
-	botService          struct{ opts Options } // BotService: the templates, hiring and listing bots
+	service    struct{ opts Options } // the spike: Ping and StreamHello
+	orgService struct{ opts Options } // OrgService: the org's name and the Hearth folder
+	botService struct {               // BotService: the templates, hiring and listing bots
+		hearthv1connect.UnimplementedBotServiceHandler // the note and update calls answer unimplemented until their handlers land
+		opts                                           Options
+	}
 	conversationService struct{ opts Options } // ConversationService: the threads and the owner's side of a run
-	providerService     struct{ opts Options } // ProviderService: which model accounts are signed in
-	integrationService  struct{ opts Options } // IntegrationService: the optional services that are not model providers
-	eventService        struct{ opts Options } // EventService: the one stream every change travels on
+	providerService     struct {               // ProviderService: which model accounts are signed in
+		hearthv1connect.UnimplementedProviderServiceHandler // the tier and credential calls answer unimplemented until their handlers land
+		opts                                                Options
+	}
+	integrationService struct{ opts Options } // IntegrationService: the optional services that are not model providers
+	eventService       struct{ opts Options } // EventService: the one stream every change travels on
 )
 
 func (s *service) Ping(context.Context, *connect.Request[hearthv1.PingRequest]) (*connect.Response[hearthv1.PingResponse], error) {

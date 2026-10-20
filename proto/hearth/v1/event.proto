@@ -4,9 +4,11 @@ package hearth.v1;
 
 import "hearth/v1/bot.proto";
 import "hearth/v1/conversation.proto";
+import "hearth/v1/handbook.proto";
 import "hearth/v1/inbox.proto";
 import "hearth/v1/integration.proto";
 import "hearth/v1/provider.proto";
+import "hearth/v1/usage.proto";
 
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
@@ -38,6 +40,11 @@ message SubscribeResponse {
     MessageDeleted message_deleted = 11;
     GrantsChanged grants_changed = 12;
     ConversationChanged conversation_changed = 13;
+    UsageTick usage_tick = 14;
+    NoteChanged note_changed = 15;
+    HandbookChanged handbook_changed = 16;
+    CredentialChanged credential_changed = 17;
+    TiersChanged tiers_changed = 18;
   }
 }
 
@@ -94,6 +101,41 @@ message GrantsChanged {
 // summary changed.
 message ConversationChanged {
   Conversation conversation = 1;
+}
+
+// UsageTick is one bot's usage and the org's after a run finished, for the
+// month it counts in.
+message UsageTick {
+  BotUsage bot = 1;
+  UsageTotals org = 2;
+  string month = 3;
+}
+
+// NoteChanged is a note saved, edited or pinned, or removed when deleted is
+// set (the note then carries only its id).
+message NoteChanged {
+  Note note = 1;
+  bool deleted = 2;
+  string bot_id = 3;
+}
+
+// HandbookChanged is a page saved, or removed when deleted is set.
+message HandbookChanged {
+  HandbookPage page = 1;
+  bool deleted = 2;
+}
+
+// CredentialChanged says a credential was stored or removed. It carries the
+// name only, never the value; the app asks for the record with
+// ProviderService.ExportCredential.
+message CredentialChanged {
+  string name = 1;
+  bool deleted = 2;
+}
+
+// TiersChanged is the tier mapping after the owner or a sign-in changed it.
+message TiersChanged {
+  repeated TierChoice tiers = 1;
 }
 
 // Resync says the requested sequence is older than the core keeps; the

@@ -11,8 +11,9 @@ import SwiftProtobuf
 
 /// ProviderService is sign-in: which providers have a credential, storing
 /// or clearing an API key, adding an OpenAI-compatible service under a name,
-/// and starting the ChatGPT browser sign-in. The core never returns a
-/// credential.
+/// and starting the ChatGPT browser sign-in, and which model each quality tier
+/// asks for. The core hands a credential back only to the app that keeps it in
+/// the Keychain, through the two credential calls below.
 public protocol Hearth_V1_ProviderServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
@@ -34,6 +35,28 @@ public protocol Hearth_V1_ProviderServiceClientInterface: Sendable {
     /// rows the app offers when the owner adds another service.
     @available(iOS 13, *)
     func `listKnownServices`(request: Hearth_V1_ListKnownServicesRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListKnownServicesResponse>
+
+    /// ListServiceModels asks a service which models it serves, so the card can
+    /// offer a picker before the key is saved.
+    @available(iOS 13, *)
+    func `listServiceModels`(request: Hearth_V1_ListServiceModelsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListServiceModelsResponse>
+
+    @available(iOS 13, *)
+    func `tiers`(request: Hearth_V1_TiersRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_TiersResponse>
+
+    @available(iOS 13, *)
+    func `setTiers`(request: Hearth_V1_SetTiersRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_SetTiersResponse>
+
+    /// SyncCredentials hands the core what the app keeps in the Keychain and
+    /// takes back what the core still holds in its own files. Called on connect
+    /// and after the app has stored a changed record.
+    @available(iOS 13, *)
+    func `syncCredentials`(request: Hearth_V1_SyncCredentialsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_SyncCredentialsResponse>
+
+    /// ExportCredential is one record for the app to store after a
+    /// credential_changed event.
+    @available(iOS 13, *)
+    func `exportCredential`(request: Hearth_V1_ExportCredentialRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ExportCredentialResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_ProviderServiceClientInterface`.
@@ -69,6 +92,31 @@ public final class Hearth_V1_ProviderServiceClient: Hearth_V1_ProviderServiceCli
         return await self.client.unary(path: "/hearth.v1.ProviderService/ListKnownServices", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `listServiceModels`(request: Hearth_V1_ListServiceModelsRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ListServiceModelsResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/ListServiceModels", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `tiers`(request: Hearth_V1_TiersRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_TiersResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/Tiers", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `setTiers`(request: Hearth_V1_SetTiersRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_SetTiersResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/SetTiers", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `syncCredentials`(request: Hearth_V1_SyncCredentialsRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_SyncCredentialsResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/SyncCredentials", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `exportCredential`(request: Hearth_V1_ExportCredentialRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ExportCredentialResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProviderService/ExportCredential", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listAccounts = Connect.MethodSpec(name: "ListAccounts", service: "hearth.v1.ProviderService", type: .unary)
@@ -76,6 +124,11 @@ public final class Hearth_V1_ProviderServiceClient: Hearth_V1_ProviderServiceCli
             public static let clearCredential = Connect.MethodSpec(name: "ClearCredential", service: "hearth.v1.ProviderService", type: .unary)
             public static let startChatGptlogin = Connect.MethodSpec(name: "StartChatGPTLogin", service: "hearth.v1.ProviderService", type: .unary)
             public static let listKnownServices = Connect.MethodSpec(name: "ListKnownServices", service: "hearth.v1.ProviderService", type: .unary)
+            public static let listServiceModels = Connect.MethodSpec(name: "ListServiceModels", service: "hearth.v1.ProviderService", type: .unary)
+            public static let tiers = Connect.MethodSpec(name: "Tiers", service: "hearth.v1.ProviderService", type: .unary)
+            public static let setTiers = Connect.MethodSpec(name: "SetTiers", service: "hearth.v1.ProviderService", type: .unary)
+            public static let syncCredentials = Connect.MethodSpec(name: "SyncCredentials", service: "hearth.v1.ProviderService", type: .unary)
+            public static let exportCredential = Connect.MethodSpec(name: "ExportCredential", service: "hearth.v1.ProviderService", type: .unary)
         }
     }
 }

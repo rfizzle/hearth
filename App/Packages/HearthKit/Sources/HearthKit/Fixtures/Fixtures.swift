@@ -117,7 +117,10 @@ public enum Fixtures {
         known(
             "together", "Together", "https://api.together.xyz/v1",
             "meta-llama/Llama-3.3-70B-Instruct-Turbo", .compatible),
-        known("ollama", "Ollama (local)", "http://localhost:11434/v1", "llama3.2", .local),
+        known("ollama", "Ollama (local)", "http://localhost:11434/v1", "llama3.2", .local) {
+            $0.detected = true
+            $0.models = ollamaModels
+        },
         known("chatgpt", "ChatGPT", "https://chatgpt.com/backend-api/codex", "", .builtin),
         known("anthropic", "Anthropic", "https://api.anthropic.com", "", .builtin),
         known("gemini", "Gemini", "https://generativelanguage.googleapis.com", "", .builtin),
@@ -126,9 +129,10 @@ public enum Fixtures {
 
     static func known(
         _ id: String, _ name: String, _ baseURL: String, _ model: String,
-        _ kind: Hearth_V1_KnownServiceKind
+        _ kind: Hearth_V1_KnownServiceKind,
+        _ more: (inout Hearth_V1_KnownService) -> Void = { _ in }
     ) -> Hearth_V1_KnownService {
-        .with {
+        var service = Hearth_V1_KnownService.with {
             $0.id = id
             $0.name = name
             $0.baseURL = baseURL
@@ -136,6 +140,8 @@ public enum Fixtures {
             $0.defaultModel = model
             $0.kind = kind
         }
+        more(&service)
+        return service
     }
 
     /// The id a preview service gets: its name, lower-cased, as the core

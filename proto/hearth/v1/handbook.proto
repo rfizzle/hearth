@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// HandbookService is the pages every bot reads: Markdown the owner writes,
+// each tagged for everyone or for one bot. The meter says how much of the
+// context budget the pages take, because all of it goes into every run.
+// See docs/model.md#knowledge.
+service HandbookService {
+  rpc ListPages(ListPagesRequest) returns (ListPagesResponse) {}
+  rpc PutPage(PutPageRequest) returns (PutPageResponse) {}
+  rpc DeletePage(DeletePageRequest) returns (DeletePageResponse) {}
+}
+
+// Scope is who reads a page. A bot scope names the bot; teams come later.
+message Scope {
+  bool everyone = 1;
+  string bot_id = 2;
+}
+
+message HandbookPage {
+  string id = 1;
+  string title = 2;
+  string markdown = 3;
+  Scope scope = 4;
+  int64 bytes = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// ContextMeter is how much of the handbook budget is in use for one reader.
+message ContextMeter {
+  int64 used_bytes = 1;
+  int64 cap_bytes = 2;
+}
+
+message ListPagesRequest {
+  // The bot whose view is wanted; empty meters the pages for everyone.
+  string bot_id = 1;
+}
+
+message ListPagesResponse {
+  repeated HandbookPage pages = 1;
+  ContextMeter meter = 2;
+}
+
+message PutPageRequest {
+  // Empty adds a page; an id replaces that page.
+  string id = 1;
+  string title = 2;
+  string markdown = 3;
+  Scope scope = 4;
+}
+
+message PutPageResponse {
+  HandbookPage page = 1;
+  ContextMeter meter = 2;
+}
+
+message DeletePageRequest {
+  string id = 1;
+}
+
+message DeletePageResponse {
+  ContextMeter meter = 1;
+}

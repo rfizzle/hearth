@@ -2,12 +2,15 @@ syntax = "proto3";
 
 package hearth.v1;
 
+import "hearth/v1/bot.proto";
+
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
 // ProviderService is sign-in: which providers have a credential, storing
 // or clearing an API key, adding an OpenAI-compatible service under a name,
-// and starting the ChatGPT browser sign-in. The core never returns a
-// credential.
+// and starting the ChatGPT browser sign-in, and which model each quality tier
+// asks for. The core hands a credential back only to the app that keeps it in
+// the Keychain, through the two credential calls below.
 service ProviderService {
   rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse) {}
   rpc SetAPIKey(SetAPIKeyRequest) returns (SetAPIKeyResponse) {}
@@ -19,6 +22,18 @@ service ProviderService {
   // ListKnownServices is the services hearth knows the address of, the
   // rows the app offers when the owner adds another service.
   rpc ListKnownServices(ListKnownServicesRequest) returns (ListKnownServicesResponse) {}
+  // ListServiceModels asks a service which models it serves, so the card can
+  // offer a picker before the key is saved.
+  rpc ListServiceModels(ListServiceModelsRequest) returns (ListServiceModelsResponse) {}
+  rpc Tiers(TiersRequest) returns (TiersResponse) {}
+  rpc SetTiers(SetTiersRequest) returns (SetTiersResponse) {}
+  // SyncCredentials hands the core what the app keeps in the Keychain and
+  // takes back what the core still holds in its own files. Called on connect
+  // and after the app has stored a changed record.
+  rpc SyncCredentials(SyncCredentialsRequest) returns (SyncCredentialsResponse) {}
+  // ExportCredential is one record for the app to store after a
+  // credential_changed event.
+  rpc ExportCredential(ExportCredentialRequest) returns (ExportCredentialResponse) {}
 }
 
 enum Provider {
@@ -122,4 +137,87 @@ message KnownService {
   // built-in, which has its own.
   string default_model = 5;
   KnownServiceKind kind = 6;
+  // For a local runtime: whether it answered on this Mac just now, and the
+  // models it listed.
+  bool detected = 7;
+  repeated string models = 8;
+}
+
+// ListServiceModelsRequest names the service to ask in one of two ways. Before
+// a key is saved, the app sends base_url and, if the service wants one, key.
+// For a saved OpenAI-compatible service it sends profile alone and the core
+// uses the stored address and key. When profile is set the other fields are
+// ignored. The core does not keep the key.
+message ListServiceModelsRequest {
+  // The address requests go to, ending before /chat/completions.
+  string base_url = 1;
+  // Empty for a local runtime, which takes no key.
+  string key = 2;
+  // A saved service's id; set it instead of base_url and key.
+  string profile = 3;
+}
+
+message ListServiceModelsResponse {
+  repeated string models = 1;
+}
+
+message TierChoice {
+  Tier tier = 1;
+  Provider provider = 2;
+  // The added service, for PROVIDER_OPENAI_COMPATIBLE.
+  string profile = 3;
+  string model = 4;
+}
+
+// ModelOption is one model the owner can pick for a tier or under Advanced.
+message ModelOption {
+  Provider provider = 1;
+  string profile = 2;
+  string model = 3;
+  // "Anthropic", or the service's display name.
+  string label = 4;
+}
+
+message TiersRequest {}
+
+message TiersResponse {
+  repeated TierChoice tiers = 1;
+  repeated ModelOption options = 2;
+}
+
+message SetTiersRequest {
+  repeated TierChoice tiers = 1;
+}
+
+message SetTiersResponse {
+  repeated TierChoice tiers = 1;
+}
+
+// Credential is one record the app keeps in the Keychain. It crosses only in
+// the credential sync and export messages below and never in an event; the
+// event stream carries a name, never a value.
+message Credential {
+  // The key store name: "anthropic", "brave-search", "compat-<id>",
+  // "chatgpt" (the sign-in record), "chatgpt-host".
+  string name = 1;
+  bytes value = 2;
+}
+
+message SyncCredentialsRequest {
+  repeated Credential records = 1;
+}
+
+message SyncCredentialsResponse {
+  // Records the core held in its files that the app did not send; the app
+  // stores them and calls SyncCredentials again, after which the core
+  // removes its files.
+  repeated Credential records_to_store = 1;
+}
+
+message ExportCredentialRequest {
+  string name = 1;
+}
+
+message ExportCredentialResponse {
+  Credential record = 1;
 }

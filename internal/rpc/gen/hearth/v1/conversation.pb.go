@@ -214,9 +214,14 @@ type Conversation struct {
 	Title     string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// The newest run, in whatever state; unset before the first message.
-	LatestRun     *Run `protobuf:"bytes,6,opt,name=latest_run,json=latestRun,proto3" json:"latest_run,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	LatestRun *Run `protobuf:"bytes,6,opt,name=latest_run,json=latestRun,proto3" json:"latest_run,omitempty"`
+	// What the bot remembers of messages that no longer fit its window, shown
+	// under "Earlier in this conversation"; empty until one is made.
+	Summary string `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+	// Messages at or below this seq are covered by the summary.
+	SummaryThroughSeq int64 `protobuf:"varint,8,opt,name=summary_through_seq,json=summaryThroughSeq,proto3" json:"summary_through_seq,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Conversation) Reset() {
@@ -291,6 +296,20 @@ func (x *Conversation) GetLatestRun() *Run {
 	return nil
 }
 
+func (x *Conversation) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *Conversation) GetSummaryThroughSeq() int64 {
+	if x != nil {
+		return x.SummaryThroughSeq
+	}
+	return 0
+}
+
 type Message struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -310,6 +329,8 @@ type Message struct {
 	Files []*FileRef `protobuf:"bytes,10,rep,name=files,proto3" json:"files,omitempty"`
 	// True while a run is still appending to content through message deltas.
 	Streaming bool `protobuf:"varint,11,opt,name=streaming,proto3" json:"streaming,omitempty"`
+	// Files the owner attached to this message.
+	Attachments []*FileRef `protobuf:"bytes,12,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	// The control a question asked the owner to answer with, when it has one.
 	// Set on question messages.
 	Widget *Widget `protobuf:"bytes,13,opt,name=widget,proto3" json:"widget,omitempty"`
@@ -424,6 +445,13 @@ func (x *Message) GetStreaming() bool {
 		return x.Streaming
 	}
 	return false
+}
+
+func (x *Message) GetAttachments() []*FileRef {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
 }
 
 func (x *Message) GetWidget() *Widget {
@@ -1243,7 +1271,7 @@ var File_hearth_v1_conversation_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\n" +
-	"\x1chearth/v1/conversation.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16hearth/v1/widget.proto\"\xe6\x01\n" +
+	"\x1chearth/v1/conversation.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16hearth/v1/widget.proto\"\xb0\x02\n" +
 	"\fConversation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\x1b.hearth.v1.ConversationKindR\x04kind\x12\x15\n" +
@@ -1252,7 +1280,9 @@ const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12-\n" +
 	"\n" +
-	"latest_run\x18\x06 \x01(\v2\x0e.hearth.v1.RunR\tlatestRun\"\xdd\x03\n" +
+	"latest_run\x18\x06 \x01(\v2\x0e.hearth.v1.RunR\tlatestRun\x12\x18\n" +
+	"\asummary\x18\a \x01(\tR\asummary\x12.\n" +
+	"\x13summary_through_seq\x18\b \x01(\x03R\x11summaryThroughSeq\"\x93\x04\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x0fconversation_id\x18\x02 \x01(\tR\x0econversationId\x12\x10\n" +
@@ -1266,7 +1296,8 @@ const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\x04tool\x18\t \x01(\v2\x13.hearth.v1.ToolCallR\x04tool\x12(\n" +
 	"\x05files\x18\n" +
 	" \x03(\v2\x12.hearth.v1.FileRefR\x05files\x12\x1c\n" +
-	"\tstreaming\x18\v \x01(\bR\tstreaming\x12)\n" +
+	"\tstreaming\x18\v \x01(\bR\tstreaming\x124\n" +
+	"\vattachments\x18\f \x03(\v2\x12.hearth.v1.FileRefR\vattachments\x12)\n" +
 	"\x06widget\x18\r \x01(\v2\x11.hearth.v1.WidgetR\x06widget\x12/\n" +
 	"\x06answer\x18\x0e \x01(\v2\x17.hearth.v1.WidgetAnswerR\x06answer\"x\n" +
 	"\bToolCall\x12\x17\n" +
@@ -1396,34 +1427,35 @@ var file_hearth_v1_conversation_proto_depIdxs = []int32{
 	20, // 4: hearth.v1.Message.created_at:type_name -> google.protobuf.Timestamp
 	5,  // 5: hearth.v1.Message.tool:type_name -> hearth.v1.ToolCall
 	6,  // 6: hearth.v1.Message.files:type_name -> hearth.v1.FileRef
-	21, // 7: hearth.v1.Message.widget:type_name -> hearth.v1.Widget
-	22, // 8: hearth.v1.Message.answer:type_name -> hearth.v1.WidgetAnswer
-	3,  // 9: hearth.v1.ListConversationsResponse.conversations:type_name -> hearth.v1.Conversation
-	4,  // 10: hearth.v1.ListMessagesResponse.messages:type_name -> hearth.v1.Message
-	4,  // 11: hearth.v1.SendResponse.message:type_name -> hearth.v1.Message
-	19, // 12: hearth.v1.SendResponse.run:type_name -> hearth.v1.Run
-	3,  // 13: hearth.v1.GetConversationResponse.conversation:type_name -> hearth.v1.Conversation
-	19, // 14: hearth.v1.RetryResponse.run:type_name -> hearth.v1.Run
-	2,  // 15: hearth.v1.Run.state:type_name -> hearth.v1.RunState
-	20, // 16: hearth.v1.Run.started_at:type_name -> google.protobuf.Timestamp
-	20, // 17: hearth.v1.Run.ended_at:type_name -> google.protobuf.Timestamp
-	7,  // 18: hearth.v1.ConversationService.ListConversations:input_type -> hearth.v1.ListConversationsRequest
-	9,  // 19: hearth.v1.ConversationService.ListMessages:input_type -> hearth.v1.ListMessagesRequest
-	11, // 20: hearth.v1.ConversationService.Send:input_type -> hearth.v1.SendRequest
-	13, // 21: hearth.v1.ConversationService.Cancel:input_type -> hearth.v1.CancelRequest
-	15, // 22: hearth.v1.ConversationService.GetConversation:input_type -> hearth.v1.GetConversationRequest
-	17, // 23: hearth.v1.ConversationService.Retry:input_type -> hearth.v1.RetryRequest
-	8,  // 24: hearth.v1.ConversationService.ListConversations:output_type -> hearth.v1.ListConversationsResponse
-	10, // 25: hearth.v1.ConversationService.ListMessages:output_type -> hearth.v1.ListMessagesResponse
-	12, // 26: hearth.v1.ConversationService.Send:output_type -> hearth.v1.SendResponse
-	14, // 27: hearth.v1.ConversationService.Cancel:output_type -> hearth.v1.CancelResponse
-	16, // 28: hearth.v1.ConversationService.GetConversation:output_type -> hearth.v1.GetConversationResponse
-	18, // 29: hearth.v1.ConversationService.Retry:output_type -> hearth.v1.RetryResponse
-	24, // [24:30] is the sub-list for method output_type
-	18, // [18:24] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	6,  // 7: hearth.v1.Message.attachments:type_name -> hearth.v1.FileRef
+	21, // 8: hearth.v1.Message.widget:type_name -> hearth.v1.Widget
+	22, // 9: hearth.v1.Message.answer:type_name -> hearth.v1.WidgetAnswer
+	3,  // 10: hearth.v1.ListConversationsResponse.conversations:type_name -> hearth.v1.Conversation
+	4,  // 11: hearth.v1.ListMessagesResponse.messages:type_name -> hearth.v1.Message
+	4,  // 12: hearth.v1.SendResponse.message:type_name -> hearth.v1.Message
+	19, // 13: hearth.v1.SendResponse.run:type_name -> hearth.v1.Run
+	3,  // 14: hearth.v1.GetConversationResponse.conversation:type_name -> hearth.v1.Conversation
+	19, // 15: hearth.v1.RetryResponse.run:type_name -> hearth.v1.Run
+	2,  // 16: hearth.v1.Run.state:type_name -> hearth.v1.RunState
+	20, // 17: hearth.v1.Run.started_at:type_name -> google.protobuf.Timestamp
+	20, // 18: hearth.v1.Run.ended_at:type_name -> google.protobuf.Timestamp
+	7,  // 19: hearth.v1.ConversationService.ListConversations:input_type -> hearth.v1.ListConversationsRequest
+	9,  // 20: hearth.v1.ConversationService.ListMessages:input_type -> hearth.v1.ListMessagesRequest
+	11, // 21: hearth.v1.ConversationService.Send:input_type -> hearth.v1.SendRequest
+	13, // 22: hearth.v1.ConversationService.Cancel:input_type -> hearth.v1.CancelRequest
+	15, // 23: hearth.v1.ConversationService.GetConversation:input_type -> hearth.v1.GetConversationRequest
+	17, // 24: hearth.v1.ConversationService.Retry:input_type -> hearth.v1.RetryRequest
+	8,  // 25: hearth.v1.ConversationService.ListConversations:output_type -> hearth.v1.ListConversationsResponse
+	10, // 26: hearth.v1.ConversationService.ListMessages:output_type -> hearth.v1.ListMessagesResponse
+	12, // 27: hearth.v1.ConversationService.Send:output_type -> hearth.v1.SendResponse
+	14, // 28: hearth.v1.ConversationService.Cancel:output_type -> hearth.v1.CancelResponse
+	16, // 29: hearth.v1.ConversationService.GetConversation:output_type -> hearth.v1.GetConversationResponse
+	18, // 30: hearth.v1.ConversationService.Retry:output_type -> hearth.v1.RetryResponse
+	25, // [25:31] is the sub-list for method output_type
+	19, // [19:25] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_conversation_proto_init() }

@@ -92,6 +92,47 @@ public protocol HearthClient: Sendable {
     /// Forgets the key for `integration`, switching its tool off.
     func clearIntegration(_ integration: Hearth_V1_Integration) async throws
 
+    /// Changes what the owner may edit on a bot; empty strings keep the stored
+    /// value and `clearModelOverride` drops the Advanced override.
+    func updateBot(_ request: Hearth_V1_UpdateBotRequest) async throws -> Hearth_V1_Bot
+    /// What the bot remembers, pinned notes first, and how many it may keep.
+    func listNotes(botID: String) async throws -> Hearth_V1_ListNotesResponse
+    /// Replaces the words of a note.
+    func editNote(id: String, text: String) async throws -> Hearth_V1_Note
+    /// Makes the bot forget a note.
+    func deleteNote(id: String) async throws
+    /// Pins a note so the bot never tidies it away, or lets it go.
+    func pinNote(id: String, pinned: Bool) async throws -> Hearth_V1_Note
+
+    /// The handbook pages `botID` reads, or every page for an empty id, and
+    /// how much of the context budget they take.
+    func listPages(botID: String) async throws -> Hearth_V1_ListPagesResponse
+    /// Adds a page, or replaces the page `request.id` names.
+    func putPage(_ request: Hearth_V1_PutPageRequest) async throws -> Hearth_V1_PutPageResponse
+    /// Removes a page; the meter is what remains.
+    func deletePage(id: String) async throws -> Hearth_V1_ContextMeter
+
+    /// What the bots cost in `month` ("2026-10"; empty is this month).
+    func usageSummary(month: String) async throws -> Hearth_V1_SummaryResponse
+    /// Sets the org's monthly budget and each listed bot's, in cents; 0 is none.
+    func setBudgets(orgCents: Int64, bots: [Hearth_V1_BotBudget]) async throws
+        -> Hearth_V1_SummaryResponse
+    /// Lets a paused bot, or the whole org for an empty id, work again this month.
+    func resume(botID: String) async throws -> Hearth_V1_SummaryResponse
+
+    /// The model each tier asks for, and every model the owner may pick.
+    func tiers() async throws -> Hearth_V1_TiersResponse
+    /// Maps tiers to models; the core answers with the mapping it kept.
+    func setTiers(_ tiers: [Hearth_V1_TierChoice]) async throws -> [Hearth_V1_TierChoice]
+    /// The model ids a service serves: by `baseURL` and `key` before a key is
+    /// saved, or by `profile` for a saved service.
+    func listServiceModels(_ request: Hearth_V1_ListServiceModelsRequest) async throws -> [String]
+    /// Hands the core the records the app keeps in the Keychain; the reply is
+    /// the records the core still held in files, for the app to store.
+    func syncCredentials(_ records: [Hearth_V1_Credential]) async throws -> [Hearth_V1_Credential]
+    /// One record to store after a credential change.
+    func exportCredential(name: String) async throws -> Hearth_V1_Credential
+
     /// Every change the core makes after `sequence` (0 for live events only),
     /// in order. The stream finishes with the error that ended it.
     func subscribe(after sequence: UInt64) -> AsyncThrowingStream<

@@ -127,3 +127,32 @@ import Testing
         conversationID: "c", text: "Hello", attachmentPaths: ["/tmp/a.pdf"])
     #expect(plain.message.content == "Hello" && attached.message.content == "Hello")
 }
+
+@Test func previewServesTheMemoryAndAccountingFixtures() async throws {
+    let client = PreviewClient()
+    let notes = try await client.listNotes(botID: Fixtures.bot.id)
+    #expect(notes.notes.count == 5)
+    #expect(notes.notes.filter(\.pinned).count == 1)
+
+    let pages = try await client.listPages(botID: Fixtures.bot.id)
+    #expect(pages.pages.count == 2)
+    #expect(pages.meter.usedBytes > 0 && pages.meter.usedBytes < pages.meter.capBytes)
+
+    let usage = try await client.usageSummary(month: "")
+    #expect(usage.months.count == 2)
+    let dana = try #require(usage.bots.first)
+    #expect(dana.totals.costMicros > dana.budgetCents * 10_000 * 9 / 10)
+
+    let tiers = try await client.tiers()
+    #expect(tiers.tiers.count == 3 && !tiers.options.isEmpty)
+
+    let services = try await client.listKnownServices()
+    #expect(services.first { $0.id == "ollama" }?.detected == true)
+}
+
+@Test func memoryEventsScriptTheThreeChanges() {
+    let kinds = Fixtures.memoryEvents.map(\.event)
+    #expect(kinds.contains { if case .usageTick = $0 { true } else { false } })
+    #expect(kinds.contains { if case .noteChanged = $0 { true } else { false } })
+    #expect(kinds.contains { if case .handbookChanged = $0 { true } else { false } })
+}

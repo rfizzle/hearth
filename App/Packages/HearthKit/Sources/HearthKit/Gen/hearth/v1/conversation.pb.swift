@@ -182,45 +182,69 @@ public nonisolated enum Hearth_V1_RunState: SwiftProtobuf.Enum, Swift.CaseIterab
 
 }
 
-public nonisolated struct Hearth_V1_Conversation: Sendable {
+public nonisolated struct Hearth_V1_Conversation: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var id: String = String()
+  public var id: String {
+    get {_storage._id}
+    set {_uniqueStorage()._id = newValue}
+  }
 
-  public var kind: Hearth_V1_ConversationKind = .unspecified
+  public var kind: Hearth_V1_ConversationKind {
+    get {_storage._kind}
+    set {_uniqueStorage()._kind = newValue}
+  }
 
   /// The bot in a DM; the lead's team in a channel comes later.
-  public var botID: String = String()
+  public var botID: String {
+    get {_storage._botID}
+    set {_uniqueStorage()._botID = newValue}
+  }
 
-  public var title: String = String()
+  public var title: String {
+    get {_storage._title}
+    set {_uniqueStorage()._title = newValue}
+  }
 
   public var updatedAt: SwiftProtobuf.Google_Protobuf_Timestamp {
-    get {_updatedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
-    set {_updatedAt = newValue}
+    get {_storage._updatedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_uniqueStorage()._updatedAt = newValue}
   }
   /// Returns true if `updatedAt` has been explicitly set.
-  public var hasUpdatedAt: Bool {self._updatedAt != nil}
+  public var hasUpdatedAt: Bool {_storage._updatedAt != nil}
   /// Clears the value of `updatedAt`. Subsequent reads from it will return its default value.
-  public mutating func clearUpdatedAt() {self._updatedAt = nil}
+  public mutating func clearUpdatedAt() {_uniqueStorage()._updatedAt = nil}
 
   /// The newest run, in whatever state; unset before the first message.
   public var latestRun: Hearth_V1_Run {
-    get {_latestRun ?? Hearth_V1_Run()}
-    set {_latestRun = newValue}
+    get {_storage._latestRun ?? Hearth_V1_Run()}
+    set {_uniqueStorage()._latestRun = newValue}
   }
   /// Returns true if `latestRun` has been explicitly set.
-  public var hasLatestRun: Bool {self._latestRun != nil}
+  public var hasLatestRun: Bool {_storage._latestRun != nil}
   /// Clears the value of `latestRun`. Subsequent reads from it will return its default value.
-  public mutating func clearLatestRun() {self._latestRun = nil}
+  public mutating func clearLatestRun() {_uniqueStorage()._latestRun = nil}
+
+  /// What the bot remembers of messages that no longer fit its window, shown
+  /// under "Earlier in this conversation"; empty until one is made.
+  public var summary: String {
+    get {_storage._summary}
+    set {_uniqueStorage()._summary = newValue}
+  }
+
+  /// Messages at or below this seq are covered by the summary.
+  public var summaryThroughSeq: Int64 {
+    get {_storage._summaryThroughSeq}
+    set {_uniqueStorage()._summaryThroughSeq = newValue}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
-  fileprivate var _updatedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
-  fileprivate var _latestRun: Hearth_V1_Run? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 public nonisolated struct Hearth_V1_Message: @unchecked Sendable {
@@ -295,6 +319,12 @@ public nonisolated struct Hearth_V1_Message: @unchecked Sendable {
   public var streaming: Bool {
     get {_storage._streaming}
     set {_uniqueStorage()._streaming = newValue}
+  }
+
+  /// Files the owner attached to this message.
+  public var attachments: [Hearth_V1_FileRef] {
+    get {_storage._attachments}
+    set {_uniqueStorage()._attachments = newValue}
   }
 
   /// The control a question asked the owner to answer with, when it has one.
@@ -618,58 +648,118 @@ nonisolated extension Hearth_V1_RunState: SwiftProtobuf._ProtoNameProviding {
 
 nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Conversation"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}kind\0\u{3}bot_id\0\u{1}title\0\u{3}updated_at\0\u{3}latest_run\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}kind\0\u{3}bot_id\0\u{1}title\0\u{3}updated_at\0\u{3}latest_run\0\u{1}summary\0\u{3}summary_through_seq\0")
+
+  fileprivate class _StorageClass {
+    var _id: String = String()
+    var _kind: Hearth_V1_ConversationKind = .unspecified
+    var _botID: String = String()
+    var _title: String = String()
+    var _updatedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+    var _latestRun: Hearth_V1_Run? = nil
+    var _summary: String = String()
+    var _summaryThroughSeq: Int64 = 0
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _id = source._id
+      _kind = source._kind
+      _botID = source._botID
+      _title = source._title
+      _updatedAt = source._updatedAt
+      _latestRun = source._latestRun
+      _summary = source._summary
+      _summaryThroughSeq = source._summaryThroughSeq
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
-      case 2: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.botID) }()
-      case 4: try { try decoder.decodeSingularStringField(value: &self.title) }()
-      case 5: try { try decoder.decodeSingularMessageField(value: &self._updatedAt) }()
-      case 6: try { try decoder.decodeSingularMessageField(value: &self._latestRun) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularStringField(value: &_storage._id) }()
+        case 2: try { try decoder.decodeSingularEnumField(value: &_storage._kind) }()
+        case 3: try { try decoder.decodeSingularStringField(value: &_storage._botID) }()
+        case 4: try { try decoder.decodeSingularStringField(value: &_storage._title) }()
+        case 5: try { try decoder.decodeSingularMessageField(value: &_storage._updatedAt) }()
+        case 6: try { try decoder.decodeSingularMessageField(value: &_storage._latestRun) }()
+        case 7: try { try decoder.decodeSingularStringField(value: &_storage._summary) }()
+        case 8: try { try decoder.decodeSingularInt64Field(value: &_storage._summaryThroughSeq) }()
+        default: break
+        }
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.id.isEmpty {
-      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if !_storage._id.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._id, fieldNumber: 1)
+      }
+      if _storage._kind != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._kind, fieldNumber: 2)
+      }
+      if !_storage._botID.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._botID, fieldNumber: 3)
+      }
+      if !_storage._title.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._title, fieldNumber: 4)
+      }
+      try { if let v = _storage._updatedAt {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+      } }()
+      try { if let v = _storage._latestRun {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+      } }()
+      if !_storage._summary.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._summary, fieldNumber: 7)
+      }
+      if _storage._summaryThroughSeq != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._summaryThroughSeq, fieldNumber: 8)
+      }
     }
-    if self.kind != .unspecified {
-      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 2)
-    }
-    if !self.botID.isEmpty {
-      try visitor.visitSingularStringField(value: self.botID, fieldNumber: 3)
-    }
-    if !self.title.isEmpty {
-      try visitor.visitSingularStringField(value: self.title, fieldNumber: 4)
-    }
-    try { if let v = self._updatedAt {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
-    } }()
-    try { if let v = self._latestRun {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Hearth_V1_Conversation, rhs: Hearth_V1_Conversation) -> Bool {
-    if lhs.id != rhs.id {return false}
-    if lhs.kind != rhs.kind {return false}
-    if lhs.botID != rhs.botID {return false}
-    if lhs.title != rhs.title {return false}
-    if lhs._updatedAt != rhs._updatedAt {return false}
-    if lhs._latestRun != rhs._latestRun {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._id != rhs_storage._id {return false}
+        if _storage._kind != rhs_storage._kind {return false}
+        if _storage._botID != rhs_storage._botID {return false}
+        if _storage._title != rhs_storage._title {return false}
+        if _storage._updatedAt != rhs_storage._updatedAt {return false}
+        if _storage._latestRun != rhs_storage._latestRun {return false}
+        if _storage._summary != rhs_storage._summary {return false}
+        if _storage._summaryThroughSeq != rhs_storage._summaryThroughSeq {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -677,7 +767,7 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
 
 nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Message"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{3}conversation_id\0\u{1}seq\0\u{3}author_bot_id\0\u{1}kind\0\u{1}content\0\u{3}created_at\0\u{3}run_id\0\u{1}tool\0\u{1}files\0\u{1}streaming\0\u{2}\u{2}widget\0\u{1}answer\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{3}conversation_id\0\u{1}seq\0\u{3}author_bot_id\0\u{1}kind\0\u{1}content\0\u{3}created_at\0\u{3}run_id\0\u{1}tool\0\u{1}files\0\u{1}streaming\0\u{1}attachments\0\u{1}widget\0\u{1}answer\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -691,6 +781,7 @@ nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
     var _tool: Hearth_V1_ToolCall? = nil
     var _files: [Hearth_V1_FileRef] = []
     var _streaming: Bool = false
+    var _attachments: [Hearth_V1_FileRef] = []
     var _widget: Hearth_V1_Widget? = nil
     var _answer: Hearth_V1_WidgetAnswer? = nil
 
@@ -714,6 +805,7 @@ nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
       _tool = source._tool
       _files = source._files
       _streaming = source._streaming
+      _attachments = source._attachments
       _widget = source._widget
       _answer = source._answer
     }
@@ -745,6 +837,7 @@ nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
         case 9: try { try decoder.decodeSingularMessageField(value: &_storage._tool) }()
         case 10: try { try decoder.decodeRepeatedMessageField(value: &_storage._files) }()
         case 11: try { try decoder.decodeSingularBoolField(value: &_storage._streaming) }()
+        case 12: try { try decoder.decodeRepeatedMessageField(value: &_storage._attachments) }()
         case 13: try { try decoder.decodeSingularMessageField(value: &_storage._widget) }()
         case 14: try { try decoder.decodeSingularMessageField(value: &_storage._answer) }()
         default: break
@@ -792,6 +885,9 @@ nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
       if _storage._streaming != false {
         try visitor.visitSingularBoolField(value: _storage._streaming, fieldNumber: 11)
       }
+      if !_storage._attachments.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._attachments, fieldNumber: 12)
+      }
       try { if let v = _storage._widget {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
       } }()
@@ -818,6 +914,7 @@ nonisolated extension Hearth_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
         if _storage._tool != rhs_storage._tool {return false}
         if _storage._files != rhs_storage._files {return false}
         if _storage._streaming != rhs_storage._streaming {return false}
+        if _storage._attachments != rhs_storage._attachments {return false}
         if _storage._widget != rhs_storage._widget {return false}
         if _storage._answer != rhs_storage._answer {return false}
         return true

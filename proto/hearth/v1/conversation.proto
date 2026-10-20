@@ -45,6 +45,11 @@ message Conversation {
   google.protobuf.Timestamp updated_at = 5;
   // The newest run, in whatever state; unset before the first message.
   Run latest_run = 6;
+  // What the bot remembers of messages that no longer fit its window, shown
+  // under "Earlier in this conversation"; empty until one is made.
+  string summary = 7;
+  // Messages at or below this seq are covered by the summary.
+  int64 summary_through_seq = 8;
 }
 
 enum MessageKind {
@@ -78,6 +83,8 @@ message Message {
   repeated FileRef files = 10;
   // True while a run is still appending to content through message deltas.
   bool streaming = 11;
+  // Files the owner attached to this message.
+  repeated FileRef attachments = 12;
   // The control a question asked the owner to answer with, when it has one.
   // Set on question messages.
   Widget widget = 13;

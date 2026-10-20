@@ -48,6 +48,20 @@ const (
 	// ProviderServiceListKnownServicesProcedure is the fully-qualified name of the ProviderService's
 	// ListKnownServices RPC.
 	ProviderServiceListKnownServicesProcedure = "/hearth.v1.ProviderService/ListKnownServices"
+	// ProviderServiceListServiceModelsProcedure is the fully-qualified name of the ProviderService's
+	// ListServiceModels RPC.
+	ProviderServiceListServiceModelsProcedure = "/hearth.v1.ProviderService/ListServiceModels"
+	// ProviderServiceTiersProcedure is the fully-qualified name of the ProviderService's Tiers RPC.
+	ProviderServiceTiersProcedure = "/hearth.v1.ProviderService/Tiers"
+	// ProviderServiceSetTiersProcedure is the fully-qualified name of the ProviderService's SetTiers
+	// RPC.
+	ProviderServiceSetTiersProcedure = "/hearth.v1.ProviderService/SetTiers"
+	// ProviderServiceSyncCredentialsProcedure is the fully-qualified name of the ProviderService's
+	// SyncCredentials RPC.
+	ProviderServiceSyncCredentialsProcedure = "/hearth.v1.ProviderService/SyncCredentials"
+	// ProviderServiceExportCredentialProcedure is the fully-qualified name of the ProviderService's
+	// ExportCredential RPC.
+	ProviderServiceExportCredentialProcedure = "/hearth.v1.ProviderService/ExportCredential"
 )
 
 // ProviderServiceClient is a client for the hearth.v1.ProviderService service.
@@ -62,6 +76,18 @@ type ProviderServiceClient interface {
 	// ListKnownServices is the services hearth knows the address of, the
 	// rows the app offers when the owner adds another service.
 	ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error)
+	// ListServiceModels asks a service which models it serves, so the card can
+	// offer a picker before the key is saved.
+	ListServiceModels(context.Context, *connect.Request[v1.ListServiceModelsRequest]) (*connect.Response[v1.ListServiceModelsResponse], error)
+	Tiers(context.Context, *connect.Request[v1.TiersRequest]) (*connect.Response[v1.TiersResponse], error)
+	SetTiers(context.Context, *connect.Request[v1.SetTiersRequest]) (*connect.Response[v1.SetTiersResponse], error)
+	// SyncCredentials hands the core what the app keeps in the Keychain and
+	// takes back what the core still holds in its own files. Called on connect
+	// and after the app has stored a changed record.
+	SyncCredentials(context.Context, *connect.Request[v1.SyncCredentialsRequest]) (*connect.Response[v1.SyncCredentialsResponse], error)
+	// ExportCredential is one record for the app to store after a
+	// credential_changed event.
+	ExportCredential(context.Context, *connect.Request[v1.ExportCredentialRequest]) (*connect.Response[v1.ExportCredentialResponse], error)
 }
 
 // NewProviderServiceClient constructs a client for the hearth.v1.ProviderService service. By
@@ -105,6 +131,36 @@ func NewProviderServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(providerServiceMethods.ByName("ListKnownServices")),
 			connect.WithClientOptions(opts...),
 		),
+		listServiceModels: connect.NewClient[v1.ListServiceModelsRequest, v1.ListServiceModelsResponse](
+			httpClient,
+			baseURL+ProviderServiceListServiceModelsProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("ListServiceModels")),
+			connect.WithClientOptions(opts...),
+		),
+		tiers: connect.NewClient[v1.TiersRequest, v1.TiersResponse](
+			httpClient,
+			baseURL+ProviderServiceTiersProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("Tiers")),
+			connect.WithClientOptions(opts...),
+		),
+		setTiers: connect.NewClient[v1.SetTiersRequest, v1.SetTiersResponse](
+			httpClient,
+			baseURL+ProviderServiceSetTiersProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("SetTiers")),
+			connect.WithClientOptions(opts...),
+		),
+		syncCredentials: connect.NewClient[v1.SyncCredentialsRequest, v1.SyncCredentialsResponse](
+			httpClient,
+			baseURL+ProviderServiceSyncCredentialsProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("SyncCredentials")),
+			connect.WithClientOptions(opts...),
+		),
+		exportCredential: connect.NewClient[v1.ExportCredentialRequest, v1.ExportCredentialResponse](
+			httpClient,
+			baseURL+ProviderServiceExportCredentialProcedure,
+			connect.WithSchema(providerServiceMethods.ByName("ExportCredential")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -115,6 +171,11 @@ type providerServiceClient struct {
 	clearCredential   *connect.Client[v1.ClearCredentialRequest, v1.ClearCredentialResponse]
 	startChatGPTLogin *connect.Client[v1.StartChatGPTLoginRequest, v1.StartChatGPTLoginResponse]
 	listKnownServices *connect.Client[v1.ListKnownServicesRequest, v1.ListKnownServicesResponse]
+	listServiceModels *connect.Client[v1.ListServiceModelsRequest, v1.ListServiceModelsResponse]
+	tiers             *connect.Client[v1.TiersRequest, v1.TiersResponse]
+	setTiers          *connect.Client[v1.SetTiersRequest, v1.SetTiersResponse]
+	syncCredentials   *connect.Client[v1.SyncCredentialsRequest, v1.SyncCredentialsResponse]
+	exportCredential  *connect.Client[v1.ExportCredentialRequest, v1.ExportCredentialResponse]
 }
 
 // ListAccounts calls hearth.v1.ProviderService.ListAccounts.
@@ -142,6 +203,31 @@ func (c *providerServiceClient) ListKnownServices(ctx context.Context, req *conn
 	return c.listKnownServices.CallUnary(ctx, req)
 }
 
+// ListServiceModels calls hearth.v1.ProviderService.ListServiceModels.
+func (c *providerServiceClient) ListServiceModels(ctx context.Context, req *connect.Request[v1.ListServiceModelsRequest]) (*connect.Response[v1.ListServiceModelsResponse], error) {
+	return c.listServiceModels.CallUnary(ctx, req)
+}
+
+// Tiers calls hearth.v1.ProviderService.Tiers.
+func (c *providerServiceClient) Tiers(ctx context.Context, req *connect.Request[v1.TiersRequest]) (*connect.Response[v1.TiersResponse], error) {
+	return c.tiers.CallUnary(ctx, req)
+}
+
+// SetTiers calls hearth.v1.ProviderService.SetTiers.
+func (c *providerServiceClient) SetTiers(ctx context.Context, req *connect.Request[v1.SetTiersRequest]) (*connect.Response[v1.SetTiersResponse], error) {
+	return c.setTiers.CallUnary(ctx, req)
+}
+
+// SyncCredentials calls hearth.v1.ProviderService.SyncCredentials.
+func (c *providerServiceClient) SyncCredentials(ctx context.Context, req *connect.Request[v1.SyncCredentialsRequest]) (*connect.Response[v1.SyncCredentialsResponse], error) {
+	return c.syncCredentials.CallUnary(ctx, req)
+}
+
+// ExportCredential calls hearth.v1.ProviderService.ExportCredential.
+func (c *providerServiceClient) ExportCredential(ctx context.Context, req *connect.Request[v1.ExportCredentialRequest]) (*connect.Response[v1.ExportCredentialResponse], error) {
+	return c.exportCredential.CallUnary(ctx, req)
+}
+
 // ProviderServiceHandler is an implementation of the hearth.v1.ProviderService service.
 type ProviderServiceHandler interface {
 	ListAccounts(context.Context, *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error)
@@ -154,6 +240,18 @@ type ProviderServiceHandler interface {
 	// ListKnownServices is the services hearth knows the address of, the
 	// rows the app offers when the owner adds another service.
 	ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error)
+	// ListServiceModels asks a service which models it serves, so the card can
+	// offer a picker before the key is saved.
+	ListServiceModels(context.Context, *connect.Request[v1.ListServiceModelsRequest]) (*connect.Response[v1.ListServiceModelsResponse], error)
+	Tiers(context.Context, *connect.Request[v1.TiersRequest]) (*connect.Response[v1.TiersResponse], error)
+	SetTiers(context.Context, *connect.Request[v1.SetTiersRequest]) (*connect.Response[v1.SetTiersResponse], error)
+	// SyncCredentials hands the core what the app keeps in the Keychain and
+	// takes back what the core still holds in its own files. Called on connect
+	// and after the app has stored a changed record.
+	SyncCredentials(context.Context, *connect.Request[v1.SyncCredentialsRequest]) (*connect.Response[v1.SyncCredentialsResponse], error)
+	// ExportCredential is one record for the app to store after a
+	// credential_changed event.
+	ExportCredential(context.Context, *connect.Request[v1.ExportCredentialRequest]) (*connect.Response[v1.ExportCredentialResponse], error)
 }
 
 // NewProviderServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -193,6 +291,36 @@ func NewProviderServiceHandler(svc ProviderServiceHandler, opts ...connect.Handl
 		connect.WithSchema(providerServiceMethods.ByName("ListKnownServices")),
 		connect.WithHandlerOptions(opts...),
 	)
+	providerServiceListServiceModelsHandler := connect.NewUnaryHandler(
+		ProviderServiceListServiceModelsProcedure,
+		svc.ListServiceModels,
+		connect.WithSchema(providerServiceMethods.ByName("ListServiceModels")),
+		connect.WithHandlerOptions(opts...),
+	)
+	providerServiceTiersHandler := connect.NewUnaryHandler(
+		ProviderServiceTiersProcedure,
+		svc.Tiers,
+		connect.WithSchema(providerServiceMethods.ByName("Tiers")),
+		connect.WithHandlerOptions(opts...),
+	)
+	providerServiceSetTiersHandler := connect.NewUnaryHandler(
+		ProviderServiceSetTiersProcedure,
+		svc.SetTiers,
+		connect.WithSchema(providerServiceMethods.ByName("SetTiers")),
+		connect.WithHandlerOptions(opts...),
+	)
+	providerServiceSyncCredentialsHandler := connect.NewUnaryHandler(
+		ProviderServiceSyncCredentialsProcedure,
+		svc.SyncCredentials,
+		connect.WithSchema(providerServiceMethods.ByName("SyncCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
+	providerServiceExportCredentialHandler := connect.NewUnaryHandler(
+		ProviderServiceExportCredentialProcedure,
+		svc.ExportCredential,
+		connect.WithSchema(providerServiceMethods.ByName("ExportCredential")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.ProviderService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProviderServiceListAccountsProcedure:
@@ -205,6 +333,16 @@ func NewProviderServiceHandler(svc ProviderServiceHandler, opts ...connect.Handl
 			providerServiceStartChatGPTLoginHandler.ServeHTTP(w, r)
 		case ProviderServiceListKnownServicesProcedure:
 			providerServiceListKnownServicesHandler.ServeHTTP(w, r)
+		case ProviderServiceListServiceModelsProcedure:
+			providerServiceListServiceModelsHandler.ServeHTTP(w, r)
+		case ProviderServiceTiersProcedure:
+			providerServiceTiersHandler.ServeHTTP(w, r)
+		case ProviderServiceSetTiersProcedure:
+			providerServiceSetTiersHandler.ServeHTTP(w, r)
+		case ProviderServiceSyncCredentialsProcedure:
+			providerServiceSyncCredentialsHandler.ServeHTTP(w, r)
+		case ProviderServiceExportCredentialProcedure:
+			providerServiceExportCredentialHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -232,4 +370,24 @@ func (UnimplementedProviderServiceHandler) StartChatGPTLogin(context.Context, *c
 
 func (UnimplementedProviderServiceHandler) ListKnownServices(context.Context, *connect.Request[v1.ListKnownServicesRequest]) (*connect.Response[v1.ListKnownServicesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.ListKnownServices is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) ListServiceModels(context.Context, *connect.Request[v1.ListServiceModelsRequest]) (*connect.Response[v1.ListServiceModelsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.ListServiceModels is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) Tiers(context.Context, *connect.Request[v1.TiersRequest]) (*connect.Response[v1.TiersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.Tiers is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) SetTiers(context.Context, *connect.Request[v1.SetTiersRequest]) (*connect.Response[v1.SetTiersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.SetTiers is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) SyncCredentials(context.Context, *connect.Request[v1.SyncCredentialsRequest]) (*connect.Response[v1.SyncCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.SyncCredentials is not implemented"))
+}
+
+func (UnimplementedProviderServiceHandler) ExportCredential(context.Context, *connect.Request[v1.ExportCredentialRequest]) (*connect.Response[v1.ExportCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProviderService.ExportCredential is not implemented"))
 }

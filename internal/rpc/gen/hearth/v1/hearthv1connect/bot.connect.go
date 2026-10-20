@@ -48,6 +48,16 @@ const (
 	BotServiceListGrantsProcedure = "/hearth.v1.BotService/ListGrants"
 	// BotServiceSetGrantsProcedure is the fully-qualified name of the BotService's SetGrants RPC.
 	BotServiceSetGrantsProcedure = "/hearth.v1.BotService/SetGrants"
+	// BotServiceUpdateBotProcedure is the fully-qualified name of the BotService's UpdateBot RPC.
+	BotServiceUpdateBotProcedure = "/hearth.v1.BotService/UpdateBot"
+	// BotServiceListNotesProcedure is the fully-qualified name of the BotService's ListNotes RPC.
+	BotServiceListNotesProcedure = "/hearth.v1.BotService/ListNotes"
+	// BotServiceEditNoteProcedure is the fully-qualified name of the BotService's EditNote RPC.
+	BotServiceEditNoteProcedure = "/hearth.v1.BotService/EditNote"
+	// BotServiceDeleteNoteProcedure is the fully-qualified name of the BotService's DeleteNote RPC.
+	BotServiceDeleteNoteProcedure = "/hearth.v1.BotService/DeleteNote"
+	// BotServicePinNoteProcedure is the fully-qualified name of the BotService's PinNote RPC.
+	BotServicePinNoteProcedure = "/hearth.v1.BotService/PinNote"
 )
 
 // BotServiceClient is a client for the hearth.v1.BotService service.
@@ -66,6 +76,14 @@ type BotServiceClient interface {
 	// granted. The core refuses allowed mode for a capability that never has
 	// standing permission, such as deleting files.
 	SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error)
+	// UpdateBot changes what the owner may edit: name, role, job description,
+	// tier, avatar and the Advanced model override. Empty strings keep the
+	// stored value; clear_model_override drops the override.
+	UpdateBot(context.Context, *connect.Request[v1.UpdateBotRequest]) (*connect.Response[v1.UpdateBotResponse], error)
+	ListNotes(context.Context, *connect.Request[v1.ListNotesRequest]) (*connect.Response[v1.ListNotesResponse], error)
+	EditNote(context.Context, *connect.Request[v1.EditNoteRequest]) (*connect.Response[v1.EditNoteResponse], error)
+	DeleteNote(context.Context, *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error)
+	PinNote(context.Context, *connect.Request[v1.PinNoteRequest]) (*connect.Response[v1.PinNoteResponse], error)
 }
 
 // NewBotServiceClient constructs a client for the hearth.v1.BotService service. By default, it uses
@@ -121,6 +139,36 @@ func NewBotServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(botServiceMethods.ByName("SetGrants")),
 			connect.WithClientOptions(opts...),
 		),
+		updateBot: connect.NewClient[v1.UpdateBotRequest, v1.UpdateBotResponse](
+			httpClient,
+			baseURL+BotServiceUpdateBotProcedure,
+			connect.WithSchema(botServiceMethods.ByName("UpdateBot")),
+			connect.WithClientOptions(opts...),
+		),
+		listNotes: connect.NewClient[v1.ListNotesRequest, v1.ListNotesResponse](
+			httpClient,
+			baseURL+BotServiceListNotesProcedure,
+			connect.WithSchema(botServiceMethods.ByName("ListNotes")),
+			connect.WithClientOptions(opts...),
+		),
+		editNote: connect.NewClient[v1.EditNoteRequest, v1.EditNoteResponse](
+			httpClient,
+			baseURL+BotServiceEditNoteProcedure,
+			connect.WithSchema(botServiceMethods.ByName("EditNote")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteNote: connect.NewClient[v1.DeleteNoteRequest, v1.DeleteNoteResponse](
+			httpClient,
+			baseURL+BotServiceDeleteNoteProcedure,
+			connect.WithSchema(botServiceMethods.ByName("DeleteNote")),
+			connect.WithClientOptions(opts...),
+		),
+		pinNote: connect.NewClient[v1.PinNoteRequest, v1.PinNoteResponse](
+			httpClient,
+			baseURL+BotServicePinNoteProcedure,
+			connect.WithSchema(botServiceMethods.ByName("PinNote")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -133,6 +181,11 @@ type botServiceClient struct {
 	draftBot      *connect.Client[v1.DraftBotRequest, v1.DraftBotResponse]
 	listGrants    *connect.Client[v1.ListGrantsRequest, v1.ListGrantsResponse]
 	setGrants     *connect.Client[v1.SetGrantsRequest, v1.SetGrantsResponse]
+	updateBot     *connect.Client[v1.UpdateBotRequest, v1.UpdateBotResponse]
+	listNotes     *connect.Client[v1.ListNotesRequest, v1.ListNotesResponse]
+	editNote      *connect.Client[v1.EditNoteRequest, v1.EditNoteResponse]
+	deleteNote    *connect.Client[v1.DeleteNoteRequest, v1.DeleteNoteResponse]
+	pinNote       *connect.Client[v1.PinNoteRequest, v1.PinNoteResponse]
 }
 
 // ListTemplates calls hearth.v1.BotService.ListTemplates.
@@ -170,6 +223,31 @@ func (c *botServiceClient) SetGrants(ctx context.Context, req *connect.Request[v
 	return c.setGrants.CallUnary(ctx, req)
 }
 
+// UpdateBot calls hearth.v1.BotService.UpdateBot.
+func (c *botServiceClient) UpdateBot(ctx context.Context, req *connect.Request[v1.UpdateBotRequest]) (*connect.Response[v1.UpdateBotResponse], error) {
+	return c.updateBot.CallUnary(ctx, req)
+}
+
+// ListNotes calls hearth.v1.BotService.ListNotes.
+func (c *botServiceClient) ListNotes(ctx context.Context, req *connect.Request[v1.ListNotesRequest]) (*connect.Response[v1.ListNotesResponse], error) {
+	return c.listNotes.CallUnary(ctx, req)
+}
+
+// EditNote calls hearth.v1.BotService.EditNote.
+func (c *botServiceClient) EditNote(ctx context.Context, req *connect.Request[v1.EditNoteRequest]) (*connect.Response[v1.EditNoteResponse], error) {
+	return c.editNote.CallUnary(ctx, req)
+}
+
+// DeleteNote calls hearth.v1.BotService.DeleteNote.
+func (c *botServiceClient) DeleteNote(ctx context.Context, req *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error) {
+	return c.deleteNote.CallUnary(ctx, req)
+}
+
+// PinNote calls hearth.v1.BotService.PinNote.
+func (c *botServiceClient) PinNote(ctx context.Context, req *connect.Request[v1.PinNoteRequest]) (*connect.Response[v1.PinNoteResponse], error) {
+	return c.pinNote.CallUnary(ctx, req)
+}
+
 // BotServiceHandler is an implementation of the hearth.v1.BotService service.
 type BotServiceHandler interface {
 	ListTemplates(context.Context, *connect.Request[v1.ListTemplatesRequest]) (*connect.Response[v1.ListTemplatesResponse], error)
@@ -186,6 +264,14 @@ type BotServiceHandler interface {
 	// granted. The core refuses allowed mode for a capability that never has
 	// standing permission, such as deleting files.
 	SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error)
+	// UpdateBot changes what the owner may edit: name, role, job description,
+	// tier, avatar and the Advanced model override. Empty strings keep the
+	// stored value; clear_model_override drops the override.
+	UpdateBot(context.Context, *connect.Request[v1.UpdateBotRequest]) (*connect.Response[v1.UpdateBotResponse], error)
+	ListNotes(context.Context, *connect.Request[v1.ListNotesRequest]) (*connect.Response[v1.ListNotesResponse], error)
+	EditNote(context.Context, *connect.Request[v1.EditNoteRequest]) (*connect.Response[v1.EditNoteResponse], error)
+	DeleteNote(context.Context, *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error)
+	PinNote(context.Context, *connect.Request[v1.PinNoteRequest]) (*connect.Response[v1.PinNoteResponse], error)
 }
 
 // NewBotServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -237,6 +323,36 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(botServiceMethods.ByName("SetGrants")),
 		connect.WithHandlerOptions(opts...),
 	)
+	botServiceUpdateBotHandler := connect.NewUnaryHandler(
+		BotServiceUpdateBotProcedure,
+		svc.UpdateBot,
+		connect.WithSchema(botServiceMethods.ByName("UpdateBot")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServiceListNotesHandler := connect.NewUnaryHandler(
+		BotServiceListNotesProcedure,
+		svc.ListNotes,
+		connect.WithSchema(botServiceMethods.ByName("ListNotes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServiceEditNoteHandler := connect.NewUnaryHandler(
+		BotServiceEditNoteProcedure,
+		svc.EditNote,
+		connect.WithSchema(botServiceMethods.ByName("EditNote")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServiceDeleteNoteHandler := connect.NewUnaryHandler(
+		BotServiceDeleteNoteProcedure,
+		svc.DeleteNote,
+		connect.WithSchema(botServiceMethods.ByName("DeleteNote")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServicePinNoteHandler := connect.NewUnaryHandler(
+		BotServicePinNoteProcedure,
+		svc.PinNote,
+		connect.WithSchema(botServiceMethods.ByName("PinNote")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.BotService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BotServiceListTemplatesProcedure:
@@ -253,6 +369,16 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 			botServiceListGrantsHandler.ServeHTTP(w, r)
 		case BotServiceSetGrantsProcedure:
 			botServiceSetGrantsHandler.ServeHTTP(w, r)
+		case BotServiceUpdateBotProcedure:
+			botServiceUpdateBotHandler.ServeHTTP(w, r)
+		case BotServiceListNotesProcedure:
+			botServiceListNotesHandler.ServeHTTP(w, r)
+		case BotServiceEditNoteProcedure:
+			botServiceEditNoteHandler.ServeHTTP(w, r)
+		case BotServiceDeleteNoteProcedure:
+			botServiceDeleteNoteHandler.ServeHTTP(w, r)
+		case BotServicePinNoteProcedure:
+			botServicePinNoteHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -288,4 +414,24 @@ func (UnimplementedBotServiceHandler) ListGrants(context.Context, *connect.Reque
 
 func (UnimplementedBotServiceHandler) SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.SetGrants is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) UpdateBot(context.Context, *connect.Request[v1.UpdateBotRequest]) (*connect.Response[v1.UpdateBotResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.UpdateBot is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) ListNotes(context.Context, *connect.Request[v1.ListNotesRequest]) (*connect.Response[v1.ListNotesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.ListNotes is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) EditNote(context.Context, *connect.Request[v1.EditNoteRequest]) (*connect.Response[v1.EditNoteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.EditNote is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) DeleteNote(context.Context, *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.DeleteNote is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) PinNote(context.Context, *connect.Request[v1.PinNoteRequest]) (*connect.Response[v1.PinNoteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.PinNote is not implemented"))
 }

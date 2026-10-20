@@ -11,7 +11,8 @@ import SwiftProtobuf
 
 /// BotService creates and lists the org's bots and the role templates they
 /// start from, drafts a bot from a description, and lists and sets what a bot
-/// may do. Notes and deletion arrive with later milestones.
+/// may do, edits a bot, and lists and changes what a bot remembers. Deletion
+/// arrives with a later milestone.
 public protocol Hearth_V1_BotServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
@@ -41,6 +42,24 @@ public protocol Hearth_V1_BotServiceClientInterface: Sendable {
     /// standing permission, such as deleting files.
     @available(iOS 13, *)
     func `setGrants`(request: Hearth_V1_SetGrantsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_SetGrantsResponse>
+
+    /// UpdateBot changes what the owner may edit: name, role, job description,
+    /// tier, avatar and the Advanced model override. Empty strings keep the
+    /// stored value; clear_model_override drops the override.
+    @available(iOS 13, *)
+    func `updateBot`(request: Hearth_V1_UpdateBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_UpdateBotResponse>
+
+    @available(iOS 13, *)
+    func `listNotes`(request: Hearth_V1_ListNotesRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListNotesResponse>
+
+    @available(iOS 13, *)
+    func `editNote`(request: Hearth_V1_EditNoteRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_EditNoteResponse>
+
+    @available(iOS 13, *)
+    func `deleteNote`(request: Hearth_V1_DeleteNoteRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_DeleteNoteResponse>
+
+    @available(iOS 13, *)
+    func `pinNote`(request: Hearth_V1_PinNoteRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_PinNoteResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_BotServiceClientInterface`.
@@ -86,6 +105,31 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
         return await self.client.unary(path: "/hearth.v1.BotService/SetGrants", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `updateBot`(request: Hearth_V1_UpdateBotRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_UpdateBotResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/UpdateBot", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `listNotes`(request: Hearth_V1_ListNotesRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ListNotesResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/ListNotes", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `editNote`(request: Hearth_V1_EditNoteRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_EditNoteResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/EditNote", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `deleteNote`(request: Hearth_V1_DeleteNoteRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_DeleteNoteResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/DeleteNote", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `pinNote`(request: Hearth_V1_PinNoteRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_PinNoteResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/PinNote", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listTemplates = Connect.MethodSpec(name: "ListTemplates", service: "hearth.v1.BotService", type: .unary)
@@ -95,6 +139,11 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
             public static let draftBot = Connect.MethodSpec(name: "DraftBot", service: "hearth.v1.BotService", type: .unary)
             public static let listGrants = Connect.MethodSpec(name: "ListGrants", service: "hearth.v1.BotService", type: .unary)
             public static let setGrants = Connect.MethodSpec(name: "SetGrants", service: "hearth.v1.BotService", type: .unary)
+            public static let updateBot = Connect.MethodSpec(name: "UpdateBot", service: "hearth.v1.BotService", type: .unary)
+            public static let listNotes = Connect.MethodSpec(name: "ListNotes", service: "hearth.v1.BotService", type: .unary)
+            public static let editNote = Connect.MethodSpec(name: "EditNote", service: "hearth.v1.BotService", type: .unary)
+            public static let deleteNote = Connect.MethodSpec(name: "DeleteNote", service: "hearth.v1.BotService", type: .unary)
+            public static let pinNote = Connect.MethodSpec(name: "PinNote", service: "hearth.v1.BotService", type: .unary)
         }
     }
 }

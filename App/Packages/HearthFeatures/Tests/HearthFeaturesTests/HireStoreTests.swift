@@ -105,6 +105,52 @@ private struct EmptyOrgClient: HearthClient {
     func clearIntegration(_ integration: Hearth_V1_Integration) async throws {
         try await base.clearIntegration(integration)
     }
+    func updateBot(_ request: Hearth_V1_UpdateBotRequest) async throws -> Hearth_V1_Bot {
+        try await base.updateBot(request)
+    }
+    func listNotes(botID: String) async throws -> Hearth_V1_ListNotesResponse {
+        try await base.listNotes(botID: botID)
+    }
+    func editNote(id: String, text: String) async throws -> Hearth_V1_Note {
+        try await base.editNote(id: id, text: text)
+    }
+    func deleteNote(id: String) async throws { try await base.deleteNote(id: id) }
+    func pinNote(id: String, pinned: Bool) async throws -> Hearth_V1_Note {
+        try await base.pinNote(id: id, pinned: pinned)
+    }
+    func listPages(botID: String) async throws -> Hearth_V1_ListPagesResponse {
+        try await base.listPages(botID: botID)
+    }
+    func putPage(_ request: Hearth_V1_PutPageRequest) async throws -> Hearth_V1_PutPageResponse {
+        try await base.putPage(request)
+    }
+    func deletePage(id: String) async throws -> Hearth_V1_ContextMeter {
+        try await base.deletePage(id: id)
+    }
+    func usageSummary(month: String) async throws -> Hearth_V1_SummaryResponse {
+        try await base.usageSummary(month: month)
+    }
+    func setBudgets(
+        orgCents: Int64, bots: [Hearth_V1_BotBudget]
+    ) async throws -> Hearth_V1_SummaryResponse {
+        try await base.setBudgets(orgCents: orgCents, bots: bots)
+    }
+    func resume(botID: String) async throws -> Hearth_V1_SummaryResponse {
+        try await base.resume(botID: botID)
+    }
+    func tiers() async throws -> Hearth_V1_TiersResponse { try await base.tiers() }
+    func setTiers(_ tiers: [Hearth_V1_TierChoice]) async throws -> [Hearth_V1_TierChoice] {
+        try await base.setTiers(tiers)
+    }
+    func listServiceModels(_ request: Hearth_V1_ListServiceModelsRequest) async throws -> [String] {
+        try await base.listServiceModels(request)
+    }
+    func syncCredentials(_ records: [Hearth_V1_Credential]) async throws -> [Hearth_V1_Credential] {
+        try await base.syncCredentials(records)
+    }
+    func exportCredential(name: String) async throws -> Hearth_V1_Credential {
+        try await base.exportCredential(name: name)
+    }
     func subscribe(after sequence: UInt64) -> AsyncThrowingStream<
         Hearth_V1_SubscribeResponse, Error
     > {

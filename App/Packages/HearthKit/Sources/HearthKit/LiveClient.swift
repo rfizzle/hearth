@@ -15,6 +15,8 @@ public final class LiveClient: HearthClient {
     private let conversations: Hearth_V1_ConversationServiceClient
     private let inbox: Hearth_V1_InboxServiceClient
     private let providers: Hearth_V1_ProviderServiceClient
+    private let handbook: Hearth_V1_HandbookServiceClient
+    private let usage: Hearth_V1_UsageServiceClient
     private let integrations: Hearth_V1_IntegrationServiceClient
     private let events: Hearth_V1_EventServiceClient
 
@@ -37,6 +39,8 @@ public final class LiveClient: HearthClient {
         self.conversations = Hearth_V1_ConversationServiceClient(client: protocolClient)
         self.inbox = Hearth_V1_InboxServiceClient(client: protocolClient)
         self.providers = Hearth_V1_ProviderServiceClient(client: protocolClient)
+        self.handbook = Hearth_V1_HandbookServiceClient(client: protocolClient)
+        self.usage = Hearth_V1_UsageServiceClient(client: protocolClient)
         self.integrations = Hearth_V1_IntegrationServiceClient(client: protocolClient)
         self.events = Hearth_V1_EventServiceClient(client: protocolClient)
     }
@@ -287,5 +291,93 @@ extension ResponseMessage {
     /// The reply, or the error the call failed with.
     fileprivate func value() throws -> Output {
         try result.get()
+    }
+}
+
+// The slice B calls, in an extension to keep the class body short.
+extension LiveClient {
+    public func updateBot(_ request: Hearth_V1_UpdateBotRequest) async throws -> Hearth_V1_Bot {
+        try await bots.updateBot(request: request).value().bot
+    }
+
+    public func listNotes(botID: String) async throws -> Hearth_V1_ListNotesResponse {
+        try await bots.listNotes(request: .with { $0.botID = botID }).value()
+    }
+
+    public func editNote(id: String, text: String) async throws -> Hearth_V1_Note {
+        let request = Hearth_V1_EditNoteRequest.with {
+            $0.id = id
+            $0.text = text
+        }
+        return try await bots.editNote(request: request).value().note
+    }
+
+    public func deleteNote(id: String) async throws {
+        _ = try await bots.deleteNote(request: .with { $0.id = id }).value()
+    }
+
+    public func pinNote(id: String, pinned: Bool) async throws -> Hearth_V1_Note {
+        let request = Hearth_V1_PinNoteRequest.with {
+            $0.id = id
+            $0.pinned = pinned
+        }
+        return try await bots.pinNote(request: request).value().note
+    }
+
+    public func listPages(botID: String) async throws -> Hearth_V1_ListPagesResponse {
+        try await handbook.listPages(request: .with { $0.botID = botID }).value()
+    }
+
+    public func putPage(
+        _ request: Hearth_V1_PutPageRequest
+    ) async throws -> Hearth_V1_PutPageResponse {
+        try await handbook.putPage(request: request).value()
+    }
+
+    public func deletePage(id: String) async throws -> Hearth_V1_ContextMeter {
+        try await handbook.deletePage(request: .with { $0.id = id }).value().meter
+    }
+
+    public func usageSummary(month: String) async throws -> Hearth_V1_SummaryResponse {
+        try await usage.summary(request: .with { $0.month = month }).value()
+    }
+
+    public func setBudgets(
+        orgCents: Int64, bots: [Hearth_V1_BotBudget]
+    ) async throws -> Hearth_V1_SummaryResponse {
+        let request = Hearth_V1_SetBudgetsRequest.with {
+            $0.orgCents = orgCents
+            $0.bots = bots
+        }
+        return try await usage.setBudgets(request: request).value().summary
+    }
+
+    public func resume(botID: String) async throws -> Hearth_V1_SummaryResponse {
+        try await usage.resume(request: .with { $0.botID = botID }).value().summary
+    }
+
+    public func tiers() async throws -> Hearth_V1_TiersResponse {
+        try await providers.tiers(request: Hearth_V1_TiersRequest()).value()
+    }
+
+    public func setTiers(_ tiers: [Hearth_V1_TierChoice]) async throws -> [Hearth_V1_TierChoice] {
+        try await providers.setTiers(request: .with { $0.tiers = tiers }).value().tiers
+    }
+
+    public func listServiceModels(
+        _ request: Hearth_V1_ListServiceModelsRequest
+    ) async throws -> [String] {
+        try await providers.listServiceModels(request: request).value().models
+    }
+
+    public func syncCredentials(
+        _ records: [Hearth_V1_Credential]
+    ) async throws -> [Hearth_V1_Credential] {
+        try await providers.syncCredentials(request: .with { $0.records = records }).value()
+            .recordsToStore
+    }
+
+    public func exportCredential(name: String) async throws -> Hearth_V1_Credential {
+        try await providers.exportCredential(request: .with { $0.name = name }).value().record
     }
 }

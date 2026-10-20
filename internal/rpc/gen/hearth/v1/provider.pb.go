@@ -767,8 +767,12 @@ type KnownService struct {
 	HelpUrl string `protobuf:"bytes,4,opt,name=help_url,json=helpUrl,proto3" json:"help_url,omitempty"`
 	// A model the service serves, offered as the default; empty for a
 	// built-in, which has its own.
-	DefaultModel  string           `protobuf:"bytes,5,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
-	Kind          KnownServiceKind `protobuf:"varint,6,opt,name=kind,proto3,enum=hearth.v1.KnownServiceKind" json:"kind,omitempty"`
+	DefaultModel string           `protobuf:"bytes,5,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
+	Kind         KnownServiceKind `protobuf:"varint,6,opt,name=kind,proto3,enum=hearth.v1.KnownServiceKind" json:"kind,omitempty"`
+	// For a local runtime: whether it answered on this Mac just now, and the
+	// models it listed.
+	Detected      bool     `protobuf:"varint,7,opt,name=detected,proto3" json:"detected,omitempty"`
+	Models        []string `protobuf:"bytes,8,rep,name=models,proto3" json:"models,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -845,11 +849,688 @@ func (x *KnownService) GetKind() KnownServiceKind {
 	return KnownServiceKind_KNOWN_SERVICE_KIND_UNSPECIFIED
 }
 
+func (x *KnownService) GetDetected() bool {
+	if x != nil {
+		return x.Detected
+	}
+	return false
+}
+
+func (x *KnownService) GetModels() []string {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+// ListServiceModelsRequest names the service to ask in one of two ways. Before
+// a key is saved, the app sends base_url and, if the service wants one, key.
+// For a saved OpenAI-compatible service it sends profile alone and the core
+// uses the stored address and key. When profile is set the other fields are
+// ignored. The core does not keep the key.
+type ListServiceModelsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The address requests go to, ending before /chat/completions.
+	BaseUrl string `protobuf:"bytes,1,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	// Empty for a local runtime, which takes no key.
+	Key string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	// A saved service's id; set it instead of base_url and key.
+	Profile       string `protobuf:"bytes,3,opt,name=profile,proto3" json:"profile,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListServiceModelsRequest) Reset() {
+	*x = ListServiceModelsRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListServiceModelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListServiceModelsRequest) ProtoMessage() {}
+
+func (x *ListServiceModelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListServiceModelsRequest.ProtoReflect.Descriptor instead.
+func (*ListServiceModelsRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListServiceModelsRequest) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *ListServiceModelsRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *ListServiceModelsRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+type ListServiceModelsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Models        []string               `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListServiceModelsResponse) Reset() {
+	*x = ListServiceModelsResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListServiceModelsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListServiceModelsResponse) ProtoMessage() {}
+
+func (x *ListServiceModelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListServiceModelsResponse.ProtoReflect.Descriptor instead.
+func (*ListServiceModelsResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListServiceModelsResponse) GetModels() []string {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+type TierChoice struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Tier     Tier                   `protobuf:"varint,1,opt,name=tier,proto3,enum=hearth.v1.Tier" json:"tier,omitempty"`
+	Provider Provider               `protobuf:"varint,2,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
+	// The added service, for PROVIDER_OPENAI_COMPATIBLE.
+	Profile       string `protobuf:"bytes,3,opt,name=profile,proto3" json:"profile,omitempty"`
+	Model         string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TierChoice) Reset() {
+	*x = TierChoice{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TierChoice) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TierChoice) ProtoMessage() {}
+
+func (x *TierChoice) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TierChoice.ProtoReflect.Descriptor instead.
+func (*TierChoice) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *TierChoice) GetTier() Tier {
+	if x != nil {
+		return x.Tier
+	}
+	return Tier_TIER_UNSPECIFIED
+}
+
+func (x *TierChoice) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *TierChoice) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *TierChoice) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+// ModelOption is one model the owner can pick for a tier or under Advanced.
+type ModelOption struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Provider Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=hearth.v1.Provider" json:"provider,omitempty"`
+	Profile  string                 `protobuf:"bytes,2,opt,name=profile,proto3" json:"profile,omitempty"`
+	Model    string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	// "Anthropic", or the service's display name.
+	Label         string `protobuf:"bytes,4,opt,name=label,proto3" json:"label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelOption) Reset() {
+	*x = ModelOption{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelOption) ProtoMessage() {}
+
+func (x *ModelOption) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelOption.ProtoReflect.Descriptor instead.
+func (*ModelOption) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ModelOption) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *ModelOption) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *ModelOption) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ModelOption) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+type TiersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TiersRequest) Reset() {
+	*x = TiersRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TiersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TiersRequest) ProtoMessage() {}
+
+func (x *TiersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TiersRequest.ProtoReflect.Descriptor instead.
+func (*TiersRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{16}
+}
+
+type TiersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tiers         []*TierChoice          `protobuf:"bytes,1,rep,name=tiers,proto3" json:"tiers,omitempty"`
+	Options       []*ModelOption         `protobuf:"bytes,2,rep,name=options,proto3" json:"options,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TiersResponse) Reset() {
+	*x = TiersResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TiersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TiersResponse) ProtoMessage() {}
+
+func (x *TiersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TiersResponse.ProtoReflect.Descriptor instead.
+func (*TiersResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *TiersResponse) GetTiers() []*TierChoice {
+	if x != nil {
+		return x.Tiers
+	}
+	return nil
+}
+
+func (x *TiersResponse) GetOptions() []*ModelOption {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+type SetTiersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tiers         []*TierChoice          `protobuf:"bytes,1,rep,name=tiers,proto3" json:"tiers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTiersRequest) Reset() {
+	*x = SetTiersRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTiersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTiersRequest) ProtoMessage() {}
+
+func (x *SetTiersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTiersRequest.ProtoReflect.Descriptor instead.
+func (*SetTiersRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SetTiersRequest) GetTiers() []*TierChoice {
+	if x != nil {
+		return x.Tiers
+	}
+	return nil
+}
+
+type SetTiersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tiers         []*TierChoice          `protobuf:"bytes,1,rep,name=tiers,proto3" json:"tiers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTiersResponse) Reset() {
+	*x = SetTiersResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTiersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTiersResponse) ProtoMessage() {}
+
+func (x *SetTiersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTiersResponse.ProtoReflect.Descriptor instead.
+func (*SetTiersResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *SetTiersResponse) GetTiers() []*TierChoice {
+	if x != nil {
+		return x.Tiers
+	}
+	return nil
+}
+
+// Credential is one record the app keeps in the Keychain. It crosses only in
+// the credential sync and export messages below and never in an event; the
+// event stream carries a name, never a value.
+type Credential struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The key store name: "anthropic", "brave-search", "compat-<id>",
+	// "chatgpt" (the sign-in record), "chatgpt-host".
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value         []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Credential) Reset() {
+	*x = Credential{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Credential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Credential) ProtoMessage() {}
+
+func (x *Credential) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Credential.ProtoReflect.Descriptor instead.
+func (*Credential) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *Credential) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Credential) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type SyncCredentialsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Records       []*Credential          `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncCredentialsRequest) Reset() {
+	*x = SyncCredentialsRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncCredentialsRequest) ProtoMessage() {}
+
+func (x *SyncCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*SyncCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *SyncCredentialsRequest) GetRecords() []*Credential {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
+type SyncCredentialsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Records the core held in its files that the app did not send; the app
+	// stores them and calls SyncCredentials again, after which the core
+	// removes its files.
+	RecordsToStore []*Credential `protobuf:"bytes,1,rep,name=records_to_store,json=recordsToStore,proto3" json:"records_to_store,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SyncCredentialsResponse) Reset() {
+	*x = SyncCredentialsResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncCredentialsResponse) ProtoMessage() {}
+
+func (x *SyncCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*SyncCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *SyncCredentialsResponse) GetRecordsToStore() []*Credential {
+	if x != nil {
+		return x.RecordsToStore
+	}
+	return nil
+}
+
+type ExportCredentialRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportCredentialRequest) Reset() {
+	*x = ExportCredentialRequest{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportCredentialRequest) ProtoMessage() {}
+
+func (x *ExportCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportCredentialRequest.ProtoReflect.Descriptor instead.
+func (*ExportCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ExportCredentialRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type ExportCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Record        *Credential            `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportCredentialResponse) Reset() {
+	*x = ExportCredentialResponse{}
+	mi := &file_hearth_v1_provider_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportCredentialResponse) ProtoMessage() {}
+
+func (x *ExportCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_provider_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportCredentialResponse.ProtoReflect.Descriptor instead.
+func (*ExportCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_provider_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ExportCredentialResponse) GetRecord() *Credential {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
 var File_hearth_v1_provider_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_provider_proto_rawDesc = "" +
 	"\n" +
-	"\x18hearth/v1/provider.proto\x12\thearth.v1\"\x9e\x02\n" +
+	"\x18hearth/v1/provider.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\"\x9e\x02\n" +
 	"\x0fProviderAccount\x12/\n" +
 	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12-\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x17.hearth.v1.AccountStateR\x05state\x12\x14\n" +
@@ -880,14 +1561,53 @@ const file_hearth_v1_provider_proto_rawDesc = "" +
 	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\"\x1a\n" +
 	"\x18ListKnownServicesRequest\"P\n" +
 	"\x19ListKnownServicesResponse\x123\n" +
-	"\bservices\x18\x01 \x03(\v2\x17.hearth.v1.KnownServiceR\bservices\"\xbe\x01\n" +
+	"\bservices\x18\x01 \x03(\v2\x17.hearth.v1.KnownServiceR\bservices\"\xf2\x01\n" +
 	"\fKnownService\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
 	"\bbase_url\x18\x03 \x01(\tR\abaseUrl\x12\x19\n" +
 	"\bhelp_url\x18\x04 \x01(\tR\ahelpUrl\x12#\n" +
 	"\rdefault_model\x18\x05 \x01(\tR\fdefaultModel\x12/\n" +
-	"\x04kind\x18\x06 \x01(\x0e2\x1b.hearth.v1.KnownServiceKindR\x04kind*\xa0\x01\n" +
+	"\x04kind\x18\x06 \x01(\x0e2\x1b.hearth.v1.KnownServiceKindR\x04kind\x12\x1a\n" +
+	"\bdetected\x18\a \x01(\bR\bdetected\x12\x16\n" +
+	"\x06models\x18\b \x03(\tR\x06models\"a\n" +
+	"\x18ListServiceModelsRequest\x12\x19\n" +
+	"\bbase_url\x18\x01 \x01(\tR\abaseUrl\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x18\n" +
+	"\aprofile\x18\x03 \x01(\tR\aprofile\"3\n" +
+	"\x19ListServiceModelsResponse\x12\x16\n" +
+	"\x06models\x18\x01 \x03(\tR\x06models\"\x92\x01\n" +
+	"\n" +
+	"TierChoice\x12#\n" +
+	"\x04tier\x18\x01 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\x12/\n" +
+	"\bprovider\x18\x02 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12\x18\n" +
+	"\aprofile\x18\x03 \x01(\tR\aprofile\x12\x14\n" +
+	"\x05model\x18\x04 \x01(\tR\x05model\"\x84\x01\n" +
+	"\vModelOption\x12/\n" +
+	"\bprovider\x18\x01 \x01(\x0e2\x13.hearth.v1.ProviderR\bprovider\x12\x18\n" +
+	"\aprofile\x18\x02 \x01(\tR\aprofile\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\x12\x14\n" +
+	"\x05label\x18\x04 \x01(\tR\x05label\"\x0e\n" +
+	"\fTiersRequest\"n\n" +
+	"\rTiersResponse\x12+\n" +
+	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\x120\n" +
+	"\aoptions\x18\x02 \x03(\v2\x16.hearth.v1.ModelOptionR\aoptions\">\n" +
+	"\x0fSetTiersRequest\x12+\n" +
+	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\"?\n" +
+	"\x10SetTiersResponse\x12+\n" +
+	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\"6\n" +
+	"\n" +
+	"Credential\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value\"I\n" +
+	"\x16SyncCredentialsRequest\x12/\n" +
+	"\arecords\x18\x01 \x03(\v2\x15.hearth.v1.CredentialR\arecords\"Z\n" +
+	"\x17SyncCredentialsResponse\x12?\n" +
+	"\x10records_to_store\x18\x01 \x03(\v2\x15.hearth.v1.CredentialR\x0erecordsToStore\"-\n" +
+	"\x17ExportCredentialRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"I\n" +
+	"\x18ExportCredentialResponse\x12-\n" +
+	"\x06record\x18\x01 \x01(\v2\x15.hearth.v1.CredentialR\x06record*\xa0\x01\n" +
 	"\bProvider\x12\x18\n" +
 	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10PROVIDER_CHATGPT\x10\x01\x12\x16\n" +
@@ -904,13 +1624,18 @@ const file_hearth_v1_provider_proto_rawDesc = "" +
 	"\x1eKNOWN_SERVICE_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aKNOWN_SERVICE_KIND_BUILTIN\x10\x01\x12!\n" +
 	"\x1dKNOWN_SERVICE_KIND_COMPATIBLE\x10\x02\x12\x1c\n" +
-	"\x18KNOWN_SERVICE_KIND_LOCAL\x10\x032\xce\x03\n" +
+	"\x18KNOWN_SERVICE_KIND_LOCAL\x10\x032\xf0\x06\n" +
 	"\x0fProviderService\x12Q\n" +
 	"\fListAccounts\x12\x1e.hearth.v1.ListAccountsRequest\x1a\x1f.hearth.v1.ListAccountsResponse\"\x00\x12H\n" +
 	"\tSetAPIKey\x12\x1b.hearth.v1.SetAPIKeyRequest\x1a\x1c.hearth.v1.SetAPIKeyResponse\"\x00\x12Z\n" +
 	"\x0fClearCredential\x12!.hearth.v1.ClearCredentialRequest\x1a\".hearth.v1.ClearCredentialResponse\"\x00\x12`\n" +
 	"\x11StartChatGPTLogin\x12#.hearth.v1.StartChatGPTLoginRequest\x1a$.hearth.v1.StartChatGPTLoginResponse\"\x00\x12`\n" +
-	"\x11ListKnownServices\x12#.hearth.v1.ListKnownServicesRequest\x1a$.hearth.v1.ListKnownServicesResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
+	"\x11ListKnownServices\x12#.hearth.v1.ListKnownServicesRequest\x1a$.hearth.v1.ListKnownServicesResponse\"\x00\x12`\n" +
+	"\x11ListServiceModels\x12#.hearth.v1.ListServiceModelsRequest\x1a$.hearth.v1.ListServiceModelsResponse\"\x00\x12<\n" +
+	"\x05Tiers\x12\x17.hearth.v1.TiersRequest\x1a\x18.hearth.v1.TiersResponse\"\x00\x12E\n" +
+	"\bSetTiers\x12\x1a.hearth.v1.SetTiersRequest\x1a\x1b.hearth.v1.SetTiersResponse\"\x00\x12Z\n" +
+	"\x0fSyncCredentials\x12!.hearth.v1.SyncCredentialsRequest\x1a\".hearth.v1.SyncCredentialsResponse\"\x00\x12]\n" +
+	"\x10ExportCredential\x12\".hearth.v1.ExportCredentialRequest\x1a#.hearth.v1.ExportCredentialResponse\"\x00B?Z=github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1b\x06proto3"
 
 var (
 	file_hearth_v1_provider_proto_rawDescOnce sync.Once
@@ -925,7 +1650,7 @@ func file_hearth_v1_provider_proto_rawDescGZIP() []byte {
 }
 
 var file_hearth_v1_provider_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_hearth_v1_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_hearth_v1_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_hearth_v1_provider_proto_goTypes = []any{
 	(Provider)(0),                     // 0: hearth.v1.Provider
 	(AccountState)(0),                 // 1: hearth.v1.AccountState
@@ -942,6 +1667,20 @@ var file_hearth_v1_provider_proto_goTypes = []any{
 	(*ListKnownServicesRequest)(nil),  // 12: hearth.v1.ListKnownServicesRequest
 	(*ListKnownServicesResponse)(nil), // 13: hearth.v1.ListKnownServicesResponse
 	(*KnownService)(nil),              // 14: hearth.v1.KnownService
+	(*ListServiceModelsRequest)(nil),  // 15: hearth.v1.ListServiceModelsRequest
+	(*ListServiceModelsResponse)(nil), // 16: hearth.v1.ListServiceModelsResponse
+	(*TierChoice)(nil),                // 17: hearth.v1.TierChoice
+	(*ModelOption)(nil),               // 18: hearth.v1.ModelOption
+	(*TiersRequest)(nil),              // 19: hearth.v1.TiersRequest
+	(*TiersResponse)(nil),             // 20: hearth.v1.TiersResponse
+	(*SetTiersRequest)(nil),           // 21: hearth.v1.SetTiersRequest
+	(*SetTiersResponse)(nil),          // 22: hearth.v1.SetTiersResponse
+	(*Credential)(nil),                // 23: hearth.v1.Credential
+	(*SyncCredentialsRequest)(nil),    // 24: hearth.v1.SyncCredentialsRequest
+	(*SyncCredentialsResponse)(nil),   // 25: hearth.v1.SyncCredentialsResponse
+	(*ExportCredentialRequest)(nil),   // 26: hearth.v1.ExportCredentialRequest
+	(*ExportCredentialResponse)(nil),  // 27: hearth.v1.ExportCredentialResponse
+	(Tier)(0),                         // 28: hearth.v1.Tier
 }
 var file_hearth_v1_provider_proto_depIdxs = []int32{
 	0,  // 0: hearth.v1.ProviderAccount.provider:type_name -> hearth.v1.Provider
@@ -952,21 +1691,41 @@ var file_hearth_v1_provider_proto_depIdxs = []int32{
 	0,  // 5: hearth.v1.ClearCredentialRequest.provider:type_name -> hearth.v1.Provider
 	14, // 6: hearth.v1.ListKnownServicesResponse.services:type_name -> hearth.v1.KnownService
 	2,  // 7: hearth.v1.KnownService.kind:type_name -> hearth.v1.KnownServiceKind
-	4,  // 8: hearth.v1.ProviderService.ListAccounts:input_type -> hearth.v1.ListAccountsRequest
-	6,  // 9: hearth.v1.ProviderService.SetAPIKey:input_type -> hearth.v1.SetAPIKeyRequest
-	8,  // 10: hearth.v1.ProviderService.ClearCredential:input_type -> hearth.v1.ClearCredentialRequest
-	10, // 11: hearth.v1.ProviderService.StartChatGPTLogin:input_type -> hearth.v1.StartChatGPTLoginRequest
-	12, // 12: hearth.v1.ProviderService.ListKnownServices:input_type -> hearth.v1.ListKnownServicesRequest
-	5,  // 13: hearth.v1.ProviderService.ListAccounts:output_type -> hearth.v1.ListAccountsResponse
-	7,  // 14: hearth.v1.ProviderService.SetAPIKey:output_type -> hearth.v1.SetAPIKeyResponse
-	9,  // 15: hearth.v1.ProviderService.ClearCredential:output_type -> hearth.v1.ClearCredentialResponse
-	11, // 16: hearth.v1.ProviderService.StartChatGPTLogin:output_type -> hearth.v1.StartChatGPTLoginResponse
-	13, // 17: hearth.v1.ProviderService.ListKnownServices:output_type -> hearth.v1.ListKnownServicesResponse
-	13, // [13:18] is the sub-list for method output_type
-	8,  // [8:13] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	28, // 8: hearth.v1.TierChoice.tier:type_name -> hearth.v1.Tier
+	0,  // 9: hearth.v1.TierChoice.provider:type_name -> hearth.v1.Provider
+	0,  // 10: hearth.v1.ModelOption.provider:type_name -> hearth.v1.Provider
+	17, // 11: hearth.v1.TiersResponse.tiers:type_name -> hearth.v1.TierChoice
+	18, // 12: hearth.v1.TiersResponse.options:type_name -> hearth.v1.ModelOption
+	17, // 13: hearth.v1.SetTiersRequest.tiers:type_name -> hearth.v1.TierChoice
+	17, // 14: hearth.v1.SetTiersResponse.tiers:type_name -> hearth.v1.TierChoice
+	23, // 15: hearth.v1.SyncCredentialsRequest.records:type_name -> hearth.v1.Credential
+	23, // 16: hearth.v1.SyncCredentialsResponse.records_to_store:type_name -> hearth.v1.Credential
+	23, // 17: hearth.v1.ExportCredentialResponse.record:type_name -> hearth.v1.Credential
+	4,  // 18: hearth.v1.ProviderService.ListAccounts:input_type -> hearth.v1.ListAccountsRequest
+	6,  // 19: hearth.v1.ProviderService.SetAPIKey:input_type -> hearth.v1.SetAPIKeyRequest
+	8,  // 20: hearth.v1.ProviderService.ClearCredential:input_type -> hearth.v1.ClearCredentialRequest
+	10, // 21: hearth.v1.ProviderService.StartChatGPTLogin:input_type -> hearth.v1.StartChatGPTLoginRequest
+	12, // 22: hearth.v1.ProviderService.ListKnownServices:input_type -> hearth.v1.ListKnownServicesRequest
+	15, // 23: hearth.v1.ProviderService.ListServiceModels:input_type -> hearth.v1.ListServiceModelsRequest
+	19, // 24: hearth.v1.ProviderService.Tiers:input_type -> hearth.v1.TiersRequest
+	21, // 25: hearth.v1.ProviderService.SetTiers:input_type -> hearth.v1.SetTiersRequest
+	24, // 26: hearth.v1.ProviderService.SyncCredentials:input_type -> hearth.v1.SyncCredentialsRequest
+	26, // 27: hearth.v1.ProviderService.ExportCredential:input_type -> hearth.v1.ExportCredentialRequest
+	5,  // 28: hearth.v1.ProviderService.ListAccounts:output_type -> hearth.v1.ListAccountsResponse
+	7,  // 29: hearth.v1.ProviderService.SetAPIKey:output_type -> hearth.v1.SetAPIKeyResponse
+	9,  // 30: hearth.v1.ProviderService.ClearCredential:output_type -> hearth.v1.ClearCredentialResponse
+	11, // 31: hearth.v1.ProviderService.StartChatGPTLogin:output_type -> hearth.v1.StartChatGPTLoginResponse
+	13, // 32: hearth.v1.ProviderService.ListKnownServices:output_type -> hearth.v1.ListKnownServicesResponse
+	16, // 33: hearth.v1.ProviderService.ListServiceModels:output_type -> hearth.v1.ListServiceModelsResponse
+	20, // 34: hearth.v1.ProviderService.Tiers:output_type -> hearth.v1.TiersResponse
+	22, // 35: hearth.v1.ProviderService.SetTiers:output_type -> hearth.v1.SetTiersResponse
+	25, // 36: hearth.v1.ProviderService.SyncCredentials:output_type -> hearth.v1.SyncCredentialsResponse
+	27, // 37: hearth.v1.ProviderService.ExportCredential:output_type -> hearth.v1.ExportCredentialResponse
+	28, // [28:38] is the sub-list for method output_type
+	18, // [18:28] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_provider_proto_init() }
@@ -974,13 +1733,14 @@ func file_hearth_v1_provider_proto_init() {
 	if File_hearth_v1_provider_proto != nil {
 		return
 	}
+	file_hearth_v1_bot_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_provider_proto_rawDesc), len(file_hearth_v1_provider_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   12,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

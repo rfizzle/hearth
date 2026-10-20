@@ -85,3 +85,55 @@ extension Fixtures {
         }
     }()
 }
+
+extension Fixtures {
+    /// A third script for slice B: a run finishes and the usage ticks, Dana
+    /// remembers a note and the owner edits then deletes another, and a
+    /// handbook page is saved. Sequences start at 1.
+    public static let memoryEvents: [Hearth_V1_SubscribeResponse] = {
+        var remembered = notes[0]
+        remembered.id = "note-new"
+        remembered.pinned = false
+        remembered.text = "Prefers a one-line answer before the detail."
+        remembered.createdAt = time(20)
+        var edited = notes[1]
+        edited.text = "The owner's house is a 1930s semi in Leeds."
+
+        let events: [Hearth_V1_SubscribeResponse.OneOf_Event] = [
+            .usageTick(
+                .with {
+                    $0.bot = usageSummary(month: "").bots[0]
+                    $0.org = usageSummary(month: "").org
+                    $0.month = currentMonth
+                }),
+            .noteChanged(
+                .with {
+                    $0.note = remembered
+                    $0.botID = bot.id
+                }),
+            .noteChanged(
+                .with {
+                    $0.note = edited
+                    $0.botID = bot.id
+                }),
+            .noteChanged(
+                .with {
+                    $0.note = .with { $0.id = notes[4].id }
+                    $0.deleted = true
+                    $0.botID = bot.id
+                }),
+            .handbookChanged(.with { $0.page = handbookPages[1] }),
+            .handbookChanged(
+                .with {
+                    $0.page = .with { $0.id = handbookPages[1].id }
+                    $0.deleted = true
+                }),
+        ]
+        return events.enumerated().map { index, event in
+            .with {
+                $0.sequence = UInt64(index + 1)
+                $0.event = event
+            }
+        }
+    }()
+}

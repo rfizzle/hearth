@@ -237,3 +237,123 @@ public struct PreviewClient: HearthClient {
         }
     }
 }
+
+// The slice B fixtures, in an extension to keep the struct body short.
+extension PreviewClient {
+    public func updateBot(_ request: Hearth_V1_UpdateBotRequest) async throws -> Hearth_V1_Bot {
+        var bot = Fixtures.bot
+        if !request.name.isEmpty { bot.name = request.name }
+        if !request.role.isEmpty { bot.role = request.role }
+        if !request.jobDescription.isEmpty { bot.jobDescription = request.jobDescription }
+        if request.tier != .unspecified { bot.tier = request.tier }
+        if !request.avatar.isEmpty { bot.avatar = request.avatar }
+        if !request.modelOverride.isEmpty { bot.modelOverride = request.modelOverride }
+        if request.clearModelOverride_p { bot.modelOverride = "" }
+        return bot
+    }
+
+    public func listNotes(botID: String) async throws -> Hearth_V1_ListNotesResponse {
+        .with {
+            $0.notes = Fixtures.notes.filter { $0.botID == botID }
+            $0.cap = Fixtures.noteCap
+        }
+    }
+
+    public func editNote(id: String, text: String) async throws -> Hearth_V1_Note {
+        var note = Fixtures.notes.first { $0.id == id } ?? Fixtures.notes[0]
+        note.text = text
+        return note
+    }
+
+    public func deleteNote(id: String) async throws {}
+
+    public func pinNote(id: String, pinned: Bool) async throws -> Hearth_V1_Note {
+        var note = Fixtures.notes.first { $0.id == id } ?? Fixtures.notes[0]
+        note.pinned = pinned
+        return note
+    }
+
+    public func listPages(botID: String) async throws -> Hearth_V1_ListPagesResponse {
+        .with {
+            $0.pages = Fixtures.handbookPages.filter {
+                botID.isEmpty || $0.scope.everyone || $0.scope.botID == botID
+            }
+            $0.meter = Fixtures.handbookMeter
+        }
+    }
+
+    public func putPage(
+        _ request: Hearth_V1_PutPageRequest
+    ) async throws -> Hearth_V1_PutPageResponse {
+        .with {
+            $0.page = .with {
+                $0.id = request.id.isEmpty ? "page-new" : request.id
+                $0.title = request.title
+                $0.markdown = request.markdown
+                $0.scope = request.scope
+                $0.bytes = Int64(request.markdown.utf8.count)
+                $0.updatedAt = Fixtures.time(30)
+            }
+            $0.meter = Fixtures.handbookMeter
+        }
+    }
+
+    public func deletePage(id: String) async throws -> Hearth_V1_ContextMeter {
+        Fixtures.handbookMeter
+    }
+
+    public func usageSummary(month: String) async throws -> Hearth_V1_SummaryResponse {
+        Fixtures.usageSummary(month: month)
+    }
+
+    public func setBudgets(
+        orgCents: Int64, bots: [Hearth_V1_BotBudget]
+    ) async throws -> Hearth_V1_SummaryResponse {
+        var summary = Fixtures.usageSummary(month: "")
+        summary.orgBudgetCents = orgCents
+        for budget in bots {
+            guard let index = summary.bots.firstIndex(where: { $0.botID == budget.botID }) else {
+                continue
+            }
+            summary.bots[index].budgetCents = budget.cents
+        }
+        return summary
+    }
+
+    public func resume(botID: String) async throws -> Hearth_V1_SummaryResponse {
+        var summary = Fixtures.usageSummary(month: "")
+        if botID.isEmpty {
+            summary.orgPaused = false
+        } else if let index = summary.bots.firstIndex(where: { $0.botID == botID }) {
+            summary.bots[index].paused = false
+        }
+        return summary
+    }
+
+    public func tiers() async throws -> Hearth_V1_TiersResponse {
+        .with {
+            $0.tiers = Fixtures.tierChoices
+            $0.options = Fixtures.modelOptions
+        }
+    }
+
+    public func setTiers(_ tiers: [Hearth_V1_TierChoice]) async throws -> [Hearth_V1_TierChoice] {
+        tiers
+    }
+
+    public func listServiceModels(
+        _ request: Hearth_V1_ListServiceModelsRequest
+    ) async throws -> [String] {
+        Fixtures.ollamaModels
+    }
+
+    public func syncCredentials(
+        _ records: [Hearth_V1_Credential]
+    ) async throws -> [Hearth_V1_Credential] {
+        []
+    }
+
+    public func exportCredential(name: String) async throws -> Hearth_V1_Credential {
+        .with { $0.name = name }
+    }
+}

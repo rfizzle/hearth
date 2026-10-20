@@ -83,6 +83,11 @@ type SubscribeResponse struct {
 	//	*SubscribeResponse_MessageDeleted
 	//	*SubscribeResponse_GrantsChanged
 	//	*SubscribeResponse_ConversationChanged
+	//	*SubscribeResponse_UsageTick
+	//	*SubscribeResponse_NoteChanged
+	//	*SubscribeResponse_HandbookChanged
+	//	*SubscribeResponse_CredentialChanged
+	//	*SubscribeResponse_TiersChanged
 	Event         isSubscribeResponse_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -240,6 +245,51 @@ func (x *SubscribeResponse) GetConversationChanged() *ConversationChanged {
 	return nil
 }
 
+func (x *SubscribeResponse) GetUsageTick() *UsageTick {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_UsageTick); ok {
+			return x.UsageTick
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetNoteChanged() *NoteChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_NoteChanged); ok {
+			return x.NoteChanged
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetHandbookChanged() *HandbookChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_HandbookChanged); ok {
+			return x.HandbookChanged
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetCredentialChanged() *CredentialChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_CredentialChanged); ok {
+			return x.CredentialChanged
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetTiersChanged() *TiersChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_TiersChanged); ok {
+			return x.TiersChanged
+		}
+	}
+	return nil
+}
+
 type isSubscribeResponse_Event interface {
 	isSubscribeResponse_Event()
 }
@@ -292,6 +342,26 @@ type SubscribeResponse_ConversationChanged struct {
 	ConversationChanged *ConversationChanged `protobuf:"bytes,13,opt,name=conversation_changed,json=conversationChanged,proto3,oneof"`
 }
 
+type SubscribeResponse_UsageTick struct {
+	UsageTick *UsageTick `protobuf:"bytes,14,opt,name=usage_tick,json=usageTick,proto3,oneof"`
+}
+
+type SubscribeResponse_NoteChanged struct {
+	NoteChanged *NoteChanged `protobuf:"bytes,15,opt,name=note_changed,json=noteChanged,proto3,oneof"`
+}
+
+type SubscribeResponse_HandbookChanged struct {
+	HandbookChanged *HandbookChanged `protobuf:"bytes,16,opt,name=handbook_changed,json=handbookChanged,proto3,oneof"`
+}
+
+type SubscribeResponse_CredentialChanged struct {
+	CredentialChanged *CredentialChanged `protobuf:"bytes,17,opt,name=credential_changed,json=credentialChanged,proto3,oneof"`
+}
+
+type SubscribeResponse_TiersChanged struct {
+	TiersChanged *TiersChanged `protobuf:"bytes,18,opt,name=tiers_changed,json=tiersChanged,proto3,oneof"`
+}
+
 func (*SubscribeResponse_MessageDelta) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_MessageUpserted) isSubscribeResponse_Event() {}
@@ -315,6 +385,16 @@ func (*SubscribeResponse_MessageDeleted) isSubscribeResponse_Event() {}
 func (*SubscribeResponse_GrantsChanged) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_ConversationChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_UsageTick) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_NoteChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_HandbookChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_CredentialChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_TiersChanged) isSubscribeResponse_Event() {}
 
 // MessageDelta is text appended to a streaming message.
 type MessageDelta struct {
@@ -806,6 +886,283 @@ func (x *ConversationChanged) GetConversation() *Conversation {
 	return nil
 }
 
+// UsageTick is one bot's usage and the org's after a run finished, for the
+// month it counts in.
+type UsageTick struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bot           *BotUsage              `protobuf:"bytes,1,opt,name=bot,proto3" json:"bot,omitempty"`
+	Org           *UsageTotals           `protobuf:"bytes,2,opt,name=org,proto3" json:"org,omitempty"`
+	Month         string                 `protobuf:"bytes,3,opt,name=month,proto3" json:"month,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UsageTick) Reset() {
+	*x = UsageTick{}
+	mi := &file_hearth_v1_event_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UsageTick) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UsageTick) ProtoMessage() {}
+
+func (x *UsageTick) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UsageTick.ProtoReflect.Descriptor instead.
+func (*UsageTick) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UsageTick) GetBot() *BotUsage {
+	if x != nil {
+		return x.Bot
+	}
+	return nil
+}
+
+func (x *UsageTick) GetOrg() *UsageTotals {
+	if x != nil {
+		return x.Org
+	}
+	return nil
+}
+
+func (x *UsageTick) GetMonth() string {
+	if x != nil {
+		return x.Month
+	}
+	return ""
+}
+
+// NoteChanged is a note saved, edited or pinned, or removed when deleted is
+// set (the note then carries only its id).
+type NoteChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Note          *Note                  `protobuf:"bytes,1,opt,name=note,proto3" json:"note,omitempty"`
+	Deleted       bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	BotId         string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NoteChanged) Reset() {
+	*x = NoteChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NoteChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NoteChanged) ProtoMessage() {}
+
+func (x *NoteChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NoteChanged.ProtoReflect.Descriptor instead.
+func (*NoteChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *NoteChanged) GetNote() *Note {
+	if x != nil {
+		return x.Note
+	}
+	return nil
+}
+
+func (x *NoteChanged) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+func (x *NoteChanged) GetBotId() string {
+	if x != nil {
+		return x.BotId
+	}
+	return ""
+}
+
+// HandbookChanged is a page saved, or removed when deleted is set.
+type HandbookChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          *HandbookPage          `protobuf:"bytes,1,opt,name=page,proto3" json:"page,omitempty"`
+	Deleted       bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HandbookChanged) Reset() {
+	*x = HandbookChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HandbookChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HandbookChanged) ProtoMessage() {}
+
+func (x *HandbookChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HandbookChanged.ProtoReflect.Descriptor instead.
+func (*HandbookChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *HandbookChanged) GetPage() *HandbookPage {
+	if x != nil {
+		return x.Page
+	}
+	return nil
+}
+
+func (x *HandbookChanged) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+// CredentialChanged says a credential was stored or removed. It carries the
+// name only, never the value; the app asks for the record with
+// ProviderService.ExportCredential.
+type CredentialChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Deleted       bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CredentialChanged) Reset() {
+	*x = CredentialChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialChanged) ProtoMessage() {}
+
+func (x *CredentialChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialChanged.ProtoReflect.Descriptor instead.
+func (*CredentialChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *CredentialChanged) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CredentialChanged) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+// TiersChanged is the tier mapping after the owner or a sign-in changed it.
+type TiersChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tiers         []*TierChoice          `protobuf:"bytes,1,rep,name=tiers,proto3" json:"tiers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TiersChanged) Reset() {
+	*x = TiersChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TiersChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TiersChanged) ProtoMessage() {}
+
+func (x *TiersChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TiersChanged.ProtoReflect.Descriptor instead.
+func (*TiersChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *TiersChanged) GetTiers() []*TierChoice {
+	if x != nil {
+		return x.Tiers
+	}
+	return nil
+}
+
 // Resync says the requested sequence is older than the core keeps; the
 // app refetches its lists and continues from this event's sequence.
 type Resync struct {
@@ -816,7 +1173,7 @@ type Resync struct {
 
 func (x *Resync) Reset() {
 	*x = Resync{}
-	mi := &file_hearth_v1_event_proto_msgTypes[12]
+	mi := &file_hearth_v1_event_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -828,7 +1185,7 @@ func (x *Resync) String() string {
 func (*Resync) ProtoMessage() {}
 
 func (x *Resync) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[12]
+	mi := &file_hearth_v1_event_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -841,7 +1198,7 @@ func (x *Resync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resync.ProtoReflect.Descriptor instead.
 func (*Resync) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{12}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{17}
 }
 
 // Heartbeat keeps a quiet subscription under the client's idle timeout.
@@ -853,7 +1210,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_hearth_v1_event_proto_msgTypes[13]
+	mi := &file_hearth_v1_event_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -865,7 +1222,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[13]
+	mi := &file_hearth_v1_event_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -878,16 +1235,16 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{13}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{18}
 }
 
 var File_hearth_v1_event_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_event_proto_rawDesc = "" +
 	"\n" +
-	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x15hearth/v1/inbox.proto\x1a\x1bhearth/v1/integration.proto\x1a\x18hearth/v1/provider.proto\"9\n" +
+	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x18hearth/v1/handbook.proto\x1a\x15hearth/v1/inbox.proto\x1a\x1bhearth/v1/integration.proto\x1a\x18hearth/v1/provider.proto\x1a\x15hearth/v1/usage.proto\"9\n" +
 	"\x10SubscribeRequest\x12%\n" +
-	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\xce\x06\n" +
+	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\x9a\t\n" +
 	"\x11SubscribeResponse\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12>\n" +
 	"\rmessage_delta\x18\x02 \x01(\v2\x17.hearth.v1.MessageDeltaH\x00R\fmessageDelta\x12G\n" +
@@ -904,7 +1261,13 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	" \x01(\v2\x17.hearth.v1.InboxChangedH\x00R\finboxChanged\x12D\n" +
 	"\x0fmessage_deleted\x18\v \x01(\v2\x19.hearth.v1.MessageDeletedH\x00R\x0emessageDeleted\x12A\n" +
 	"\x0egrants_changed\x18\f \x01(\v2\x18.hearth.v1.GrantsChangedH\x00R\rgrantsChanged\x12S\n" +
-	"\x14conversation_changed\x18\r \x01(\v2\x1e.hearth.v1.ConversationChangedH\x00R\x13conversationChangedB\a\n" +
+	"\x14conversation_changed\x18\r \x01(\v2\x1e.hearth.v1.ConversationChangedH\x00R\x13conversationChanged\x125\n" +
+	"\n" +
+	"usage_tick\x18\x0e \x01(\v2\x14.hearth.v1.UsageTickH\x00R\tusageTick\x12;\n" +
+	"\fnote_changed\x18\x0f \x01(\v2\x16.hearth.v1.NoteChangedH\x00R\vnoteChanged\x12G\n" +
+	"\x10handbook_changed\x18\x10 \x01(\v2\x1a.hearth.v1.HandbookChangedH\x00R\x0fhandbookChanged\x12M\n" +
+	"\x12credential_changed\x18\x11 \x01(\v2\x1c.hearth.v1.CredentialChangedH\x00R\x11credentialChanged\x12>\n" +
+	"\rtiers_changed\x18\x12 \x01(\v2\x17.hearth.v1.TiersChangedH\x00R\ftiersChangedB\a\n" +
 	"\x05event\"\x81\x01\n" +
 	"\fMessageDelta\x12'\n" +
 	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
@@ -934,7 +1297,23 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	"\x06bot_id\x18\x01 \x01(\tR\x05botId\x12(\n" +
 	"\x06grants\x18\x02 \x03(\v2\x10.hearth.v1.GrantR\x06grants\"R\n" +
 	"\x13ConversationChanged\x12;\n" +
-	"\fconversation\x18\x01 \x01(\v2\x17.hearth.v1.ConversationR\fconversation\"\b\n" +
+	"\fconversation\x18\x01 \x01(\v2\x17.hearth.v1.ConversationR\fconversation\"r\n" +
+	"\tUsageTick\x12%\n" +
+	"\x03bot\x18\x01 \x01(\v2\x13.hearth.v1.BotUsageR\x03bot\x12(\n" +
+	"\x03org\x18\x02 \x01(\v2\x16.hearth.v1.UsageTotalsR\x03org\x12\x14\n" +
+	"\x05month\x18\x03 \x01(\tR\x05month\"c\n" +
+	"\vNoteChanged\x12#\n" +
+	"\x04note\x18\x01 \x01(\v2\x0f.hearth.v1.NoteR\x04note\x12\x18\n" +
+	"\adeleted\x18\x02 \x01(\bR\adeleted\x12\x15\n" +
+	"\x06bot_id\x18\x03 \x01(\tR\x05botId\"X\n" +
+	"\x0fHandbookChanged\x12+\n" +
+	"\x04page\x18\x01 \x01(\v2\x17.hearth.v1.HandbookPageR\x04page\x12\x18\n" +
+	"\adeleted\x18\x02 \x01(\bR\adeleted\"A\n" +
+	"\x11CredentialChanged\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\adeleted\x18\x02 \x01(\bR\adeleted\";\n" +
+	"\fTiersChanged\x12+\n" +
+	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\"\b\n" +
 	"\x06Resync\"\v\n" +
 	"\tHeartbeat2Z\n" +
 	"\fEventService\x12J\n" +
@@ -952,7 +1331,7 @@ func file_hearth_v1_event_proto_rawDescGZIP() []byte {
 	return file_hearth_v1_event_proto_rawDescData
 }
 
-var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_hearth_v1_event_proto_goTypes = []any{
 	(*SubscribeRequest)(nil),    // 0: hearth.v1.SubscribeRequest
 	(*SubscribeResponse)(nil),   // 1: hearth.v1.SubscribeResponse
@@ -966,16 +1345,26 @@ var file_hearth_v1_event_proto_goTypes = []any{
 	(*MessageDeleted)(nil),      // 9: hearth.v1.MessageDeleted
 	(*GrantsChanged)(nil),       // 10: hearth.v1.GrantsChanged
 	(*ConversationChanged)(nil), // 11: hearth.v1.ConversationChanged
-	(*Resync)(nil),              // 12: hearth.v1.Resync
-	(*Heartbeat)(nil),           // 13: hearth.v1.Heartbeat
-	(*Message)(nil),             // 14: hearth.v1.Message
-	(*Run)(nil),                 // 15: hearth.v1.Run
-	(*ProviderAccount)(nil),     // 16: hearth.v1.ProviderAccount
-	(*Bot)(nil),                 // 17: hearth.v1.Bot
-	(*IntegrationAccount)(nil),  // 18: hearth.v1.IntegrationAccount
-	(*InboxItem)(nil),           // 19: hearth.v1.InboxItem
-	(*Grant)(nil),               // 20: hearth.v1.Grant
-	(*Conversation)(nil),        // 21: hearth.v1.Conversation
+	(*UsageTick)(nil),           // 12: hearth.v1.UsageTick
+	(*NoteChanged)(nil),         // 13: hearth.v1.NoteChanged
+	(*HandbookChanged)(nil),     // 14: hearth.v1.HandbookChanged
+	(*CredentialChanged)(nil),   // 15: hearth.v1.CredentialChanged
+	(*TiersChanged)(nil),        // 16: hearth.v1.TiersChanged
+	(*Resync)(nil),              // 17: hearth.v1.Resync
+	(*Heartbeat)(nil),           // 18: hearth.v1.Heartbeat
+	(*Message)(nil),             // 19: hearth.v1.Message
+	(*Run)(nil),                 // 20: hearth.v1.Run
+	(*ProviderAccount)(nil),     // 21: hearth.v1.ProviderAccount
+	(*Bot)(nil),                 // 22: hearth.v1.Bot
+	(*IntegrationAccount)(nil),  // 23: hearth.v1.IntegrationAccount
+	(*InboxItem)(nil),           // 24: hearth.v1.InboxItem
+	(*Grant)(nil),               // 25: hearth.v1.Grant
+	(*Conversation)(nil),        // 26: hearth.v1.Conversation
+	(*BotUsage)(nil),            // 27: hearth.v1.BotUsage
+	(*UsageTotals)(nil),         // 28: hearth.v1.UsageTotals
+	(*Note)(nil),                // 29: hearth.v1.Note
+	(*HandbookPage)(nil),        // 30: hearth.v1.HandbookPage
+	(*TierChoice)(nil),          // 31: hearth.v1.TierChoice
 }
 var file_hearth_v1_event_proto_depIdxs = []int32{
 	2,  // 0: hearth.v1.SubscribeResponse.message_delta:type_name -> hearth.v1.MessageDelta
@@ -983,28 +1372,38 @@ var file_hearth_v1_event_proto_depIdxs = []int32{
 	4,  // 2: hearth.v1.SubscribeResponse.run_changed:type_name -> hearth.v1.RunChanged
 	5,  // 3: hearth.v1.SubscribeResponse.account_changed:type_name -> hearth.v1.AccountChanged
 	6,  // 4: hearth.v1.SubscribeResponse.bot_changed:type_name -> hearth.v1.BotChanged
-	12, // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
-	13, // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
+	17, // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
+	18, // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
 	7,  // 7: hearth.v1.SubscribeResponse.integration_changed:type_name -> hearth.v1.IntegrationChanged
 	8,  // 8: hearth.v1.SubscribeResponse.inbox_changed:type_name -> hearth.v1.InboxChanged
 	9,  // 9: hearth.v1.SubscribeResponse.message_deleted:type_name -> hearth.v1.MessageDeleted
 	10, // 10: hearth.v1.SubscribeResponse.grants_changed:type_name -> hearth.v1.GrantsChanged
 	11, // 11: hearth.v1.SubscribeResponse.conversation_changed:type_name -> hearth.v1.ConversationChanged
-	14, // 12: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
-	15, // 13: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
-	16, // 14: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
-	17, // 15: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
-	18, // 16: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
-	19, // 17: hearth.v1.InboxChanged.item:type_name -> hearth.v1.InboxItem
-	20, // 18: hearth.v1.GrantsChanged.grants:type_name -> hearth.v1.Grant
-	21, // 19: hearth.v1.ConversationChanged.conversation:type_name -> hearth.v1.Conversation
-	0,  // 20: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
-	1,  // 21: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
-	21, // [21:22] is the sub-list for method output_type
-	20, // [20:21] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	12, // 12: hearth.v1.SubscribeResponse.usage_tick:type_name -> hearth.v1.UsageTick
+	13, // 13: hearth.v1.SubscribeResponse.note_changed:type_name -> hearth.v1.NoteChanged
+	14, // 14: hearth.v1.SubscribeResponse.handbook_changed:type_name -> hearth.v1.HandbookChanged
+	15, // 15: hearth.v1.SubscribeResponse.credential_changed:type_name -> hearth.v1.CredentialChanged
+	16, // 16: hearth.v1.SubscribeResponse.tiers_changed:type_name -> hearth.v1.TiersChanged
+	19, // 17: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
+	20, // 18: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
+	21, // 19: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
+	22, // 20: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
+	23, // 21: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
+	24, // 22: hearth.v1.InboxChanged.item:type_name -> hearth.v1.InboxItem
+	25, // 23: hearth.v1.GrantsChanged.grants:type_name -> hearth.v1.Grant
+	26, // 24: hearth.v1.ConversationChanged.conversation:type_name -> hearth.v1.Conversation
+	27, // 25: hearth.v1.UsageTick.bot:type_name -> hearth.v1.BotUsage
+	28, // 26: hearth.v1.UsageTick.org:type_name -> hearth.v1.UsageTotals
+	29, // 27: hearth.v1.NoteChanged.note:type_name -> hearth.v1.Note
+	30, // 28: hearth.v1.HandbookChanged.page:type_name -> hearth.v1.HandbookPage
+	31, // 29: hearth.v1.TiersChanged.tiers:type_name -> hearth.v1.TierChoice
+	0,  // 30: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
+	1,  // 31: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
+	31, // [31:32] is the sub-list for method output_type
+	30, // [30:31] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_event_proto_init() }
@@ -1014,9 +1413,11 @@ func file_hearth_v1_event_proto_init() {
 	}
 	file_hearth_v1_bot_proto_init()
 	file_hearth_v1_conversation_proto_init()
+	file_hearth_v1_handbook_proto_init()
 	file_hearth_v1_inbox_proto_init()
 	file_hearth_v1_integration_proto_init()
 	file_hearth_v1_provider_proto_init()
+	file_hearth_v1_usage_proto_init()
 	file_hearth_v1_event_proto_msgTypes[1].OneofWrappers = []any{
 		(*SubscribeResponse_MessageDelta)(nil),
 		(*SubscribeResponse_MessageUpserted)(nil),
@@ -1030,6 +1431,11 @@ func file_hearth_v1_event_proto_init() {
 		(*SubscribeResponse_MessageDeleted)(nil),
 		(*SubscribeResponse_GrantsChanged)(nil),
 		(*SubscribeResponse_ConversationChanged)(nil),
+		(*SubscribeResponse_UsageTick)(nil),
+		(*SubscribeResponse_NoteChanged)(nil),
+		(*SubscribeResponse_HandbookChanged)(nil),
+		(*SubscribeResponse_CredentialChanged)(nil),
+		(*SubscribeResponse_TiersChanged)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1037,7 +1443,7 @@ func file_hearth_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_event_proto_rawDesc), len(file_hearth_v1_event_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

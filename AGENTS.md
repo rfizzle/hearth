@@ -175,7 +175,7 @@ from `Hearth`.
   plugins and the BSR rate-limits anonymous generation, so drift is checked
   outside `make ci`: after editing the proto, run `make proto && make
   proto-drift`. `buf registry login` lifts the limit locally.
-- **`make proto` regenerates two files per proto on each side** (nine
+- **`make proto` regenerates two files per proto on each side** (eleven
   protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables.
