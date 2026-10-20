@@ -141,6 +141,7 @@ public struct OnboardingScreen: View {
                 accounts: accounts.accounts, knownServices: accounts.knownServices,
                 loginURL: accounts.loginURL, failure: accounts.signInFailure,
                 serviceFailure: accounts.serviceError, footer: signInFooter,
+                featured: [.chatgpt, .openrouter],
                 onSignInWithChatGPT: { Task { await accounts.startChatGPTLogin() } },
                 onSetKey: { provider, key in Task { await accounts.setAPIKey(key, for: provider) }
                 },

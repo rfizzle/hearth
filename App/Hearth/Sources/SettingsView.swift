@@ -41,7 +41,7 @@ extension SignInPanel {
         self.init(
             accounts: accounts.accounts, knownServices: accounts.knownServices,
             loginURL: accounts.loginURL, failure: accounts.signInFailure,
-            serviceFailure: accounts.serviceError, showsEveryProvider: false,
+            serviceFailure: accounts.serviceError, featured: [],
             onSignInWithChatGPT: { Task { await accounts.startChatGPTLogin() } },
             onSetKey: { provider, key in Task { await accounts.setAPIKey(key, for: provider) } },
             onClear: { provider in Task { await accounts.clear(provider) } },

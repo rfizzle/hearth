@@ -27,7 +27,9 @@ public struct SignInPanel: View {
     let failure: String?
     let serviceFailure: String?
     let footer: String?
-    let showsEveryProvider: Bool
+    /// The built-ins that keep a card while signed out; the rest wait in
+    /// the picker so a first screen stays short.
+    let featured: Set<Hearth_V1_Provider>
     let onSignInWithChatGPT: () -> Void
     let onSetKey: (Hearth_V1_Provider, String) -> Void
     let onClear: (Hearth_V1_Provider) -> Void
@@ -42,8 +44,9 @@ public struct SignInPanel: View {
     @State private var revealed: Set<Hearth_V1_Provider> = []
     @Environment(\.openURL) private var openURL
 
-    /// A panel over `accounts`. With `showsEveryProvider` false (Settings),
-    /// a signed-out built-in has no card until it is chosen from the picker.
+    /// A panel over `accounts`. A signed-out built-in outside `featured` has
+    /// no card until it is chosen from the picker: onboarding features ChatGPT
+    /// and OpenRouter, Settings features none.
     /// `onCloseService` is told when the picker closes, so a failure shown in
     /// it can be forgotten.
     public init(
@@ -53,7 +56,7 @@ public struct SignInPanel: View {
         failure: String?,
         serviceFailure: String? = nil,
         footer: String? = nil,
-        showsEveryProvider: Bool = true,
+        featured: Set<Hearth_V1_Provider> = [.chatgpt, .anthropic, .gemini, .openrouter],
         onSignInWithChatGPT: @escaping () -> Void,
         onSetKey: @escaping (Hearth_V1_Provider, String) -> Void,
         onClear: @escaping (Hearth_V1_Provider) -> Void,
@@ -67,7 +70,7 @@ public struct SignInPanel: View {
         self.failure = failure
         self.serviceFailure = serviceFailure
         self.footer = footer
-        self.showsEveryProvider = showsEveryProvider
+        self.featured = featured
         self.onSignInWithChatGPT = onSignInWithChatGPT
         self.onSetKey = onSetKey
         self.onClear = onClear
@@ -94,7 +97,7 @@ public struct SignInPanel: View {
                     onClear: { onRemoveService(account.profile) })
             }
             ServicePicker(
-                title: showsEveryProvider ? "Another service" : "Add a service",
+                title: featured.isEmpty ? "Add a service" : "Another service",
                 services: offered, failure: serviceFailure, stage: addingStage,
                 onChooseBuiltin: choose, onSave: onSaveService)
             if let failure, editing == nil, !accounts.contains(where: { !$0.failure.isEmpty }) {
@@ -118,12 +121,12 @@ public struct SignInPanel: View {
         }
     }
 
-    /// The built-in cards shown: all of them, or in Settings the configured
-    /// ones and any the owner is setting up.
+    /// The built-in cards shown: the featured ones, the configured ones, and
+    /// any the owner is setting up from the picker.
     private var builtins: [Hearth_V1_ProviderAccount] {
         accounts.filter { account in
             account.provider != .openaiCompatible
-                && (showsEveryProvider || account.state != .signedOut
+                && (featured.contains(account.provider) || account.state != .signedOut
                     || revealed.contains(account.provider) || editing == account.provider)
         }
     }
@@ -254,7 +257,7 @@ extension SignInPanel {
     public init(previewState state: PreviewState) {
         self.init(
             accounts: state.accounts, knownServices: Fixtures.knownServices, loginURL: nil,
-            failure: state.failure, showsEveryProvider: state != .settings,
+            failure: state.failure, featured: state == .settings ? [] : [.chatgpt, .openrouter],
             onSignInWithChatGPT: {}, onSetKey: { _, _ in }, onClear: { _ in },
             onSaveService: { _ in }, onRemoveService: { _ in }, onCloseService: {})
         _editing = State(initialValue: state.editing)

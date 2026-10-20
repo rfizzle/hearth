@@ -57,7 +57,7 @@ public struct ServicePicker: View {
     nonisolated static let searchThreshold = 8
     static let customName = "Custom gateway"
     static let gives =
-        "Z.ai, Groq, a company gateway, or any service that speaks OpenAI's API."
+        "Anthropic, Gemini, Z.ai, Groq, a company gateway, or any service that speaks OpenAI's API."
 
     public var body: some View {
         CardSurface {
