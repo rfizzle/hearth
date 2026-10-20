@@ -52,21 +52,29 @@ Hearth.app
 
 ### 3. The contract (sketch)
 
-One `hearth.v1` proto package. Services, not exhaustive:
+One `hearth.v1` proto package, twelve files. Built today:
 
 ```
-OrgService        GetOrg, UpdateOrg, ExportOrg, ImportOrg
-BotService        List, Create, Update, Delete, ListTemplates, ListGrants, SetGrants, ListNotes, EditNote, DeleteNote, PinNote
+HearthService     Ping, StreamHello (the spike)
+OrgService        GetOrg, UpdateOrg
+BotService        ListTemplates, CreateBot, ListBots, GetBot, DraftBot, UpdateBot, ListGrants, SetGrants, ListNotes, EditNote, DeleteNote, PinNote
 HandbookService   ListPages, PutPage, DeletePage (the pages every bot reads, with a context meter)
-TeamService       List, Create, Update, Delete
-ConversationService  List, Get (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
-TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-ProjectService    List, Create (or confirm a proposal), Update, MarkDone, Archive
+ConversationService  ListConversations, GetConversation (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
+ProjectService    ListProjects, CreateProject (or confirm a proposal), UpdateProject, MarkProjectDone, ArchiveProject
 InboxService      ListInbox, Decide(approval), Answer(question, or a widget), Acknowledge
-UsageService      Summary(by bot/team/month), SetBudgets, Resume
-ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), ListServiceModels (before or after a key is saved), Tiers, SetTiers, SyncCredentials, ExportCredential
-IntegrationService  List, SetKey, Clear (web search backends)
-EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, project changes, usage ticks, note, handbook, credential (name only) and tier changes
+UsageService      Summary(by bot/month), SetBudgets, Resume
+ProviderService   ListAccounts, SetAPIKey, ClearCredential, StartChatGPTLogin (returns the page the app opens), ListKnownServices, ListServiceModels (before or after a key is saved), Tiers, SetTiers, SyncCredentials, ExportCredential
+IntegrationService  ListIntegrations, SetIntegrationKey, ClearIntegration (web search backends)
+EventService      Subscribe(stream): message deltas, run state, inbox changes, project changes, usage ticks, note, handbook, credential (name only) and tier changes
+```
+
+Planned, not in the proto yet:
+
+```
+OrgService        ExportOrg, ImportOrg
+BotService        Delete
+TeamService       List, Create, Update, Delete
+TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
 NativeToolService (served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
@@ -121,7 +129,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/memory  internal/handbook  internal/meter  internal/provider  internal/integration  internal/native
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/native is planned)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -148,9 +156,11 @@ Rules:
 | `internal/org` | Domain types, grant resolution, hierarchy rules, budget math | new |
 | `internal/org/widget` | The seven controls a bot may ask with, their limits, and the fixed words an answer reaches the bot in (decisions.md D28) | new |
 | `internal/org/intro` | A bot's introduction (purpose, three how lines, three prompts), the rule that assembles one for a bot hired from a description, and the check a shipped one passes; app-rendered, never in a run | new |
+| `internal/org/inbox` | What waits for the owner: Inbox items, the four decisions on an approval, the allowances a decision leaves, and the rule that turns a decision into grants | new |
 | `internal/org/memory` | Bot notes and handbook pages, their caps, and the pure rules for which pages a bot reads and how full the handbook is | new |
 | `internal/org/usage` | Usage records, the month's totals, budgets, and the rule that says how near a budget the spending is | new |
 | `internal/project` | Project types and the derived status rule | new |
+| `internal/draft` | Turns a few words from the owner into a proposed bot with one model call outside any conversation | new |
 | `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
 | `internal/store/migrate` | The ordered schema steps and the runner that applies the ones a file has not seen | new |
@@ -159,21 +169,25 @@ Rules:
 | `internal/agent` | Turn loop, tool rounds, steering queue, repeat detection, retry, compaction | lifted from shhh `internal/agent` core + `retry.go` + `compact.go` |
 | `internal/orchestrate` | Task state machine, run scheduling, fan-out and resumption, budgets, schedules, event bus | new |
 | `internal/orchestrate/after` | The work after a run that ended done: tidying the bot's notes and folding the conversation's older text into its summary | new |
+| `internal/orchestrate/bus` | The event bus: a sequence number per event, a ring for resync, a heartbeat, and the bodies of the events the orchestrator publishes | new |
+| `internal/orchestrate/park` | What a run that waits on the owner leaves behind: the thread message and the Inbox item, the wording of each decision, the grant for an always-allow | new |
+| `internal/orchestrate/record` | What one run writes as it goes: its messages, steps and how it ended, stored and published; the agent's sink | new |
+| `internal/orchestrate/toolset` | The tools one run is handed, built from the bot's grants | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
-| `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
-| `internal/native` | Tool proxies to the app's NativeToolService | new |
+| `internal/tools/files` | `files.read`, `files.write`, `files.delete` inside the folders a bot's grants name | new |
+| `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
 | `internal/provider` | llm wiring, tiers, credentials, ChatGPT account, catalog | new, thin |
 | `internal/provider/gateway` | A service reached by address: the table of known services, the check on an address, the list of its models, the check that a completion is one | new |
+| `internal/provider/models` | Which model a bot runs on: the tier mapping, one bot's pin, the models the accounts offer, the probe for a local runtime | new |
 | `internal/keystore` | Named secrets: the Store interface, the file store, the memory store the app syncs into | new |
 | `internal/integration` | The web-search key over the shared key store; builds the searcher a run is handed, none when no key is set (D22) | new, thin |
-| `internal/meter` | Usage ledger over llm's prices, month summary, budget rails (D29) | hearth's own ledger: agentcore's is in memory, this one survives relaunch |
-| `internal/memory` | Bot notes: bounded recall, consolidation, pins; held by `org/memory`, `tools/memory` and `assembly` rather than a package of this name | new (D13; shhh's memory package stays in shhh) |
+| `internal/meter` | Usage ledger over llm's prices, month summary, budget rails (D30) | hearth's own ledger: agentcore's is in memory, this one survives relaunch |
 | `internal/handbook` | Pages by scope, the refusal of a page that overfills a reader's context, the "Handbook" block a run carries | new |
-| `internal/secret` | Scrub tool results | lifted from shhh |
 | `internal/skill` | Role templates as SKILL.md bundles | lifted from shhh |
+| `internal/skill/builtin` | The shipped role templates as SKILL.md bundles | new |
 | `internal/rpc` | Connect handlers, event stream, version handshake | new |
 | `internal/rpc/staff` | The calls about the org and its people: the org, the bots with their grants, the conversations, the Inbox and the event stream, beside the spike | new |
 | `internal/rpc/accounts` | The calls about the model accounts and the integrations, and the bus bodies their changes publish | new |
@@ -182,6 +196,8 @@ Rules:
 | `internal/framing` | The fixed instructions wrapped around job descriptions (Chief of Staff, lead, member) as embedded text with tests that they render | new |
 | `internal/assembly` | A run's context, built in a fixed order within byte caps (framing, handbook, notes, summary, window, the parked round, attachments); dropped files brought where the bot may read them; and the side runs after a run: the conversation's summary and tidying a bot's notes | new |
 | `cmd/hearthd` | Assembly, `--repl` harness for driving the core without the app | new |
+
+Planned, with no directory yet: `internal/native` (proxies to the app's NativeToolService), `internal/tools/describe` (plain-English effect strings for approval cards), and a scrub of tool results for key shapes. Bot notes live in `org/memory`, `tools/memory` and `assembly`.
 
 Each package states its contract the Go way: a `doc.go` whose package comment names the responsibility, the invariants the type system does not hold, and the seams it is handed. Behaviour that spans packages (assignment, approvals, budgets, schedules) is already written down in `model.md#orchestration`; code cites those headings. No per-package spec files and no approval states: shhh's convention, which has held up, rather than overwatch's, which became paperwork.
 

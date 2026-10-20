@@ -101,15 +101,14 @@ These yield to an explicit instruction to do otherwise.
 ## Architecture
 
 Package doc comments (`doc.go`) and the comments at each trap are the detailed
-map. `cmd/hearthd`, `internal/rpc`, `proto/` and `scripts/` exist today; the
-rest is the target from `docs/architecture.md`. Skills for each side: `go-structure` and
-`swiftui-structure`.
+map. Everything below exists; `docs/architecture.md` marks what is planned.
+Skills for each side: `go-structure` and `swiftui-structure`.
 
 ```
 cmd/hearthd           assembly, and the --repl harness (exists)
 scripts/docscheck     the checks behind make docs-check, vendored (exists)
 scripts/skillscheck   the hash check behind make skills-check, vendored (exists)
-internal/             dependencies point down only; only rpc/, orchestrate/, assembly/, draft/, provider/, keystore/, integration/, agent/, framing/, skill/, tools/, handbook/, meter/, org/, project/, workspace/ and store/ exist so far
+internal/             dependencies point down only
   rpc/                Options, the token check and the registration of the services; staff/ serves the org, bot (with grants), conversation (with retry), project, inbox and event services over the store and runs; accounts/ serves the provider and integration services; books/ serves notes, a bot's settings, the handbook, usage and the tiers; wire/ is the translation the services share (the error codes, the common conversions, a stored control and answer read into the contract); generated code under gen/ (exists)
   orchestrate/        tasks, runs, scheduler, budgets, waits, event bus (exists: DM runs, approvals, questions, and the bus; bus/, park/, record/, toolset/ and after/ (tidy and summary after a run) below it)
   assembly/           a run's context in a fixed order within byte caps, dropped files into the Inbox, the conversation's summary and the notes' tidy (exists)
@@ -118,6 +117,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
   provider/           accounts, the key store seam, tier to model, login for the app (exists); gateway/ is the address check, the model list and the known services, models/ the choice among models
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
   tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal)
+    memory/           remember: appends a note for the calling bot (exists)
     files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
@@ -175,7 +175,7 @@ from `Hearth`.
   plugins and the BSR rate-limits anonymous generation, so drift is checked
   outside `make ci`: after editing the proto, run `make proto && make
   proto-drift`. `buf registry login` lifts the limit locally.
-- **`make proto` regenerates two files per proto on each side** (eleven
+- **`make proto` regenerates two files per proto on each side** (twelve
   protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables.

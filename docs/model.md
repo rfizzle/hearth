@@ -2,6 +2,8 @@
 
 The things in the system, how they relate, and the rules that govern how work flows between the owner and bots. This is the behavioural contract the Go core implements and the app reflects; code cites these headings.
 
+This describes the product as designed. `AGENTS.md`'s map and `docs/architecture.md`'s package table mark what exists today.
+
 ## Concepts
 
 ### The org
@@ -44,7 +46,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 
 ### Conversations
 
-**Conversation** (`Conversation`). Four kinds, same message model:
+**Conversation** (`Conversation`). Four kinds, same message model. Two exist today (`dm`, `project`); `channel` and `task` are planned:
 
 | Kind | Participants | Created by | Lives in sidebar as |
 |---|---|---|---|
@@ -58,6 +60,8 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 **Attachment** (`Attachment`). A file reference (bookmark to a file in the Workspace or a granted folder) or an inline image/PDF. Dropped files are copied into the Workspace `Inbox` subfolder unless the bot can already read them where they are; a folder, a missing file or a file inside hearth's own data folder cannot be attached. The bot is told each file's name, size and path with the message, and reads it with its tools.
 
 ### Work
+
+(planned) Teams, tasks and schedules below are the design; none is built yet.
 
 **Task** (`Assignment`). The unit of delegation. Created when the owner or a bot assigns work.
 
@@ -153,9 +157,9 @@ A bot working in a project's conversation, or on one of its tasks, may read and 
 
 ### Usage
 
-**Usage record** (`Usage`). Per run: provider, model, input/output/cached tokens, estimated cost from the llm catalog, attributed to bot, team, task and month. Displayed as "Usage" (Q7 decided against "Payroll"). Budgets are soft (warn) at 80% and hard (pause) at 100% per task, team and org per month. A project's budget is a total over its tasks, not a monthly figure, and caps them the way a team's does.
+**Usage record** (`Usage`). Per run: provider, model, input/output/cached tokens, estimated cost from the llm catalog, attributed to bot, team, task and month. Displayed as "Usage" (Q7 decided against "Payroll"). Budgets are soft (warn) at 80% and hard (pause) at 100% per month. Today a budget is set for the org and for one bot; budgets per task, team and project are planned. A project's budget is a total over its tasks, not a monthly figure, and caps them the way a team's does.
 
-Cost is an estimate in US dollars from llm's price table, not a bill: a model the table does not know is shown as not priced, with its tokens. Requests paid for by a plan (ChatGPT) are counted in tokens and never priced. A budget is a monthly limit for the org or for one bot. At 80% the owner gets one Inbox item for that month. The hard limit pauses the bot (or every bot, for the org's budget), stops the run in progress and refuses new messages until the owner chooses Resume or sets a higher budget; a resumed bot is not paused again that month unless its budget is raised.
+Cost is an estimate in US dollars from llm's price table, not a bill: a model the table does not know is shown as not priced, with its tokens. Requests paid for by a plan (ChatGPT) are counted in tokens and never priced. At 80% the owner gets one Inbox item for that month. The hard limit pauses the bot (or every bot, for the org's budget), stops the run in progress and refuses new messages until the owner chooses Resume or sets a higher budget; a resumed bot is not paused again that month unless its budget is raised.
 
 ### Vocabulary (user-facing)
 
@@ -177,6 +181,8 @@ Cost is an estimate in US dollars from llm's price table, not a bill: a model th
 
 
 ## Orchestration
+
+(planned) Teams, tasks, `assign`, schedules and export/import are not built yet; DM runs, approvals and questions are.
 
 ### 1. Where a message goes
 

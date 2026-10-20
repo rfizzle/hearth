@@ -2,6 +2,8 @@
 
 What hearth is, who it is for, and the strict line around what it will and will not do. Updated when the product changes, which is rarely. Decisions are in `decisions.md`.
 
+This describes the product as designed. `AGENTS.md`'s map and `docs/architecture.md`'s package table mark what exists today.
+
 ## Vision
 
 ### One sentence
