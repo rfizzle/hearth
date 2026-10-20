@@ -1,10 +1,14 @@
-// OnboardingScreen shows the store's step: a welcome, the sign-in panel with
-// the optional web-search panel under it, and the name and folder form. The
+// OnboardingScreen shows the store's step in a centred column: a welcome, the
+// sign-in cards with the optional web-search card folded away under them, and
+// the name and folder form. Optional setup waits behind a collapsed
+// disclosure so the owner is not asked for it before they can continue. The
 // folder is picked with the system file importer limited to directories, so
 // the owner sees the standard sheet and keyboard access is the system's. The
 // screen is a function of store state; its only local state is whether the
-// importer is open.
+// importer is open and whether the web-search disclosure is.
+// See docs/design.md#empty-states-and-first-run
 
+import HearthDesign
 import HearthKit
 import HearthUI
 import SwiftUI
@@ -15,66 +19,120 @@ public struct OnboardingScreen: View {
     let store: OnboardingStore
 
     @State private var isChoosingFolder = false
+    @State private var isWebSearchOpen = false
 
     public init(store: OnboardingStore) {
         self.store = store
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+            header
             switch store.step {
-            case .welcome: welcome
+            case .welcome: EmptyView()
             case .signIn: signIn
             case .nameAndFolder: nameAndFolder
             }
             if let error = store.error {
-                Text(error).foregroundStyle(.primary)
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(Theme.callout)
+                    .foregroundStyle(Theme.color(.toneNegative))
             }
             buttons
         }
-        .padding()
-        .frame(maxWidth: 520)
+        .frame(maxWidth: Theme.Size.formWidth)
+        .padding(.top, Theme.Spacing.xl)
+        .padding(.horizontal, Theme.Spacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .navigationTitle("Welcome")
         .task { await store.accounts.load() }
     }
 
-    private var welcome: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Welcome to Hearth").font(.largeTitle)
-            Text("Run a small office of AI employees. Three quick steps and it is yours.")
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            if store.step == .welcome {
+                Image(systemName: "flame.fill")
+                    .font(Theme.largeTitle)
+                    .foregroundStyle(.tint)
+                    .padding(.bottom, Theme.Spacing.sm)
+                    .accessibilityHidden(true)
+            }
+            Text("Step \(store.step.rawValue + 1) of \(Self.stepCount)")
+                .font(Theme.caption)
+                .foregroundStyle(Theme.color(.textSecondary))
+            Text(heading)
+                .font(Theme.title)
+                .foregroundStyle(Theme.color(.textPrimary))
+                .accessibilityAddTraits(.isHeader)
+            Text(lead)
+                .font(Theme.body)
+                .foregroundStyle(Theme.color(.textSecondary))
+        }
+    }
+
+    private static let stepCount = OnboardingStore.Step.allCases.count
+
+    private var heading: String {
+        switch store.step {
+        case .welcome: "Run a small office of AI employees."
+        case .signIn: "Sign in"
+        case .nameAndFolder: "Name your office"
+        }
+    }
+
+    private var lead: String {
+        switch store.step {
+        case .welcome: "Three quick steps and it is yours."
+        case .signIn: "Choose a service for your team to think with."
+        case .nameAndFolder: "Give it a name and a folder to keep its files in."
         }
     }
 
     private var signIn: some View {
         let accounts = store.accounts
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("Sign in").font(.title)
+        return VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
             SignInPanel(
                 accounts: accounts.accounts, loginURL: accounts.loginURL,
-                failure: accounts.signInFailure,
+                failure: accounts.signInFailure, footer: signInFooter,
                 onSignInWithChatGPT: { Task { await accounts.startChatGPTLogin() } },
                 onSetKey: { provider, key in Task { await accounts.setAPIKey(key, for: provider) }
                 },
                 onClear: { provider in Task { await accounts.clear(provider) } })
-            Text("Optional: web search").font(.headline)
-            IntegrationsPanel(
-                integrations: accounts.integrations, failure: accounts.integrationError,
-                onSetKey: { integration, key in
-                    Task { await accounts.setKey(key, for: integration) }
-                },
-                onClear: { integration in Task { await accounts.clear(integration) } })
+            DisclosureGroup("Add web search (optional)", isExpanded: $isWebSearchOpen) {
+                IntegrationsPanel(
+                    integrations: accounts.integrations, failure: accounts.integrationError,
+                    onSetKey: { integration, key in
+                        Task { await accounts.setKey(key, for: integration) }
+                    },
+                    onClear: { integration in Task { await accounts.clear(integration) } }
+                )
+                .padding(.top, Theme.Spacing.sm)
+            }
+            .font(Theme.callout)
         }
+    }
+
+    private var signInFooter: String {
+        store.accounts.hasSignedInAccount
+            ? "You can add or change these later in Settings."
+            : "Sign in with at least one of these to continue. "
+                + "Web search below is optional and doesn't count."
     }
 
     private var nameAndFolder: some View {
         @Bindable var store = store
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Name your org").font(.title)
-            TextField("Org name", text: $store.name)
-            HStack {
-                Text(store.path).lineLimit(1).truncationMode(.middle)
-                Button("Choose…") { isChoosingFolder = true }
+        return Form {
+            TextField("Name", text: $store.name, prompt: Text("My Office"))
+            LabeledContent("Folder") {
+                HStack {
+                    Text(store.path).lineLimit(1).truncationMode(.middle)
+                    Button("Choose…") { isChoosingFolder = true }
+                }
             }
         }
+        .formStyle(.grouped)
+        .scrollDisabled(true)
+        .fixedSize(horizontal: false, vertical: true)
         .fileImporter(isPresented: $isChoosingFolder, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result { store.path = url.path }
         }
@@ -89,10 +147,12 @@ public struct OnboardingScreen: View {
             if store.step == .nameAndFolder {
                 Button("Done") { Task { await store.done() } }
                     .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
                     .disabled(!store.canFinish)
             } else {
                 Button("Continue") { store.next() }
                     .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
                     .disabled(!store.canContinue)
             }
         }
