@@ -6,12 +6,13 @@
 // this direction alone and gives the helper on stdin after the launch token,
 // as a bearer, checked in constant time before the method or the route.
 //
-// The bounds, here, in NativeHTTP and in NativeService: 8 KB of headers and
-// 64 KB of body; 5 s for a request to arrive and 40 s for a connection in
-// all; ten pages a call; 28 s waiting for a read, which then runs on without
-// holding this loop, and only one such read at a time; a reply of at most
-// 4 MB; four connections waiting, and any more closed unanswered. Nothing is
-// written; the log has a file's name and how long it took, never its text.
+// The bounds, here, in NativeHTTP, NativeService and ReadingClient: 8 KB of
+// headers and 64 KB of body; 5 s for a request to arrive and 40 s for a
+// connection in all; ten pages a call; reading done only in the sandboxed
+// reading service, one read at a time, waited for at most 28 s before the
+// service is killed; a reply of at most 4 MB; four connections waiting, and
+// any more closed unanswered. Nothing is written; the log has a file's name
+// and how long it took, never its text.
 // See docs/decisions.md#hearth--decisions
 
 import Foundation
@@ -37,21 +38,23 @@ public final class NativeServer: Sendable {
     private let arrivals: AsyncStream<NWConnection>.Continuation
     private let worker = Mutex<Task<Void, Never>?>(nil)
     private let active = ActiveConnection()
+    private let reader: any PageReading
     private let onFailure: @Sendable () -> Void
 
     /// A server that answers requests carrying `token`, the native token,
-    /// with `extractor`. It does not listen until start. `onFailure` is told
-    /// when the listener fails after it was ready, so the caller can stop
-    /// handing out its port.
+    /// reading files through `reader`. It does not listen until start.
+    /// `onFailure` is told when the listener fails after it was ready, so the
+    /// caller can stop handing out its port.
     public init(
-        token: String, extractor: any TextExtracting,
+        token: String, reader: any PageReading,
         onFailure: @escaping @Sendable () -> Void = {}
     ) throws {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: .any)
         parameters.acceptLocalOnly = true
         listener = try NWListener(using: parameters)
-        service = NativeService(token: token, extractor: extractor)
+        service = NativeService(token: token, reader: reader)
+        self.reader = reader
         self.onFailure = onFailure
         (waiting, arrivals) = AsyncStream.makeStream(
             of: NWConnection.self, bufferingPolicy: .bufferingOldest(Self.maxWaiting))
@@ -98,13 +101,14 @@ public final class NativeServer: Sendable {
     }
 
     /// Stops listening, closes every connection waiting and the one being
-    /// served, and cancels its reading, which stops at the next page.
+    /// served, and ends its reading with the reading service's connection.
     public func stop() {
         listener.newConnectionHandler = nil
         listener.cancel()
         arrivals.finish()
         worker.withLock { $0?.cancel() }
         active.slot.withLock { $0?.cancel() }
+        reader.close()
     }
 
     static func isLoopback(_ endpoint: NWEndpoint) -> Bool {

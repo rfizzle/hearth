@@ -1,8 +1,10 @@
 // swift-tools-version: 6.2
-// Hearth: the app target (scenes, windows, helper lifecycle, wiring) and the
-// gallery target over the five local packages. Imports point down: Hearth ->
-// HearthFeatures -> HearthUI -> HearthDesign, HearthKit below all but
-// HearthDesign, HearthNative only from Hearth.
+// Hearth: the app target (scenes, windows, helper lifecycle, wiring), the
+// gallery target over the five local packages, and HearthReader, the
+// sandboxed XPC service the app hands files to for text recognition. Imports
+// point down: Hearth -> HearthFeatures -> HearthUI -> HearthDesign, HearthKit
+// below all but HearthDesign, HearthNative only from Hearth, and HearthReader
+// on HearthNative's HearthReading alone.
 import PackageDescription
 
 let package = Package(
@@ -11,6 +13,7 @@ let package = Package(
     products: [
         .executable(name: "Hearth", targets: ["Hearth"]),
         .executable(name: "HearthGallery", targets: ["HearthGallery"]),
+        .executable(name: "HearthReader", targets: ["HearthReader"]),
     ],
     dependencies: [
         .package(path: "Packages/HearthDesign"),
@@ -49,6 +52,11 @@ let package = Package(
                 .product(name: "HearthDesign", package: "HearthDesign"),
             ],
             path: "HearthGallery/Sources"
+        ),
+        .executableTarget(
+            name: "HearthReader",
+            dependencies: [.product(name: "HearthReading", package: "HearthNative")],
+            path: "HearthReader/Sources"
         ),
     ],
     swiftLanguageModes: [.v6]

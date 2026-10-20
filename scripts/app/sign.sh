@@ -1,6 +1,7 @@
 #!/bin/sh
-# Signs the helper, then the app, with the hardened runtime and a timestamp
-# (inside-out, as notarisation requires). With MACOS_SIGN_P12 set (a base64
+# Signs the reading service (with its sandbox entitlement), the helper, then
+# the app, with the hardened runtime and a timestamp (inside-out, as
+# notarisation requires). With MACOS_SIGN_P12 set (a base64
 # Developer ID .p12, password in MACOS_SIGN_PASSWORD) the identity is imported
 # into a temporary keychain for this run only; without it the bundle is
 # ad-hoc signed, which runs here and nowhere else. No Mac holds the identity:
@@ -50,6 +51,10 @@ else
 	set --
 fi
 
+here=$(cd "$(dirname "$0")" && pwd)
+codesign --force --options runtime --timestamp --sign "$identity" "$@" \
+	--entitlements "$here/../../App/HearthReader/HearthReader.entitlements" \
+	"$app/Contents/XPCServices/com.rfizzle.hearth.reader.xpc"
 codesign --force --options runtime --timestamp --sign "$identity" "$@" "$app/Contents/Helpers/hearthd"
 codesign --force --options runtime --timestamp --sign "$identity" "$@" "$app"
 echo "signed $app"

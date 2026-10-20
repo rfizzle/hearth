@@ -41,7 +41,7 @@ Hearth.app
 | Orchestration (assign, waits, budgets, schedules (planned)) | core | New; `model.md#orchestration` is its spec. |
 | Tool registry | core | shhh's `Definition{Tool, Execute, Receipt}` shape. Two tiers only: read and act; act tools consult the approval gate. |
 | Core-side tools | core | files.read/write/delete (within granted paths handed over by the app as resolved paths), web.fetch, web.search (offered only while a search key is stored), assign, ask_owner, remember. |
-| Document reading and rendering | core | pure Go; the app only for text recognition through the native service |
+| Document reading and rendering | core | pure Go; the app only for text recognition through the native service, which hands the open file to a sandboxed reading service |
 | Shaped deliverables and measures | core renders, app shows | One spec, two renderers; measures by id through `MeasureService`. |
 | Native tools (planned) | app, invoked by core | calendar.*, reminders.*, contacts.read, shortcuts.run, notifications. The core calls back into the app over the same connection (bidirectional stream, or the app registers as a tool server on a second socket). The app owns the TCC prompts and the EventKit/Contacts/Shortcuts code. |
 | Credentials | app (Keychain) → core (memory) | The app reads its Keychain records and pushes them with `SyncCredentials` on connect; the core holds them in memory and writes none to disk. A changed record reaches the app as a `credential_changed` event (name only) and an `ExportCredential` call. The core hands back the records its own files held that the app lacked; a later sync that holds every one of those names deletes `keys/` and `chatgpt/`. A core started by hand with no app keeps owner-only files in those folders (D29). |
@@ -79,7 +79,7 @@ OrgService        ExportOrg, ImportOrg
 BotService        Delete
 TeamService       List, Create, Update, Delete
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-NativeService (served by the app, called by the core; Ping and ExtractText are built, off by default until text recognition runs in a sandboxed service; the rest planned): Ping, ExtractText, Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
+NativeService (served by the app, called by the core; Ping and ExtractText are built, on unless the owner turns it off, and text recognition runs in a sandboxed XPC service the app kills on a timeout or crash, never in the app's own process; the rest planned): Ping, ExtractText, Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
 Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple. A heartbeat keeps a quiet subscription under the client's idle timeout, and the app reconnects from the last sequence it saw.
@@ -102,12 +102,13 @@ Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a 
 - Web fetch has no cookies, follows redirects with a cap, strips scripts, limits size, and blocks link-local and private ranges.
 - Prompt injection from fetched pages and files is treated as untrusted data: the framing says so, and act-tier tools require approval regardless of what a page says. There is no "always allow" for `files.delete` or any Shortcut that the owner did not individually grant.
 - The core listens on loopback only and checks the launch token on every request (D16).
+- PDFs and images the core asks the app to recognise are parsed only in the reading service, an XPC service in the app bundle with the App Sandbox on and nothing granted. The app opens the file and passes the open file, never a path, and kills the service when a read outlasts its deadline; a crafted file can crash or hang the service, not the app that holds the Keychain (D41).
 - No telemetry. Crash reports only with an explicit opt-in, via the macOS mechanism.
 
 ### 6. Build, sign, ship
 
 - Repo: single repo. Go module at the root (`cmd/hearthd`, `internal/...`, `proto/`), SwiftPM package under `App/`. The Makefile builds the Go helper for arm64 (and amd64 if Intel is supported, then `lipo`), and `make app-build` assembles the bundle and copies it into `Contents/Helpers`. (D4, decided 2026-10-19)
-- Signing inside-out: helper with hardened runtime and timestamp, then the app; `notarytool` + `stapler`. Pure Go needs no JIT entitlements. Check `LC_BUILD_VERSION` with `vtool` in CI.
+- Signing inside-out: the reading service with its sandbox entitlement, the helper, each with hardened runtime and timestamp, then the app; `notarytool` + `stapler`. Pure Go needs no JIT entitlements. Check `LC_BUILD_VERSION` with `vtool` in CI.
 - **Developer ID, notarised, Sparkle 2 updates** first. A Mac App Store build is a possible later SKU that would lose Shortcuts execution, Mail automation and wide file access, and would need the helper signed with `app-sandbox` + `inherit`. (D5, decided 2026-10-19)
 - Licence MIT or Apache-2.0 to keep the App Store option open and to satisfy OpenAI's open-source sign-in programme. (D6, decided 2026-10-19)
 - Minimum macOS 26 (Foundation Models, Liquid Glass, current App Intents). Apple Silicon only unless there is a reason to pay for Intel. (D7, decided 2026-10-19)
@@ -266,7 +267,9 @@ App/
     HearthUI/                 components and compositions that know the domain models
     HearthFeatures/           one folder per feature: an @Observable store + screens
     HearthNative/             EventKit, Contacts, Shortcuts, Keychain, UNUserNotification,
-                              Foundation Models adapters; the NativeService server
+                              Foundation Models adapters; the NativeService server;
+                              HearthReading, the text extractor and the reading service's interface
+  HearthReader/               the reading service: a sandboxed XPC service on HearthReading alone
 ```
 
 Dependency direction: `Hearth` → `HearthFeatures` → `HearthUI` → `HearthDesign`, with `HearthKit` importable by everything above `HearthDesign` and `HearthNative` importable only by `Hearth`. `HearthDesign` imports nothing of hearth's.

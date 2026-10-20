@@ -128,7 +128,7 @@ proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 ```
 
 ```
-App/                  Package.swift root: the app and gallery targets
+App/                  Package.swift root: the app, the gallery and HearthReader, the sandboxed XPC reading service
   Hearth/             app target: the main window (onboarding, then team and conversation), Settings, the Team menu, helper lifecycle, one event relay, DI
   HearthGallery/      every component and composition in every state
   Packages/
@@ -136,12 +136,12 @@ App/                  Package.swift root: the app and gallery targets
     HearthDesign/     tokens and primitives (the look: docs/design.md)
     HearthUI/         components and compositions
     HearthFeatures/   one @Observable store and screens per feature
-    HearthNative/     EventKit, Contacts, Shortcuts, Keychain, notifications
+    HearthNative/     EventKit, Contacts, Shortcuts, Keychain, notifications; HearthReading, the text extractor
 ```
 
 Swift imports point down: `Hearth` -> `HearthFeatures` -> `HearthUI` ->
 `HearthDesign`; `HearthKit` below all but `HearthDesign`; `HearthNative` only
-from `Hearth`.
+from `Hearth`; `HearthReader` imports `HearthReading` alone.
 
 ## Invariants
 

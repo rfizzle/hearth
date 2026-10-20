@@ -1,7 +1,8 @@
 #!/bin/sh
-# Checks what notarisation will check, before submitting: both the helper and
-# the app carry the hardened runtime, the bundle's signatures verify, and the
-# helper has an LC_BUILD_VERSION load command. Reports whether a notarisation
+# Checks what notarisation will check, before submitting: the reading
+# service, the helper and the app carry the hardened runtime, the service is
+# sandboxed, the bundle's signatures verify, and the helper has an
+# LC_BUILD_VERSION load command. Reports whether a notarisation
 # ticket is stapled without failing on its absence, since only the Release
 # workflow can notarise.
 #
@@ -14,8 +15,9 @@ if [ "$#" -ne 1 ]; then
 fi
 app=$1
 helper="$app/Contents/Helpers/hearthd"
+reader="$app/Contents/XPCServices/com.rfizzle.hearth.reader.xpc"
 
-for target in "$helper" "$app"; do
+for target in "$reader" "$helper" "$app"; do
 	flags=$(codesign -dv --verbose=2 "$target" 2>&1 | grep 'flags=' || true)
 	echo "$target: $flags"
 	case $flags in
@@ -26,6 +28,11 @@ for target in "$helper" "$app"; do
 		;;
 	esac
 done
+if ! codesign -d --entitlements - "$reader" 2>/dev/null | grep -q com.apple.security.app-sandbox; then
+	echo "$reader is not sandboxed" >&2
+	exit 1
+fi
+echo "$reader: sandboxed"
 codesign --verify --deep --strict --verbose=2 "$app"
 if ! xcrun vtool -show "$helper" | grep -q LC_BUILD_VERSION; then
 	echo "$helper has no LC_BUILD_VERSION" >&2

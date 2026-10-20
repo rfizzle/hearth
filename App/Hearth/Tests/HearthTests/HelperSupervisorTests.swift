@@ -25,13 +25,17 @@ import Testing
         ])
 }
 
-@Test @MainActor func theDefaultLaunchCarriesNoNative() throws {
+@Test @MainActor func theDefaultLaunchCarriesNativeUnlessTurnedOff() throws {
     let name = "hearth-test-\(UUID().uuidString)"
     let defaults = try #require(UserDefaults(suiteName: name))
     defer { defaults.removePersistentDomain(forName: name) }
+    #expect(HelperSupervisor.nativeEnabled(defaults))
+    defaults.set(false, forKey: "native.recognition")
     #expect(!HelperSupervisor.nativeEnabled(defaults))
     let port: UInt16? = HelperSupervisor.nativeEnabled(defaults) ? 5123 : nil
     #expect(!HelperSupervisor.arguments(dataDir: nil, nativePort: port).contains("--native"))
+    defaults.set("NO", forKey: "native.recognition")
+    #expect(!HelperSupervisor.nativeEnabled(defaults))
     defaults.set(true, forKey: "native.recognition")
     #expect(HelperSupervisor.nativeEnabled(defaults))
 }

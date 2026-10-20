@@ -22,11 +22,11 @@
 // restarted with a new one; when the app quits, the listener is dropped only
 // after the helper has exited.
 //
-// The native server is off by default: text recognition parses files the
-// owner did not write, and it runs in the app's own process until it has a
-// sandboxed service of its own. It is bound only when the defaults key
-// native.recognition is true; otherwise the helper runs without --native and
-// says pictures could not be read.
+// The native server is on unless the defaults key native.recognition is set
+// to false. It parses nothing itself: text recognition reads files the owner
+// did not write, so it runs in the sandboxed reading service bundled in the
+// app, which a crafted file can crash without touching the app. Turned off,
+// the helper runs without --native and says pictures could not be read.
 // See docs/architecture.md#5-security-model
 
 import Foundation
@@ -81,7 +81,7 @@ final class HelperSupervisor {
         dropNative()
         do {
             let token = try Self.launchToken()
-            let server = try NativeServer(token: token, extractor: TextExtractor()) {
+            let server = try NativeServer(token: token, reader: ReadingClient.service()) {
                 Task { @MainActor [weak self] in self?.nativeFailed() }
             }
             native = server
@@ -107,9 +107,10 @@ final class HelperSupervisor {
     }
 
     /// Whether the native server is bound: the defaults key
-    /// native.recognition, false unless set.
+    /// native.recognition, true unless set to false.
     static func nativeEnabled(_ defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: "native.recognition")
+        defaults.object(forKey: "native.recognition") == nil
+            || defaults.bool(forKey: "native.recognition")
     }
 
     /// The helper's arguments: serve, the data folder when one is set, and the
