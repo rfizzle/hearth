@@ -2,8 +2,10 @@ package rpc
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -78,7 +80,34 @@ type rig struct {
 	opts Options
 	bus  *orchestrate.Bus
 	root string // the Hearth folder a test names
+	gw   *gateway
 }
+
+// gateway is every address an added service names, answering the models
+// call with what a test sets, so no test leaves the process.
+type gateway struct {
+	mu     sync.Mutex
+	status int
+	body   string
+}
+
+func (g *gateway) set(status int, body string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.status, g.body = status, body
+}
+
+func (g *gateway) client() *http.Client {
+	return &http.Client{Transport: gatewayFunc(func(*http.Request) (*http.Response, error) {
+		g.mu.Lock()
+		defer g.mu.Unlock()
+		return &http.Response{StatusCode: g.status, Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(g.body))}, nil
+	})}
+}
+
+type gatewayFunc func(*http.Request) (*http.Response, error)
+
+func (f gatewayFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func newRig(t *testing.T, steps ...step) *rig {
 	t.Helper()
@@ -89,7 +118,8 @@ func newRig(t *testing.T, steps ...step) *rig {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	accounts, err := provider.Open(filepath.Join(dir, "data"), nil)
+	gw := &gateway{status: http.StatusOK, body: `{"data":[{"id":"acme-large"}]}`}
+	accounts, err := provider.Open(filepath.Join(dir, "data"), gw.client())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,6 +134,7 @@ func newRig(t *testing.T, steps ...step) *rig {
 		t.Fatal(err)
 	}
 	return &rig{
+		gw:   gw,
 		bus:  bus,
 		root: filepath.Join(dir, "Hearth"),
 		opts: Options{

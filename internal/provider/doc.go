@@ -31,6 +31,9 @@
 //   - An added service that ends a completion with nothing said, from a body
 //     with no choices in it, is an error naming the service and quoting the
 //     first of the body with secrets removed, never a silent empty reply.
+//   - Saving a service first asks its address for models with its key and
+//     refuses, in plain words, anything that is not a model list; nothing
+//     is stored then. The words never hold the key or what the service sent.
 //
 // Seams it is handed: the http client that reaches the authorization server,
 // the function that opens the browser, the directory the credentials live in,

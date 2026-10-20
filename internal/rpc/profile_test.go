@@ -67,6 +67,23 @@ func TestProviderProfile_SetListClearWithoutTheKey(t *testing.T) {
 	}
 }
 
+func TestProviderProfile_AnAddressThatIsNotAServiceIsRefused(t *testing.T) {
+	const key = "gw-0123456789-secret-wxyz"
+	r := newRig(t)
+	r.gw.set(200, `{"Output":{"__type":"com.amazon.coral.service#UnknownOperationException"}}`)
+	c := newClients(serve(t, r.opts), testToken)
+	compat := hearthv1.Provider_PROVIDER_OPENAI_COMPATIBLE
+	_, err := c.prov.SetAPIKey(t.Context(), connect.NewRequest(&hearthv1.SetAPIKeyRequest{
+		Provider: compat, Key: key, DisplayName: "G", BaseUrl: "https://gw.example/claude", DefaultModel: "m",
+	}))
+	if code(err) != connect.CodeInvalidArgument || !strings.Contains(err.Error(), "many gateways need `/v1`") || strings.Contains(err.Error(), key) {
+		t.Errorf("error = %v, want invalid_argument with the address words and no key", err)
+	}
+	if n := len(unary(t, c.prov.ListAccounts, &hearthv1.ListAccountsRequest{}).GetAccounts()); n != 4 {
+		t.Errorf("a refused save left %d accounts, want the four built-ins", n)
+	}
+}
+
 func TestProviderProfile_Refusals(t *testing.T) {
 	const key = "gw-0123456789-secret-wxyz"
 	r := newRig(t)

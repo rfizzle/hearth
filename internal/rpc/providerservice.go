@@ -18,14 +18,14 @@ func (s *providerService) ListAccounts(_ context.Context, _ *connect.Request[hea
 // the service's settings as a profile. The account it returns carries the
 // key's last four characters, never the key.
 // See docs/model.md#providers-and-models
-func (s *providerService) SetAPIKey(_ context.Context, req *connect.Request[hearthv1.SetAPIKeyRequest]) (*connect.Response[hearthv1.SetAPIKeyResponse], error) {
+func (s *providerService) SetAPIKey(ctx context.Context, req *connect.Request[hearthv1.SetAPIKeyRequest]) (*connect.Response[hearthv1.SetAPIKeyResponse], error) {
 	m := req.Msg
 	p, err := fromProto(providerNames, m.GetProvider())
 	if err != nil {
 		return nil, err
 	}
 	if p == provider.Compatible {
-		acct, err := s.opts.Accounts.SetProfile(provider.Profile{ID: m.GetProfile(), Name: m.GetDisplayName(), BaseURL: m.GetBaseUrl(), DefaultModel: m.GetDefaultModel()}, m.GetKey())
+		acct, err := s.opts.Accounts.SaveProfile(ctx, provider.Profile{ID: m.GetProfile(), Name: m.GetDisplayName(), BaseURL: m.GetBaseUrl(), DefaultModel: m.GetDefaultModel()}, m.GetKey())
 		if err != nil && !errors.Is(err, provider.ErrNoProfile) {
 			// The provider words, for the person, what to fix.
 			err = invalid("%v", err)
