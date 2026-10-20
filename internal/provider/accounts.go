@@ -50,6 +50,13 @@ type Account struct {
 	// Failure is why the last sign-in failed, in plain words, until the next
 	// attempt starts.
 	Failure string
+	// Profile, DisplayName, BaseURL and DefaultModel describe a service the
+	// person added (Provider is Compatible); they are empty for the
+	// built-ins.
+	Profile      string
+	DisplayName  string
+	BaseURL      string
+	DefaultModel string
 }
 
 // Accounts is the person's accounts over one data directory. The orchestrator
@@ -64,6 +71,9 @@ type Accounts struct {
 	OnChange func(Account)
 
 	chat *chatgpt.Account
+	// client is the network the added services are reached through, as it
+	// was handed to Open.
+	client *http.Client
 	// login carries the listener and wait seams for the browser sign-in.
 	login chatgpt.LoginOptions
 
@@ -73,6 +83,9 @@ type Accounts struct {
 	// its temporary directory is removed.
 	bg      sync.WaitGroup
 	failure map[Provider]string
+	// profileMu serialises adding, changing and removing a service, so an
+	// id is minted once.
+	profileMu sync.Mutex
 }
 
 // attempt is one browser sign-in in flight.
@@ -84,8 +97,9 @@ type attempt struct {
 }
 
 // Open opens the accounts kept in dir: the ChatGPT sign-in in dir/chatgpt
-// and the API keys in dir/keys. client reaches the authorization server and
-// nil is the real one.
+// and the API keys, and the services added by address, in dir/keys. client
+// reaches the authorization server and the added services; nil is the real
+// network.
 func Open(dir string, client *http.Client) (*Accounts, error) {
 	chat, err := chatgpt.Open(chatgpt.Options{Store: credstore.FileStore{Dir: filepath.Join(dir, "chatgpt")}, Client: client})
 	if err != nil {
@@ -94,15 +108,21 @@ func Open(dir string, client *http.Client) (*Accounts, error) {
 	return &Accounts{
 		Keys:    FileKeys{Dir: filepath.Join(dir, "keys")},
 		chat:    chat,
+		client:  client,
 		failure: map[Provider]string{},
 	}, nil
 }
 
-// List reports every provider's account.
+// List reports every provider's account, then one per service the person
+// added, the first added first.
 func (a *Accounts) List() []Account {
-	out := make([]Account, 0, len(Providers))
+	profiles := a.Profiles()
+	out := make([]Account, 0, len(Providers)+len(profiles))
 	for _, p := range Providers {
 		out = append(out, a.account(p))
+	}
+	for _, p := range profiles {
+		out = append(out, a.profileAccount(p))
 	}
 	return out
 }

@@ -6,6 +6,7 @@ require (
 	connectrpc.com/connect v1.21.1
 	github.com/rfizzle/agentcore v0.1.0
 	github.com/rfizzle/llm v0.7.0
+	github.com/sashabaranov/go-openai v1.41.2
 	golang.org/x/net v0.61.0
 	google.golang.org/protobuf v1.36.12
 	modernc.org/sqlite v1.50.0
@@ -30,7 +31,6 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/sashabaranov/go-openai v1.41.2 // indirect
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

@@ -25,19 +25,32 @@ var ErrNoAccount = errors.New("no account is signed in")
 
 // Model is a provider ready to stream and the model to ask it for.
 type Model struct {
-	Account  Provider
+	Account Provider
+	// Profile is the added service's id when Account is Compatible.
+	Profile  string
 	Provider llm.Provider
 	Name     string
 }
 
-// Resolve returns the model for a tier from the first signed-in provider's
-// defaults: the cheap model for Fast, the main one for Balanced and Best.
-// A mapping the person edits arrives with the Tiers screen.
+// Resolve returns the model for a tier. A service the person added is
+// preferred, the first one added, at its default model for every tier: it
+// is the one they chose to bring. Otherwise it is the first signed-in
+// provider's defaults: the cheap model for Fast, the main one for Balanced
+// and Best. A mapping the person edits arrives with the Tiers screen.
+// See docs/model.md#providers-and-models
 func (a *Accounts) Resolve(tier Tier) (Model, error) {
 	if tier < Fast || tier > Best {
 		return Model{}, fmt.Errorf("unknown quality tier %d", tier)
 	}
 	var lastErr error
+	for _, p := range a.Profiles() {
+		prov, err := a.buildProfile(p)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		return Model{Account: Compatible, Profile: p.ID, Provider: prov, Name: p.DefaultModel}, nil
+	}
 	for _, p := range Providers {
 		prov, err := a.build(p)
 		if errors.Is(err, ErrNoAccount) {
@@ -100,6 +113,10 @@ func (a *Accounts) vault() *secret.Vault {
 	v := secret.New()
 	names, _ := a.Keys.Names()
 	for _, n := range names {
+		if isProfileMeta(n) {
+			// A service's name and address, not a secret.
+			continue
+		}
 		key, err := a.Keys.Load(n)
 		if err != nil || key == "" {
 			continue
