@@ -19,8 +19,9 @@
 //   - Ids are minted here, when a value is first stored. Values built in org
 //     carry none until then.
 //   - No credential is stored in any table.
-//   - Two bots never share a folder, compared without regard to case; the
-//     second hire is refused inside the transaction that would save it.
+//   - Two bots, or a bot and a project, never share a folder, compared
+//     without regard to case; the second is refused inside the transaction
+//     that would save it.
 //   - The org's first save hires its Chief of Staff, an org-level bot, in
 //     the same transaction, and a later save hires nobody.
 //

@@ -67,14 +67,14 @@ func (db *DB) insertBot(ctx context.Context, tx *sql.Tx, bot org.Bot, grants []o
 	return bot, nil
 }
 
-// checkFolderFree is ErrFolderTaken when another bot's folder is folder,
-// compared without regard to case: the default Mac volume is
+// checkFolderFree is ErrFolderTaken when another bot's or a project's folder
+// is folder, compared without regard to case: the default Mac volume is
 // case-insensitive, so "Dana" and "dana" would share one folder on disk.
 // It reads inside the creating transaction, so two hires racing for one
 // name cannot both pass.
 // See docs/model.md#access
 func checkFolderFree(ctx context.Context, tx *sql.Tx, folder string) error {
-	rows, err := tx.QueryContext(ctx, `SELECT folder_path FROM bots`)
+	rows, err := tx.QueryContext(ctx, `SELECT folder_path FROM bots UNION ALL SELECT folder_path FROM projects WHERE folder_path != ''`)
 	if err != nil {
 		return err
 	}

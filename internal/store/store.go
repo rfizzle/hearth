@@ -18,9 +18,9 @@ import (
 // store and by every repository it embeds.
 var ErrNotFound = sqlrow.ErrNotFound
 
-// ErrFolderTaken is returned when a new bot's folder is another bot's,
-// whatever the case.
-var ErrFolderTaken = errors.New("another bot already has that folder")
+// ErrFolderTaken is returned when a new bot's or project's folder is
+// another's, whatever the case.
+var ErrFolderTaken = errors.New("another bot or project already has that folder")
 
 // DB is an open store. The repositories of the sub-packages are embedded,
 // so their methods are the store's.

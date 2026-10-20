@@ -190,6 +190,30 @@ var migrations = []string{
 	// The introduction a bot was hired with, as JSON; empty for a bot hired
 	// before introductions existed, which the store reads as an assembled one.
 	`ALTER TABLE bots ADD COLUMN introduction TEXT NOT NULL DEFAULT '';`,
+
+	// Projects, and the project a conversation belongs to. A proposed
+	// project has no folder and no conversation yet.
+	`CREATE TABLE projects (
+		id                          TEXT PRIMARY KEY,
+		name                        TEXT NOT NULL,
+		goal                        TEXT NOT NULL DEFAULT '',
+		context                     TEXT NOT NULL DEFAULT '',
+		done_looks_like             TEXT NOT NULL DEFAULT '',
+		done_when                   TEXT NOT NULL DEFAULT '',
+		state                       INTEGER NOT NULL,
+		target_date                 TEXT NOT NULL DEFAULT '',
+		folder_path                 TEXT NOT NULL DEFAULT '',
+		proposed_by_bot_id          TEXT REFERENCES bots(id) ON DELETE SET NULL,
+		proposed_in_conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+		created_at                  INTEGER NOT NULL,
+		activated_at                INTEGER,
+		done_at                     INTEGER,
+		archived_at                 INTEGER,
+		updated_at                  INTEGER NOT NULL
+	);
+	CREATE INDEX projects_state ON projects(state);
+	ALTER TABLE conversations ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE CASCADE;
+	CREATE INDEX conversations_project ON conversations(project_id);`,
 }
 
 // Count is the number of steps, the version a current file records.

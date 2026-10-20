@@ -18,7 +18,7 @@ func (db *DB) Conversations(ctx context.Context, botID string) ([]org.Conversati
 
 // conversationSelect reads a conversation and its newest run; a caller adds
 // the WHERE.
-const conversationSelect = `SELECT c.id, c.kind, COALESCE(c.bot_id, ''), c.title, c.created_at, c.updated_at,
+const conversationSelect = `SELECT c.id, c.kind, COALESCE(c.bot_id, ''), COALESCE(c.project_id, ''), c.title, c.created_at, c.updated_at,
 		c.summary, c.summary_through_seq,
 		r.id, r.conversation_id, r.bot_id, r.state, r.steps, r.failure, r.started_at, r.ended_at
 		FROM conversations c
@@ -52,7 +52,7 @@ func scanConversation(row sqlrow.Scanner) (org.Conversation, error) {
 		state, steps  sql.NullInt64
 		failure       sql.NullString
 	}
-	err := row.Scan(&c.ID, &c.Kind, &c.BotID, &c.Title, &created, &updated,
+	err := row.Scan(&c.ID, &c.Kind, &c.BotID, &c.ProjectID, &c.Title, &created, &updated,
 		&c.Summary, &c.SummaryThroughSeq,
 		&run.id, &run.conv, &run.bot, &run.state, &run.steps, &run.failure, &started, &ended)
 	c.CreatedAt, c.UpdatedAt = sqlrow.FromMillis(created), sqlrow.FromMillis(updated)

@@ -37,6 +37,29 @@ func BotFolder(root, name string) string {
 	return filepath.Join(root, org.FolderName(name))
 }
 
+// projects is the folder every project's folder sits in.
+const projects = "Projects"
+
+// ProjectFolder is the folder a project named name keeps its deliverables in
+// under root. The name takes a bot's sanitising, so it is one path element.
+func ProjectFolder(root, name string) string {
+	return filepath.Join(root, projects, org.FolderName(name))
+}
+
+// EnsureFolder creates path and any parents it lacks, refusing a path
+// outside root (see Resolve). Projects/ is made with the first project, not
+// by Ensure.
+func EnsureFolder(root, path string) error {
+	real, err := Resolve(root, path)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(real, 0o755); err != nil {
+		return fmt.Errorf("workspace: %w", err)
+	}
+	return nil
+}
+
 // Resolve turns requested, relative to root or absolute, into the absolute
 // path it names on disk with every existing symlink followed, and refuses it
 // with ErrOutside when that path is not root or under it. The path need not

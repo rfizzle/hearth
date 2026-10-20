@@ -142,12 +142,12 @@ func TestEnumValuesAreStable(t *testing.T) {
 	got := []int{
 		int(TierFast), int(TierBalanced), int(TierBest),
 		int(BotIdle), int(BotWorking),
-		int(ConversationDM),
+		int(ConversationDM), int(ConversationProject),
 		int(MessageText), int(MessageToolCall), int(MessageToolResult), int(MessageSystem),
 		int(RunQueued), int(RunWorking), int(RunDone), int(RunFailed), int(RunCancelled),
 		int(ModeNotGranted), int(ModeAsk), int(ModeAllowed),
 	}
-	want := []int{1, 2, 3, 1, 2, 1, 1, 2, 3, 9, 1, 2, 4, 5, 6, 0, 1, 2}
+	want := []int{1, 2, 3, 1, 2, 1, 4, 1, 2, 3, 9, 1, 2, 4, 5, 6, 0, 1, 2}
 	if !slices.Equal(got, want) {
 		t.Fatalf("enum values = %v, want %v", got, want)
 	}

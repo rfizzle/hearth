@@ -17,6 +17,7 @@ var releasedMigrations = []string{
 	"2b92f32667289f55", // 3: notes, handbook pages, usage, budgets, tiers, summaries, bot override, attachments
 	"6e62aca3a00a7458", // 4: the bot scope
 	"b16341ff8d3c542d", // 5: the bot introduction
+	"b1701ae70031409e", // 6: projects, and the project a conversation belongs to
 }
 
 func migrationDigest(m string) string {

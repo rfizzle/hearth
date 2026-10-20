@@ -133,3 +133,32 @@ func TestResolve_ARootBehindASymlink(t *testing.T) {
 		t.Fatal("Resolve accepted a relative root")
 	}
 }
+
+func TestProjectFolder_IsOneElementUnderProjects(t *testing.T) {
+	root := realTempDir(t)
+	for _, name := range []string{"Launch", "../x", "a/b", "..", "Inbox"} {
+		got := ProjectFolder(root, name)
+		if filepath.Dir(got) != filepath.Join(root, "Projects") {
+			t.Errorf("ProjectFolder(%q) = %q, want one element under Projects", name, got)
+		}
+	}
+}
+
+func TestEnsureFolder(t *testing.T) {
+	root := realTempDir(t)
+	folder := ProjectFolder(root, "../x")
+	for range 2 {
+		if err := EnsureFolder(root, folder); err != nil {
+			t.Fatalf("EnsureFolder: %v", err)
+		}
+	}
+	if info, err := os.Stat(folder); err != nil || !info.IsDir() {
+		t.Fatalf("folder: %v", err)
+	}
+	if err := EnsureFolder(root, filepath.Join(root, "..", "elsewhere")); !errors.Is(err, ErrOutside) {
+		t.Fatalf("EnsureFolder outside the root = %v, want ErrOutside", err)
+	}
+	if err := EnsureFolder(root, "Projects/../../elsewhere"); !errors.Is(err, ErrOutside) {
+		t.Fatalf("EnsureFolder escaping = %v, want ErrOutside", err)
+	}
+}
