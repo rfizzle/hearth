@@ -57,7 +57,7 @@ public enum Fixtures {
         $0.jobDescription = templates[0].jobDescription
         $0.tier = .balanced
         $0.status = .idle
-        $0.avatar = "magnifyingglass"
+        $0.avatar = ""
         $0.folderPath = workspacePath + "/Dana"
         $0.dmConversationID = "conversation-dana"
     }
