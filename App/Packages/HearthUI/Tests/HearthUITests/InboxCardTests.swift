@@ -47,3 +47,25 @@ import Testing
     #expect(FailureCard.PreviewState.open.item.effect == Fixtures.failedRun.failure)
     #expect(FailureCard.PreviewState.closed.state == .closed("Acknowledged", .neutral))
 }
+
+@MainActor
+@Test func whileTheOwnerIsAskedSendIsHeldAndTheLineSaysSo() {
+    #expect(!Composer.canSend(draft: "Add a section.", isWorking: false, isWaiting: true))
+    #expect(Composer.canSend(draft: "Add a section.", isWorking: false, isWaiting: false))
+    let name = Fixtures.bot.name
+    let waiting = RunStatusLine.PreviewState.waiting.run
+    #expect(RunStatusLine.text(run: waiting, botName: name) == "Dana is waiting for you")
+    #expect(RunStatusLine.tone(run: waiting) == .attention)
+    #expect(
+        RunStatusLine.text(run: nil, botName: name, isWaiting: true) == "Dana is waiting for you")
+    #expect(RunStatusLine.tone(run: nil, isWaiting: true) == .attention)
+    #expect(RunStatusLine.tone(run: Fixtures.failedRun) == .negative)
+    #expect(RunStatusLine.tone(run: Fixtures.workingRun) == .neutral)
+}
+
+@MainActor
+@Test func anAnsweredRequestIsALineAndTheDecisionANotice() {
+    #expect(MessageRow.PreviewState.askedApproval.message.kind == .approvalRequest)
+    #expect(MessageRow.PreviewState.decision.message.kind == .approvalDecision)
+    #expect(MessageRow(previewState: .decision).isOwner)
+}

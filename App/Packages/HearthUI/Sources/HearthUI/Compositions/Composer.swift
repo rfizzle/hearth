@@ -11,8 +11,12 @@
 // has no height of its own and fills the whole bar. The draft is presentation
 // state and clears once the send succeeds, so a refused message is still
 // there to try again. Send and Stop are one round button whose symbol replaces
-// itself, so the pointer target stays put.
-// See docs/design.md#materials and docs/design.md#motion
+// itself, so the pointer target stays put. While the conversation waits for
+// the owner to answer a card above it, the field is disabled and says so in
+// place of its label, and Send stays disabled: the core takes no message
+// until the answer.
+// See docs/design.md#materials, docs/design.md#motion and
+// docs/model.md#8-approvals
 
 import HearthDesign
 import SwiftUI
@@ -21,6 +25,7 @@ import SwiftUI
 public struct Composer: View {
     let label: String
     let isWorking: Bool
+    let waitingPrompt: String?
     let onSend: (String) async -> Bool
     let onStop: () -> Void
 
@@ -28,16 +33,19 @@ public struct Composer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A composer labelled `label` ("Message Dana"); `isWorking` while the
-    /// conversation's run has not ended.
+    /// conversation's run has not ended, and `waitingPrompt` ("Answer Dana
+    /// above first") while it waits for the owner.
     public init(
         label: String,
         isWorking: Bool,
+        waitingPrompt: String? = nil,
         draft: String = "",
         onSend: @escaping (String) async -> Bool,
         onStop: @escaping () -> Void
     ) {
         self.label = label
         self.isWorking = isWorking
+        self.waitingPrompt = waitingPrompt
         self.onSend = onSend
         self.onStop = onStop
         _draft = State(initialValue: draft)
@@ -59,17 +67,20 @@ public struct Composer: View {
                 .controlSize(.large)
                 .contentTransition(.symbolEffect(.replace))
                 .keyboardShortcut(stops ? KeyboardShortcut(".", modifiers: .command) : nil)
-                .disabled(!stops && !Self.canSend(draft: draft, isWorking: isWorking))
+                .disabled(!stops && !canSend)
                 .help(stops ? "Stop (⌘.)" : "Send (Return)")
             }
         }
         .animation(Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: isWorking)
+        .animation(
+            Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: waitingPrompt != nil
+        )
         .padding(.horizontal, Theme.Spacing.lg)
         .padding(.bottom, Theme.Spacing.md)
     }
 
     private var editor: some View {
-        TextField(label, text: $draft, axis: .vertical)
+        TextField(waitingPrompt ?? label, text: $draft, axis: .vertical)
             .textFieldStyle(.plain)
             .lineLimit(1...8)
             .font(Theme.body)
@@ -77,7 +88,8 @@ public struct Composer: View {
             .padding(.horizontal, Theme.Spacing.md)
             .padding(.vertical, Theme.Spacing.sm)
             .glassEffect(.regular, in: .rect(cornerRadius: Theme.Radius.lg))
-            .accessibilityLabel(label)
+            .accessibilityLabel(waitingPrompt ?? label)
+            .disabled(waitingPrompt != nil)
             .onKeyPress(keys: [.return], phases: .down) { press in
                 if press.modifiers.contains(.shift) { return .ignored }
                 send()
@@ -85,8 +97,12 @@ public struct Composer: View {
             }
     }
 
+    private var canSend: Bool {
+        Self.canSend(draft: draft, isWorking: isWorking, isWaiting: waitingPrompt != nil)
+    }
+
     private func send() {
-        guard Self.canSend(draft: draft, isWorking: isWorking) else { return }
+        guard canSend else { return }
         let sent = draft
         Task {
             // Typing during the call keeps what was typed.
@@ -96,9 +112,11 @@ public struct Composer: View {
         }
     }
 
-    /// Whether Send is enabled: nothing is running and the draft is not blank.
-    static func canSend(draft: String, isWorking: Bool) -> Bool {
-        !isWorking && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    /// Whether Send is enabled: nothing is running or waiting for the owner,
+    /// and the draft is not blank.
+    static func canSend(draft: String, isWorking: Bool, isWaiting: Bool = false) -> Bool {
+        !isWorking && !isWaiting
+            && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Whether Stop is shown: only while a run works.
@@ -114,10 +132,11 @@ extension Composer {
         case drafted
         case threeLines
         case working
+        case waiting
 
         var draft: String {
             switch self {
-            case .empty: ""
+            case .empty, .waiting: ""
             case .drafted, .working: "Add a section on running costs."
             case .threeLines:
                 "Add a section on running costs.\nKeep it to one paragraph.\nUse pounds, not dollars."
@@ -128,7 +147,8 @@ extension Composer {
     /// A composer showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
-            label: "Message Dana", isWorking: state == .working, draft: state.draft,
+            label: "Message Dana", isWorking: state == .working,
+            waitingPrompt: state == .waiting ? "Answer Dana above first" : nil, draft: state.draft,
             onSend: { _ in true }, onStop: {})
     }
 }
@@ -137,3 +157,4 @@ extension Composer {
 #Preview("Drafted") { Composer(previewState: .drafted).padding() }
 #Preview("Three lines") { Composer(previewState: .threeLines).padding() }
 #Preview("Working") { Composer(previewState: .working).padding() }
+#Preview("Waiting") { Composer(previewState: .waiting).padding() }

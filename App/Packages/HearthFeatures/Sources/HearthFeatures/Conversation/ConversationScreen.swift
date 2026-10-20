@@ -8,9 +8,12 @@
 // conversation with nothing in it says hello instead. Show in Finder reaches
 // the revealInFinder action the app target sets. Only the owner's own send
 // moves in; everything from the core appears in place, and the empty state
-// fades out.
-// See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run
-// and docs/design.md#motion
+// fades out. An approval or a question the run parked on stands in the thread
+// as its Inbox card while it is open, and as a quiet line once answered;
+// meanwhile the status line says the bot is waiting and the composer asks
+// for the answer instead of a message.
+// See docs/design.md#the-transcript, docs/design.md#empty-states-and-first-run,
+// docs/design.md#motion and docs/model.md#owner-interaction
 
 import HearthDesign
 import HearthKit
@@ -94,6 +97,8 @@ public struct ConversationScreen: View {
                     case .tool(let call, _, let result):
                         ToolCallRow(call: call, result: result)
                             .transition(.identity)
+                    case .request(let message, let item):
+                        request(message, item: item)
                     }
                 }
             }
@@ -109,9 +114,21 @@ public struct ConversationScreen: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
     }
 
+    /// An open request as its card, acting through the Inbox; an answered one
+    /// as its message.
+    @ViewBuilder
+    private func request(_ message: Hearth_V1_Message, item: Hearth_V1_InboxItem?) -> some View {
+        if let item, let inbox = store.inbox {
+            InboxItemCard(
+                store: inbox, item: item, bot: bot, isDefault: item.id == store.waitingItem?.id)
+        } else {
+            MessageRow(message: message, author: message.authorBotID.isEmpty ? nil : bot)
+        }
+    }
+
     /// The owner's own message, which moves in; a system notice is the core's.
     private static func isSend(_ message: Hearth_V1_Message) -> Bool {
-        message.authorBotID.isEmpty && message.kind != .system
+        message.authorBotID.isEmpty && message.kind == .text
     }
 
     private static let sendTransition = AnyTransition.move(edge: .bottom)
@@ -119,7 +136,7 @@ public struct ConversationScreen: View {
 
     private var bar: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            RunStatusLine(run: store.run, botName: bot.name)
+            RunStatusLine(run: store.run, botName: bot.name, isWaiting: store.isWaiting)
                 .padding(.horizontal, Theme.Spacing.lg)
             if let error = store.error, loaded {
                 Text(error)
@@ -128,7 +145,9 @@ public struct ConversationScreen: View {
                     .padding(.horizontal, Theme.Spacing.lg)
             }
             Composer(
-                label: "Message \(bot.name)", isWorking: store.isWorking,
+                label: "Message \(bot.name)",
+                isWorking: store.isWorking && !store.isWaiting,
+                waitingPrompt: store.waitingPrompt(botName: bot.name),
                 onSend: { text in await store.send(text) },
                 onStop: { Task { await store.cancel() } })
         }

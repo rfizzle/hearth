@@ -169,6 +169,77 @@ private struct After {
     #expect(!store.isWorking)
 }
 
+/// Where the conversation is after one event of the park script.
+private struct Parked {
+    let run: Hearth_V1_RunState
+    let waiting: Bool
+    let card: Bool
+}
+
+@MainActor
+@Test func aParkedRunWaitsWithItsCardAndResumesOnceAnswered() async {
+    let relay = EventRelay(client: PreviewClient())
+    let inbox = InboxStore(client: PreviewClient(), relay: relay)
+    let store = ConversationStore(
+        client: PreviewClient(), relay: relay, conversationID: Fixtures.dmConversation.id,
+        inbox: inbox)
+    await store.load()
+    await store.handle(.with { $0.event = .runChanged(.with { $0.run = Fixtures.workingRun }) })
+    #expect(store.isWorking)
+    #expect(!store.isWaiting)
+    #expect(store.waitingPrompt(botName: Fixtures.bot.name) == nil)
+
+    var card: Hearth_V1_InboxItem? {
+        store.rows.compactMap { row -> Hearth_V1_InboxItem? in
+            guard case .request(_, let item) = row else { return nil }
+            return item
+        }.first
+    }
+    let expected: [Parked] = [
+        Parked(run: .waitingOwner, waiting: true, card: false),
+        Parked(run: .waitingOwner, waiting: true, card: false),
+        Parked(run: .waitingOwner, waiting: true, card: true),
+        Parked(run: .waitingOwner, waiting: true, card: false),
+        Parked(run: .waitingOwner, waiting: true, card: false),
+        Parked(run: .waitingOwner, waiting: true, card: false),
+        Parked(run: .working, waiting: false, card: false),
+        Parked(run: .done, waiting: false, card: false),
+    ]
+    #expect(expected.count == Fixtures.parkEvents.count)
+    for (event, after) in zip(Fixtures.parkEvents, expected) {
+        await inbox.handle(event)
+        await store.handle(event)
+        let step = "after event \(event.sequence)"
+        #expect(store.run?.state == after.run, "\(step)")
+        #expect(store.isWaiting == after.waiting, "\(step)")
+        #expect((card?.id == Fixtures.approval.id) == after.card, "\(step)")
+        #expect(
+            store.waitingPrompt(botName: Fixtures.bot.name)
+                == (after.waiting ? "Answer Dana above first" : nil), "\(step)")
+    }
+    // The request stays in the thread as a line, the decision as a notice.
+    let kinds = store.messages.map(\.kind)
+    #expect(kinds.contains(.approvalRequest))
+    #expect(kinds.contains(.approvalDecision))
+    #expect(store.messages.count == Fixtures.dmMessages.count + 3)
+}
+
+@MainActor
+@Test func anOpenItemHoldsTheConversationEvenWhenTheRunIsForgotten() async {
+    let relay = EventRelay(client: PreviewClient())
+    let inbox = InboxStore(client: PreviewClient(), relay: relay)
+    await inbox.load()
+    let store = ConversationStore(
+        client: PreviewClient(), relay: relay, conversationID: Fixtures.dmConversation.id,
+        inbox: inbox)
+    #expect(store.run == nil)
+    #expect(store.waitingItem?.id == Fixtures.approval.id)
+    #expect(store.isWaiting)
+    let elsewhere = ConversationStore(
+        client: PreviewClient(), relay: relay, conversationID: "conversation-other", inbox: inbox)
+    #expect(!elsewhere.isWaiting)
+}
+
 @MainActor
 @Test func aResyncForgetsTheRunUntilTheCoreReportsItAgain() async {
     let store = store()

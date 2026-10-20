@@ -6,6 +6,12 @@
 // forgets the run until the core reports it again. Send
 // and Stop are calls; the store decides nothing about either.
 // See docs/architecture.md#3-the-contract-sketch
+//
+// An approval request or a question in the thread is joined by message id to
+// the Inbox's open items, so while one is open the thread draws its card; the
+// conversation then waits for the owner and Send is held, since the core
+// refuses a message while a run waits on an answer.
+// See docs/model.md#8-approvals
 
 import Foundation
 import HearthKit
@@ -21,17 +27,23 @@ public final class ConversationStore {
         case message(Hearth_V1_Message)
         /// A tool call and, once it has arrived, its result.
         case tool(call: Hearth_V1_ToolCall, id: String, result: Hearth_V1_Message?)
+        /// An approval request or a question, with its Inbox item while that
+        /// is open.
+        case request(Hearth_V1_Message, item: Hearth_V1_InboxItem?)
 
         public var id: String {
             switch self {
             case .message(let message): message.id
             case .tool(_, let id, _): id
+            case .request(let message, _): message.id
             }
         }
     }
 
     /// The conversation this store follows.
     public let conversationID: String
+    /// What waits on the owner, joined to the thread; nil draws no cards.
+    public let inbox: InboxStore?
     /// The loaded messages, ascending by seq.
     public private(set) var messages: [Hearth_V1_Message] = []
     /// Whether the core holds messages older than the first loaded.
@@ -47,14 +59,17 @@ public final class ConversationStore {
     @ObservationIgnored private let relay: EventRelay
     @ObservationIgnored private var registration: EventRelay.Registration?
 
-    /// A store for `conversationID` over `client`, fed by `relay`; a
-    /// `pageSize` of 0 asks for the core's default page.
+    /// A store for `conversationID` over `client`, fed by `relay`, with the
+    /// open items from `inbox`; a `pageSize` of 0 asks for the core's default
+    /// page.
     public init(
-        client: any HearthClient, relay: EventRelay, conversationID: String, pageSize: Int32 = 0
+        client: any HearthClient, relay: EventRelay, conversationID: String,
+        inbox: InboxStore? = nil, pageSize: Int32 = 0
     ) {
         self.client = client
         self.relay = relay
         self.conversationID = conversationID
+        self.inbox = inbox
         self.pageSize = pageSize
         registration = relay.register { [weak self] event in await self?.handle(event) }
     }
@@ -71,8 +86,26 @@ public final class ConversationStore {
         }
     }
 
+    /// The open approval or question the run waits on, if there is one.
+    public var waitingItem: Hearth_V1_InboxItem? {
+        inbox?.waitingItem(inConversation: conversationID)
+    }
+
+    /// Whether the conversation waits for the owner: an item is open, or the
+    /// core says the run waits.
+    public var isWaiting: Bool {
+        waitingItem != nil || run?.state == .waitingOwner
+    }
+
+    /// What the composer says in place of a message while the conversation
+    /// waits for the owner, or nil when it does not.
+    public func waitingPrompt(botName: String) -> String? {
+        isWaiting ? "Answer \(botName) above first" : nil
+    }
+
     /// The transcript as rows: each tool call carries its result, matched by
-    /// call id, and a result whose call is not loaded stands alone.
+    /// call id, and a result whose call is not loaded stands alone; a request
+    /// carries its item while that is open.
     public var rows: [Row] {
         let results = Dictionary(
             messages.filter { $0.kind == .toolResult }.map { ($0.tool.callID, $0) },
@@ -85,6 +118,8 @@ public final class ConversationStore {
             case .toolResult:
                 calls.contains(message.tool.callID)
                     ? nil : .tool(call: message.tool, id: message.id, result: message)
+            case .approvalRequest, .question:
+                .request(message, item: inbox?.openItem(forMessage: message.id))
             default:
                 .message(message)
             }

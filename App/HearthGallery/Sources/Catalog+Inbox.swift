@@ -1,7 +1,10 @@
 // What waits on the owner: the decision bar in its wide and narrow layouts,
-// and the approval, question and failure cards in each state.
+// the approval, question and failure cards in each state, and a conversation
+// whose run waits on the owner with the card in the thread.
 
 import HearthDesign
+import HearthFeatures
+import HearthKit
 import HearthUI
 import SwiftUI
 
@@ -32,5 +35,36 @@ extension Catalog {
                     FailureCard(previewState: $0)
                 }),
         ]
+    }
+}
+
+extension Catalog {
+    /// Dana has parked at the delete: the run waits, the request is in the
+    /// thread and the Inbox; the stream stays open.
+    static func conversationWaiting() -> GalleryState {
+        let client = PreviewClient()
+        let arrived = Array(Fixtures.parkEvents.prefix(3))
+        let relay = EventRelay(subscribe: { after in
+            AsyncThrowingStream { continuation in
+                for event in arrived where event.sequence > after { continuation.yield(event) }
+                // Left open on purpose: the run is still waiting.
+                Task {
+                    try? await Task.sleep(for: .seconds(86_400))
+                    continuation.finish()
+                }
+            }
+        })
+        let inbox = InboxStore(client: client, relay: relay)
+        let store = ConversationStore(
+            client: client, relay: relay, conversationID: Fixtures.dmConversation.id,
+            inbox: inbox)
+        Task {
+            await store.load()
+            relay.start()
+        }
+        return GalleryState(
+            name: "waiting", width: 600,
+            view: AnyView(
+                ConversationScreen(store: store, bot: Fixtures.bot).frame(height: 520)))
     }
 }

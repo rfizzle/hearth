@@ -7,8 +7,11 @@
 // streaming and parsed inline Markdown once it is complete; tables and code
 // blocks wait for a Markdown package. There is no streaming cursor: the status
 // line is the one working signal. The name and time read as one element; the
-// Avatar is hidden, since the name says who wrote it.
-// See docs/design.md#the-transcript
+// Avatar is hidden, since the name says who wrote it. An approval request the
+// owner has answered is a quiet line under the bot's turn saying what it
+// asked to do (an open one is its card, which the screen draws instead), and
+// the owner's decision is a notice like a system message.
+// See docs/design.md#the-transcript and docs/model.md#8-approvals
 
 import HearthDesign
 import HearthKit
@@ -18,6 +21,10 @@ import SwiftUI
 public struct MessageRow: View {
     let message: Hearth_V1_Message
     let author: Hearth_V1_Bot?
+
+    /// Under the bot's name: the avatar's width and the gap after it.
+    @ScaledMetric(relativeTo: .body) private var indent: CGFloat =
+        Theme.Size.avatar + Theme.Spacing.sm
 
     /// A row for `message`; `author` is the bot that wrote it, nil for the
     /// owner.
@@ -31,8 +38,10 @@ public struct MessageRow: View {
     }
 
     public var body: some View {
-        if message.kind == .system {
+        if message.kind == .system || message.kind == .approvalDecision {
             notice
+        } else if message.kind == .approvalRequest {
+            askedLine
         } else if isOwner {
             ownerBubble
         } else {
@@ -117,6 +126,20 @@ public struct MessageRow: View {
             .textSelection(.enabled)
     }
 
+    private var askedLine: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            Image(systemName: "hand.raised").accessibilityHidden(true)
+            Text(message.content)
+                .lineLimit(2)
+        }
+        .font(Theme.callout)
+        .foregroundStyle(Theme.color(.textSecondary))
+        .padding(.leading, indent)
+        .frame(maxWidth: Theme.Size.readableWidth, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Asked: \(message.content)")
+    }
+
     private var notice: some View {
         HStack(spacing: Theme.Spacing.xs) {
             Image(systemName: "info.circle").accessibilityHidden(true)
@@ -146,6 +169,8 @@ extension MessageRow {
         case complete
         case withFile
         case system
+        case askedApproval
+        case decision
 
         var message: Hearth_V1_Message {
             switch self {
@@ -174,6 +199,10 @@ extension MessageRow {
                 return message
             case .system:
                 return Fixtures.dmMessages[1]
+            case .askedApproval:
+                return Fixtures.approvalRequest
+            case .decision:
+                return Fixtures.approvalDecision
             }
         }
     }
@@ -191,3 +220,5 @@ extension MessageRow {
 #Preview("Complete") { MessageRow(previewState: .complete).padding() }
 #Preview("With a file") { MessageRow(previewState: .withFile).padding() }
 #Preview("System") { MessageRow(previewState: .system).padding() }
+#Preview("Asked for approval") { MessageRow(previewState: .askedApproval).padding() }
+#Preview("Decision") { MessageRow(previewState: .decision).padding() }

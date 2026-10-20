@@ -24,7 +24,7 @@ extension Catalog {
                 package: package, name: "BotList", states: botListStates),
             GalleryPage(
                 package: package, name: "ConversationScreen",
-                states: [conversationMidStream(), conversationEmpty()]),
+                states: [conversationMidStream(), conversationWaiting(), conversationEmpty()]),
         ]
     }
 

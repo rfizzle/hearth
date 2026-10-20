@@ -1,0 +1,243 @@
+// InboxStore holds what waits on the owner as the core last listed it: the
+// open items, newest first, and for each bot with an approval its grants, so a
+// card offers Always Allow only where the core says the capability can stand.
+// It fetches the list, applies each inbox change the relay delivers (an open
+// item joins, a closed one leaves), keeps grants current, and refetches on a
+// resync. Decide, answer, acknowledge and retry are calls; while one is in
+// flight its card waits, and once the core answers the card shows the core's
+// outcome until the item's closing change removes it. The store decides
+// nothing about any of them. The sidebar's count, the Inbox screen and the
+// conversation's cards read it.
+// See docs/model.md#owner-interaction and docs/model.md#8-approvals
+
+import Foundation
+import HearthDesign
+import HearthKit
+import HearthUI
+import Observation
+
+/// The store behind the Inbox.
+@MainActor
+@Observable
+public final class InboxStore {
+    /// The Inbox's two groups.
+    public enum Section: String, CaseIterable, Identifiable, Sendable {
+        /// Approvals and questions: a run waits on them.
+        case needsDecision = "Needs a decision"
+        /// Failures and budgets: nothing waits, the owner notes them.
+        case toNote = "To note"
+
+        public var id: String { rawValue }
+
+        /// Whether an item of `kind` belongs here.
+        func holds(_ kind: Hearth_V1_InboxKind) -> Bool {
+            switch kind {
+            case .approval, .question: self == .needsDecision
+            default: self == .toNote
+            }
+        }
+    }
+
+    /// The open items, newest first.
+    public private(set) var items: [Hearth_V1_InboxItem] = []
+    /// Whether the first list has come back.
+    public private(set) var loaded = false
+    /// The last failed call's text, if one failed.
+    public private(set) var error: String?
+
+    /// Items with a call in flight.
+    private(set) var pending: Set<String> = []
+    /// The core's answer for an item still listed, until its change arrives.
+    private(set) var answered: [String: Hearth_V1_InboxItem] = [:]
+    /// Each bot's grants, for the bots with an approval.
+    private var grants: [String: [Hearth_V1_Grant]] = [:]
+
+    private let client: any HearthClient
+    @ObservationIgnored private let relay: EventRelay
+    @ObservationIgnored private var registration: EventRelay.Registration?
+
+    /// A store over `client`, fed by `relay`.
+    public init(client: any HearthClient, relay: EventRelay) {
+        self.client = client
+        self.relay = relay
+        registration = relay.register { [weak self] event in await self?.handle(event) }
+    }
+
+    isolated deinit {
+        if let registration { relay.unregister(registration) }
+    }
+
+    /// How many items are open: the sidebar's count.
+    public var openCount: Int {
+        items.count
+    }
+
+    /// The open items in `section`, newest first.
+    public func items(in section: Section) -> [Hearth_V1_InboxItem] {
+        items.filter { section.holds($0.kind) }
+    }
+
+    /// The sections that hold anything, in order.
+    public var sections: [Section] {
+        Section.allCases.filter { !items(in: $0).isEmpty }
+    }
+
+    /// The open item standing behind the thread message `messageID`.
+    public func openItem(forMessage messageID: String) -> Hearth_V1_InboxItem? {
+        items.first { $0.messageID == messageID }
+    }
+
+    /// The newest open approval or question in `conversationID`: what its run
+    /// waits on.
+    public func waitingItem(inConversation conversationID: String) -> Hearth_V1_InboxItem? {
+        items.first {
+            $0.conversationID == conversationID && Section.needsDecision.holds($0.kind)
+        }
+    }
+
+    /// Where `item`'s card is.
+    public func state(of item: Hearth_V1_InboxItem) -> InboxCardState {
+        if let closed = answered[item.id] {
+            return .closed(Self.outcome(closed), Self.tone(closed))
+        }
+        return pending.contains(item.id) ? .deciding : .open
+    }
+
+    /// Whether `item`'s card offers Always Allow: every grant behind its
+    /// call's capability says it can stand.
+    public func canAlwaysAllow(_ item: Hearth_V1_InboxItem) -> Bool {
+        guard item.kind == .approval, let capability = Self.capability(forTool: item.call.name)
+        else { return false }
+        let behind = (grants[item.botID] ?? []).filter { $0.capability == capability }
+        return !behind.isEmpty && behind.allSatisfy(\.canAllow)
+    }
+
+    /// Fetches the open items, and the grants of each bot with an approval.
+    public func load() async {
+        do {
+            let fetched = try await client.listInbox(includeClosed: false)
+            items = Self.newestFirst(fetched.filter { $0.state == .open })
+            answered = answered.filter { id, _ in items.contains { $0.id == id } }
+            loaded = true
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+            return
+        }
+        await loadGrants()
+    }
+
+    /// Answers the approval `item` with `decision`; `reason` goes with a deny.
+    public func decide(
+        _ item: Hearth_V1_InboxItem, _ decision: Hearth_V1_Decision, reason: String = ""
+    ) async {
+        await call(item) {
+            try await self.client.decide(itemID: item.id, decision, reason: reason).item
+        }
+    }
+
+    /// Replies `text` to the question `item`.
+    public func answer(_ item: Hearth_V1_InboxItem, _ text: String) async {
+        await call(item) { try await self.client.answer(itemID: item.id, text).item }
+    }
+
+    /// Closes the notice `item`.
+    public func acknowledge(_ item: Hearth_V1_InboxItem) async {
+        await call(item) { try await self.client.acknowledge(itemID: item.id) }
+    }
+
+    /// Runs the failed run behind `item` again; the core closes the item.
+    public func retry(_ item: Hearth_V1_InboxItem) async {
+        await call(item) {
+            _ = try await self.client.retry(runID: item.runID)
+            var retried = item
+            retried.state = .closed
+            retried.outcome = "Trying again"
+            return retried
+        }
+    }
+
+    /// Applies one event from the relay.
+    func handle(_ event: Hearth_V1_SubscribeResponse) async {
+        switch event.event {
+        case .inboxChanged(let change):
+            apply(change.item)
+            // A bot's first approval needs its grants; known ones are kept.
+            if change.item.state == .open { await loadGrants() }
+        case .grantsChanged(let change):
+            grants[change.botID] = change.grants
+        case .resync:
+            await load()
+        default:
+            break
+        }
+    }
+
+    private func apply(_ item: Hearth_V1_InboxItem) {
+        items.removeAll { $0.id == item.id }
+        if item.state == .open {
+            items = Self.newestFirst(items + [item])
+        } else {
+            answered[item.id] = nil
+            pending.remove(item.id)
+        }
+    }
+
+    /// Runs one call for `item`: the card waits while it is in flight and
+    /// shows the core's answer once it comes back.
+    private func call(
+        _ item: Hearth_V1_InboxItem, _ body: () async throws -> Hearth_V1_InboxItem
+    ) async {
+        guard items.contains(where: { $0.id == item.id }), !pending.contains(item.id),
+            answered[item.id] == nil
+        else { return }
+        pending.insert(item.id)
+        defer { pending.remove(item.id) }
+        do {
+            let closed = try await body()
+            // The closing change may have beaten the answer here.
+            if items.contains(where: { $0.id == item.id }) {
+                answered[item.id] = closed
+            }
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    private func loadGrants() async {
+        let bots = Set(items.filter { $0.kind == .approval }.map(\.botID))
+        for bot in bots where grants[bot] == nil {
+            // Without them the card offers no Always Allow, the safe side.
+            grants[bot] = try? await client.listGrants(botID: bot)
+        }
+    }
+
+    private static func newestFirst(_ items: [Hearth_V1_InboxItem]) -> [Hearth_V1_InboxItem] {
+        items.sorted { $0.createdAt.date > $1.createdAt.date }
+    }
+
+    /// The outcome's tone: positive when the run goes on with what the owner
+    /// allowed or said, quiet for a deny or a notice.
+    static func tone(_ item: Hearth_V1_InboxItem) -> Tone {
+        item.decision == .deny || !Section.needsDecision.holds(item.kind) ? .neutral : .positive
+    }
+
+    /// What a closed card says: the core's outcome, else that it is done.
+    static func outcome(_ item: Hearth_V1_InboxItem) -> String {
+        item.outcome.isEmpty ? "Done" : item.outcome
+    }
+
+    /// The capability a tool's calls are granted under, as the Access sheet
+    /// names them; nil for a tool that has no standing grant.
+    static func capability(forTool name: String) -> Hearth_V1_Capability? {
+        switch name {
+        case "files.read": .filesRead
+        case "files.write": .filesWrite
+        case "files.delete": .filesDelete
+        case "web.fetch": .webFetch
+        case "web.search": .webSearch
+        default: nil
+        }
+    }
+}
