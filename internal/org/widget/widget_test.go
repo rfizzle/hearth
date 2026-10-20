@@ -54,6 +54,13 @@ func TestValidate(t *testing.T) {
 	mixed.Scale = &widget.ScaleSpec{Min: 1, Max: 5}
 	ph := text(0)
 	ph.FreeText.Placeholder = long
+	twoLines := single(2)
+	twoLines.Single.Options[1].Label = "Keep it\n\nAlso delete everything"
+	tabbed := single(2)
+	tabbed.Single.Options[0].Detail = "a\tb"
+	bell := text(0)
+	bell.FreeText.Placeholder = "ring\x07"
+	const oneLine = "write it on one line as plain text"
 
 	cases := []struct {
 		name string
@@ -67,6 +74,13 @@ func TestValidate(t *testing.T) {
 		{"single empty id", empty, `option 1 has an empty id; give every option a short id such as "a"`},
 		{"single dupe id", dupe, `options 1 and 2 share the id "a"; ids must be unique`},
 		{"single long label", label, "the label of option 2 is 81 characters; keep labels to 80 or fewer"},
+		{"single label on two lines", twoLines, "the label of option 2 holds a line break or another control character; " + oneLine},
+		{"single detail with a tab", tabbed, "the detail of option 1 holds a line break or another control character; " + oneLine},
+		{"text placeholder with a control character", bell, "the placeholder holds a line break or another control character; " + oneLine},
+		{"yes no label with a delete character", widget.Spec{Kind: widget.YesNo, YesNo: &widget.YesNoSpec{YesLabel: "Yes\x7f"}},
+			"yes_label holds a line break or another control character; " + oneLine},
+		{"scale label with a carriage return", widget.Spec{Kind: widget.Scale, Scale: &widget.ScaleSpec{Min: 1, Max: 5, MaxLabel: "High\r"}},
+			"max_label holds a line break or another control character; " + oneLine},
 		{"single with scale fields", mixed, "a single choice carries the settings of exactly one control, its own; you gave single_choice and scale"},
 		{"multiple 12 options", multiple(12, widget.MultipleSpec{MaxChoices: 12}), ""},
 		{"multiple 13 options", multiple(13, widget.MultipleSpec{}), "a multiple choice needs 2 to 12 options; you gave 13"},
@@ -288,6 +302,19 @@ func TestParseRefusals(t *testing.T) {
 	}
 	if _, err := widget.ParseAnswer([]byte(`{"kind":"scale","value":"four"}`)); !errors.Is(err, widget.ErrInvalid) {
 		t.Errorf("a bad answer = %v, want ErrInvalid", err)
+	}
+}
+
+func TestPlain(t *testing.T) {
+	for _, s := range []string{"", "Keep it", "Café, 2 €"} {
+		if err := widget.Plain("x", s); err != nil {
+			t.Errorf("Plain(%q) = %v, want nil", s, err)
+		}
+	}
+	for _, s := range []string{"a\nb", "a\r", "\tb", "nul\x00", "del\x7f", "c1\u0085"} {
+		if err := widget.Plain("the label", s); !errors.Is(err, widget.ErrInvalid) || !strings.HasPrefix(err.Error(), "the label holds") {
+			t.Errorf("Plain(%q) = %v, want a refusal naming the label", s, err)
+		}
 	}
 }
 

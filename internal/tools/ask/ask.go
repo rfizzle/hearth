@@ -77,8 +77,9 @@ type args struct {
 }
 
 // validate refuses a request the owner could not be shown as asked: no
-// question, one too long, too many or empty suggested answers, or a control
-// the catalogue refuses. Each refusal says what to change.
+// question, one too long, too many or empty suggested answers, a question
+// or suggested answer with a line break or another control character, or a
+// control the catalogue refuses. Each refusal says what to change.
 func validate(raw json.RawMessage) error {
 	var a args
 	if err := json.Unmarshal(raw, &a); err != nil {
@@ -89,6 +90,9 @@ func validate(raw json.RawMessage) error {
 	}
 	if n := utf8.RuneCountInString(a.Question); n > maxQuestion {
 		return fmt.Errorf("the question is %d characters; keep it to %d or fewer", n, maxQuestion)
+	}
+	if err := widget.Plain("the question", a.Question); err != nil {
+		return err
 	}
 	if err := validateSuggested(a.Suggested); err != nil {
 		return err
@@ -115,6 +119,9 @@ func validateSuggested(suggested []string) error {
 		}
 		if n := utf8.RuneCountInString(s); n > widget.MaxLabel {
 			return fmt.Errorf("suggested answer %d is %d characters; keep each to %d or fewer", i+1, n, widget.MaxLabel)
+		}
+		if err := widget.Plain(fmt.Sprintf("suggested answer %d", i+1), s); err != nil {
+			return err
 		}
 	}
 	return nil

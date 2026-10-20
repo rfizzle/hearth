@@ -106,7 +106,8 @@ func Open(ctx context.Context, d Deps) (*Service, error) {
 // returns; its progress is published on the bus. Send refuses with ErrBusy
 // while an earlier run in the conversation has not ended. If the run cannot
 // be stored the owner's message is removed again, so no message is left that
-// nothing answers.
+// nothing answers. The Inbox items earlier failures in the conversation
+// left are closed: the new run answers the owner instead.
 func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.Message, error) {
 	bot, err := s.dmBot(ctx, convID)
 	if err != nil {
@@ -127,6 +128,7 @@ func (s *Service) Send(ctx context.Context, convID, text string) (org.Run, org.M
 		s.release(convID, "")
 		return org.Run{}, org.Message{}, err
 	}
+	s.superseded(context.WithoutCancel(ctx), convID, "Closed: a new message was sent")
 	go s.run(runCtx, bot, r, ask{msg: m})
 	return r, m, nil
 }
@@ -154,7 +156,7 @@ func (s *Service) Retry(ctx context.Context, convID string) (org.Run, error) {
 		s.release(convID, "")
 		return org.Run{}, err
 	}
-	s.retried(context.WithoutCancel(ctx), convID)
+	s.superseded(context.WithoutCancel(ctx), convID, "Retried")
 	go s.run(runCtx, bot, r, ask{msg: prompt})
 	return r, nil
 }

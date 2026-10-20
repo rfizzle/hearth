@@ -470,3 +470,20 @@ func TestApproval_AFailureAfterTheCallRanEndsTheRunFailed(t *testing.T) {
 	f.svc.fault = nil
 	f.send(t, "again", ended) // the conversation is free again
 }
+
+func TestApproval_TheCallRowNamesTheFileTheCallLandsOn(t *testing.T) {
+	f := parkedFixture(t, []string{"x.md"}, events(toolCall("c1", "files.delete", `{"path":"notes/../x.md"}`)))
+	if err := os.MkdirAll(filepath.Join(f.bot.FolderPath, "notes"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, it := f.park(t, "tidy up")
+	var row string
+	for _, m := range f.messages(t) {
+		if m.Kind == org.MessageToolCall && len(m.ToolCalls) == 1 && m.ToolCalls[0].ID == "c1" {
+			row = m.ToolCalls[0].Summary
+		}
+	}
+	if want := "Delete x.md from Dana's folder"; row != want || it.Effect != want {
+		t.Fatalf("row = %q, card = %q, want both %q", row, it.Effect, want)
+	}
+}

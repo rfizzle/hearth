@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -90,6 +91,24 @@ func validateOptions(e entry, opts []Option) error {
 		if l := utf8.RuneCountInString(o.Label); l > MaxLabel {
 			return refuse("the label of option %d is %d characters; keep labels to %d or fewer", n, l, MaxLabel)
 		}
+		if err := Plain(fmt.Sprintf("the label of option %d", n), o.Label); err != nil {
+			return err
+		}
+		if err := Plain(fmt.Sprintf("the detail of option %d", n), o.Detail); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Plain refuses s, named what in the refusal, when it holds a control
+// character such as a line break or a tab. Words the owner picks become
+// their message in the thread, so a second line hidden in a control would
+// read there as something they said.
+// See docs/model.md#owner-interaction.
+func Plain(what, s string) error {
+	if strings.ContainsFunc(s, unicode.IsControl) {
+		return refuse("%s holds a line break or another control character; write it on one line as plain text", what)
 	}
 	return nil
 }
@@ -120,13 +139,16 @@ func validateFreeText(f *FreeTextSpec) error {
 	if l := utf8.RuneCountInString(f.Placeholder); l > MaxPlaceholder {
 		return refuse("the placeholder is %d characters; keep it to %d or fewer", l, MaxPlaceholder)
 	}
-	return nil
+	return Plain("the placeholder", f.Placeholder)
 }
 
 func validateLabels(pairs ...[2]string) error {
 	for _, p := range pairs {
 		if n := utf8.RuneCountInString(p[1]); n > MaxLabel {
 			return refuse("%s is %d characters; keep it to %d or fewer", p[0], n, MaxLabel)
+		}
+		if err := Plain(p[0], p[1]); err != nil {
+			return err
 		}
 	}
 	return nil

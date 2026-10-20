@@ -93,13 +93,19 @@ func (k *sink) Round(n int) {
 	k.saveRunLocked()
 }
 
-// ToolCall stores the call with its tool's plain-words summary.
+// ToolCall stores the call with its tool's plain-words summary. A call the
+// dispatcher places is summarised as the card is, with the path it
+// resolved, so the row never shows the bot's paraphrase of where it lands;
+// one it refuses is summarised from its own arguments.
+// See docs/model.md#8-approvals.
 func (k *sink) ToolCall(id, name string, args json.RawMessage) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	k.closeText(k.buf.String())
 	tc := org.ToolCall{ID: id, Name: name, Arguments: string(args)}
-	if d := k.describe[name]; d != nil {
+	if c, err := k.disp.Check(name, args); err == nil {
+		tc.Summary = c.Describe()
+	} else if d := k.describe[name]; d != nil {
 		tc.Summary = d(args)
 	}
 	k.calls[id] = tc

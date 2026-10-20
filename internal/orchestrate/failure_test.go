@@ -48,11 +48,6 @@ func TestFailure_AProviderFailureIsAnInboxItem(t *testing.T) {
 		t.Fatalf("open items = %+v, want the failure", items)
 	}
 
-	// The item holds no conversation: the owner can write to the bot.
-	if next, _ := f.send(t, "try this instead", ended); f.storedRun(t, next.ID).State != org.RunDone {
-		t.Fatal("the failure item blocked the next message")
-	}
-
 	ctx := context.Background()
 	closed, err := f.svc.Acknowledge(ctx, it.ID)
 	if err != nil || closed.State != inbox.Closed || closed.Outcome != "Acknowledged" {
@@ -60,6 +55,24 @@ func TestFailure_AProviderFailureIsAnInboxItem(t *testing.T) {
 	}
 	if _, err := f.svc.Acknowledge(ctx, it.ID); !errors.Is(err, ErrClosed) {
 		t.Fatalf("a second Acknowledge = %v, want ErrClosed", err)
+	}
+	if items := openFailures(t, f); len(items) != 0 {
+		t.Fatalf("open items = %+v, want none", items)
+	}
+}
+
+func TestFailure_ANewMessageIsSentAndClosesTheItem(t *testing.T) {
+	f := newFixture(t, refusedKey(), events(llm.StreamEvent{Token: "Hello."}, llm.StreamEvent{Done: true}))
+	_, it := f.failed(t, "first")
+	// The item holds no conversation: the owner can write to the bot, and
+	// the run that answers them supersedes the failure, so no Retry on it
+	// can send their newest message again.
+	if next, _ := f.send(t, "second", ended); f.storedRun(t, next.ID).State != org.RunDone {
+		t.Fatal("the failure item blocked the next message")
+	}
+	got, err := f.db.InboxItem(context.Background(), it.ID)
+	if err != nil || got.State != inbox.Closed || got.Outcome != "Closed: a new message was sent" {
+		t.Fatalf("item = %+v, %v, want closed by the new message", got, err)
 	}
 	if items := openFailures(t, f); len(items) != 0 {
 		t.Fatalf("open items = %+v, want none", items)
