@@ -30,6 +30,10 @@ public nonisolated struct Hearth_V1_Org: Sendable {
   /// The Hearth folder, as an absolute path the app has resolved.
   public var workspacePath: String = String()
 
+  /// The org-level bot that answers project conversations; empty until one
+  /// is hired.
+  public var coordinatorBotID: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -108,7 +112,7 @@ fileprivate nonisolated let _protobuf_package = "hearth.v1"
 
 nonisolated extension Hearth_V1_Org: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Org"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{3}workspace_path\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{3}workspace_path\0\u{3}coordinator_bot_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -118,6 +122,7 @@ nonisolated extension Hearth_V1_Org: SwiftProtobuf.Message, SwiftProtobuf._Messa
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.workspacePath) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.coordinatorBotID) }()
       default: break
       }
     }
@@ -130,12 +135,16 @@ nonisolated extension Hearth_V1_Org: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if !self.workspacePath.isEmpty {
       try visitor.visitSingularStringField(value: self.workspacePath, fieldNumber: 2)
     }
+    if !self.coordinatorBotID.isEmpty {
+      try visitor.visitSingularStringField(value: self.coordinatorBotID, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Hearth_V1_Org, rhs: Hearth_V1_Org) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.workspacePath != rhs.workspacePath {return false}
+    if lhs.coordinatorBotID != rhs.coordinatorBotID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

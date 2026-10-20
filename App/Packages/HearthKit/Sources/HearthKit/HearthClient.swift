@@ -133,6 +133,17 @@ public protocol HearthClient: Sendable {
     /// One record to store after a credential change.
     func exportCredential(name: String) async throws -> Hearth_V1_Credential
 
+    /// Every project that is proposed, active or done; archived too when asked.
+    func listProjects(includeArchived: Bool) async throws -> [Hearth_V1_Project]
+    /// Creates an active project, or confirms the proposal `request.proposalID` names.
+    func createProject(_ request: Hearth_V1_CreateProjectRequest) async throws -> Hearth_V1_Project
+    /// Replaces the name, brief and target date.
+    func updateProject(_ request: Hearth_V1_UpdateProjectRequest) async throws -> Hearth_V1_Project
+    /// The owner's mark.
+    func markProjectDone(id: String) async throws -> Hearth_V1_Project
+    /// Keeps the folder and the conversation; "Not now" on a proposal.
+    func archiveProject(id: String) async throws -> Hearth_V1_Project
+
     /// Every change the core makes after `sequence` (0 for live events only),
     /// in order. The stream finishes with the error that ended it.
     func subscribe(after sequence: UInt64) -> AsyncThrowingStream<

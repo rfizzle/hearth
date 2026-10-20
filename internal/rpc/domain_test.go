@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/rfizzle/hearth/internal/org"
+	"github.com/rfizzle/hearth/internal/project"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 )
 
@@ -432,6 +433,15 @@ func TestEnumsThatAreCastNumberAlike(t *testing.T) {
 		{"idle", int(hearthv1.BotStatus_BOT_STATUS_IDLE), int(org.BotIdle)},
 		{"bot working", int(hearthv1.BotStatus_BOT_STATUS_WORKING), int(org.BotWorking)},
 		{"dm", int(hearthv1.ConversationKind_CONVERSATION_KIND_DM), int(org.ConversationDM)},
+		{"project conversation", int(hearthv1.ConversationKind_CONVERSATION_KIND_PROJECT), int(org.ConversationProject)},
+		{"proposed", int(hearthv1.ProjectState_PROJECT_STATE_PROPOSED), int(project.Proposed)},
+		{"active", int(hearthv1.ProjectState_PROJECT_STATE_ACTIVE), int(project.Active)},
+		{"project done", int(hearthv1.ProjectState_PROJECT_STATE_DONE), int(project.Done)},
+		{"archived", int(hearthv1.ProjectState_PROJECT_STATE_ARCHIVED), int(project.Archived)},
+		{"no light", int(hearthv1.ProjectLight_PROJECT_LIGHT_NONE), int(project.LightNone)},
+		{"green", int(hearthv1.ProjectLight_PROJECT_LIGHT_GREEN), int(project.LightGreen)},
+		{"yellow", int(hearthv1.ProjectLight_PROJECT_LIGHT_YELLOW), int(project.LightYellow)},
+		{"red", int(hearthv1.ProjectLight_PROJECT_LIGHT_RED), int(project.LightRed)},
 		{"text", int(hearthv1.MessageKind_MESSAGE_KIND_TEXT), int(org.MessageText)},
 		{"tool call", int(hearthv1.MessageKind_MESSAGE_KIND_TOOL_CALL), int(org.MessageToolCall)},
 		{"tool result", int(hearthv1.MessageKind_MESSAGE_KIND_TOOL_RESULT), int(org.MessageToolResult)},

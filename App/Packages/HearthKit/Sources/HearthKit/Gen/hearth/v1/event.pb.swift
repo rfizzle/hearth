@@ -178,6 +178,14 @@ public nonisolated struct Hearth_V1_SubscribeResponse: Sendable {
     set {event = .tiersChanged(newValue)}
   }
 
+  public var projectChanged: Hearth_V1_ProjectChanged {
+    get {
+      if case .projectChanged(let v)? = event {return v}
+      return Hearth_V1_ProjectChanged()
+    }
+    set {event = .projectChanged(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Event: Equatable, Sendable {
@@ -198,6 +206,7 @@ public nonisolated struct Hearth_V1_SubscribeResponse: Sendable {
     case handbookChanged(Hearth_V1_HandbookChanged)
     case credentialChanged(Hearth_V1_CredentialChanged)
     case tiersChanged(Hearth_V1_TiersChanged)
+    case projectChanged(Hearth_V1_ProjectChanged)
 
   }
 
@@ -525,6 +534,28 @@ public nonisolated struct Hearth_V1_TiersChanged: Sendable {
   public init() {}
 }
 
+/// ProjectChanged is a project as it is now, with its derived status.
+public nonisolated struct Hearth_V1_ProjectChanged: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var project: Hearth_V1_Project {
+    get {_project ?? Hearth_V1_Project()}
+    set {_project = newValue}
+  }
+  /// Returns true if `project` has been explicitly set.
+  public var hasProject: Bool {self._project != nil}
+  /// Clears the value of `project`. Subsequent reads from it will return its default value.
+  public mutating func clearProject() {self._project = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _project: Hearth_V1_Project? = nil
+}
+
 /// Resync says the requested sequence is older than the core keeps; the
 /// app refetches its lists and continues from this event's sequence.
 public nonisolated struct Hearth_V1_Resync: Sendable {
@@ -584,7 +615,7 @@ nonisolated extension Hearth_V1_SubscribeRequest: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Hearth_V1_SubscribeResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SubscribeResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sequence\0\u{3}message_delta\0\u{3}message_upserted\0\u{3}run_changed\0\u{3}account_changed\0\u{3}bot_changed\0\u{1}resync\0\u{1}heartbeat\0\u{3}integration_changed\0\u{3}inbox_changed\0\u{3}message_deleted\0\u{3}grants_changed\0\u{3}conversation_changed\0\u{3}usage_tick\0\u{3}note_changed\0\u{3}handbook_changed\0\u{3}credential_changed\0\u{3}tiers_changed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sequence\0\u{3}message_delta\0\u{3}message_upserted\0\u{3}run_changed\0\u{3}account_changed\0\u{3}bot_changed\0\u{1}resync\0\u{1}heartbeat\0\u{3}integration_changed\0\u{3}inbox_changed\0\u{3}message_deleted\0\u{3}grants_changed\0\u{3}conversation_changed\0\u{3}usage_tick\0\u{3}note_changed\0\u{3}handbook_changed\0\u{3}credential_changed\0\u{3}tiers_changed\0\u{3}project_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -814,6 +845,19 @@ nonisolated extension Hearth_V1_SubscribeResponse: SwiftProtobuf.Message, SwiftP
           self.event = .tiersChanged(v)
         }
       }()
+      case 19: try {
+        var v: Hearth_V1_ProjectChanged?
+        var hadOneofValue = false
+        if let current = self.event {
+          hadOneofValue = true
+          if case .projectChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.event = .projectChanged(v)
+        }
+      }()
       default: break
       }
     }
@@ -895,6 +939,10 @@ nonisolated extension Hearth_V1_SubscribeResponse: SwiftProtobuf.Message, SwiftP
     case .tiersChanged?: try {
       guard case .tiersChanged(let v)? = self.event else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
+    }()
+    case .projectChanged?: try {
+      guard case .projectChanged(let v)? = self.event else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 19)
     }()
     case nil: break
     }
@@ -1489,6 +1537,40 @@ nonisolated extension Hearth_V1_TiersChanged: SwiftProtobuf.Message, SwiftProtob
 
   public static func ==(lhs: Hearth_V1_TiersChanged, rhs: Hearth_V1_TiersChanged) -> Bool {
     if lhs.tiers != rhs.tiers {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_ProjectChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ProjectChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}project\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._project) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._project {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_ProjectChanged, rhs: Hearth_V1_ProjectChanged) -> Bool {
+    if lhs._project != rhs._project {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -34,6 +34,8 @@ enum ConversationKind {
   CONVERSATION_KIND_DM = 1;
   CONVERSATION_KIND_CHANNEL = 2;
   CONVERSATION_KIND_TASK = 3;
+  // The Chief of Staff answers; the conversation has a project_id.
+  CONVERSATION_KIND_PROJECT = 4;
 }
 
 message Conversation {
@@ -50,6 +52,10 @@ message Conversation {
   string summary = 7;
   // Messages at or below this seq are covered by the summary.
   int64 summary_through_seq = 8;
+  // The project this is the conversation of; empty for the other kinds. A
+  // project conversation leaves bot_id empty: the coordinator is resolved
+  // when a message is sent.
+  string project_id = 9;
 }
 
 enum MessageKind {

@@ -88,6 +88,7 @@ type SubscribeResponse struct {
 	//	*SubscribeResponse_HandbookChanged
 	//	*SubscribeResponse_CredentialChanged
 	//	*SubscribeResponse_TiersChanged
+	//	*SubscribeResponse_ProjectChanged
 	Event         isSubscribeResponse_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -290,6 +291,15 @@ func (x *SubscribeResponse) GetTiersChanged() *TiersChanged {
 	return nil
 }
 
+func (x *SubscribeResponse) GetProjectChanged() *ProjectChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_ProjectChanged); ok {
+			return x.ProjectChanged
+		}
+	}
+	return nil
+}
+
 type isSubscribeResponse_Event interface {
 	isSubscribeResponse_Event()
 }
@@ -362,6 +372,10 @@ type SubscribeResponse_TiersChanged struct {
 	TiersChanged *TiersChanged `protobuf:"bytes,18,opt,name=tiers_changed,json=tiersChanged,proto3,oneof"`
 }
 
+type SubscribeResponse_ProjectChanged struct {
+	ProjectChanged *ProjectChanged `protobuf:"bytes,19,opt,name=project_changed,json=projectChanged,proto3,oneof"`
+}
+
 func (*SubscribeResponse_MessageDelta) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_MessageUpserted) isSubscribeResponse_Event() {}
@@ -395,6 +409,8 @@ func (*SubscribeResponse_HandbookChanged) isSubscribeResponse_Event() {}
 func (*SubscribeResponse_CredentialChanged) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_TiersChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_ProjectChanged) isSubscribeResponse_Event() {}
 
 // MessageDelta is text appended to a streaming message.
 type MessageDelta struct {
@@ -1163,6 +1179,51 @@ func (x *TiersChanged) GetTiers() []*TierChoice {
 	return nil
 }
 
+// ProjectChanged is a project as it is now, with its derived status.
+type ProjectChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Project       *Project               `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectChanged) Reset() {
+	*x = ProjectChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectChanged) ProtoMessage() {}
+
+func (x *ProjectChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectChanged.ProtoReflect.Descriptor instead.
+func (*ProjectChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ProjectChanged) GetProject() *Project {
+	if x != nil {
+		return x.Project
+	}
+	return nil
+}
+
 // Resync says the requested sequence is older than the core keeps; the
 // app refetches its lists and continues from this event's sequence.
 type Resync struct {
@@ -1173,7 +1234,7 @@ type Resync struct {
 
 func (x *Resync) Reset() {
 	*x = Resync{}
-	mi := &file_hearth_v1_event_proto_msgTypes[17]
+	mi := &file_hearth_v1_event_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1185,7 +1246,7 @@ func (x *Resync) String() string {
 func (*Resync) ProtoMessage() {}
 
 func (x *Resync) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[17]
+	mi := &file_hearth_v1_event_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1198,7 +1259,7 @@ func (x *Resync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resync.ProtoReflect.Descriptor instead.
 func (*Resync) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{17}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{18}
 }
 
 // Heartbeat keeps a quiet subscription under the client's idle timeout.
@@ -1210,7 +1271,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_hearth_v1_event_proto_msgTypes[18]
+	mi := &file_hearth_v1_event_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1222,7 +1283,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[18]
+	mi := &file_hearth_v1_event_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1235,16 +1296,16 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{18}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{19}
 }
 
 var File_hearth_v1_event_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_event_proto_rawDesc = "" +
 	"\n" +
-	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x18hearth/v1/handbook.proto\x1a\x15hearth/v1/inbox.proto\x1a\x1bhearth/v1/integration.proto\x1a\x18hearth/v1/provider.proto\x1a\x15hearth/v1/usage.proto\"9\n" +
+	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x18hearth/v1/handbook.proto\x1a\x15hearth/v1/inbox.proto\x1a\x1bhearth/v1/integration.proto\x1a\x17hearth/v1/project.proto\x1a\x18hearth/v1/provider.proto\x1a\x15hearth/v1/usage.proto\"9\n" +
 	"\x10SubscribeRequest\x12%\n" +
-	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\x9a\t\n" +
+	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\xe0\t\n" +
 	"\x11SubscribeResponse\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12>\n" +
 	"\rmessage_delta\x18\x02 \x01(\v2\x17.hearth.v1.MessageDeltaH\x00R\fmessageDelta\x12G\n" +
@@ -1267,7 +1328,8 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	"\fnote_changed\x18\x0f \x01(\v2\x16.hearth.v1.NoteChangedH\x00R\vnoteChanged\x12G\n" +
 	"\x10handbook_changed\x18\x10 \x01(\v2\x1a.hearth.v1.HandbookChangedH\x00R\x0fhandbookChanged\x12M\n" +
 	"\x12credential_changed\x18\x11 \x01(\v2\x1c.hearth.v1.CredentialChangedH\x00R\x11credentialChanged\x12>\n" +
-	"\rtiers_changed\x18\x12 \x01(\v2\x17.hearth.v1.TiersChangedH\x00R\ftiersChangedB\a\n" +
+	"\rtiers_changed\x18\x12 \x01(\v2\x17.hearth.v1.TiersChangedH\x00R\ftiersChanged\x12D\n" +
+	"\x0fproject_changed\x18\x13 \x01(\v2\x19.hearth.v1.ProjectChangedH\x00R\x0eprojectChangedB\a\n" +
 	"\x05event\"\x81\x01\n" +
 	"\fMessageDelta\x12'\n" +
 	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
@@ -1313,7 +1375,9 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\adeleted\x18\x02 \x01(\bR\adeleted\";\n" +
 	"\fTiersChanged\x12+\n" +
-	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\"\b\n" +
+	"\x05tiers\x18\x01 \x03(\v2\x15.hearth.v1.TierChoiceR\x05tiers\">\n" +
+	"\x0eProjectChanged\x12,\n" +
+	"\aproject\x18\x01 \x01(\v2\x12.hearth.v1.ProjectR\aproject\"\b\n" +
 	"\x06Resync\"\v\n" +
 	"\tHeartbeat2Z\n" +
 	"\fEventService\x12J\n" +
@@ -1331,7 +1395,7 @@ func file_hearth_v1_event_proto_rawDescGZIP() []byte {
 	return file_hearth_v1_event_proto_rawDescData
 }
 
-var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_hearth_v1_event_proto_goTypes = []any{
 	(*SubscribeRequest)(nil),    // 0: hearth.v1.SubscribeRequest
 	(*SubscribeResponse)(nil),   // 1: hearth.v1.SubscribeResponse
@@ -1350,21 +1414,23 @@ var file_hearth_v1_event_proto_goTypes = []any{
 	(*HandbookChanged)(nil),     // 14: hearth.v1.HandbookChanged
 	(*CredentialChanged)(nil),   // 15: hearth.v1.CredentialChanged
 	(*TiersChanged)(nil),        // 16: hearth.v1.TiersChanged
-	(*Resync)(nil),              // 17: hearth.v1.Resync
-	(*Heartbeat)(nil),           // 18: hearth.v1.Heartbeat
-	(*Message)(nil),             // 19: hearth.v1.Message
-	(*Run)(nil),                 // 20: hearth.v1.Run
-	(*ProviderAccount)(nil),     // 21: hearth.v1.ProviderAccount
-	(*Bot)(nil),                 // 22: hearth.v1.Bot
-	(*IntegrationAccount)(nil),  // 23: hearth.v1.IntegrationAccount
-	(*InboxItem)(nil),           // 24: hearth.v1.InboxItem
-	(*Grant)(nil),               // 25: hearth.v1.Grant
-	(*Conversation)(nil),        // 26: hearth.v1.Conversation
-	(*BotUsage)(nil),            // 27: hearth.v1.BotUsage
-	(*UsageTotals)(nil),         // 28: hearth.v1.UsageTotals
-	(*Note)(nil),                // 29: hearth.v1.Note
-	(*HandbookPage)(nil),        // 30: hearth.v1.HandbookPage
-	(*TierChoice)(nil),          // 31: hearth.v1.TierChoice
+	(*ProjectChanged)(nil),      // 17: hearth.v1.ProjectChanged
+	(*Resync)(nil),              // 18: hearth.v1.Resync
+	(*Heartbeat)(nil),           // 19: hearth.v1.Heartbeat
+	(*Message)(nil),             // 20: hearth.v1.Message
+	(*Run)(nil),                 // 21: hearth.v1.Run
+	(*ProviderAccount)(nil),     // 22: hearth.v1.ProviderAccount
+	(*Bot)(nil),                 // 23: hearth.v1.Bot
+	(*IntegrationAccount)(nil),  // 24: hearth.v1.IntegrationAccount
+	(*InboxItem)(nil),           // 25: hearth.v1.InboxItem
+	(*Grant)(nil),               // 26: hearth.v1.Grant
+	(*Conversation)(nil),        // 27: hearth.v1.Conversation
+	(*BotUsage)(nil),            // 28: hearth.v1.BotUsage
+	(*UsageTotals)(nil),         // 29: hearth.v1.UsageTotals
+	(*Note)(nil),                // 30: hearth.v1.Note
+	(*HandbookPage)(nil),        // 31: hearth.v1.HandbookPage
+	(*TierChoice)(nil),          // 32: hearth.v1.TierChoice
+	(*Project)(nil),             // 33: hearth.v1.Project
 }
 var file_hearth_v1_event_proto_depIdxs = []int32{
 	2,  // 0: hearth.v1.SubscribeResponse.message_delta:type_name -> hearth.v1.MessageDelta
@@ -1372,8 +1438,8 @@ var file_hearth_v1_event_proto_depIdxs = []int32{
 	4,  // 2: hearth.v1.SubscribeResponse.run_changed:type_name -> hearth.v1.RunChanged
 	5,  // 3: hearth.v1.SubscribeResponse.account_changed:type_name -> hearth.v1.AccountChanged
 	6,  // 4: hearth.v1.SubscribeResponse.bot_changed:type_name -> hearth.v1.BotChanged
-	17, // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
-	18, // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
+	18, // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
+	19, // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
 	7,  // 7: hearth.v1.SubscribeResponse.integration_changed:type_name -> hearth.v1.IntegrationChanged
 	8,  // 8: hearth.v1.SubscribeResponse.inbox_changed:type_name -> hearth.v1.InboxChanged
 	9,  // 9: hearth.v1.SubscribeResponse.message_deleted:type_name -> hearth.v1.MessageDeleted
@@ -1384,26 +1450,28 @@ var file_hearth_v1_event_proto_depIdxs = []int32{
 	14, // 14: hearth.v1.SubscribeResponse.handbook_changed:type_name -> hearth.v1.HandbookChanged
 	15, // 15: hearth.v1.SubscribeResponse.credential_changed:type_name -> hearth.v1.CredentialChanged
 	16, // 16: hearth.v1.SubscribeResponse.tiers_changed:type_name -> hearth.v1.TiersChanged
-	19, // 17: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
-	20, // 18: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
-	21, // 19: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
-	22, // 20: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
-	23, // 21: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
-	24, // 22: hearth.v1.InboxChanged.item:type_name -> hearth.v1.InboxItem
-	25, // 23: hearth.v1.GrantsChanged.grants:type_name -> hearth.v1.Grant
-	26, // 24: hearth.v1.ConversationChanged.conversation:type_name -> hearth.v1.Conversation
-	27, // 25: hearth.v1.UsageTick.bot:type_name -> hearth.v1.BotUsage
-	28, // 26: hearth.v1.UsageTick.org:type_name -> hearth.v1.UsageTotals
-	29, // 27: hearth.v1.NoteChanged.note:type_name -> hearth.v1.Note
-	30, // 28: hearth.v1.HandbookChanged.page:type_name -> hearth.v1.HandbookPage
-	31, // 29: hearth.v1.TiersChanged.tiers:type_name -> hearth.v1.TierChoice
-	0,  // 30: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
-	1,  // 31: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
-	31, // [31:32] is the sub-list for method output_type
-	30, // [30:31] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	17, // 17: hearth.v1.SubscribeResponse.project_changed:type_name -> hearth.v1.ProjectChanged
+	20, // 18: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
+	21, // 19: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
+	22, // 20: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
+	23, // 21: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
+	24, // 22: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
+	25, // 23: hearth.v1.InboxChanged.item:type_name -> hearth.v1.InboxItem
+	26, // 24: hearth.v1.GrantsChanged.grants:type_name -> hearth.v1.Grant
+	27, // 25: hearth.v1.ConversationChanged.conversation:type_name -> hearth.v1.Conversation
+	28, // 26: hearth.v1.UsageTick.bot:type_name -> hearth.v1.BotUsage
+	29, // 27: hearth.v1.UsageTick.org:type_name -> hearth.v1.UsageTotals
+	30, // 28: hearth.v1.NoteChanged.note:type_name -> hearth.v1.Note
+	31, // 29: hearth.v1.HandbookChanged.page:type_name -> hearth.v1.HandbookPage
+	32, // 30: hearth.v1.TiersChanged.tiers:type_name -> hearth.v1.TierChoice
+	33, // 31: hearth.v1.ProjectChanged.project:type_name -> hearth.v1.Project
+	0,  // 32: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
+	1,  // 33: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
+	33, // [33:34] is the sub-list for method output_type
+	32, // [32:33] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_event_proto_init() }
@@ -1416,6 +1484,7 @@ func file_hearth_v1_event_proto_init() {
 	file_hearth_v1_handbook_proto_init()
 	file_hearth_v1_inbox_proto_init()
 	file_hearth_v1_integration_proto_init()
+	file_hearth_v1_project_proto_init()
 	file_hearth_v1_provider_proto_init()
 	file_hearth_v1_usage_proto_init()
 	file_hearth_v1_event_proto_msgTypes[1].OneofWrappers = []any{
@@ -1436,6 +1505,7 @@ func file_hearth_v1_event_proto_init() {
 		(*SubscribeResponse_HandbookChanged)(nil),
 		(*SubscribeResponse_CredentialChanged)(nil),
 		(*SubscribeResponse_TiersChanged)(nil),
+		(*SubscribeResponse_ProjectChanged)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1443,7 +1513,7 @@ func file_hearth_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_event_proto_rawDesc), len(file_hearth_v1_event_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

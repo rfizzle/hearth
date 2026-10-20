@@ -16,6 +16,14 @@ public enum Fixtures {
     public static let org = Hearth_V1_Org.with {
         $0.name = "Harbor Street Studio"
         $0.workspacePath = workspacePath
+        $0.coordinatorBotID = chiefOfStaff.id
+    }
+
+    /// The same org before a Chief of Staff is hired: project conversations
+    /// show "Hire a Chief of Staff" where the composer would be.
+    public static let orgWithoutCoordinator = Hearth_V1_Org.with {
+        $0.name = "Harbor Street Studio"
+        $0.workspacePath = workspacePath
     }
 
     /// Three templates: a research lead, a writer and a scheduler.

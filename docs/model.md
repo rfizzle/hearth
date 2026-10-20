@@ -44,13 +44,14 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 
 ### Conversations
 
-**Conversation** (`Conversation`). Three kinds, same message model:
+**Conversation** (`Conversation`). Four kinds, same message model:
 
 | Kind | Participants | Created by | Lives in sidebar as |
 |---|---|---|---|
 | **Direct message** (`dm`) | Owner + one bot | Owner | the bot's name |
 | **Team channel** (`channel`) | Owner + lead + members | With the team | the team's name |
 | **Task thread** (`task`) | Assigner + assignee (+ owner, always) | An assignment | nested under the conversation it was assigned from |
+| **Project conversation** (`project`) | Owner + Chief of Staff (+ owner, always) | With the project | the project's name, under "Projects"; its task threads nest under it |
 
 **Message** (`Message`). Author (owner or bot), body (rich text with attachments), kind (`text`, `tool_call`, `tool_result`, `assignment`, `result`, `question`, `approval_request`, `approval_decision`, `system`), timestamps, cost attribution. Tool calls and results render as collapsed cards by default.
 
@@ -71,6 +72,23 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 | deliverables | Files written to the Workspace, listed on the task card |
 | result | The assignee's final message, returned to the assigner's thread |
 | schedule | Optional recurrence (see Recurring) |
+
+**Project** (`Project`). An outcome that takes more than one task, often across teams. Teams are the standing responsibilities; a project ends. Created by the owner, or proposed by the Chief of Staff and confirmed by the owner in one click; nothing is assigned under a proposal until it is confirmed.
+
+| Field | Meaning |
+|---|---|
+| name | Shown in the sidebar; the folder is named after it |
+| brief | Four parts of plain prose: the goal, the context, what done looks like, and one "done when" sentence, which gives the Chief of Staff and the leads a stopping condition. Pinned at the top of the project's conversation. |
+| owner | The org's owner, always |
+| target date | Optional; shown, never enforced |
+| tasks | The tasks that carry this project's reference (see Assignment, rule 9) |
+| folder | `Projects/<name>/` in the Workspace; the project's deliverables go here, team folders keep team-owned work |
+| conversation | The project's own conversation; its task threads nest under it |
+| budget | An optional cost cap on the project's tasks together, a total rather than a monthly figure because a project ends |
+| state | `proposed` → `active` → `done` / `archived`. Only the owner moves it: confirming a proposal, marking it done, archiving it. Archived keeps the folder and the conversation; nothing is deleted. |
+| status | Derived by rule and set by nobody: the count of tasks in each state, shown as a pie with "3 of 7 done", and one light with its word: yellow "Waiting on you" when any task waits on the owner (a failed task with its Retry counts), red "Paused on budget" when any is paused on budget, green "On track" otherwise, none "No tasks yet" while it has no tasks. |
+
+A project is done when the owner marks it done. When every task has finished the project says "All tasks done" and offers the mark, and the owner confirms. A project's id never changes, so a later measurement can attach to it.
 
 **Run** (`Run`). One bot taking a turn: a model call loop with tool calls until the bot yields a message, a question, an assignment wait, or hits a limit. Runs are the unit of cost accounting and cancellation. A task is a sequence of runs by the assignee, interleaved with waits.
 
@@ -96,6 +114,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 Hearth/
   Handbook/            (exported copy of handbook pages, read-only mirror)
   Inbox/               (files the owner drops in without a home)
+  Projects/<Project name>/   (a project's deliverables; team folders keep team-owned work)
   <Team name>/         (deliverables, one subfolder per task when more than one file)
   <Bot name>/          (an org-level bot's deliverables; the Chief of Staff's folder is one of these)
   Chief of Staff/      (for example: the Chief of Staff's org-level deliverables)
@@ -124,6 +143,8 @@ The app watches the folder; files the owner adds are visible to bots with the fo
 
 Modes: `allowed`, `ask me` (approval each time, with "always allow" offered), `not granted`. Team grants apply to every member; a bot's grants add to its team's.
 
+A bot working in a project's conversation, or on one of its tasks, may read and write that project's folder for that run; the grant is the project's, not the bot's, and does not appear in the bot's Access sheet.
+
 ### Providers and models
 
 **Provider account** (`ProviderAccount`). A signed-in account or stored key for one backend: ChatGPT plan (OAuth), Anthropic (key), Gemini (key), OpenRouter (key), Compatible endpoint (URL + optional key, how Ollama/LM Studio arrive), Apple on-device (no account). Stored in Keychain; the Go core receives credentials through the llm library's credential interface. Any OpenAI-compatible service, a company gateway or one such as Z.ai or Groq, is added with a name, an address, a key and a default model, becomes an account and a card of its own, and answers every tier until the owner maps tiers; its key, like every key, never leaves the core.
@@ -132,7 +153,7 @@ Modes: `allowed`, `ask me` (approval each time, with "always allow" offered), `n
 
 ### Usage
 
-**Usage record** (`Usage`). Per run: provider, model, input/output/cached tokens, estimated cost from the llm catalog, attributed to bot, team, task and month. Displayed as "Usage" (Q7 decided against "Payroll"). Budgets are soft (warn) at 80% and hard (pause) at 100% per task, team and org per month.
+**Usage record** (`Usage`). Per run: provider, model, input/output/cached tokens, estimated cost from the llm catalog, attributed to bot, team, task and month. Displayed as "Usage" (Q7 decided against "Payroll"). Budgets are soft (warn) at 80% and hard (pause) at 100% per task, team and org per month. A project's budget is a total over its tasks, not a monthly figure, and caps them the way a team's does.
 
 Cost is an estimate in US dollars from llm's price table, not a bill: a model the table does not know is shown as not priced, with its tokens. Requests paid for by a plan (ChatGPT) are counted in tokens and never priced. A budget is a monthly limit for the org or for one bot. At 80% the owner gets one Inbox item for that month. The hard limit pauses the bot (or every bot, for the org's budget), stops the run in progress and refuses new messages until the owner chooses Resume or sets a higher budget; a resumed bot is not paused again that month unless its budget is raised.
 
@@ -146,6 +167,7 @@ Cost is an estimate in US dollars from llm's price table, not a bill: a model th
 | Team | Team | |
 | Lead | Lead | Shown as a badge on the member row. |
 | Assignment | Task | |
+| Project | Project | Proposed, active, done or archived; the sidebar lists active and done. |
 | Run | (not shown) | Appears only in Usage as "steps". |
 | Grant | Access | "What Dana can see and do". |
 | Handbook | Handbook | "24 KB, measured as bytes". |
@@ -164,6 +186,7 @@ Cost is an estimate in US dollars from llm's price table, not a bill: a model th
 | A bot's DM | That bot | A run for that bot. A lead may assign to its members; a member answers itself. |
 | A team channel | The team's lead | A run for the lead with the channel history as context; members are mentioned, not run, unless the lead assigns. |
 | A task thread | The task's assignee | Appended to the task's context; the assignee's next run sees it. If the task is `waiting_owner`, it resumes. |
+| A project conversation | Chief of Staff | A run for the Chief of Staff with the project's brief in context and the project's folder as its working folder. It answers, or assigns tasks that carry the project. If no Chief of Staff is hired (an org named before the app hired one, until its next launch) the message is refused and the screen says so. |
 
 Owner messages are always allowed to interrupt: typing in a thread while a run is in progress queues the message and the run is told at its next tool boundary that new owner input exists.
 
@@ -206,6 +229,7 @@ Rules:
 6. **Budgets flow down.** A child's budget cannot exceed what remains of the parent's. Team and org monthly budgets cap everything. A breach pauses the subtree and raises one Inbox item at the top.
 7. **No upward delegation, no sideways.** A member that needs something from another team says so in its result ("I could not get X; the Calendar team would need to…"); the lead or Chief of Staff decides. Questions to the owner (`ask_owner`) are the only upward channel and they pause the whole subtree.
 8. **Cancellation.** Cancelling a task cancels its subtree. The owner can cancel from any card; a bot can cancel only its own children by re-assigning or finishing.
+9. **Projects.** A task may carry a project reference. A task assigned from a project conversation inherits it, and so does every child task. A project's budget caps its tasks together, as a team's does. A task with a project writes its deliverables to the project's folder.
 
 ### 4. Termination guarantees
 
@@ -228,6 +252,7 @@ The coordinator is a normal bot with a strong job description shipped with the a
 3. Fan out to several teams only when the owner's request has clearly separable parts. Say so in the Plan card.
 4. Ask the owner before assigning if the request is ambiguous in a way that would change which team or what deliverable. One question, with suggested answers, not a questionnaire.
 5. Never restate work that a team already did; link the deliverable.
+6. Propose a project instead of assigning when the request clearly spans more than one team or will outlast one round of work. The Plan card shows the proposed name and its "done when" sentence with Create project and Not now, and nothing is assigned until the owner confirms.
 
 A routing hint from the on-device model (team name from the request text) is passed to the coordinator as a suggestion, never enforced.
 
@@ -261,3 +286,5 @@ Approval requests expire into the task's `waiting_owner` state indefinitely; sch
 ### 10. What the owner sees
 
 Each task has a card (in the thread it came from, in the team channel, and in Inbox when it needs them) with: assignee, state, elapsed time, cost so far, step count, deliverables, and a "Show work" disclosure that opens the task thread with every tool call and sub-task inline. The same card is used everywhere so the owner learns one shape.
+
+A project has a row in the sidebar with its pie and its light, and its conversation opens with the brief pinned above the thread, the same count, the light's word and the date. Its tasks use the task card above.

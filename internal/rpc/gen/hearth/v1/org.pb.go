@@ -26,8 +26,11 @@ type Org struct {
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The Hearth folder, as an absolute path the app has resolved.
 	WorkspacePath string `protobuf:"bytes,2,opt,name=workspace_path,json=workspacePath,proto3" json:"workspace_path,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The org-level bot that answers project conversations; empty until one
+	// is hired.
+	CoordinatorBotId string `protobuf:"bytes,3,opt,name=coordinator_bot_id,json=coordinatorBotId,proto3" json:"coordinator_bot_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Org) Reset() {
@@ -70,6 +73,13 @@ func (x *Org) GetName() string {
 func (x *Org) GetWorkspacePath() string {
 	if x != nil {
 		return x.WorkspacePath
+	}
+	return ""
+}
+
+func (x *Org) GetCoordinatorBotId() string {
+	if x != nil {
+		return x.CoordinatorBotId
 	}
 	return ""
 }
@@ -255,10 +265,11 @@ var File_hearth_v1_org_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_org_proto_rawDesc = "" +
 	"\n" +
-	"\x13hearth/v1/org.proto\x12\thearth.v1\"@\n" +
+	"\x13hearth/v1/org.proto\x12\thearth.v1\"n\n" +
 	"\x03Org\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0eworkspace_path\x18\x02 \x01(\tR\rworkspacePath\"\x0f\n" +
+	"\x0eworkspace_path\x18\x02 \x01(\tR\rworkspacePath\x12,\n" +
+	"\x12coordinator_bot_id\x18\x03 \x01(\tR\x10coordinatorBotId\"\x0f\n" +
 	"\rGetOrgRequest\"2\n" +
 	"\x0eGetOrgResponse\x12 \n" +
 	"\x03org\x18\x01 \x01(\v2\x0e.hearth.v1.OrgR\x03org\"M\n" +

@@ -17,6 +17,9 @@ message Org {
   string name = 1;
   // The Hearth folder, as an absolute path the app has resolved.
   string workspace_path = 2;
+  // The org-level bot that answers project conversations; empty until one
+  // is hired.
+  string coordinator_bot_id = 3;
 }
 
 message GetOrgRequest {}

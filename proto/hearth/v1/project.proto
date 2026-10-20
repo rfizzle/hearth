@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// ProjectService is the outcomes that take more than one task: listing them,
+// creating one or confirming a proposal, editing the brief, marking done and
+// archiving. Status is derived by the core and set through nothing here.
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {}
+  // CreateProject makes an active project with its folder and conversation.
+  // With proposal_id it confirms that proposal instead, applying the other
+  // fields as edits; the proposal's id is kept.
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {}
+  // UpdateProject replaces the name, the brief and the target date. The
+  // folder keeps the name the project was created with.
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {}
+  // MarkProjectDone is the owner's mark; it fails with failed_precondition
+  // on a project that is not active.
+  rpc MarkProjectDone(MarkProjectDoneRequest) returns (MarkProjectDoneResponse) {}
+  // ArchiveProject keeps the folder and the conversation. On a proposal it
+  // is "Not now".
+  rpc ArchiveProject(ArchiveProjectRequest) returns (ArchiveProjectResponse) {}
+}
+
+enum ProjectState {
+  PROJECT_STATE_UNSPECIFIED = 0;
+  // Proposed by the Chief of Staff; no folder or conversation yet.
+  PROJECT_STATE_PROPOSED = 1;
+  PROJECT_STATE_ACTIVE = 2;
+  PROJECT_STATE_DONE = 3;
+  PROJECT_STATE_ARCHIVED = 4;
+}
+
+// ProjectBrief is the four parts of a project's brief, plain prose each.
+message ProjectBrief {
+  string goal = 1;
+  string context = 2;
+  string done_looks_like = 3;
+  // One sentence: the stopping condition.
+  string done_when = 4;
+}
+
+// ProjectLight is the one traffic light the core sets from the tasks.
+enum ProjectLight {
+  PROJECT_LIGHT_UNSPECIFIED = 0;
+  // No tasks yet.
+  PROJECT_LIGHT_NONE = 1;
+  PROJECT_LIGHT_GREEN = 2;
+  // A task waits on the owner.
+  PROJECT_LIGHT_YELLOW = 3;
+  // A task is paused on budget.
+  PROJECT_LIGHT_RED = 4;
+}
+
+// ProjectStatus is derived from the project's tasks on every read; nothing
+// sets it. The counts are the pie, done over total is its fill.
+message ProjectStatus {
+  int32 tasks_total = 1;
+  int32 tasks_done = 2;
+  // Queued or working.
+  int32 tasks_working = 3;
+  int32 tasks_waiting_owner = 4;
+  int32 tasks_paused_budget = 5;
+  int32 tasks_failed = 6;
+  int32 tasks_cancelled = 7;
+  ProjectLight light = 8;
+  // The light's word, shown beside it: "On track", "Waiting on you",
+  // "Paused on budget", "All tasks done", "No tasks yet".
+  string light_label = 9;
+  // Every task has finished; the project offers the owner the mark.
+  bool all_tasks_done = 10;
+}
+
+message Project {
+  string id = 1;
+  string name = 2;
+  ProjectBrief brief = 3;
+  ProjectState state = 4;
+  // A calendar date as yyyy-mm-dd; empty for none.
+  string target_date = 5;
+  // Absolute; empty while proposed.
+  string folder_path = 6;
+  // The project's own conversation; empty while proposed.
+  string conversation_id = 7;
+  ProjectStatus status = 8;
+  // Set when the Chief of Staff proposed it: the bot and the conversation
+  // the proposal was made in, where the card is shown.
+  string proposed_by_bot_id = 9;
+  string proposed_in_conversation_id = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp activated_at = 12;
+  google.protobuf.Timestamp done_at = 13;
+  google.protobuf.Timestamp archived_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+  // 20 is the project's budget; its unit is the usage contract's, so it is
+  // added with the usage story.
+  reserved 20;
+}
+
+message ListProjectsRequest {
+  // Proposed, active and done are always listed; archived only on request.
+  bool include_archived = 1;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  ProjectBrief brief = 2;
+  string target_date = 3;
+  // A proposed project's id: confirm it rather than create another.
+  string proposal_id = 4;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message UpdateProjectRequest {
+  string id = 1;
+  string name = 2;
+  ProjectBrief brief = 3;
+  // Empty clears it.
+  string target_date = 4;
+}
+
+message UpdateProjectResponse {
+  Project project = 1;
+}
+
+message MarkProjectDoneRequest {
+  string id = 1;
+}
+
+message MarkProjectDoneResponse {
+  Project project = 1;
+}
+
+message ArchiveProjectRequest {
+  string id = 1;
+}
+
+message ArchiveProjectResponse {
+  Project project = 1;
+}

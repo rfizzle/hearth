@@ -45,6 +45,56 @@ import Testing
     #expect(try await client.listConversations(botID: "bot-other").isEmpty)
 }
 
+@Test func projectsListWithoutTheArchivedAndReflectEveryWrite() async throws {
+    let client = PreviewClient()
+    #expect(try await client.listProjects(includeArchived: false).count == 4)
+
+    let made = try await client.createProject(
+        .with {
+            $0.name = "Plan the party"
+            $0.brief = Fixtures.projects[1].brief
+        })
+    #expect(made.state == .active)
+    #expect(made.conversationID.isEmpty == false)
+
+    let confirmed = try await client.createProject(.with { $0.proposalID = "project-website" })
+    #expect(confirmed.id == "project-website")
+    #expect(confirmed.state == .active)
+    #expect(confirmed.name == "Refresh the website")
+
+    let done = try await client.markProjectDone(id: "project-office")
+    #expect(done.state == .done)
+    _ = try await client.archiveProject(id: "project-tax")
+
+    let kept = try await client.listProjects(includeArchived: false)
+    #expect(kept.count == 4)
+    #expect(try await client.listProjects(includeArchived: true).count == 5)
+    #expect(kept.first { $0.id == "project-office" }?.state == .done)
+}
+
+@Test func updateProjectReplacesNameAndDateButKeepsTheFolder() async throws {
+    let client = PreviewClient()
+    let edited = try await client.updateProject(
+        .with {
+            $0.id = "project-office"
+            $0.name = "Move the studio"
+            $0.targetDate = "2027-01-10"
+        })
+    #expect(edited.name == "Move the studio")
+    #expect(edited.targetDate == "2027-01-10")
+    #expect(edited.folderPath == Fixtures.projects[1].folderPath)
+    await #expect(throws: PreviewError.self) {
+        try await client.updateProject(.with { $0.id = "nope" })
+    }
+}
+
+@Test func orgFixturesNameTheCoordinatorOrNone() {
+    #expect(Fixtures.org.coordinatorBotID == Fixtures.chiefOfStaff.id)
+    #expect(Fixtures.orgWithoutCoordinator.coordinatorBotID.isEmpty)
+    #expect(Fixtures.projects.map(\.state) == [.active, .active, .done, .proposed])
+    #expect(Fixtures.projectEvents.count == 1)
+}
+
 @Test func draftBotServesTheFixtureDraft() async throws {
     let request = Hearth_V1_DraftBotRequest.with { $0.description_p = "Read up on competitors" }
     let draft = try await PreviewClient().draftBot(request)

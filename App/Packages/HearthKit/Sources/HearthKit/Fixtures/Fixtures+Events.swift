@@ -139,6 +139,23 @@ extension Fixtures {
 }
 
 extension Fixtures {
+    /// A fourth script: the owner marks a project done, so the project
+    /// arrives with its new state. Sequences start at 1.
+    public static let projectEvents: [Hearth_V1_SubscribeResponse] = {
+        var finished = projects[0]
+        finished.state = .done
+        finished.doneAt = time(30)
+        finished.updatedAt = time(30)
+        return [
+            .with {
+                $0.sequence = 1
+                $0.event = .projectChanged(.with { $0.project = finished })
+            }
+        ]
+    }()
+}
+
+extension Fixtures {
     /// Another script: the core rewrote the DM's summary after a run, so the
     /// conversation arrives with its new summary. Sequences start at 1.
     public static let summaryEvents: [Hearth_V1_SubscribeResponse] = {

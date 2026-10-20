@@ -7,6 +7,7 @@ import "hearth/v1/conversation.proto";
 import "hearth/v1/handbook.proto";
 import "hearth/v1/inbox.proto";
 import "hearth/v1/integration.proto";
+import "hearth/v1/project.proto";
 import "hearth/v1/provider.proto";
 import "hearth/v1/usage.proto";
 
@@ -45,6 +46,7 @@ message SubscribeResponse {
     HandbookChanged handbook_changed = 16;
     CredentialChanged credential_changed = 17;
     TiersChanged tiers_changed = 18;
+    ProjectChanged project_changed = 19;
   }
 }
 
@@ -136,6 +138,11 @@ message CredentialChanged {
 // TiersChanged is the tier mapping after the owner or a sign-in changed it.
 message TiersChanged {
   repeated TierChoice tiers = 1;
+}
+
+// ProjectChanged is a project as it is now, with its derived status.
+message ProjectChanged {
+  Project project = 1;
 }
 
 // Resync says the requested sequence is older than the core keeps; the

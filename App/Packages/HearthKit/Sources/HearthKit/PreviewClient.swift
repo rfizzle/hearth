@@ -1,6 +1,7 @@
 // PreviewClient answers from Fixtures instead of the core, for previews, the
 // gallery and store tests. It keeps no state: a write answers as the core
-// would and changes nothing, and subscribe replays Fixtures' scripted reply.
+// would and changes nothing (except projects, which it keeps in a list so
+// create, done and archive are reflected), and subscribe replays Fixtures' scripted reply.
 
 import Foundation
 
@@ -23,6 +24,8 @@ public struct PreviewClient: HearthClient {
         self.latestRun = latestRun
         self.credentials = credentials
     }
+
+    let projectList = ProjectList()
 
     private var directMessage: Hearth_V1_Conversation {
         var conversation = Fixtures.dmConversation

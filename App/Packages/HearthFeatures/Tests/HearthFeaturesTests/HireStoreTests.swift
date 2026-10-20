@@ -49,6 +49,25 @@ private struct EmptyOrgClient: HearthClient {
         try await base.getConversation(id: id)
     }
     func retry(runID: String) async throws -> Hearth_V1_Run { try await base.retry(runID: runID) }
+    func listProjects(includeArchived: Bool) async throws -> [Hearth_V1_Project] {
+        try await base.listProjects(includeArchived: includeArchived)
+    }
+    func createProject(
+        _ request: Hearth_V1_CreateProjectRequest
+    ) async throws -> Hearth_V1_Project {
+        try await base.createProject(request)
+    }
+    func updateProject(
+        _ request: Hearth_V1_UpdateProjectRequest
+    ) async throws -> Hearth_V1_Project {
+        try await base.updateProject(request)
+    }
+    func markProjectDone(id: String) async throws -> Hearth_V1_Project {
+        try await base.markProjectDone(id: id)
+    }
+    func archiveProject(id: String) async throws -> Hearth_V1_Project {
+        try await base.archiveProject(id: id)
+    }
     func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
         try await base.listGrants(botID: botID)
     }

@@ -61,11 +61,12 @@ HandbookService   ListPages, PutPage, DeletePage (the pages every bot reads, wit
 TeamService       List, Create, Update, Delete
 ConversationService  List, Get (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
+ProjectService    List, Create (or confirm a proposal), Update, MarkDone, Archive
 InboxService      ListInbox, Decide(approval), Answer(question, or a widget), Acknowledge
 UsageService      Summary(by bot/team/month), SetBudgets, Resume
 ProviderService   List, SetCredential, ClearCredential, StartChatGPTLogin (returns the page the app opens), ListServiceModels (before or after a key is saved), Tiers, SetTiers, SyncCredentials, ExportCredential
 IntegrationService  List, SetKey, Clear (web search backends)
-EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, usage ticks, note, handbook, credential (name only) and tier changes
+EventService      Subscribe(stream): message deltas, run state, task state, inbox changes, project changes, usage ticks, note, handbook, credential (name only) and tier changes
 NativeToolService (served by the app, called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
 
@@ -76,7 +77,7 @@ Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a 
 ### 4. Data
 
 - **SQLite** via `modernc.org/sqlite`, single writer connection, WAL, append-only migrations with a `schema_version` table (shhh pattern). Location: `~/Library/Application Support/Hearth/hearth.db`.
-- Tables (first cut): `org`, `bots`, `teams`, `team_members`, `grants`, `conversations`, `messages`, `attachments`, `tasks`, `runs`, `usage`, `handbook_pages`, `bot_notes`, `schedules`, `inbox_items`, `providers`, `tiers`, `settings`.
+- Tables (first cut): `org`, `bots`, `teams`, `team_members`, `grants`, `conversations`, `messages`, `attachments`, `tasks`, `runs`, `usage`, `handbook_pages`, `bot_notes`, `schedules`, `projects`, `inbox_items`, `providers`, `tiers`, `settings`.
 - `messages` follows shhh's `chat_messages` shape (session, seq, role, content, tool_calls JSON, tool_call_id, attachments) plus `author_bot_id`, `kind`, `task_id`, `run_id`, `cost`.
 - **Files** live in the Workspace folder; the database stores relative paths and content hashes. Deleting a bot or team never deletes files.
 - **Export** is a zip: `org.json` (bots, teams, grants without bookmarks, tiers without credentials), `handbook/*.md`, `templates/*.json`. No conversations, notes, usage or credentials.
@@ -124,6 +125,7 @@ internal/tools  internal/memory  internal/handbook  internal/meter  internal/pro
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
+internal/project                 a project's types and the status rule derived from its tasks; imports org and the stdlib only
 internal/workspace               the Hearth folder's layout and path containment; imports org only
 internal/store                   SQLite, migrations, repositories; knows org types, nothing above
 proto/hearth/v1                  the contract; generated Go under internal/rpc/gen, Swift under App/Packages/HearthKit
@@ -148,6 +150,7 @@ Rules:
 | `internal/org/intro` | A bot's introduction (purpose, three how lines, three prompts), the rule that assembles one for a bot hired from a description, and the check a shipped one passes; app-rendered, never in a run | new |
 | `internal/org/memory` | Bot notes and handbook pages, their caps, and the pure rules for which pages a bot reads and how full the handbook is | new |
 | `internal/org/usage` | Usage records, the month's totals, budgets, and the rule that says how near a budget the spending is | new |
+| `internal/project` | Project types and the derived status rule | new |
 | `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
 | `internal/store/migrate` | The ordered schema steps and the runner that applies the ones a file has not seen | new |

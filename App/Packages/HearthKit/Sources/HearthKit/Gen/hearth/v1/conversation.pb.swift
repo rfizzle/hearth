@@ -26,6 +26,9 @@ public nonisolated enum Hearth_V1_ConversationKind: SwiftProtobuf.Enum, Swift.Ca
   case dm // = 1
   case channel // = 2
   case task // = 3
+
+  /// The Chief of Staff answers; the conversation has a project_id.
+  case project // = 4
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -38,6 +41,7 @@ public nonisolated enum Hearth_V1_ConversationKind: SwiftProtobuf.Enum, Swift.Ca
     case 1: self = .dm
     case 2: self = .channel
     case 3: self = .task
+    case 4: self = .project
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -48,6 +52,7 @@ public nonisolated enum Hearth_V1_ConversationKind: SwiftProtobuf.Enum, Swift.Ca
     case .dm: return 1
     case .channel: return 2
     case .task: return 3
+    case .project: return 4
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -58,6 +63,7 @@ public nonisolated enum Hearth_V1_ConversationKind: SwiftProtobuf.Enum, Swift.Ca
     .dm,
     .channel,
     .task,
+    .project,
   ]
 
 }
@@ -238,6 +244,14 @@ public nonisolated struct Hearth_V1_Conversation: @unchecked Sendable {
   public var summaryThroughSeq: Int64 {
     get {_storage._summaryThroughSeq}
     set {_uniqueStorage()._summaryThroughSeq = newValue}
+  }
+
+  /// The project this is the conversation of; empty for the other kinds. A
+  /// project conversation leaves bot_id empty: the coordinator is resolved
+  /// when a message is sent.
+  public var projectID: String {
+    get {_storage._projectID}
+    set {_uniqueStorage()._projectID = newValue}
   }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -635,7 +649,7 @@ public nonisolated struct Hearth_V1_Run: Sendable {
 fileprivate nonisolated let _protobuf_package = "hearth.v1"
 
 nonisolated extension Hearth_V1_ConversationKind: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CONVERSATION_KIND_UNSPECIFIED\0\u{1}CONVERSATION_KIND_DM\0\u{1}CONVERSATION_KIND_CHANNEL\0\u{1}CONVERSATION_KIND_TASK\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CONVERSATION_KIND_UNSPECIFIED\0\u{1}CONVERSATION_KIND_DM\0\u{1}CONVERSATION_KIND_CHANNEL\0\u{1}CONVERSATION_KIND_TASK\0\u{1}CONVERSATION_KIND_PROJECT\0")
 }
 
 nonisolated extension Hearth_V1_MessageKind: SwiftProtobuf._ProtoNameProviding {
@@ -648,7 +662,7 @@ nonisolated extension Hearth_V1_RunState: SwiftProtobuf._ProtoNameProviding {
 
 nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Conversation"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}kind\0\u{3}bot_id\0\u{1}title\0\u{3}updated_at\0\u{3}latest_run\0\u{1}summary\0\u{3}summary_through_seq\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}kind\0\u{3}bot_id\0\u{1}title\0\u{3}updated_at\0\u{3}latest_run\0\u{1}summary\0\u{3}summary_through_seq\0\u{3}project_id\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -659,6 +673,7 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
     var _latestRun: Hearth_V1_Run? = nil
     var _summary: String = String()
     var _summaryThroughSeq: Int64 = 0
+    var _projectID: String = String()
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -677,6 +692,7 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
       _latestRun = source._latestRun
       _summary = source._summary
       _summaryThroughSeq = source._summaryThroughSeq
+      _projectID = source._projectID
     }
   }
 
@@ -703,6 +719,7 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
         case 6: try { try decoder.decodeSingularMessageField(value: &_storage._latestRun) }()
         case 7: try { try decoder.decodeSingularStringField(value: &_storage._summary) }()
         case 8: try { try decoder.decodeSingularInt64Field(value: &_storage._summaryThroughSeq) }()
+        case 9: try { try decoder.decodeSingularStringField(value: &_storage._projectID) }()
         default: break
         }
       }
@@ -739,6 +756,9 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
       if _storage._summaryThroughSeq != 0 {
         try visitor.visitSingularInt64Field(value: _storage._summaryThroughSeq, fieldNumber: 8)
       }
+      if !_storage._projectID.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._projectID, fieldNumber: 9)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -756,6 +776,7 @@ nonisolated extension Hearth_V1_Conversation: SwiftProtobuf.Message, SwiftProtob
         if _storage._latestRun != rhs_storage._latestRun {return false}
         if _storage._summary != rhs_storage._summary {return false}
         if _storage._summaryThroughSeq != rhs_storage._summaryThroughSeq {return false}
+        if _storage._projectID != rhs_storage._projectID {return false}
         return true
       }
       if !storagesAreEqual {return false}

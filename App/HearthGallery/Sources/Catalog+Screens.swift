@@ -188,6 +188,25 @@ private struct NoBotsClient: HearthClient {
     func retry(runID: String) async throws -> Hearth_V1_Run {
         try await preview.retry(runID: runID)
     }
+    func listProjects(includeArchived: Bool) async throws -> [Hearth_V1_Project] {
+        try await preview.listProjects(includeArchived: includeArchived)
+    }
+    func createProject(
+        _ request: Hearth_V1_CreateProjectRequest
+    ) async throws -> Hearth_V1_Project {
+        try await preview.createProject(request)
+    }
+    func updateProject(
+        _ request: Hearth_V1_UpdateProjectRequest
+    ) async throws -> Hearth_V1_Project {
+        try await preview.updateProject(request)
+    }
+    func markProjectDone(id: String) async throws -> Hearth_V1_Project {
+        try await preview.markProjectDone(id: id)
+    }
+    func archiveProject(id: String) async throws -> Hearth_V1_Project {
+        try await preview.archiveProject(id: id)
+    }
     func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
         try await preview.listGrants(botID: botID)
     }

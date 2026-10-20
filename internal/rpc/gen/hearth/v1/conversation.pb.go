@@ -29,6 +29,8 @@ const (
 	ConversationKind_CONVERSATION_KIND_DM          ConversationKind = 1
 	ConversationKind_CONVERSATION_KIND_CHANNEL     ConversationKind = 2
 	ConversationKind_CONVERSATION_KIND_TASK        ConversationKind = 3
+	// The Chief of Staff answers; the conversation has a project_id.
+	ConversationKind_CONVERSATION_KIND_PROJECT ConversationKind = 4
 )
 
 // Enum value maps for ConversationKind.
@@ -38,12 +40,14 @@ var (
 		1: "CONVERSATION_KIND_DM",
 		2: "CONVERSATION_KIND_CHANNEL",
 		3: "CONVERSATION_KIND_TASK",
+		4: "CONVERSATION_KIND_PROJECT",
 	}
 	ConversationKind_value = map[string]int32{
 		"CONVERSATION_KIND_UNSPECIFIED": 0,
 		"CONVERSATION_KIND_DM":          1,
 		"CONVERSATION_KIND_CHANNEL":     2,
 		"CONVERSATION_KIND_TASK":        3,
+		"CONVERSATION_KIND_PROJECT":     4,
 	}
 )
 
@@ -220,8 +224,12 @@ type Conversation struct {
 	Summary string `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
 	// Messages at or below this seq are covered by the summary.
 	SummaryThroughSeq int64 `protobuf:"varint,8,opt,name=summary_through_seq,json=summaryThroughSeq,proto3" json:"summary_through_seq,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The project this is the conversation of; empty for the other kinds. A
+	// project conversation leaves bot_id empty: the coordinator is resolved
+	// when a message is sent.
+	ProjectId     string `protobuf:"bytes,9,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Conversation) Reset() {
@@ -308,6 +316,13 @@ func (x *Conversation) GetSummaryThroughSeq() int64 {
 		return x.SummaryThroughSeq
 	}
 	return 0
+}
+
+func (x *Conversation) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
 }
 
 type Message struct {
@@ -1271,7 +1286,7 @@ var File_hearth_v1_conversation_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\n" +
-	"\x1chearth/v1/conversation.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16hearth/v1/widget.proto\"\xb0\x02\n" +
+	"\x1chearth/v1/conversation.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16hearth/v1/widget.proto\"\xcf\x02\n" +
 	"\fConversation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\x1b.hearth.v1.ConversationKindR\x04kind\x12\x15\n" +
@@ -1282,7 +1297,9 @@ const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\n" +
 	"latest_run\x18\x06 \x01(\v2\x0e.hearth.v1.RunR\tlatestRun\x12\x18\n" +
 	"\asummary\x18\a \x01(\tR\asummary\x12.\n" +
-	"\x13summary_through_seq\x18\b \x01(\x03R\x11summaryThroughSeq\"\x93\x04\n" +
+	"\x13summary_through_seq\x18\b \x01(\x03R\x11summaryThroughSeq\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\t \x01(\tR\tprojectId\"\x93\x04\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x0fconversation_id\x18\x02 \x01(\tR\x0econversationId\x12\x10\n" +
@@ -1347,12 +1364,13 @@ const file_hearth_v1_conversation_proto_rawDesc = "" +
 	"\afailure\x18\x06 \x01(\tR\afailure\x129\n" +
 	"\n" +
 	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x125\n" +
-	"\bended_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\aendedAt*\x8a\x01\n" +
+	"\bended_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\aendedAt*\xa9\x01\n" +
 	"\x10ConversationKind\x12!\n" +
 	"\x1dCONVERSATION_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CONVERSATION_KIND_DM\x10\x01\x12\x1d\n" +
 	"\x19CONVERSATION_KIND_CHANNEL\x10\x02\x12\x1a\n" +
-	"\x16CONVERSATION_KIND_TASK\x10\x03*\xad\x02\n" +
+	"\x16CONVERSATION_KIND_TASK\x10\x03\x12\x1d\n" +
+	"\x19CONVERSATION_KIND_PROJECT\x10\x04*\xad\x02\n" +
 	"\vMessageKind\x12\x1c\n" +
 	"\x18MESSAGE_KIND_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_KIND_TEXT\x10\x01\x12\x1a\n" +

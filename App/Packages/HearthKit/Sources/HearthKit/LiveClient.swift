@@ -18,6 +18,7 @@ public final class LiveClient: HearthClient {
     private let handbook: Hearth_V1_HandbookServiceClient
     private let usage: Hearth_V1_UsageServiceClient
     private let integrations: Hearth_V1_IntegrationServiceClient
+    let projects: Hearth_V1_ProjectServiceClient
     private let events: Hearth_V1_EventServiceClient
 
     /// Connects to hearthd at `baseURL` (for example `http://127.0.0.1:52011`),
@@ -42,6 +43,7 @@ public final class LiveClient: HearthClient {
         self.handbook = Hearth_V1_HandbookServiceClient(client: protocolClient)
         self.usage = Hearth_V1_UsageServiceClient(client: protocolClient)
         self.integrations = Hearth_V1_IntegrationServiceClient(client: protocolClient)
+        self.projects = Hearth_V1_ProjectServiceClient(client: protocolClient)
         self.events = Hearth_V1_EventServiceClient(client: protocolClient)
     }
 
@@ -289,7 +291,7 @@ public final class LiveClient: HearthClient {
 
 extension ResponseMessage {
     /// The reply, or the error the call failed with.
-    fileprivate func value() throws -> Output {
+    func value() throws -> Output {
         try result.get()
     }
 }
