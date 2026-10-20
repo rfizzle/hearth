@@ -1,6 +1,6 @@
 // BotListStore holds the bots as the core last reported them and which one is
-// selected. It fetches the list, applies the bot changes the core announces,
-// and decides nothing; the selection is what the sidebar highlights and the
+// selected. It fetches the list, applies the bot changes the relay delivers,
+// refetches on a resync, and decides nothing; the selection is what the sidebar highlights and the
 // conversation opens.
 
 import HearthKit
@@ -19,12 +19,18 @@ public final class BotListStore {
 
     private var loaded = false
     private let client: any HearthClient
-    private let events: AsyncStream<Hearth_V1_SubscribeResponse>
+    @ObservationIgnored private let relay: EventRelay
+    @ObservationIgnored private var registration: EventRelay.Registration?
 
-    /// A store over `client`; `events` is the relay's stream of core events.
-    public init(client: any HearthClient, events: AsyncStream<Hearth_V1_SubscribeResponse>) {
+    /// A store over `client`, fed by `relay`.
+    public init(client: any HearthClient, relay: EventRelay) {
         self.client = client
-        self.events = events
+        self.relay = relay
+        registration = relay.register { [weak self] event in await self?.handle(event) }
+    }
+
+    isolated deinit {
+        if let registration { relay.unregister(registration) }
     }
 
     /// Whether to offer hiring: the list has loaded and holds nobody.
@@ -48,19 +54,20 @@ public final class BotListStore {
         }
     }
 
-    /// Applies bot changes until the stream ends.
-    public func run() async {
-        for await event in events {
-            apply(event)
+    /// Applies one event from the relay.
+    func handle(_ event: Hearth_V1_SubscribeResponse) async {
+        switch event.event {
+        case .botChanged(let change): upsert(change.bot)
+        case .resync: await load()
+        default: break
         }
     }
 
-    private func apply(_ event: Hearth_V1_SubscribeResponse) {
-        guard case .botChanged(let change) = event.event else { return }
-        if let index = bots.firstIndex(where: { $0.id == change.bot.id }) {
-            bots[index] = change.bot
+    private func upsert(_ bot: Hearth_V1_Bot) {
+        if let index = bots.firstIndex(where: { $0.id == bot.id }) {
+            bots[index] = bot
         } else {
-            bots.append(change.bot)
+            bots.append(bot)
         }
     }
 }

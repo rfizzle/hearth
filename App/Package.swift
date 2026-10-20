@@ -23,9 +23,11 @@ let package = Package(
         .executableTarget(
             name: "Hearth",
             dependencies: [
+                .product(name: "HearthDesign", package: "HearthDesign"),
                 .product(name: "HearthFeatures", package: "HearthFeatures"),
                 .product(name: "HearthKit", package: "HearthKit"),
                 .product(name: "HearthNative", package: "HearthNative"),
+                .product(name: "HearthUI", package: "HearthUI"),
             ],
             path: "Hearth/Sources"
         ),

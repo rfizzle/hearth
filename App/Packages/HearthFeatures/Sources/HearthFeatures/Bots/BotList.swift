@@ -34,7 +34,6 @@ public struct BotList: View {
         }
         .listStyle(.sidebar)
         .task { await store.load() }
-        .task { await store.run() }
     }
 }
 

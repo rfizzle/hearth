@@ -30,6 +30,7 @@ public struct ConversationScreen: View {
 
     public var body: some View {
         content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) { bar }
             .navigationTitle(bot.name)
             .task(id: store.conversationID) {

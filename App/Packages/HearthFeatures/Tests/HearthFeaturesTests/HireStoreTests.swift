@@ -68,14 +68,8 @@ private struct EmptyOrgClient: HearthClient {
 }
 
 @MainActor
-private func botList(
-    client: any HearthClient = PreviewClient(), events: [Hearth_V1_SubscribeResponse] = []
-) -> BotListStore {
-    let stream = AsyncStream<Hearth_V1_SubscribeResponse> { continuation in
-        for event in events { continuation.yield(event) }
-        continuation.finish()
-    }
-    return BotListStore(client: client, events: stream)
+private func botList(client: any HearthClient = PreviewClient()) -> BotListStore {
+    BotListStore(client: client, relay: EventRelay(client: client))
 }
 
 private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
@@ -148,10 +142,10 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     var sam = Fixtures.bot
     sam.id = "bot-sam"
     sam.name = "Sam"
-    let store = botList(events: [botEvent(sam)])
+    let store = botList()
     await store.load()
     #expect(store.bots.map(\.name) == ["Dana"])
-    await store.run()
+    await store.handle(botEvent(sam))
     #expect(store.bots.map(\.name) == ["Dana", "Sam"])
 }
 
@@ -159,10 +153,10 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
 @Test func aChangedBotReplacesItsRowAndKeepsTheSelection() async {
     var renamed = Fixtures.bot
     renamed.status = .working
-    let store = botList(events: [botEvent(renamed)])
+    let store = botList()
     await store.load()
     store.selection = Fixtures.bot.id
-    await store.run()
+    await store.handle(botEvent(renamed))
     #expect(store.bots.count == 1)
     #expect(store.selectedBot?.status == .working)
 }
@@ -176,4 +170,16 @@ private func botEvent(_ bot: Hearth_V1_Bot) -> Hearth_V1_SubscribeResponse {
     let full = botList()
     await full.load()
     #expect(!full.showsHireAffordance)
+}
+
+@MainActor
+@Test func aResyncRefetchesTheList() async {
+    var stray = Fixtures.bot
+    stray.id = "bot-stray"
+    let store = botList()
+    await store.load()
+    await store.handle(botEvent(stray))
+    #expect(store.bots.count == 2)
+    await store.handle(.with { $0.event = .resync(Hearth_V1_Resync()) })
+    #expect(store.bots.map(\.id) == [Fixtures.bot.id])
 }

@@ -42,13 +42,20 @@ extension Catalog {
         let changes = [working, paused].map { bot in
             Hearth_V1_SubscribeResponse.with { $0.event = .botChanged(.with { $0.bot = bot }) }
         }
-        let events = AsyncStream<Hearth_V1_SubscribeResponse> { continuation in
-            changes.forEach { continuation.yield($0) }
-            continuation.finish()
-        }
-        let team = BotListStore(client: PreviewClient(), events: events)
+        // The changes arrive after the list's own fetch, as they would live.
+        let relay = EventRelay(subscribe: { _ in
+            AsyncThrowingStream { continuation in
+                let task = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    changes.forEach { continuation.yield($0) }
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        })
+        let team = BotListStore(client: PreviewClient(), relay: relay)
+        relay.start()
         team.selection = Fixtures.bot.id
-        let empty = BotListStore(client: noBotsClient, events: AsyncStream { $0.finish() })
+        let empty = BotListStore(client: noBotsClient, relay: EventRelay(client: noBotsClient))
         return [
             GalleryState(
                 name: "idle, working, paused", width: 280,

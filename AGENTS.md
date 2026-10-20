@@ -129,7 +129,7 @@ proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 
 ```
 App/                  Package.swift root: the app and gallery targets
-  Hearth/             app target: scenes, windows, helper lifecycle, DI
+  Hearth/             app target: the main window (onboarding, then team and conversation), Settings, the Team menu, helper lifecycle, one event relay, DI
   HearthGallery/      every component and composition in every state
   Packages/
     HearthKit/        generated client, HearthClient, LiveClient, PreviewClient
@@ -187,8 +187,8 @@ from `Hearth`.
 - **A bare SwiftUI executable launched from the shim shows no window.** `open`
   needs a bundle: `make gallery-open` assembles one, and `make gallery-shot`
   captures its window by id (Screen Recording granted, path under `/Users`).
-- **`HEARTH_HELPER=./hearthd`** lets `swift run --package-path App Hearth`
-  find the helper outside a bundle.
+- **`HEARTH_HELPER=./hearthd`** finds the helper outside a bundle. Trial runs
+  use a throwaway `HEARTH_DATA_DIR` (`open --env`), or touch the real data.
 - **There is no signing identity on a developer Mac, by design.** `make
   app-sign` ad-hoc signs and says so; the Release workflow is the only place
   a Developer ID build comes from (D18 in `docs/decisions.md`).

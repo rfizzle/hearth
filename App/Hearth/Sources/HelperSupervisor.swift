@@ -48,6 +48,9 @@ final class HelperSupervisor {
         let process = Process()
         process.executableURL = Self.helperURL()
         process.arguments = ["serve", "--listen", "127.0.0.1:0"]
+        if let dataDir = Self.dataDir() {
+            process.arguments?.append(contentsOf: ["--data-dir", dataDir])
+        }
         let stdin = Pipe()
         let stdout = Pipe()
         process.standardInput = stdin
@@ -125,6 +128,14 @@ final class HelperSupervisor {
             return URL(filePath: path)
         }
         return Bundle.main.bundleURL.appending(path: "Contents/Helpers/hearthd")
+    }
+
+    /// HEARTH_DATA_DIR when set: where the helper keeps its database and
+    /// credentials instead of the Hearth folder in Application Support, so a
+    /// trial run leaves the owner's own data alone.
+    private static func dataDir() -> String? {
+        let path = ProcessInfo.processInfo.environment["HEARTH_DATA_DIR"]
+        return path?.isEmpty == false ? path : nil
     }
 
     /// 32 random bytes as hex.
