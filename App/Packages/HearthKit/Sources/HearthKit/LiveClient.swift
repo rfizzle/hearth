@@ -19,6 +19,8 @@ public final class LiveClient: HearthClient {
     private let usage: Hearth_V1_UsageServiceClient
     private let integrations: Hearth_V1_IntegrationServiceClient
     let projects: Hearth_V1_ProjectServiceClient
+    let measures: Hearth_V1_MeasureServiceClient
+    let deliverables: Hearth_V1_DeliverableServiceClient
     private let events: Hearth_V1_EventServiceClient
 
     /// Connects to hearthd at `baseURL` (for example `http://127.0.0.1:52011`),
@@ -44,6 +46,8 @@ public final class LiveClient: HearthClient {
         self.usage = Hearth_V1_UsageServiceClient(client: protocolClient)
         self.integrations = Hearth_V1_IntegrationServiceClient(client: protocolClient)
         self.projects = Hearth_V1_ProjectServiceClient(client: protocolClient)
+        self.measures = Hearth_V1_MeasureServiceClient(client: protocolClient)
+        self.deliverables = Hearth_V1_DeliverableServiceClient(client: protocolClient)
         self.events = Hearth_V1_EventServiceClient(client: protocolClient)
     }
 

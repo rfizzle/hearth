@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// DeliverableService is the templates of shaped deliverables: the five
+// Hearth ships and the owner's own, kept as files in the Templates folder of
+// the Hearth folder. Only the owner, through the app, writes there.
+// See docs/model.md#work.
+service DeliverableService {
+  // ListDeliverableTemplates is the shipped templates and then the owner's,
+  // each in id order, and a file that could not be used with its problem.
+  rpc ListDeliverableTemplates(ListDeliverableTemplatesRequest) returns (ListDeliverableTemplatesResponse) {}
+  // SaveDeliverableTemplate validates a template document and writes it as
+  // Templates/<id>.deliverable.json, replacing the owner's of that id.
+  rpc SaveDeliverableTemplate(SaveDeliverableTemplateRequest) returns (SaveDeliverableTemplateResponse) {}
+  // DeleteDeliverableTemplate removes one of the owner's templates by id.
+  rpc DeleteDeliverableTemplate(DeleteDeliverableTemplateRequest) returns (DeleteDeliverableTemplateResponse) {}
+}
+
+message DeliverableTemplate {
+  string id = 1;
+  string name = 2;
+  // A sentence on when to use it.
+  string when = 3;
+  bool shipped = 4;
+  // The file of an owner's template, absolute; empty for a shipped one.
+  string path = 5;
+  // The owner's template document as written; empty for a shipped one.
+  string json = 6;
+  // Why a file could not be used; set only on a file that failed to load.
+  string problem = 7;
+}
+
+message ListDeliverableTemplatesRequest {}
+
+message ListDeliverableTemplatesResponse {
+  repeated DeliverableTemplate templates = 1;
+}
+
+message SaveDeliverableTemplateRequest {
+  // A template document; the core validates it.
+  string json = 1;
+}
+
+message SaveDeliverableTemplateResponse {
+  DeliverableTemplate template = 1;
+}
+
+message DeleteDeliverableTemplateRequest {
+  string id = 1;
+}
+
+message DeleteDeliverableTemplateResponse {}

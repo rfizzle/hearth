@@ -144,6 +144,19 @@ public protocol HearthClient: Sendable {
     /// Keeps the folder and the conversation; "Not now" on a proposal.
     func archiveProject(id: String) async throws -> Hearth_V1_Project
 
+    /// Every measure id that resolves now, with its label and no value.
+    func listMeasures() async throws -> [Hearth_V1_MeasureValue]
+    /// One value per resolved id, in the order asked, at most 100. A subject
+    /// that is gone is a value with `missing` set, not an error.
+    func readMeasures(ids: [String]) async throws -> [Hearth_V1_MeasureValue]
+    /// The five shipped templates, the owner's after them, and each file that
+    /// could not be used with its problem.
+    func listDeliverableTemplates() async throws -> [Hearth_V1_DeliverableTemplate]
+    /// Validates a template document and keeps it in the Templates folder.
+    func saveDeliverableTemplate(json: String) async throws -> Hearth_V1_DeliverableTemplate
+    /// Removes one of the owner's templates.
+    func deleteDeliverableTemplate(id: String) async throws
+
     /// Every change the core makes after `sequence` (0 for live events only),
     /// in order. The stream finishes with the error that ended it.
     func subscribe(after sequence: UInt64) -> AsyncThrowingStream<

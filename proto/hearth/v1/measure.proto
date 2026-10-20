@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// MeasureService is the office's own figures, read by id: a project's tasks,
+// what a bot has cost, how many items wait in the Inbox. The core computes
+// every value from its own books, so a dashboard stays live with no model in
+// the loop; the app reads again on the events it already receives.
+// See docs/model.md#work.
+service MeasureService {
+  // ListMeasures is every id that resolves now, with its label and no value.
+  rpc ListMeasures(ListMeasuresRequest) returns (ListMeasuresResponse) {}
+  // ReadMeasures is one value per id asked, in the order asked. A subject
+  // that is gone is a value with missing set, not an error.
+  rpc ReadMeasures(ReadMeasuresRequest) returns (ReadMeasuresResponse) {}
+}
+
+enum MeasureKind {
+  MEASURE_KIND_UNSPECIFIED = 0;
+  MEASURE_KIND_NUMBER = 1;
+  MEASURE_KIND_PROGRESS = 2;
+  MEASURE_KIND_LIGHT = 3;
+}
+
+enum Tone {
+  TONE_UNSPECIFIED = 0;
+  TONE_NEUTRAL = 1;
+  TONE_POSITIVE = 2;
+  TONE_ATTENTION = 3;
+  TONE_NEGATIVE = 4;
+}
+
+message MeasureValue {
+  // The resolved id, "family/subject[/period]".
+  string id = 1;
+  MeasureKind kind = 2;
+  string label = 3;
+  // A number's value.
+  double number = 4;
+  // What a number or progress counts: count, usd_micros, tokens, bytes or cents.
+  string unit = 5;
+  // A progress: done of total.
+  int64 done = 6;
+  int64 total = 7;
+  // A light: its tone and the words beside it.
+  Tone tone = 8;
+  string word = 9;
+  // When the core read it; unset in a list.
+  google.protobuf.Timestamp as_of = 10;
+  // Why there is no value: "No such project", "Not priced", "No budget set".
+  string missing = 11;
+}
+
+message ListMeasuresRequest {}
+
+message ListMeasuresResponse {
+  repeated MeasureValue measures = 1;
+}
+
+message ReadMeasuresRequest {
+  // At most 100 resolved ids.
+  repeated string ids = 1;
+}
+
+message ReadMeasuresResponse {
+  repeated MeasureValue values = 1;
+}

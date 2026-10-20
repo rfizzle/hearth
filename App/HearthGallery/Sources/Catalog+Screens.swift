@@ -209,6 +209,21 @@ private struct NoBotsClient: HearthClient {
     func archiveProject(id: String) async throws -> Hearth_V1_Project {
         try await preview.archiveProject(id: id)
     }
+    func listMeasures() async throws -> [Hearth_V1_MeasureValue] {
+        try await preview.listMeasures()
+    }
+    func readMeasures(ids: [String]) async throws -> [Hearth_V1_MeasureValue] {
+        try await preview.readMeasures(ids: ids)
+    }
+    func listDeliverableTemplates() async throws -> [Hearth_V1_DeliverableTemplate] {
+        try await preview.listDeliverableTemplates()
+    }
+    func saveDeliverableTemplate(json: String) async throws -> Hearth_V1_DeliverableTemplate {
+        try await preview.saveDeliverableTemplate(json: json)
+    }
+    func deleteDeliverableTemplate(id: String) async throws {
+        try await preview.deleteDeliverableTemplate(id: id)
+    }
     func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
         try await preview.listGrants(botID: botID)
     }

@@ -68,6 +68,21 @@ private struct EmptyOrgClient: HearthClient {
     func archiveProject(id: String) async throws -> Hearth_V1_Project {
         try await base.archiveProject(id: id)
     }
+    func listMeasures() async throws -> [Hearth_V1_MeasureValue] {
+        try await base.listMeasures()
+    }
+    func readMeasures(ids: [String]) async throws -> [Hearth_V1_MeasureValue] {
+        try await base.readMeasures(ids: ids)
+    }
+    func listDeliverableTemplates() async throws -> [Hearth_V1_DeliverableTemplate] {
+        try await base.listDeliverableTemplates()
+    }
+    func saveDeliverableTemplate(json: String) async throws -> Hearth_V1_DeliverableTemplate {
+        try await base.saveDeliverableTemplate(json: json)
+    }
+    func deleteDeliverableTemplate(id: String) async throws {
+        try await base.deleteDeliverableTemplate(id: id)
+    }
     func listGrants(botID: String) async throws -> [Hearth_V1_Grant] {
         try await base.listGrants(botID: botID)
     }

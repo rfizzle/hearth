@@ -84,6 +84,17 @@ final class ProjectList: @unchecked Sendable {
         }
     }
 
+    /// Takes the project as the core sent it, in the place it holds.
+    func replace(_ project: Hearth_V1_Project) {
+        lock.withLock {
+            if let index = projects.firstIndex(where: { $0.id == project.id }) {
+                projects[index] = project
+            } else {
+                projects.append(project)
+            }
+        }
+    }
+
     func change(
         _ id: String, _ edit: (inout Hearth_V1_Project) -> Void
     ) throws -> Hearth_V1_Project {
