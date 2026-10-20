@@ -34,7 +34,8 @@ func Definitions(o Options) []tools.Definition {
 			Parameters: json.RawMessage(`{"type":"object","properties":{` +
 				`"path":{"type":"string","description":"The file, relative to your folder, for example brief.md, notes/sources.md or report.pdf."},` +
 				`"offset":{"type":"integer","description":"The byte to start at. Leave it out to read from the start; pass the offset a previous result named to read on."},` +
-				`"pages":{"type":"string","description":"For a PDF or a deck: the pages to read, such as \"4-12\" or \"7\". At most 100 pages are read at a time; leave it out to start at page 1."}` +
+				`"pages":{"type":"string","description":"For a PDF or a deck: the pages to read, such as \"4-12\" or \"7\". At most 100 pages are read at a time; leave it out to start at page 1."},` +
+				`"sheet":{"type":"string","description":"For an Excel workbook: the one sheet to read, by its name or its number from 1. Leave it out to read the first 20 sheets."}` +
 				`},"required":["path"]}`),
 			Capability: org.FilesRead,
 			Tier:       tools.TierRead,
@@ -66,6 +67,7 @@ type readArgs struct {
 	Path   string `json:"path"`
 	Offset int64  `json:"offset"`
 	Pages  string `json:"pages"`
+	Sheet  string `json:"sheet"`
 }
 
 type writeArgs struct {
@@ -94,6 +96,9 @@ func (o Options) read(ctx context.Context, call tools.Call) (tools.Result, error
 	kind, err := kindOf(f, name)
 	if err != nil {
 		return tools.Result{}, err
+	}
+	if a.Sheet != "" && kind != document.KindXLSX {
+		return tools.Result{}, errors.New("files.read: sheet applies to Excel files only")
 	}
 	if kind != document.KindText {
 		return o.readDocument(ctx, call, a, name)
@@ -254,6 +259,9 @@ func describeRead(args json.RawMessage) string {
 	_ = json.Unmarshal(args, &a) // a describer never fails; an unreadable call shows a bare verb
 	if a.Pages != "" {
 		return fmt.Sprintf("Read %s, pages %s", a.Path, a.Pages)
+	}
+	if a.Sheet != "" {
+		return fmt.Sprintf("Read %s, sheet %s", a.Path, a.Sheet)
 	}
 	if a.Offset > 0 {
 		return fmt.Sprintf("Read %s from byte %d", a.Path, a.Offset)

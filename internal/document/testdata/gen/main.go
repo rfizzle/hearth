@@ -24,6 +24,14 @@
 // 200 rows, each with a quoted comma. bomb.docx is a Word file whose
 // [Content_Types].xml header claims a terabyte; deep.docx has a document part
 // nested 150 levels deep. Each is a few kilobytes.
+//
+// sales.xlsx is written with excelize: a sheet "Sales" with a date shown as
+// yyyy-mm-dd, a number shown as #,##0.00 and a formula, and a sheet "Notes".
+// wide.xlsx is one sheet of 120 rows by 100 columns, 12,000 cells, past the
+// cap. letter.rtf has a font table, a Windows-1252 escape and a \u escape.
+// tiny.png, tiny.jpg and tiny.gif are 1x1 pictures from the standard
+// library's encoders. huge.png is a PNG whose header claims 100,000 x
+// 100,000 pixels and holds no pixels, to be refused from the header.
 package main
 
 import (
@@ -33,13 +41,22 @@ import (
 	"compress/zlib"
 	"crypto/md5"
 	"crypto/rc4"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"hash/crc32"
+	"image"
+	"image/color"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/xuri/excelize/v2"
 )
 
 // pad is the 32 bytes the standard security handler pads a password with.
@@ -77,6 +94,13 @@ func main() {
 		"rows.csv":           rowsCSV(),
 		"bomb.docx":          bombDocx(),
 		"deep.docx":          deepDocx(),
+		"sales.xlsx":         salesXLSX(),
+		"wide.xlsx":          wideXLSX(),
+		"letter.rtf":         []byte(letterRTF),
+		"tiny.png":           tinyPNG(),
+		"tiny.jpg":           tinyJPEG(),
+		"tiny.gif":           tinyGIF(),
+		"huge.png":           hugePNG(),
 	}
 	for name, data := range files {
 		if err := os.WriteFile(filepath.Join(*out, name), data, 0o644); err != nil {
@@ -381,4 +405,112 @@ func deepDocx() []byte {
 		contentTypes("/word/document.xml", wordMain),
 		{"word/document.xml", xml + `<w:document xmlns:w="` + wns + `"><w:body>` + body + `</w:body></w:document>`},
 	})
+}
+
+// salesXLSX is two sheets: Sales, with a date, a number format and a formula,
+// and Notes, with one line of text.
+func salesXLSX() []byte {
+	f := excelize.NewFile()
+	defer f.Close()
+	must(f.SetSheetName("Sheet1", "Sales"))
+	_, err := f.NewSheet("Notes")
+	must(err)
+	date := must1(f.NewStyle(&excelize.Style{CustomNumFmt: ptr("yyyy-mm-dd")}))
+	money := must1(f.NewStyle(&excelize.Style{CustomNumFmt: ptr("#,##0.00")}))
+	must(f.SetSheetRow("Sales", "A1", &[]any{"Day", "Region", "Amount", "Doubled"}))
+	must(f.SetCellValue("Sales", "A2", time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC)))
+	must(f.SetCellValue("Sales", "B2", "North | East"))
+	must(f.SetCellValue("Sales", "C2", 1234.5))
+	must(f.SetCellFormula("Sales", "D2", "C2*2"))
+	must(f.SetCellValue("Sales", "A3", time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC)))
+	must(f.SetCellValue("Sales", "B3", "South"))
+	must(f.SetCellValue("Sales", "C3", 99))
+	must(f.SetCellFormula("Sales", "D3", "C3*2"))
+	must(f.SetCellStyle("Sales", "A2", "A3", date))
+	must(f.SetCellStyle("Sales", "C2", "D3", money))
+	must(f.SetCellValue("Notes", "A1", "Figures are before tax."))
+	return xlsxBytes(f)
+}
+
+// wideXLSX is 120 rows of 100 columns, 12,000 cells.
+func wideXLSX() []byte {
+	f := excelize.NewFile()
+	defer f.Close()
+	for r := 1; r <= 120; r++ {
+		row := make([]any, 100)
+		for c := range row {
+			row[c] = r*1000 + c
+		}
+		cell := must1(excelize.CoordinatesToCellName(1, r))
+		must(f.SetSheetRow("Sheet1", cell, &row))
+	}
+	return xlsxBytes(f)
+}
+
+func xlsxBytes(f *excelize.File) []byte {
+	var b bytes.Buffer
+	must(f.Write(&b))
+	return b.Bytes()
+}
+
+// letterRTF has a font table to drop, an e-acute as \'e9 and a euro sign as
+// \u8364 with its question-mark fallback.
+const letterRTF = `{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0 Times New Roman;}}{\colortbl;\red0\green0\blue0;}` +
+	`{\*\generator Hearth fixture;}\pard Caf\'e9 menu\par Price: \u8364?12\tab net\par {\b Bold} done.\par}`
+
+func tinyImage() *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	img.Set(0, 0, color.RGBA{R: 200, G: 30, B: 30, A: 255})
+	return img
+}
+
+func tinyPNG() []byte {
+	var b bytes.Buffer
+	must(png.Encode(&b, tinyImage()))
+	return b.Bytes()
+}
+
+func tinyJPEG() []byte {
+	var b bytes.Buffer
+	must(jpeg.Encode(&b, tinyImage(), nil))
+	return b.Bytes()
+}
+
+func tinyGIF() []byte {
+	var b bytes.Buffer
+	must(gif.Encode(&b, tinyImage(), nil))
+	return b.Bytes()
+}
+
+// hugePNG is the signature and an IHDR claiming 100,000 x 100,000 8-bit RGBA
+// pixels, then an IEND: a header a decoder reads in full and no data.
+func hugePNG() []byte {
+	var b bytes.Buffer
+	b.WriteString("\x89PNG\r\n\x1a\n")
+	chunk := func(kind string, data []byte) {
+		must(binary.Write(&b, binary.BigEndian, uint32(len(data))))
+		body := append([]byte(kind), data...)
+		b.Write(body)
+		must(binary.Write(&b, binary.BigEndian, crc32.ChecksumIEEE(body)))
+	}
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], 100000)
+	binary.BigEndian.PutUint32(ihdr[4:], 100000)
+	ihdr[8], ihdr[9] = 8, 6 // bit depth 8, colour type RGBA
+	chunk("IHDR", ihdr)
+	chunk("IEND", nil)
+	return b.Bytes()
+}
+
+func ptr[T any](v T) *T { return &v }
+
+func must(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func must1[T any](v T, err error) T {
+	must(err)
+	return v
 }

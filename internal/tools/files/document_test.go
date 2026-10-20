@@ -30,6 +30,11 @@ func TestReadDocument(t *testing.T) {
 	b.fixture(t, "notes.docx", "notes.docx")
 	b.fixture(t, "deck.pptx", "deck.pptx")
 	b.fixture(t, "rows.csv", "rows.csv")
+	b.fixture(t, "sales.xlsx", "sales.xlsx")
+	b.fixture(t, "wide.xlsx", "wide.xlsx")
+	b.fixture(t, "letter.rtf", "letter.rtf")
+	b.fixture(t, "shot.png", "tiny.png")
+	b.fixture(t, "huge.png", "huge.png")
 	b.put(t, "fake.pdf", []byte("only words"))
 	b.put(t, "plain.md", []byte("# Plain\n"))
 	b.fixture(t, "wrong.docx", "deck.pptx")
@@ -74,6 +79,22 @@ func TestReadDocument(t *testing.T) {
 			[]string{"## Slide 2\nThe plan"}, []string{"## Slide 1"}, ""},
 		{"a csv is a table", map[string]any{"path": "rows.csv"},
 			[]string{"[File: rows.csv, a table, read as text.]", "| 1 | Doe, Jo 1 | ok |"}, nil, ""},
+		{"a workbook reads sheet by sheet", map[string]any{"path": "sales.xlsx"},
+			[]string{"[File: sales.xlsx, 2 sheets, read as tables.]\n\n## Sheet: Sales (3 rows × 4 columns)", "| 2024-01-31 | North \\| East | 1,234.50 |", "## Sheet: Notes"}, nil, ""},
+		{"sheet picks one by name", map[string]any{"path": "sales.xlsx", "sheet": "Notes"},
+			[]string{`[File: sales.xlsx, 2 sheets, showing sheet "Notes".]`, "Figures are before tax."}, []string{"Sales"}, ""},
+		{"sheet picks one by number", map[string]any{"path": "sales.xlsx", "sheet": "2"},
+			[]string{"## Sheet: Notes"}, []string{"## Sheet: Sales"}, ""},
+		{"a sheet that is not there", map[string]any{"path": "sales.xlsx", "sheet": "Q9"}, nil, nil, `has no sheet called "Q9"; its sheets are "Sales" and "Notes"`},
+		{"a big sheet is cut with a notice", map[string]any{"path": "wide.xlsx"},
+			[]string{"has 12,000 cells; the first 10,000 are shown", "[Showing bytes 0 to 65536 of"}, nil, ""},
+		{"sheet on a pdf", map[string]any{"path": "brief.pdf", "sheet": "1"}, nil, nil, "sheet applies to Excel files only"},
+		{"sheet on a text file", map[string]any{"path": "plain.md", "sheet": "1"}, nil, nil, "sheet applies to Excel files only"},
+		{"an rtf reads as text", map[string]any{"path": "letter.rtf"},
+			[]string{"[File: letter.rtf, text without its formatting.]\n\nCafé menu\nPrice: €12\tnet"}, []string{"fonttbl", "Times New Roman"}, ""},
+		{"a picture is described and noted", map[string]any{"path": "shot.png"},
+			[]string{"shot.png is a PNG image, 1×1.", "[shot.png is a picture. Hearth isn't open, so its text could not be read.]"}, []string{"[File:"}, ""},
+		{"a picture over 50 megapixels is refused", map[string]any{"path": "huge.png"}, nil, nil, "100000 × 100000 pixels, larger than the 50 megapixels"},
 		{"pages on a word file", map[string]any{"path": "notes.docx", "pages": "1"}, nil, nil, "has no pages to pick"},
 		{"a deck named as a word file", map[string]any{"path": "wrong.docx"}, nil, nil, "wrong.docx does not look like a Word document."},
 		{"pages on a text file", map[string]any{"path": "plain.md", "pages": "1"}, nil, nil, "pages applies to PDF"},
@@ -118,7 +139,7 @@ func TestReadDocumentNameCannotOpenInTheAppVoice(t *testing.T) {
 
 func TestReadDocumentPagesInTheDescription(t *testing.T) {
 	read := Definitions(Options{})[0]
-	for _, want := range []string{"PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) and RTF", `"pages":`} {
+	for _, want := range []string{"PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) and RTF", `"pages":`, `"sheet":`} {
 		if !strings.Contains(read.Description+string(read.Parameters), want) {
 			t.Errorf("files.read lacks %q", want)
 		}

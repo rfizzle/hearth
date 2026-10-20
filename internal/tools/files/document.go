@@ -45,7 +45,7 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 		return tools.Result{}, fmt.Errorf("files.read: %w", err)
 	}
 	doc, err := document.Read(ctx, call.Path, document.Options{
-		Name: name, Pages: pages, Want: int(min(a.Offset, 1<<30)) + readCap + utf8.UTFMax, Recogniser: o.Recogniser,
+		Name: name, Pages: pages, Sheet: a.Sheet, Want: int(min(a.Offset, 1<<30)) + readCap + utf8.UTFMax, Recogniser: o.Recogniser,
 	})
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("files.read: %w", err)
@@ -67,7 +67,10 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 	end := from + int64(len(window))
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "[File: %s, %s.]\n\n%s", name, describe(doc), window)
+	if lead, ok := describe(doc); ok {
+		fmt.Fprintf(&out, "[File: %s, %s.]\n\n", name, lead)
+	}
+	out.Write(window)
 	next := ""
 	if doc.Next > 0 {
 		next = fmt.Sprintf(`pages "%s"`, document.PagesHint(doc.Next, doc.PageCount))
@@ -89,17 +92,19 @@ func (o Options) readDocument(ctx context.Context, call tools.Call, a readArgs, 
 }
 
 // describe is what the first line says of a document: its size and where the
-// text came from.
-func describe(doc document.Document) string {
+// text came from. A kind that says it all in its text, a picture, has none.
+func describe(doc document.Document) (string, bool) {
 	switch doc.Kind {
 	case document.KindPPTX:
-		return plural(doc.PageCount, "slide") + ", read from the slides' text"
+		return plural(doc.PageCount, "slide") + ", read from the slides' text", true
 	case document.KindDocx:
-		return "a Word document, read as text"
+		return "a Word document, read as text", true
 	case document.KindCSV:
-		return "a table, read as text"
+		return "a table, read as text", true
+	case document.KindPDF:
+		return plural(doc.PageCount, "page") + ", read from its text layer", true
 	}
-	return plural(doc.PageCount, "page") + ", read from its text layer"
+	return doc.Header, doc.Header != ""
 }
 
 func plural(n int, noun string) string {

@@ -24,6 +24,12 @@ var rows = []row{
 	{KindDocx, labelDocx, []string{".docx"}, sniffDocx, readDocx},
 	{KindPPTX, labelPPTX, []string{".pptx"}, sniffPPTX, readPPTX},
 	{KindCSV, "a CSV file", []string{".csv", ".tsv"}, sniffCSV, readCSV},
+	{KindXLSX, labelXLSX, []string{".xlsx"}, sniffXLSX, readXLSX},
+	{KindRTF, "an RTF file", []string{".rtf"}, sniffRTF, readRTF},
+	{KindPNG, "a PNG image", []string{".png"}, sniffPNG, readImage},
+	{KindJPEG, "a JPEG image", []string{".jpg", ".jpeg"}, sniffJPEG, readImage},
+	{KindGIF, "a GIF image", []string{".gif"}, sniffGIF, readImage},
+	{KindWebP, "a WebP image", []string{".webp"}, sniffWebP, readImage},
 }
 
 // unsupported are formats that are not read; Detect says to export them.

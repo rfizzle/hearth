@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/hearth/internal/document/sheet"
 )
 
 // Every notice a read adds is built here, from a fixed sentence in brackets;
@@ -126,4 +128,93 @@ func noticeCellCap(cells int) string {
 		n = n[:len(n)-3] + "," + n[len(n)-3:]
 	}
 	return fmt.Sprintf("[The table has more than %s cells; only the first rows, up to %s cells, are shown. Ask the owner for a smaller file.]", n, n)
+}
+
+// label is a name taken from a document (a sheet's) made fit for a notice or a
+// heading: one line, no brackets or quotation marks to close a notice early,
+// and at most labelRunes characters.
+func label(s string) string {
+	s = strings.ToValidUTF8(oneLine(s), "�")
+	s = strings.NewReplacer("[", "(", "]", ")", `"`, "'").Replace(s)
+	if r := []rune(s); len(r) > labelRunes {
+		s = string(r[:labelRunes]) + "…"
+	}
+	return strings.TrimSpace(s)
+}
+
+// labelRunes is the longest a document's own name is allowed to be in a
+// notice, and how many names a notice lists.
+const (
+	labelRunes = 60
+	listNames  = 10
+)
+
+// commas writes n with a comma between each three digits, as the owner reads
+// a number.
+func commas(n int) string {
+	s := strconv.Itoa(n)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}
+
+// nameList is names as `"A", "B" and "C"`, at most listNames of them, then
+// the number left over.
+func nameList(names []string) string {
+	shown := names[:min(len(names), listNames)]
+	parts := make([]string, len(shown))
+	for i, n := range shown {
+		parts[i] = `"` + label(n) + `"`
+	}
+	more := ""
+	if len(names) > len(shown) {
+		more = fmt.Sprintf(" and %d more", len(names)-len(shown))
+	}
+	if len(parts) == 1 {
+		return parts[0] + more
+	}
+	if more != "" {
+		return strings.Join(parts, ", ") + more
+	}
+	return strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
+}
+
+// noticeSheetCut says a sheet has more cells than are shown. exact is false
+// when the count stopped at the deadline.
+func noticeSheetCut(name string, cells int, exact bool) string {
+	have := "has " + commas(cells) + " cells"
+	if !exact {
+		have = "has at least " + commas(cells) + " cells"
+	}
+	return fmt.Sprintf(`[Sheet "%s" %s; the first %s are shown. Ask the owner for a smaller sheet or a CSV.]`, label(name), have, commas(sheet.MaxCells))
+}
+
+func noticeSheetsLeft(left []string) string {
+	return fmt.Sprintf(`[Sheets %s were not read; only the first %d sheets are read. Call files.read with sheet "%s" to read one.]`, nameList(left), sheet.MaxSheets, label(left[0]))
+}
+
+func noticeSheetUnread(name string) string {
+	return fmt.Sprintf(`[Sheet "%s" could not be read.]`, label(name))
+}
+
+func noticeSheetTextCap(name string) string {
+	return fmt.Sprintf(`[Reading stopped at %d MB of text, in sheet "%s".]`, MaxText>>20, label(name))
+}
+
+func noticeCellsCut(runes int) string {
+	return fmt.Sprintf("[Cells longer than %d characters were cut.]", runes)
+}
+
+// noticePicture says an image's text could not be read: with the app open it
+// was offered and not recognised, without it nothing could look.
+func noticePicture(name string, app bool) string {
+	if app {
+		return fmt.Sprintf("[%s is a picture; its text could not be recognised yet.]", name)
+	}
+	return fmt.Sprintf("[%s is a picture. Hearth isn't open, so its text could not be read.]", name)
+}
+
+func noticeNoSheets(name string) string {
+	return fmt.Sprintf("[%s has no sheets Hearth can read.]", name)
 }

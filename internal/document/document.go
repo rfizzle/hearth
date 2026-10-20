@@ -66,6 +66,9 @@ type Options struct {
 	Name string
 	// Pages limits a paged kind to a range.
 	Pages Range
+	// Sheet chooses one sheet of a workbook, by name or by its number from 1;
+	// empty reads the first sheets.
+	Sheet string
 	// Want is how many bytes of text the caller will use. A reader stops once
 	// it has that many, so a long document costs what is read of it; 0 reads
 	// to the caps.
@@ -98,6 +101,10 @@ type Document struct {
 	Text string
 	// Notices are fixed sentences in brackets about what was left out.
 	Notices []string
+	// Header is what the first line says after the file name for a kind the
+	// caller has no words for, such as "3 sheets, read as tables"; empty when
+	// the text says it all, as a picture's does.
+	Header string
 	// Next is the first page of the range the read stopped before because
 	// Want was met; 0 when it did not.
 	Next int

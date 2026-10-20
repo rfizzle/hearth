@@ -78,7 +78,7 @@ func TestRead(t *testing.T) {
 	b.put(t, "long.md", []byte(long))
 	b.put(t, "split.md", []byte(split))
 	b.put(t, "empty.md", nil)
-	b.put(t, "logo.png", []byte{0x89, 'P', 'N', 'G', 0, 0, 0, 0})
+	b.put(t, "logo.dat", []byte{0x89, 'P', 'N', 'G', 0, 0, 0, 0})
 	b.put(t, "sub/notes.md", []byte("notes"))
 	b.fifo(t, "pipe")
 
@@ -96,7 +96,7 @@ func TestRead(t *testing.T) {
 		{"and read on from the offset", map[string]any{"path": "long.md", "offset": readCap}, long[readCap:], "the end of the file.]", ""},
 		{"a character the cap would split", map[string]any{"path": "split.md"}, split[:readCap-1], "with offset 65535.]", ""},
 		{"an offset inside a character", map[string]any{"path": "split.md", "offset": readCap}, "tail", "bytes 65537 to 65541 of 65541, the end of the file.]", ""},
-		{"a binary file", map[string]any{"path": "logo.png"}, "", "", "not a text file"},
+		{"a binary file", map[string]any{"path": "logo.dat"}, "", "", "not a text file"},
 		{"a folder", map[string]any{"path": "sub"}, "", "", "is a folder"},
 		{"a missing file", map[string]any{"path": "nope.md"}, "", "", "could not read nope.md: no such file"},
 		{"a named pipe", map[string]any{"path": "pipe"}, "", "", "pipe is not a regular file"},

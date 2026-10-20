@@ -1,6 +1,6 @@
 // Package document reads the text out of a file a bot is pointed at: a PDF,
-// a Word file, a PowerPoint deck or a CSV today, the other common kinds as
-// their readers land.
+// a Word file, a PowerPoint deck, a CSV, an Excel workbook, an RTF file, or
+// the kind and size of a picture.
 //
 // Responsibility: decide what kind of file it is from its name and its first
 // bytes, read it within fixed caps, and return its text with page markers
@@ -33,9 +33,15 @@
 // A kind is one row in kinds.go: its name, extensions, the check its first
 // bytes must pass, and its reader. A new kind is a new row and a sub-package. A Word or PowerPoint file is a
 // zip read by office under limits on entries, bytes and XML depth; a CSV is
-// read here into a Markdown table of at most 10,000 cells.
+// read here into a Markdown table of at most 10,000 cells. A workbook is read
+// by sheet, in memory and under its own zip limits, up to 20 sheets of 10,000
+// cells, or the one sheet the call names; an RTF file by rtf, with a depth and
+// a size cap. A picture is described from its header alone (format and
+// pixels, never decoded) and one over 50 megapixels is refused; its text is
+// left to the Recogniser, which is not consulted yet, and the notice says
+// whether the app was open.
 //
 // See docs/decisions.md#hearth--decisions
 //
-// It imports pdftext, office and the standard library.
+// It imports pdftext, office, sheet, rtf, x/image/webp and the standard library.
 package document
