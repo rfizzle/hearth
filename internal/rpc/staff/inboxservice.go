@@ -1,4 +1,4 @@
-package rpc
+package staff
 
 import (
 	"context"
@@ -10,11 +10,9 @@ import (
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
 
-// inboxService is InboxService: what waits on the owner. The orchestrator
-// owns every rule about an item; these only name the item and the decision.
+// ListInbox is what waits on the owner. The orchestrator owns every rule
+// about an item; these handlers only name the item and the decision.
 // See docs/model.md#8-approvals.
-type inboxService struct{ opts Options }
-
 func (s *inboxService) ListInbox(ctx context.Context, req *connect.Request[hearthv1.ListInboxRequest]) (*connect.Response[hearthv1.ListInboxResponse], error) {
 	items, err := s.opts.Store.InboxItems(ctx, !req.Msg.GetIncludeClosed())
 	if err != nil {

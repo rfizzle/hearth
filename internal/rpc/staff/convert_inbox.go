@@ -1,4 +1,4 @@
-package rpc
+package staff
 
 import (
 	"context"
@@ -107,14 +107,14 @@ func grantsToProto(grants []org.Grant, own string) []*hearthv1.Grant {
 
 // grantsOf is the bot's grants in the contract's form. The own folder is
 // read from the bot; a bot that cannot be read has none marked.
-func (o Options) grantsOf(ctx context.Context, botID string, grants []org.Grant) []*hearthv1.Grant {
+func (o Deps) grantsOf(ctx context.Context, botID string, grants []org.Grant) []*hearthv1.Grant {
 	bot, _ := o.Store.Bot(ctx, botID)
 	return grantsToProto(grants, bot.FolderPath)
 }
 
 // itemToProto is an Inbox item. A failure item holds no conversation, so
 // its link to the thread goes through its run.
-func (o Options) itemToProto(ctx context.Context, it inbox.Item) *hearthv1.InboxItem {
+func (o Deps) itemToProto(ctx context.Context, it inbox.Item) *hearthv1.InboxItem {
 	out := &hearthv1.InboxItem{
 		Id:               it.ID,
 		Kind:             wire.ToProto(inboxKinds, it.Kind),

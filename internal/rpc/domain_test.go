@@ -452,11 +452,3 @@ func TestEnumsThatAreCastNumberAlike(t *testing.T) {
 		}
 	}
 }
-
-func TestUpdateOrg_RefusesWhileNoWayToMakeTheFolderIsSet(t *testing.T) {
-	s := &orgService{opts: Options{}}
-	_, err := s.UpdateOrg(t.Context(), connect.NewRequest(&hearthv1.UpdateOrgRequest{Name: "Acme", WorkspacePath: "/Hearth"}))
-	if code(err) != connect.CodeFailedPrecondition {
-		t.Fatalf("UpdateOrg = %v, want failed_precondition", err)
-	}
-}

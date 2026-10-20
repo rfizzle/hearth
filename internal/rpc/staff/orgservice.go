@@ -1,4 +1,4 @@
-package rpc
+package staff
 
 import (
 	"context"
@@ -46,7 +46,7 @@ func (s *orgService) UpdateOrg(ctx context.Context, req *connect.Request[hearthv
 	bot, grants, dm := skill.ChiefOfStaff(o.WorkspacePath)
 	bot, hired, err := s.opts.Store.PutOrgWithCoordinator(ctx, o, bot, grants, dm)
 	if hired {
-		s.opts.publish(wire.BotChanged{Bot: bot})
+		s.opts.Publish(wire.BotChanged{Bot: bot})
 	}
 	return wire.Reply(&hearthv1.UpdateOrgResponse{Org: orgToProto(o)}, err)
 }

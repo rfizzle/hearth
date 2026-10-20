@@ -1,4 +1,4 @@
-package rpc
+package staff
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (s *botService) CreateBot(ctx context.Context, req *connect.Request[hearthv
 		}
 	}
 	if bot, err = s.opts.Store.CreateBot(ctx, bot, grants, dm); err == nil {
-		s.opts.publish(wire.BotChanged{Bot: bot})
+		s.opts.Publish(wire.BotChanged{Bot: bot})
 	}
 	return wire.Reply(&hearthv1.CreateBotResponse{Bot: wire.BotToProto(bot)}, err)
 }
@@ -132,6 +132,6 @@ func (s *botService) SetGrants(ctx context.Context, req *connect.Request[hearthv
 	if err != nil {
 		return nil, wire.Fail(err)
 	}
-	s.opts.publish(orchestrate.GrantsChanged{BotID: m.GetBotId(), Grants: stored})
+	s.opts.Publish(orchestrate.GrantsChanged{BotID: m.GetBotId(), Grants: stored})
 	return connect.NewResponse(&hearthv1.SetGrantsResponse{Grants: s.opts.grantsOf(ctx, m.GetBotId(), stored)}), nil
 }

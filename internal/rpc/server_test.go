@@ -63,6 +63,9 @@ func (memAddr) String() string  { return "hearthd" }
 
 const testToken = "launch-token"
 
+// maxCount is the most words one StreamHello sends, staff's cap.
+const maxCount = 1000
+
 // serve starts NewHandler(o) on an in-memory listener and returns an HTTP
 // client whose requests reach it.
 func serve(t *testing.T, o Options) *http.Client {

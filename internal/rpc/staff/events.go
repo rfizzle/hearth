@@ -1,39 +1,17 @@
-package rpc
+package staff
 
 import (
 	"context"
 
-	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
-	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/rpc/books"
 	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/wire"
 )
 
-// The bodies rpc publishes on the bus beside orchestrate's: a change to an
-// account, an integration or a bot is not a run, so it is rpc's to name.
-
-// AccountChanged is a model provider's account in its new state.
-type AccountChanged struct{ Account provider.Account }
-
-// IntegrationChanged is an integration's account in its new state.
-type IntegrationChanged struct{ Integration integration.Account }
-
-// CredentialChanged names a credential that was stored or removed. It has no
-// value field on purpose: the app fetches the record with ExportCredential.
-type CredentialChanged struct {
-	Name    string
-	Deleted bool
-}
-
-// ConversationChanged is a conversation as it is now: its newest run, its
-// title or its summary changed. The orchestrator publishes it too.
-type ConversationChanged = orchestrate.ConversationChanged
-
 // eventToProto is the SubscribeResponse for a bus event, and false for a body
 // the contract has no message for.
-func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
+func (o Deps) eventToProto(ctx context.Context, e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
 	out := &hearthv1.SubscribeResponse{Sequence: e.Seq}
 	switch b := e.Body.(type) {
 	case orchestrate.MessageDelta:
@@ -54,7 +32,7 @@ func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearth
 		out.Event = &hearthv1.SubscribeResponse_GrantsChanged{GrantsChanged: &hearthv1.GrantsChanged{
 			BotId: b.BotID, Grants: o.grantsOf(ctx, b.BotID, b.Grants),
 		}}
-	case ConversationChanged:
+	case orchestrate.ConversationChanged:
 		out.Event = &hearthv1.SubscribeResponse_ConversationChanged{ConversationChanged: &hearthv1.ConversationChanged{
 			Conversation: conversationToProto(b.Conversation),
 		}}
@@ -62,25 +40,26 @@ func (o Options) eventToProto(ctx context.Context, e orchestrate.Event) (*hearth
 		out.Event = &hearthv1.SubscribeResponse_Resync{Resync: &hearthv1.Resync{}}
 	case orchestrate.Heartbeat:
 		out.Event = &hearthv1.SubscribeResponse_Heartbeat{Heartbeat: &hearthv1.Heartbeat{}}
-	case AccountChanged:
-		out.Event = &hearthv1.SubscribeResponse_AccountChanged{AccountChanged: &hearthv1.AccountChanged{Account: accountToProto(b.Account)}}
-	case IntegrationChanged:
-		changed := &hearthv1.IntegrationChanged{Integration: integrationAccountToProto(b.Integration)}
-		out.Event = &hearthv1.SubscribeResponse_IntegrationChanged{IntegrationChanged: changed}
-	case CredentialChanged:
-		out.Event = &hearthv1.SubscribeResponse_CredentialChanged{CredentialChanged: &hearthv1.CredentialChanged{Name: b.Name, Deleted: b.Deleted}}
 	case wire.BotChanged:
 		out.Event = &hearthv1.SubscribeResponse_BotChanged{BotChanged: &hearthv1.BotChanged{Bot: wire.BotToProto(b.Bot)}}
 	default:
-		return booksEvent(e)
+		return o.otherEvent(e)
 	}
 	return out, true
 }
 
-// booksEvent is the SubscribeResponse for a body books publishes, or for a
-// note the orchestrator does.
-func booksEvent(e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
-	out, ok := books.Event(e.Body)
+// otherEvent is the SubscribeResponse for a body Deps.Events knows (the
+// accounts' bodies), or one books publishes, or for a note the orchestrator
+// does.
+func (o Deps) otherEvent(e orchestrate.Event) (*hearthv1.SubscribeResponse, bool) {
+	var out *hearthv1.SubscribeResponse
+	ok := false
+	if o.Events != nil {
+		out, ok = o.Events(e.Body)
+	}
+	if !ok {
+		out, ok = books.Event(e.Body)
+	}
 	if ok {
 		out.Sequence = e.Seq
 	}

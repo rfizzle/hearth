@@ -1,36 +1,38 @@
 package rpc
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"time"
-
-	"connectrpc.com/connect"
 
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/provider"
+	"github.com/rfizzle/hearth/internal/rpc/accounts"
 	"github.com/rfizzle/hearth/internal/rpc/books"
-	hearthv1 "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1"
 	"github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1/hearthv1connect"
+	"github.com/rfizzle/hearth/internal/rpc/staff"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
 const (
 	// defaultInterval is the pause between streamed words.
 	defaultInterval = 50 * time.Millisecond
-	// defaultCount is how many words StreamHello sends when asked for none.
-	defaultCount = 10
-	// maxCount caps how many words one StreamHello may ask for. The count is
-	// request input and every word holds the stream open for an interval, so
-	// without a cap one caller could pin a handler for as long as it liked.
-	// 1,000 words is far more than the demo stream needs and ends within a
-	// minute at the default pace.
-	maxCount     = 1000
-	defaultWords = "Hello from hearthd, the Go core of hearth, streaming one word at a time to the app."
+	defaultWords    = "Hello from hearthd, the Go core of hearth, streaming one word at a time to the app."
 )
+
+// What the owner asks a bot to be drafted from, and the proposal that comes
+// back: staff's, named here because hearthd builds the Drafter.
+type (
+	DraftRequest = staff.DraftRequest
+	Draft        = staff.Draft
+	Drafter      = staff.Drafter
+)
+
+// ConversationChanged is a conversation as it is now: its newest run, its
+// title or its summary changed. The orchestrator publishes it too.
+type ConversationChanged = orchestrate.ConversationChanged
 
 // Options configures the handler NewHandler returns.
 type Options struct {
@@ -98,76 +100,24 @@ func (o Options) withDefaults() Options {
 
 // NewHandler returns the HTTP handler for the hearth.v1 contract, behind the
 // launch-token check. It serves the spike service and the nine services over
-// the domain in Options, the handbook and usage ones through books. It points the accounts' and the integrations' change
-// hooks at the bus, so a sign-in finishing or a key pasted reaches the app
-// whoever caused it; call it before either is used.
+// the domain in Options: the org, bot, conversation, inbox and event ones
+// through staff, the provider and integration ones through accounts, the
+// handbook and usage ones through books. It points the accounts' and the
+// integrations' change hooks at the bus, so a sign-in finishing or a key
+// pasted reaches the app whoever caused it; call it before either is used.
 // See docs/architecture.md#1-layering
 func NewHandler(o Options) http.Handler {
 	o = o.withDefaults()
 	mux := http.NewServeMux()
-	mux.Handle(hearthv1connect.NewHearthServiceHandler(&service{opts: o}))
-	mux.Handle(hearthv1connect.NewOrgServiceHandler(&orgService{opts: o}))
 	deps := books.Deps{Store: o.Store, Accounts: o.Accounts, Pages: o.Handbook, Meter: o.Meter, Publish: o.publish}
-	mux.Handle(hearthv1connect.NewBotServiceHandler(&botService{Bots: books.Bots{Deps: deps}, opts: o}))
-	if o.Accounts != nil {
-		o.Accounts.OnChange = func(a provider.Account) { o.publish(AccountChanged{Account: a}) }
-		o.Accounts.OnCredentialChange = func(name string, deleted bool) { o.publish(CredentialChanged{Name: name, Deleted: deleted}) }
-	}
-	if o.Integrations != nil {
-		o.Integrations.OnChange = func(a integration.Account) { o.publish(IntegrationChanged{Integration: a}) }
-	}
-	mux.Handle(hearthv1connect.NewConversationServiceHandler(&conversationService{opts: o}))
-	mux.Handle(hearthv1connect.NewProviderServiceHandler(&providerService{Models: books.Models{Deps: deps}, opts: o}))
-	mux.Handle(hearthv1connect.NewIntegrationServiceHandler(&integrationService{opts: o}))
-	mux.Handle(hearthv1connect.NewEventServiceHandler(&eventService{opts: o}))
-	mux.Handle(hearthv1connect.NewInboxServiceHandler(&inboxService{opts: o}))
+	staff.Register(mux, staff.Deps{
+		Version: o.Version, Interval: o.Interval, Words: o.Words,
+		Store: o.Store, Orchestrator: o.Orchestrator, Templates: o.Templates,
+		ReservedFolders: o.ReservedFolders, Drafter: o.Drafter, Bus: o.Bus,
+		EnsureWorkspace: o.EnsureWorkspace, Books: deps, Events: accounts.Event, Publish: o.publish,
+	})
+	accounts.Register(mux, accounts.Deps{Accounts: o.Accounts, Integrations: o.Integrations, Books: deps, Publish: o.publish})
 	mux.Handle(hearthv1connect.NewHandbookServiceHandler(books.Handbook{Deps: deps}))
 	mux.Handle(hearthv1connect.NewUsageServiceHandler(books.Usage{Deps: deps}))
 	return requireToken(o.Token, mux)
-}
-
-// The services, one per file beside this one.
-type (
-	service    struct{ opts Options } // the spike: Ping and StreamHello
-	orgService struct{ opts Options } // OrgService: the org's name and the Hearth folder
-	botService struct {               // BotService: the templates, hiring, listing bots and their grants
-		books.Bots // the bot's settings and its notes
-		opts       Options
-	}
-	conversationService struct{ opts Options } // ConversationService: the threads and the owner's side of a run
-	providerService     struct {               // ProviderService: which model accounts are signed in, and their credentials
-		books.Models // the tiers and the models on offer
-		opts         Options
-	}
-	integrationService struct{ opts Options } // IntegrationService: the optional services that are not model providers
-	eventService       struct{ opts Options } // EventService: the one stream every change travels on
-)
-
-func (s *service) Ping(context.Context, *connect.Request[hearthv1.PingRequest]) (*connect.Response[hearthv1.PingResponse], error) {
-	return connect.NewResponse(&hearthv1.PingResponse{Version: s.opts.Version}), nil
-}
-
-func (s *service) StreamHello(ctx context.Context, req *connect.Request[hearthv1.HelloRequest], stream *connect.ServerStream[hearthv1.HelloChunk]) error {
-	count := int(req.Msg.GetCount())
-	if count <= 0 {
-		count = defaultCount
-	}
-	count = min(count, maxCount)
-	timer := time.NewTimer(0)
-	defer timer.Stop()
-	for i := range count {
-		if i > 0 {
-			timer.Reset(s.opts.Interval)
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-timer.C:
-			}
-		}
-		chunk := &hearthv1.HelloChunk{Index: int32(i), Word: s.opts.Words[i%len(s.opts.Words)]}
-		if err := stream.Send(chunk); err != nil {
-			return err
-		}
-	}
-	return nil
 }
