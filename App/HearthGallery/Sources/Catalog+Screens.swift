@@ -41,7 +41,8 @@ extension Catalog {
             for _ in 0..<step.rawValue { store.next() }
         }
         return GalleryState(
-            name: name, width: 560, view: AnyView(OnboardingScreen(store: store)))
+            name: name, width: 760,
+            view: AnyView(OnboardingScreen(store: store).frame(height: 600)))
     }
 
     private static func hireWithTemplate() -> GalleryState {

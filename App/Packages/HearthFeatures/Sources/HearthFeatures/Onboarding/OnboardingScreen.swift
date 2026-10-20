@@ -20,16 +20,39 @@ public struct OnboardingScreen: View {
 
     @State private var isChoosingFolder = false
     @State private var isWebSearchOpen = false
+    @ScaledMetric(relativeTo: .largeTitle) private var markSize: CGFloat = 72
+    @ScaledMetric(relativeTo: .title) private var iconColumn: CGFloat = 36
 
     public init(store: OnboardingStore) {
         self.store = store
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+        VStack(spacing: Theme.Spacing.xl) {
+            GeometryReader { proxy in
+                ScrollView {
+                    content
+                        .frame(maxWidth: Theme.Size.formWidth)
+                        .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            }
+            buttons
+                .frame(maxWidth: Theme.Size.formWidth)
+        }
+        .padding(Theme.Spacing.xxl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+        .navigationTitle("Welcome")
+        .task { await store.accounts.load() }
+    }
+
+    /// The step's content, centred in the space above the buttons.
+    private var content: some View {
+        VStack(alignment: store.step == .welcome ? .center : .leading, spacing: Theme.Spacing.xl) {
             header
             switch store.step {
-            case .welcome: EmptyView()
+            case .welcome: outline
             case .signIn: signIn
             case .nameAndFolder: nameAndFolder
             }
@@ -38,37 +61,62 @@ public struct OnboardingScreen: View {
                     .font(Theme.callout)
                     .foregroundStyle(Theme.color(.toneNegative))
             }
-            buttons
         }
-        .frame(maxWidth: Theme.Size.formWidth)
-        .padding(.top, Theme.Spacing.xl)
-        .padding(.horizontal, Theme.Spacing.lg)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .navigationTitle("Welcome")
-        .task { await store.accounts.load() }
+        .padding(.vertical, Theme.Spacing.lg)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            if store.step == .welcome {
+        let welcome = store.step == .welcome
+        return VStack(
+            alignment: welcome ? .center : .leading,
+            spacing: welcome ? Theme.Spacing.md : Theme.Spacing.xs
+        ) {
+            if welcome {
                 Image(systemName: "flame.fill")
-                    .font(Theme.largeTitle)
+                    .font(.system(size: markSize))
                     .foregroundStyle(.tint)
-                    .padding(.bottom, Theme.Spacing.sm)
+                    .padding(.bottom, Theme.Spacing.lg)
                     .accessibilityHidden(true)
             }
             Text("Step \(store.step.rawValue + 1) of \(Self.stepCount)")
                 .font(Theme.caption)
                 .foregroundStyle(Theme.color(.textSecondary))
             Text(heading)
-                .font(Theme.title)
+                .font(welcome ? Theme.largeTitle : Theme.title)
+                .multilineTextAlignment(welcome ? .center : .leading)
                 .foregroundStyle(Theme.color(.textPrimary))
                 .accessibilityAddTraits(.isHeader)
             Text(lead)
-                .font(Theme.body)
+                .font(welcome ? Theme.title : Theme.body)
+                .fontWeight(.regular)
+                .multilineTextAlignment(welcome ? .center : .leading)
                 .foregroundStyle(Theme.color(.textSecondary))
         }
     }
+
+    /// The three steps ahead, one short line each.
+    private var outline: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+            ForEach(Self.outlineLines, id: \.text) { line in
+                Label {
+                    Text(line.text)
+                        .font(Theme.body)
+                        .foregroundStyle(Theme.color(.textPrimary))
+                } icon: {
+                    Image(systemName: line.symbol)
+                        .font(Theme.title)
+                        .foregroundStyle(.tint)
+                        .frame(width: iconColumn)
+                }
+            }
+        }
+    }
+
+    private static let outlineLines: [(symbol: String, text: String)] = [
+        ("person.crop.circle", "Sign in"),
+        ("building.2", "Name your office"),
+        ("folder", "Choose where work lands"),
+    ]
 
     private static let stepCount = OnboardingStore.Step.allCases.count
 
