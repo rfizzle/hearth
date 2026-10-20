@@ -30,6 +30,17 @@ public protocol Hearth_V1_ConversationServiceClientInterface: Sendable {
     /// Cancel stops a run; what the bot had written so far is kept.
     @available(iOS 13, *)
     func `cancel`(request: Hearth_V1_CancelRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_CancelResponse>
+
+    /// GetConversation is one conversation with its latest run, so a screen
+    /// opened while a run is in progress shows it.
+    @available(iOS 13, *)
+    func `getConversation`(request: Hearth_V1_GetConversationRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_GetConversationResponse>
+
+    /// Retry runs the owner message behind a failed or cancelled run again, as
+    /// a new run from scratch. It fails with failed_precondition while a run in
+    /// the conversation is working or waiting on the owner.
+    @available(iOS 13, *)
+    func `retry`(request: Hearth_V1_RetryRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_RetryResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_ConversationServiceClientInterface`.
@@ -60,12 +71,24 @@ public final class Hearth_V1_ConversationServiceClient: Hearth_V1_ConversationSe
         return await self.client.unary(path: "/hearth.v1.ConversationService/Cancel", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `getConversation`(request: Hearth_V1_GetConversationRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_GetConversationResponse> {
+        return await self.client.unary(path: "/hearth.v1.ConversationService/GetConversation", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `retry`(request: Hearth_V1_RetryRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_RetryResponse> {
+        return await self.client.unary(path: "/hearth.v1.ConversationService/Retry", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listConversations = Connect.MethodSpec(name: "ListConversations", service: "hearth.v1.ConversationService", type: .unary)
             public static let listMessages = Connect.MethodSpec(name: "ListMessages", service: "hearth.v1.ConversationService", type: .unary)
             public static let send = Connect.MethodSpec(name: "Send", service: "hearth.v1.ConversationService", type: .unary)
             public static let cancel = Connect.MethodSpec(name: "Cancel", service: "hearth.v1.ConversationService", type: .unary)
+            public static let getConversation = Connect.MethodSpec(name: "GetConversation", service: "hearth.v1.ConversationService", type: .unary)
+            public static let retry = Connect.MethodSpec(name: "Retry", service: "hearth.v1.ConversationService", type: .unary)
         }
     }
 }

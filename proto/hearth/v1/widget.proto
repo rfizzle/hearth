@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// Widget is the control a bot asks the owner to answer with, when prose
+// would be worse: a choice between a few concrete things, a date, a folder.
+// The catalogue is closed: a kind the core does not know is refused before
+// the bot's run parks. The owner's answer travels back as WidgetAnswer and
+// reaches the bot in fixed words, never as JSON.
+message Widget {
+  // Whether the owner must answer the control (the question itself is
+  // always answerable with free text when the control is not required).
+  bool required = 1;
+  oneof kind {
+    SingleChoice single_choice = 2;
+    MultipleChoice multiple_choice = 3;
+    FreeText free_text = 4;
+    YesNo yes_no = 5;
+    DatePick date = 6;
+    PathPick path = 7;
+    Scale scale = 8;
+  }
+}
+
+message Choice {
+  // Stable within the question; what the answer names.
+  string id = 1;
+  // At most 80 characters.
+  string label = 2;
+  // One line under the label; optional.
+  string detail = 3;
+}
+
+// SingleChoice has 2 to 8 options; allow_other adds an "Other" row with a
+// text field.
+message SingleChoice {
+  repeated Choice options = 1;
+  bool allow_other = 2;
+}
+
+// MultipleChoice has 2 to 12 options; min and max bound how many may be
+// chosen (0 is unbounded).
+message MultipleChoice {
+  repeated Choice options = 1;
+  int32 min = 2;
+  int32 max = 3;
+}
+
+// FreeText has a max_length of at most 4,000 (0 is 1,000) and a placeholder
+// of at most 80 characters.
+message FreeText {
+  string placeholder = 1;
+  int32 max_length = 2;
+  bool multiline = 3;
+}
+
+// YesNo labels default to "Yes" and "No".
+message YesNo {
+  string yes_label = 1;
+  string no_label = 2;
+}
+
+message DatePick {
+  bool with_time = 1;
+  google.protobuf.Timestamp earliest = 2;
+  google.protobuf.Timestamp latest = 3;
+}
+
+// PathPick wants at least one of folders and files; start_path is a hint the
+// panel opens at.
+message PathPick {
+  bool folders = 1;
+  bool files = 2;
+  string start_path = 3;
+}
+
+// Scale has min below max and at most 10 steps; labels sit at the ends.
+message Scale {
+  int32 min = 1;
+  int32 max = 2;
+  string min_label = 3;
+  string max_label = 4;
+}
+
+message WidgetAnswer {
+  oneof value {
+    string choice_id = 1;
+    ChoiceIDs choice_ids = 2;
+    string text = 3;
+    bool yes = 4;
+    google.protobuf.Timestamp date = 5;
+    string path = 6;
+    int32 scale = 7;
+  }
+  // The "Other" text for a single choice that allowed it.
+  string other = 8;
+  // The answer in the words the bot read: "The owner chose: Keep it".
+  string text_form = 9;
+}
+
+message ChoiceIDs {
+  repeated string ids = 1;
+}

@@ -5,8 +5,8 @@ package hearth.v1;
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
 // BotService creates and lists the org's bots and the role templates they
-// start from, and drafts a bot from a description. Grants, notes and deletion
-// arrive with later milestones.
+// start from, drafts a bot from a description, and lists and sets what a bot
+// may do. Notes and deletion arrive with later milestones.
 service BotService {
   rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {}
   rpc CreateBot(CreateBotRequest) returns (CreateBotResponse) {}
@@ -15,6 +15,62 @@ service BotService {
   // DraftBot asks the model to propose a bot from a description. It only
   // proposes: nothing is stored until the owner sends CreateBot.
   rpc DraftBot(DraftBotRequest) returns (DraftBotResponse) {}
+  // ListGrants is what the bot may do, one row per capability and, for the
+  // file capabilities, one row per folder.
+  rpc ListGrants(ListGrantsRequest) returns (ListGrantsResponse) {}
+  // SetGrants replaces the bot's grants whole. A capability left out is not
+  // granted. The core refuses allowed mode for a capability that never has
+  // standing permission, such as deleting files.
+  rpc SetGrants(SetGrantsRequest) returns (SetGrantsResponse) {}
+}
+
+// Capability is one thing a bot may do, as the Access sheet lists it.
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  CAPABILITY_FILES_READ = 1;
+  CAPABILITY_FILES_WRITE = 2;
+  CAPABILITY_FILES_DELETE = 3;
+  CAPABILITY_WEB_FETCH = 4;
+  CAPABILITY_WEB_SEARCH = 5;
+}
+
+// GrantMode is whether a capability is off, asks each time, or is standing.
+enum GrantMode {
+  GRANT_MODE_UNSPECIFIED = 0;
+  GRANT_MODE_NOT_GRANTED = 1;
+  GRANT_MODE_ASK = 2;
+  GRANT_MODE_ALLOWED = 3;
+}
+
+message Grant {
+  Capability capability = 1;
+  GrantMode mode = 2;
+  // The folder for a files capability, absolute; empty otherwise.
+  string folder = 3;
+  // Plain words for the row, from the core: "Read files", "Delete files".
+  string title = 4;
+  // Whether allowed mode may be chosen; false where the owner must be asked
+  // every time (see docs/architecture.md#5-security-model).
+  bool can_allow = 5;
+  // True for the bot's own folder, which the owner cannot remove.
+  bool own_folder = 6;
+}
+
+message ListGrantsRequest {
+  string bot_id = 1;
+}
+
+message ListGrantsResponse {
+  repeated Grant grants = 1;
+}
+
+message SetGrantsRequest {
+  string bot_id = 1;
+  repeated Grant grants = 2;
+}
+
+message SetGrantsResponse {
+  repeated Grant grants = 1;
 }
 
 // Tier is the quality tier the org maps to a provider and model.

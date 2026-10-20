@@ -3,6 +3,7 @@ syntax = "proto3";
 package hearth.v1;
 
 import "google/protobuf/timestamp.proto";
+import "hearth/v1/widget.proto";
 
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
@@ -19,6 +20,13 @@ service ConversationService {
   rpc Send(SendRequest) returns (SendResponse) {}
   // Cancel stops a run; what the bot had written so far is kept.
   rpc Cancel(CancelRequest) returns (CancelResponse) {}
+  // GetConversation is one conversation with its latest run, so a screen
+  // opened while a run is in progress shows it.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {}
+  // Retry runs the owner message behind a failed or cancelled run again, as
+  // a new run from scratch. It fails with failed_precondition while a run in
+  // the conversation is working or waiting on the owner.
+  rpc Retry(RetryRequest) returns (RetryResponse) {}
 }
 
 enum ConversationKind {
@@ -35,6 +43,8 @@ message Conversation {
   string bot_id = 3;
   string title = 4;
   google.protobuf.Timestamp updated_at = 5;
+  // The newest run, in whatever state; unset before the first message.
+  Run latest_run = 6;
 }
 
 enum MessageKind {
@@ -68,6 +78,11 @@ message Message {
   repeated FileRef files = 10;
   // True while a run is still appending to content through message deltas.
   bool streaming = 11;
+  // The control a question asked the owner to answer with, when it has one.
+  // Set on question messages.
+  Widget widget = 13;
+  // The owner's answer to the question, once given.
+  WidgetAnswer answer = 14;
 }
 
 message ToolCall {
@@ -110,6 +125,9 @@ message ListMessagesResponse {
 message SendRequest {
   string conversation_id = 1;
   string text = 2;
+  // Files the owner attached, as absolute paths the app resolved. The core
+  // ignores them until attachments arrive; the field number is settled here.
+  repeated string attachment_paths = 3;
 }
 
 message SendResponse {
@@ -123,6 +141,22 @@ message CancelRequest {
 }
 
 message CancelResponse {}
+
+message GetConversationRequest {
+  string id = 1;
+}
+
+message GetConversationResponse {
+  Conversation conversation = 1;
+}
+
+message RetryRequest {
+  string run_id = 1;
+}
+
+message RetryResponse {
+  Run run = 1;
+}
 
 enum RunState {
   RUN_STATE_UNSPECIFIED = 0;

@@ -44,6 +44,10 @@ const (
 	BotServiceGetBotProcedure = "/hearth.v1.BotService/GetBot"
 	// BotServiceDraftBotProcedure is the fully-qualified name of the BotService's DraftBot RPC.
 	BotServiceDraftBotProcedure = "/hearth.v1.BotService/DraftBot"
+	// BotServiceListGrantsProcedure is the fully-qualified name of the BotService's ListGrants RPC.
+	BotServiceListGrantsProcedure = "/hearth.v1.BotService/ListGrants"
+	// BotServiceSetGrantsProcedure is the fully-qualified name of the BotService's SetGrants RPC.
+	BotServiceSetGrantsProcedure = "/hearth.v1.BotService/SetGrants"
 )
 
 // BotServiceClient is a client for the hearth.v1.BotService service.
@@ -55,6 +59,13 @@ type BotServiceClient interface {
 	// DraftBot asks the model to propose a bot from a description. It only
 	// proposes: nothing is stored until the owner sends CreateBot.
 	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
+	// ListGrants is what the bot may do, one row per capability and, for the
+	// file capabilities, one row per folder.
+	ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error)
+	// SetGrants replaces the bot's grants whole. A capability left out is not
+	// granted. The core refuses allowed mode for a capability that never has
+	// standing permission, such as deleting files.
+	SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error)
 }
 
 // NewBotServiceClient constructs a client for the hearth.v1.BotService service. By default, it uses
@@ -98,6 +109,18 @@ func NewBotServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(botServiceMethods.ByName("DraftBot")),
 			connect.WithClientOptions(opts...),
 		),
+		listGrants: connect.NewClient[v1.ListGrantsRequest, v1.ListGrantsResponse](
+			httpClient,
+			baseURL+BotServiceListGrantsProcedure,
+			connect.WithSchema(botServiceMethods.ByName("ListGrants")),
+			connect.WithClientOptions(opts...),
+		),
+		setGrants: connect.NewClient[v1.SetGrantsRequest, v1.SetGrantsResponse](
+			httpClient,
+			baseURL+BotServiceSetGrantsProcedure,
+			connect.WithSchema(botServiceMethods.ByName("SetGrants")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -108,6 +131,8 @@ type botServiceClient struct {
 	listBots      *connect.Client[v1.ListBotsRequest, v1.ListBotsResponse]
 	getBot        *connect.Client[v1.GetBotRequest, v1.GetBotResponse]
 	draftBot      *connect.Client[v1.DraftBotRequest, v1.DraftBotResponse]
+	listGrants    *connect.Client[v1.ListGrantsRequest, v1.ListGrantsResponse]
+	setGrants     *connect.Client[v1.SetGrantsRequest, v1.SetGrantsResponse]
 }
 
 // ListTemplates calls hearth.v1.BotService.ListTemplates.
@@ -135,6 +160,16 @@ func (c *botServiceClient) DraftBot(ctx context.Context, req *connect.Request[v1
 	return c.draftBot.CallUnary(ctx, req)
 }
 
+// ListGrants calls hearth.v1.BotService.ListGrants.
+func (c *botServiceClient) ListGrants(ctx context.Context, req *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error) {
+	return c.listGrants.CallUnary(ctx, req)
+}
+
+// SetGrants calls hearth.v1.BotService.SetGrants.
+func (c *botServiceClient) SetGrants(ctx context.Context, req *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error) {
+	return c.setGrants.CallUnary(ctx, req)
+}
+
 // BotServiceHandler is an implementation of the hearth.v1.BotService service.
 type BotServiceHandler interface {
 	ListTemplates(context.Context, *connect.Request[v1.ListTemplatesRequest]) (*connect.Response[v1.ListTemplatesResponse], error)
@@ -144,6 +179,13 @@ type BotServiceHandler interface {
 	// DraftBot asks the model to propose a bot from a description. It only
 	// proposes: nothing is stored until the owner sends CreateBot.
 	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
+	// ListGrants is what the bot may do, one row per capability and, for the
+	// file capabilities, one row per folder.
+	ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error)
+	// SetGrants replaces the bot's grants whole. A capability left out is not
+	// granted. The core refuses allowed mode for a capability that never has
+	// standing permission, such as deleting files.
+	SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error)
 }
 
 // NewBotServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -183,6 +225,18 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(botServiceMethods.ByName("DraftBot")),
 		connect.WithHandlerOptions(opts...),
 	)
+	botServiceListGrantsHandler := connect.NewUnaryHandler(
+		BotServiceListGrantsProcedure,
+		svc.ListGrants,
+		connect.WithSchema(botServiceMethods.ByName("ListGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServiceSetGrantsHandler := connect.NewUnaryHandler(
+		BotServiceSetGrantsProcedure,
+		svc.SetGrants,
+		connect.WithSchema(botServiceMethods.ByName("SetGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.BotService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BotServiceListTemplatesProcedure:
@@ -195,6 +249,10 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 			botServiceGetBotHandler.ServeHTTP(w, r)
 		case BotServiceDraftBotProcedure:
 			botServiceDraftBotHandler.ServeHTTP(w, r)
+		case BotServiceListGrantsProcedure:
+			botServiceListGrantsHandler.ServeHTTP(w, r)
+		case BotServiceSetGrantsProcedure:
+			botServiceSetGrantsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -222,4 +280,12 @@ func (UnimplementedBotServiceHandler) GetBot(context.Context, *connect.Request[v
 
 func (UnimplementedBotServiceHandler) DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.DraftBot is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.ListGrants is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) SetGrants(context.Context, *connect.Request[v1.SetGrantsRequest]) (*connect.Response[v1.SetGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.SetGrants is not implemented"))
 }

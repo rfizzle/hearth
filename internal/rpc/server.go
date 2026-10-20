@@ -107,6 +107,7 @@ func NewHandler(o Options) http.Handler {
 	mux.Handle(hearthv1connect.NewProviderServiceHandler(&providerService{opts: o}))
 	mux.Handle(hearthv1connect.NewIntegrationServiceHandler(&integrationService{opts: o}))
 	mux.Handle(hearthv1connect.NewEventServiceHandler(&eventService{opts: o}))
+	mux.Handle(hearthv1connect.NewInboxServiceHandler(&inboxService{opts: o}))
 	return requireToken(o.Token, mux)
 }
 

@@ -79,6 +79,10 @@ type SubscribeResponse struct {
 	//	*SubscribeResponse_Resync
 	//	*SubscribeResponse_Heartbeat
 	//	*SubscribeResponse_IntegrationChanged
+	//	*SubscribeResponse_InboxChanged
+	//	*SubscribeResponse_MessageDeleted
+	//	*SubscribeResponse_GrantsChanged
+	//	*SubscribeResponse_ConversationChanged
 	Event         isSubscribeResponse_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -200,6 +204,42 @@ func (x *SubscribeResponse) GetIntegrationChanged() *IntegrationChanged {
 	return nil
 }
 
+func (x *SubscribeResponse) GetInboxChanged() *InboxChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_InboxChanged); ok {
+			return x.InboxChanged
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetMessageDeleted() *MessageDeleted {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_MessageDeleted); ok {
+			return x.MessageDeleted
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetGrantsChanged() *GrantsChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_GrantsChanged); ok {
+			return x.GrantsChanged
+		}
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetConversationChanged() *ConversationChanged {
+	if x != nil {
+		if x, ok := x.Event.(*SubscribeResponse_ConversationChanged); ok {
+			return x.ConversationChanged
+		}
+	}
+	return nil
+}
+
 type isSubscribeResponse_Event interface {
 	isSubscribeResponse_Event()
 }
@@ -236,6 +276,22 @@ type SubscribeResponse_IntegrationChanged struct {
 	IntegrationChanged *IntegrationChanged `protobuf:"bytes,9,opt,name=integration_changed,json=integrationChanged,proto3,oneof"`
 }
 
+type SubscribeResponse_InboxChanged struct {
+	InboxChanged *InboxChanged `protobuf:"bytes,10,opt,name=inbox_changed,json=inboxChanged,proto3,oneof"`
+}
+
+type SubscribeResponse_MessageDeleted struct {
+	MessageDeleted *MessageDeleted `protobuf:"bytes,11,opt,name=message_deleted,json=messageDeleted,proto3,oneof"`
+}
+
+type SubscribeResponse_GrantsChanged struct {
+	GrantsChanged *GrantsChanged `protobuf:"bytes,12,opt,name=grants_changed,json=grantsChanged,proto3,oneof"`
+}
+
+type SubscribeResponse_ConversationChanged struct {
+	ConversationChanged *ConversationChanged `protobuf:"bytes,13,opt,name=conversation_changed,json=conversationChanged,proto3,oneof"`
+}
+
 func (*SubscribeResponse_MessageDelta) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_MessageUpserted) isSubscribeResponse_Event() {}
@@ -251,6 +307,14 @@ func (*SubscribeResponse_Resync) isSubscribeResponse_Event() {}
 func (*SubscribeResponse_Heartbeat) isSubscribeResponse_Event() {}
 
 func (*SubscribeResponse_IntegrationChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_InboxChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_MessageDeleted) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_GrantsChanged) isSubscribeResponse_Event() {}
+
+func (*SubscribeResponse_ConversationChanged) isSubscribeResponse_Event() {}
 
 // MessageDelta is text appended to a streaming message.
 type MessageDelta struct {
@@ -543,6 +607,205 @@ func (x *IntegrationChanged) GetIntegration() *IntegrationAccount {
 	return nil
 }
 
+// InboxChanged is an item created or closed. The count the sidebar shows is
+// the open items in the list; the app refetches the list on resync.
+type InboxChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *InboxItem             `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InboxChanged) Reset() {
+	*x = InboxChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InboxChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InboxChanged) ProtoMessage() {}
+
+func (x *InboxChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InboxChanged.ProtoReflect.Descriptor instead.
+func (*InboxChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *InboxChanged) GetItem() *InboxItem {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+// MessageDeleted removes a message the core withdrew: the empty bubble a
+// failed run left open.
+type MessageDeleted struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	MessageId      string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *MessageDeleted) Reset() {
+	*x = MessageDeleted{}
+	mi := &file_hearth_v1_event_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessageDeleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessageDeleted) ProtoMessage() {}
+
+func (x *MessageDeleted) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessageDeleted.ProtoReflect.Descriptor instead.
+func (*MessageDeleted) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *MessageDeleted) GetConversationId() string {
+	if x != nil {
+		return x.ConversationId
+	}
+	return ""
+}
+
+func (x *MessageDeleted) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+// GrantsChanged is the bot's grants after a decision or the Access sheet.
+type GrantsChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BotId         string                 `protobuf:"bytes,1,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	Grants        []*Grant               `protobuf:"bytes,2,rep,name=grants,proto3" json:"grants,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrantsChanged) Reset() {
+	*x = GrantsChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrantsChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrantsChanged) ProtoMessage() {}
+
+func (x *GrantsChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrantsChanged.ProtoReflect.Descriptor instead.
+func (*GrantsChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GrantsChanged) GetBotId() string {
+	if x != nil {
+		return x.BotId
+	}
+	return ""
+}
+
+func (x *GrantsChanged) GetGrants() []*Grant {
+	if x != nil {
+		return x.Grants
+	}
+	return nil
+}
+
+// ConversationChanged is a conversation's row after its latest run or its
+// summary changed.
+type ConversationChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Conversation  *Conversation          `protobuf:"bytes,1,opt,name=conversation,proto3" json:"conversation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConversationChanged) Reset() {
+	*x = ConversationChanged{}
+	mi := &file_hearth_v1_event_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationChanged) ProtoMessage() {}
+
+func (x *ConversationChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_event_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConversationChanged.ProtoReflect.Descriptor instead.
+func (*ConversationChanged) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ConversationChanged) GetConversation() *Conversation {
+	if x != nil {
+		return x.Conversation
+	}
+	return nil
+}
+
 // Resync says the requested sequence is older than the core keeps; the
 // app refetches its lists and continues from this event's sequence.
 type Resync struct {
@@ -553,7 +816,7 @@ type Resync struct {
 
 func (x *Resync) Reset() {
 	*x = Resync{}
-	mi := &file_hearth_v1_event_proto_msgTypes[8]
+	mi := &file_hearth_v1_event_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -565,7 +828,7 @@ func (x *Resync) String() string {
 func (*Resync) ProtoMessage() {}
 
 func (x *Resync) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[8]
+	mi := &file_hearth_v1_event_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -578,7 +841,7 @@ func (x *Resync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resync.ProtoReflect.Descriptor instead.
 func (*Resync) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{8}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{12}
 }
 
 // Heartbeat keeps a quiet subscription under the client's idle timeout.
@@ -590,7 +853,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_hearth_v1_event_proto_msgTypes[9]
+	mi := &file_hearth_v1_event_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -602,7 +865,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_event_proto_msgTypes[9]
+	mi := &file_hearth_v1_event_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -615,16 +878,16 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_event_proto_rawDescGZIP(), []int{9}
+	return file_hearth_v1_event_proto_rawDescGZIP(), []int{13}
 }
 
 var File_hearth_v1_event_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_event_proto_rawDesc = "" +
 	"\n" +
-	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x1bhearth/v1/integration.proto\x1a\x18hearth/v1/provider.proto\"9\n" +
+	"\x15hearth/v1/event.proto\x12\thearth.v1\x1a\x13hearth/v1/bot.proto\x1a\x1chearth/v1/conversation.proto\x1a\x15hearth/v1/inbox.proto\x1a\x1bhearth/v1/integration.proto\x1a\x18hearth/v1/provider.proto\"9\n" +
 	"\x10SubscribeRequest\x12%\n" +
-	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\xb0\x04\n" +
+	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\"\xce\x06\n" +
 	"\x11SubscribeResponse\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12>\n" +
 	"\rmessage_delta\x18\x02 \x01(\v2\x17.hearth.v1.MessageDeltaH\x00R\fmessageDelta\x12G\n" +
@@ -636,7 +899,12 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	"botChanged\x12+\n" +
 	"\x06resync\x18\a \x01(\v2\x11.hearth.v1.ResyncH\x00R\x06resync\x124\n" +
 	"\theartbeat\x18\b \x01(\v2\x14.hearth.v1.HeartbeatH\x00R\theartbeat\x12P\n" +
-	"\x13integration_changed\x18\t \x01(\v2\x1d.hearth.v1.IntegrationChangedH\x00R\x12integrationChangedB\a\n" +
+	"\x13integration_changed\x18\t \x01(\v2\x1d.hearth.v1.IntegrationChangedH\x00R\x12integrationChanged\x12>\n" +
+	"\rinbox_changed\x18\n" +
+	" \x01(\v2\x17.hearth.v1.InboxChangedH\x00R\finboxChanged\x12D\n" +
+	"\x0fmessage_deleted\x18\v \x01(\v2\x19.hearth.v1.MessageDeletedH\x00R\x0emessageDeleted\x12A\n" +
+	"\x0egrants_changed\x18\f \x01(\v2\x18.hearth.v1.GrantsChangedH\x00R\rgrantsChanged\x12S\n" +
+	"\x14conversation_changed\x18\r \x01(\v2\x1e.hearth.v1.ConversationChangedH\x00R\x13conversationChangedB\a\n" +
 	"\x05event\"\x81\x01\n" +
 	"\fMessageDelta\x12'\n" +
 	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
@@ -655,7 +923,18 @@ const file_hearth_v1_event_proto_rawDesc = "" +
 	"BotChanged\x12 \n" +
 	"\x03bot\x18\x01 \x01(\v2\x0e.hearth.v1.BotR\x03bot\"U\n" +
 	"\x12IntegrationChanged\x12?\n" +
-	"\vintegration\x18\x01 \x01(\v2\x1d.hearth.v1.IntegrationAccountR\vintegration\"\b\n" +
+	"\vintegration\x18\x01 \x01(\v2\x1d.hearth.v1.IntegrationAccountR\vintegration\"8\n" +
+	"\fInboxChanged\x12(\n" +
+	"\x04item\x18\x01 \x01(\v2\x14.hearth.v1.InboxItemR\x04item\"X\n" +
+	"\x0eMessageDeleted\x12'\n" +
+	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x02 \x01(\tR\tmessageId\"P\n" +
+	"\rGrantsChanged\x12\x15\n" +
+	"\x06bot_id\x18\x01 \x01(\tR\x05botId\x12(\n" +
+	"\x06grants\x18\x02 \x03(\v2\x10.hearth.v1.GrantR\x06grants\"R\n" +
+	"\x13ConversationChanged\x12;\n" +
+	"\fconversation\x18\x01 \x01(\v2\x17.hearth.v1.ConversationR\fconversation\"\b\n" +
 	"\x06Resync\"\v\n" +
 	"\tHeartbeat2Z\n" +
 	"\fEventService\x12J\n" +
@@ -673,23 +952,30 @@ func file_hearth_v1_event_proto_rawDescGZIP() []byte {
 	return file_hearth_v1_event_proto_rawDescData
 }
 
-var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_hearth_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_hearth_v1_event_proto_goTypes = []any{
-	(*SubscribeRequest)(nil),   // 0: hearth.v1.SubscribeRequest
-	(*SubscribeResponse)(nil),  // 1: hearth.v1.SubscribeResponse
-	(*MessageDelta)(nil),       // 2: hearth.v1.MessageDelta
-	(*MessageUpserted)(nil),    // 3: hearth.v1.MessageUpserted
-	(*RunChanged)(nil),         // 4: hearth.v1.RunChanged
-	(*AccountChanged)(nil),     // 5: hearth.v1.AccountChanged
-	(*BotChanged)(nil),         // 6: hearth.v1.BotChanged
-	(*IntegrationChanged)(nil), // 7: hearth.v1.IntegrationChanged
-	(*Resync)(nil),             // 8: hearth.v1.Resync
-	(*Heartbeat)(nil),          // 9: hearth.v1.Heartbeat
-	(*Message)(nil),            // 10: hearth.v1.Message
-	(*Run)(nil),                // 11: hearth.v1.Run
-	(*ProviderAccount)(nil),    // 12: hearth.v1.ProviderAccount
-	(*Bot)(nil),                // 13: hearth.v1.Bot
-	(*IntegrationAccount)(nil), // 14: hearth.v1.IntegrationAccount
+	(*SubscribeRequest)(nil),    // 0: hearth.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),   // 1: hearth.v1.SubscribeResponse
+	(*MessageDelta)(nil),        // 2: hearth.v1.MessageDelta
+	(*MessageUpserted)(nil),     // 3: hearth.v1.MessageUpserted
+	(*RunChanged)(nil),          // 4: hearth.v1.RunChanged
+	(*AccountChanged)(nil),      // 5: hearth.v1.AccountChanged
+	(*BotChanged)(nil),          // 6: hearth.v1.BotChanged
+	(*IntegrationChanged)(nil),  // 7: hearth.v1.IntegrationChanged
+	(*InboxChanged)(nil),        // 8: hearth.v1.InboxChanged
+	(*MessageDeleted)(nil),      // 9: hearth.v1.MessageDeleted
+	(*GrantsChanged)(nil),       // 10: hearth.v1.GrantsChanged
+	(*ConversationChanged)(nil), // 11: hearth.v1.ConversationChanged
+	(*Resync)(nil),              // 12: hearth.v1.Resync
+	(*Heartbeat)(nil),           // 13: hearth.v1.Heartbeat
+	(*Message)(nil),             // 14: hearth.v1.Message
+	(*Run)(nil),                 // 15: hearth.v1.Run
+	(*ProviderAccount)(nil),     // 16: hearth.v1.ProviderAccount
+	(*Bot)(nil),                 // 17: hearth.v1.Bot
+	(*IntegrationAccount)(nil),  // 18: hearth.v1.IntegrationAccount
+	(*InboxItem)(nil),           // 19: hearth.v1.InboxItem
+	(*Grant)(nil),               // 20: hearth.v1.Grant
+	(*Conversation)(nil),        // 21: hearth.v1.Conversation
 }
 var file_hearth_v1_event_proto_depIdxs = []int32{
 	2,  // 0: hearth.v1.SubscribeResponse.message_delta:type_name -> hearth.v1.MessageDelta
@@ -697,21 +983,28 @@ var file_hearth_v1_event_proto_depIdxs = []int32{
 	4,  // 2: hearth.v1.SubscribeResponse.run_changed:type_name -> hearth.v1.RunChanged
 	5,  // 3: hearth.v1.SubscribeResponse.account_changed:type_name -> hearth.v1.AccountChanged
 	6,  // 4: hearth.v1.SubscribeResponse.bot_changed:type_name -> hearth.v1.BotChanged
-	8,  // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
-	9,  // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
+	12, // 5: hearth.v1.SubscribeResponse.resync:type_name -> hearth.v1.Resync
+	13, // 6: hearth.v1.SubscribeResponse.heartbeat:type_name -> hearth.v1.Heartbeat
 	7,  // 7: hearth.v1.SubscribeResponse.integration_changed:type_name -> hearth.v1.IntegrationChanged
-	10, // 8: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
-	11, // 9: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
-	12, // 10: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
-	13, // 11: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
-	14, // 12: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
-	0,  // 13: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
-	1,  // 14: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
-	14, // [14:15] is the sub-list for method output_type
-	13, // [13:14] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	8,  // 8: hearth.v1.SubscribeResponse.inbox_changed:type_name -> hearth.v1.InboxChanged
+	9,  // 9: hearth.v1.SubscribeResponse.message_deleted:type_name -> hearth.v1.MessageDeleted
+	10, // 10: hearth.v1.SubscribeResponse.grants_changed:type_name -> hearth.v1.GrantsChanged
+	11, // 11: hearth.v1.SubscribeResponse.conversation_changed:type_name -> hearth.v1.ConversationChanged
+	14, // 12: hearth.v1.MessageUpserted.message:type_name -> hearth.v1.Message
+	15, // 13: hearth.v1.RunChanged.run:type_name -> hearth.v1.Run
+	16, // 14: hearth.v1.AccountChanged.account:type_name -> hearth.v1.ProviderAccount
+	17, // 15: hearth.v1.BotChanged.bot:type_name -> hearth.v1.Bot
+	18, // 16: hearth.v1.IntegrationChanged.integration:type_name -> hearth.v1.IntegrationAccount
+	19, // 17: hearth.v1.InboxChanged.item:type_name -> hearth.v1.InboxItem
+	20, // 18: hearth.v1.GrantsChanged.grants:type_name -> hearth.v1.Grant
+	21, // 19: hearth.v1.ConversationChanged.conversation:type_name -> hearth.v1.Conversation
+	0,  // 20: hearth.v1.EventService.Subscribe:input_type -> hearth.v1.SubscribeRequest
+	1,  // 21: hearth.v1.EventService.Subscribe:output_type -> hearth.v1.SubscribeResponse
+	21, // [21:22] is the sub-list for method output_type
+	20, // [20:21] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_event_proto_init() }
@@ -721,6 +1014,7 @@ func file_hearth_v1_event_proto_init() {
 	}
 	file_hearth_v1_bot_proto_init()
 	file_hearth_v1_conversation_proto_init()
+	file_hearth_v1_inbox_proto_init()
 	file_hearth_v1_integration_proto_init()
 	file_hearth_v1_provider_proto_init()
 	file_hearth_v1_event_proto_msgTypes[1].OneofWrappers = []any{
@@ -732,6 +1026,10 @@ func file_hearth_v1_event_proto_init() {
 		(*SubscribeResponse_Resync)(nil),
 		(*SubscribeResponse_Heartbeat)(nil),
 		(*SubscribeResponse_IntegrationChanged)(nil),
+		(*SubscribeResponse_InboxChanged)(nil),
+		(*SubscribeResponse_MessageDeleted)(nil),
+		(*SubscribeResponse_GrantsChanged)(nil),
+		(*SubscribeResponse_ConversationChanged)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -739,7 +1037,7 @@ func file_hearth_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_event_proto_rawDesc), len(file_hearth_v1_event_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

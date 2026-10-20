@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+import "google/protobuf/timestamp.proto";
+import "hearth/v1/conversation.proto";
+import "hearth/v1/widget.proto";
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// InboxService is what waits on the owner: a tool call a bot may not make
+// without asking, a question a bot asked, a run that failed, a budget that
+// was reached. Deciding, answering or acknowledging closes the item; the
+// run behind an approval or a question resumes.
+// See docs/model.md#8-approvals.
+service InboxService {
+  rpc ListInbox(ListInboxRequest) returns (ListInboxResponse) {}
+  // Decide answers an approval with one of the four decisions. The call runs
+  // or is refused at once, and the bot's run resumes.
+  rpc Decide(DecideRequest) returns (DecideResponse) {}
+  // Answer replies to a question; the bot's run resumes with the answer.
+  rpc Answer(AnswerRequest) returns (AnswerResponse) {}
+  // Acknowledge closes an item that needs no decision: a failure or a
+  // budget notice.
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse) {}
+}
+
+enum InboxKind {
+  INBOX_KIND_UNSPECIFIED = 0;
+  INBOX_KIND_APPROVAL = 1;
+  INBOX_KIND_QUESTION = 2;
+  INBOX_KIND_FAILURE = 3;
+  INBOX_KIND_BUDGET = 4;
+}
+
+enum InboxState {
+  INBOX_STATE_UNSPECIFIED = 0;
+  INBOX_STATE_OPEN = 1;
+  INBOX_STATE_CLOSED = 2;
+}
+
+// Decision is what the owner may say to an approval.
+// See docs/model.md#8-approvals.
+enum Decision {
+  DECISION_UNSPECIFIED = 0;
+  DECISION_ALLOW_ONCE = 1;
+  // The same capability for the rest of this conversation (the task, once
+  // tasks exist).
+  DECISION_ALLOW_FOR_TASK = 2;
+  // Upgrades the bot's grant to allowed; refused where can_allow is false.
+  DECISION_ALWAYS_ALLOW = 3;
+  DECISION_DENY = 4;
+}
+
+message InboxItem {
+  string id = 1;
+  InboxKind kind = 2;
+  InboxState state = 3;
+  string bot_id = 4;
+  string conversation_id = 5;
+  string run_id = 6;
+  // The message in the thread this item stands behind.
+  string message_id = 7;
+  // One line for the row: "Dana wants to delete a file".
+  string title = 8;
+  // The exact effect in plain words from the tool's own describer, for an
+  // approval; the failure or the budget notice for the rest.
+  string effect = 9;
+  // The call, for an approval.
+  ToolCall call = 10;
+  // The question and the answers the bot suggested, for a question.
+  string question = 11;
+  repeated string suggested_answers = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp closed_at = 14;
+  // How it closed: the decision, or unspecified for an answer, an
+  // acknowledgement or a cancelled run.
+  Decision decision = 15;
+  string answer = 16;
+  // Plain words on a closed item: "Allowed once", "Answered", "Cancelled".
+  string outcome = 17;
+  // The control the question asked the owner to answer with, when it has one.
+  Widget widget = 18;
+  // The owner's typed answer to that control, once given.
+  WidgetAnswer answer_value = 19;
+}
+
+message ListInboxRequest {
+  // Closed items are left out unless asked for.
+  bool include_closed = 1;
+}
+
+message ListInboxResponse {
+  repeated InboxItem items = 1;
+}
+
+message DecideRequest {
+  string item_id = 1;
+  Decision decision = 2;
+  string reason = 3;
+}
+
+message DecideResponse {
+  InboxItem item = 1;
+  Run run = 2;
+}
+
+message AnswerRequest {
+  string item_id = 1;
+  // A prose reply.
+  string answer = 2;
+  // The answer to the question's control; the core fills its text_form.
+  WidgetAnswer value = 3;
+}
+
+message AnswerResponse {
+  InboxItem item = 1;
+  Run run = 2;
+}
+
+message AcknowledgeRequest {
+  string item_id = 1;
+}
+
+message AcknowledgeResponse {
+  InboxItem item = 1;
+}

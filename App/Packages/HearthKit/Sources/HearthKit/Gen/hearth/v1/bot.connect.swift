@@ -10,8 +10,8 @@ import Foundation
 import SwiftProtobuf
 
 /// BotService creates and lists the org's bots and the role templates they
-/// start from, and drafts a bot from a description. Grants, notes and deletion
-/// arrive with later milestones.
+/// start from, drafts a bot from a description, and lists and sets what a bot
+/// may do. Notes and deletion arrive with later milestones.
 public protocol Hearth_V1_BotServiceClientInterface: Sendable {
 
     @available(iOS 13, *)
@@ -30,6 +30,17 @@ public protocol Hearth_V1_BotServiceClientInterface: Sendable {
     /// proposes: nothing is stored until the owner sends CreateBot.
     @available(iOS 13, *)
     func `draftBot`(request: Hearth_V1_DraftBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_DraftBotResponse>
+
+    /// ListGrants is what the bot may do, one row per capability and, for the
+    /// file capabilities, one row per folder.
+    @available(iOS 13, *)
+    func `listGrants`(request: Hearth_V1_ListGrantsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListGrantsResponse>
+
+    /// SetGrants replaces the bot's grants whole. A capability left out is not
+    /// granted. The core refuses allowed mode for a capability that never has
+    /// standing permission, such as deleting files.
+    @available(iOS 13, *)
+    func `setGrants`(request: Hearth_V1_SetGrantsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_SetGrantsResponse>
 }
 
 /// Concrete implementation of `Hearth_V1_BotServiceClientInterface`.
@@ -65,6 +76,16 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
         return await self.client.unary(path: "/hearth.v1.BotService/DraftBot", idempotencyLevel: .unknown, request: request, headers: headers)
     }
 
+    @available(iOS 13, *)
+    public func `listGrants`(request: Hearth_V1_ListGrantsRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ListGrantsResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/ListGrants", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `setGrants`(request: Hearth_V1_SetGrantsRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_SetGrantsResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/SetGrants", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
     public enum Metadata {
         public enum Methods {
             public static let listTemplates = Connect.MethodSpec(name: "ListTemplates", service: "hearth.v1.BotService", type: .unary)
@@ -72,6 +93,8 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
             public static let listBots = Connect.MethodSpec(name: "ListBots", service: "hearth.v1.BotService", type: .unary)
             public static let getBot = Connect.MethodSpec(name: "GetBot", service: "hearth.v1.BotService", type: .unary)
             public static let draftBot = Connect.MethodSpec(name: "DraftBot", service: "hearth.v1.BotService", type: .unary)
+            public static let listGrants = Connect.MethodSpec(name: "ListGrants", service: "hearth.v1.BotService", type: .unary)
+            public static let setGrants = Connect.MethodSpec(name: "SetGrants", service: "hearth.v1.BotService", type: .unary)
         }
     }
 }

@@ -4,6 +4,7 @@ package hearth.v1;
 
 import "hearth/v1/bot.proto";
 import "hearth/v1/conversation.proto";
+import "hearth/v1/inbox.proto";
 import "hearth/v1/integration.proto";
 import "hearth/v1/provider.proto";
 
@@ -33,6 +34,10 @@ message SubscribeResponse {
     Resync resync = 7;
     Heartbeat heartbeat = 8;
     IntegrationChanged integration_changed = 9;
+    InboxChanged inbox_changed = 10;
+    MessageDeleted message_deleted = 11;
+    GrantsChanged grants_changed = 12;
+    ConversationChanged conversation_changed = 13;
   }
 }
 
@@ -64,6 +69,31 @@ message BotChanged {
 
 message IntegrationChanged {
   IntegrationAccount integration = 1;
+}
+
+// InboxChanged is an item created or closed. The count the sidebar shows is
+// the open items in the list; the app refetches the list on resync.
+message InboxChanged {
+  InboxItem item = 1;
+}
+
+// MessageDeleted removes a message the core withdrew: the empty bubble a
+// failed run left open.
+message MessageDeleted {
+  string conversation_id = 1;
+  string message_id = 2;
+}
+
+// GrantsChanged is the bot's grants after a decision or the Access sheet.
+message GrantsChanged {
+  string bot_id = 1;
+  repeated Grant grants = 2;
+}
+
+// ConversationChanged is a conversation's row after its latest run or its
+// summary changed.
+message ConversationChanged {
+  Conversation conversation = 1;
 }
 
 // Resync says the requested sequence is older than the core keeps; the

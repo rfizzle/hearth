@@ -45,6 +45,12 @@ const (
 	// ConversationServiceCancelProcedure is the fully-qualified name of the ConversationService's
 	// Cancel RPC.
 	ConversationServiceCancelProcedure = "/hearth.v1.ConversationService/Cancel"
+	// ConversationServiceGetConversationProcedure is the fully-qualified name of the
+	// ConversationService's GetConversation RPC.
+	ConversationServiceGetConversationProcedure = "/hearth.v1.ConversationService/GetConversation"
+	// ConversationServiceRetryProcedure is the fully-qualified name of the ConversationService's Retry
+	// RPC.
+	ConversationServiceRetryProcedure = "/hearth.v1.ConversationService/Retry"
 )
 
 // ConversationServiceClient is a client for the hearth.v1.ConversationService service.
@@ -58,6 +64,13 @@ type ConversationServiceClient interface {
 	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
 	// Cancel stops a run; what the bot had written so far is kept.
 	Cancel(context.Context, *connect.Request[v1.CancelRequest]) (*connect.Response[v1.CancelResponse], error)
+	// GetConversation is one conversation with its latest run, so a screen
+	// opened while a run is in progress shows it.
+	GetConversation(context.Context, *connect.Request[v1.GetConversationRequest]) (*connect.Response[v1.GetConversationResponse], error)
+	// Retry runs the owner message behind a failed or cancelled run again, as
+	// a new run from scratch. It fails with failed_precondition while a run in
+	// the conversation is working or waiting on the owner.
+	Retry(context.Context, *connect.Request[v1.RetryRequest]) (*connect.Response[v1.RetryResponse], error)
 }
 
 // NewConversationServiceClient constructs a client for the hearth.v1.ConversationService service.
@@ -95,6 +108,18 @@ func NewConversationServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(conversationServiceMethods.ByName("Cancel")),
 			connect.WithClientOptions(opts...),
 		),
+		getConversation: connect.NewClient[v1.GetConversationRequest, v1.GetConversationResponse](
+			httpClient,
+			baseURL+ConversationServiceGetConversationProcedure,
+			connect.WithSchema(conversationServiceMethods.ByName("GetConversation")),
+			connect.WithClientOptions(opts...),
+		),
+		retry: connect.NewClient[v1.RetryRequest, v1.RetryResponse](
+			httpClient,
+			baseURL+ConversationServiceRetryProcedure,
+			connect.WithSchema(conversationServiceMethods.ByName("Retry")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -104,6 +129,8 @@ type conversationServiceClient struct {
 	listMessages      *connect.Client[v1.ListMessagesRequest, v1.ListMessagesResponse]
 	send              *connect.Client[v1.SendRequest, v1.SendResponse]
 	cancel            *connect.Client[v1.CancelRequest, v1.CancelResponse]
+	getConversation   *connect.Client[v1.GetConversationRequest, v1.GetConversationResponse]
+	retry             *connect.Client[v1.RetryRequest, v1.RetryResponse]
 }
 
 // ListConversations calls hearth.v1.ConversationService.ListConversations.
@@ -126,6 +153,16 @@ func (c *conversationServiceClient) Cancel(ctx context.Context, req *connect.Req
 	return c.cancel.CallUnary(ctx, req)
 }
 
+// GetConversation calls hearth.v1.ConversationService.GetConversation.
+func (c *conversationServiceClient) GetConversation(ctx context.Context, req *connect.Request[v1.GetConversationRequest]) (*connect.Response[v1.GetConversationResponse], error) {
+	return c.getConversation.CallUnary(ctx, req)
+}
+
+// Retry calls hearth.v1.ConversationService.Retry.
+func (c *conversationServiceClient) Retry(ctx context.Context, req *connect.Request[v1.RetryRequest]) (*connect.Response[v1.RetryResponse], error) {
+	return c.retry.CallUnary(ctx, req)
+}
+
 // ConversationServiceHandler is an implementation of the hearth.v1.ConversationService service.
 type ConversationServiceHandler interface {
 	ListConversations(context.Context, *connect.Request[v1.ListConversationsRequest]) (*connect.Response[v1.ListConversationsResponse], error)
@@ -137,6 +174,13 @@ type ConversationServiceHandler interface {
 	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
 	// Cancel stops a run; what the bot had written so far is kept.
 	Cancel(context.Context, *connect.Request[v1.CancelRequest]) (*connect.Response[v1.CancelResponse], error)
+	// GetConversation is one conversation with its latest run, so a screen
+	// opened while a run is in progress shows it.
+	GetConversation(context.Context, *connect.Request[v1.GetConversationRequest]) (*connect.Response[v1.GetConversationResponse], error)
+	// Retry runs the owner message behind a failed or cancelled run again, as
+	// a new run from scratch. It fails with failed_precondition while a run in
+	// the conversation is working or waiting on the owner.
+	Retry(context.Context, *connect.Request[v1.RetryRequest]) (*connect.Response[v1.RetryResponse], error)
 }
 
 // NewConversationServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -170,6 +214,18 @@ func NewConversationServiceHandler(svc ConversationServiceHandler, opts ...conne
 		connect.WithSchema(conversationServiceMethods.ByName("Cancel")),
 		connect.WithHandlerOptions(opts...),
 	)
+	conversationServiceGetConversationHandler := connect.NewUnaryHandler(
+		ConversationServiceGetConversationProcedure,
+		svc.GetConversation,
+		connect.WithSchema(conversationServiceMethods.ByName("GetConversation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	conversationServiceRetryHandler := connect.NewUnaryHandler(
+		ConversationServiceRetryProcedure,
+		svc.Retry,
+		connect.WithSchema(conversationServiceMethods.ByName("Retry")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hearth.v1.ConversationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConversationServiceListConversationsProcedure:
@@ -180,6 +236,10 @@ func NewConversationServiceHandler(svc ConversationServiceHandler, opts ...conne
 			conversationServiceSendHandler.ServeHTTP(w, r)
 		case ConversationServiceCancelProcedure:
 			conversationServiceCancelHandler.ServeHTTP(w, r)
+		case ConversationServiceGetConversationProcedure:
+			conversationServiceGetConversationHandler.ServeHTTP(w, r)
+		case ConversationServiceRetryProcedure:
+			conversationServiceRetryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -203,4 +263,12 @@ func (UnimplementedConversationServiceHandler) Send(context.Context, *connect.Re
 
 func (UnimplementedConversationServiceHandler) Cancel(context.Context, *connect.Request[v1.CancelRequest]) (*connect.Response[v1.CancelResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ConversationService.Cancel is not implemented"))
+}
+
+func (UnimplementedConversationServiceHandler) GetConversation(context.Context, *connect.Request[v1.GetConversationRequest]) (*connect.Response[v1.GetConversationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ConversationService.GetConversation is not implemented"))
+}
+
+func (UnimplementedConversationServiceHandler) Retry(context.Context, *connect.Request[v1.RetryRequest]) (*connect.Response[v1.RetryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ConversationService.Retry is not implemented"))
 }

@@ -20,6 +20,100 @@ fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobu
   typealias Version = _2
 }
 
+/// Capability is one thing a bot may do, as the Access sheet lists it.
+public nonisolated enum Hearth_V1_Capability: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+  case filesRead // = 1
+  case filesWrite // = 2
+  case filesDelete // = 3
+  case webFetch // = 4
+  case webSearch // = 5
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .filesRead
+    case 2: self = .filesWrite
+    case 3: self = .filesDelete
+    case 4: self = .webFetch
+    case 5: self = .webSearch
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .filesRead: return 1
+    case .filesWrite: return 2
+    case .filesDelete: return 3
+    case .webFetch: return 4
+    case .webSearch: return 5
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Hearth_V1_Capability] = [
+    .unspecified,
+    .filesRead,
+    .filesWrite,
+    .filesDelete,
+    .webFetch,
+    .webSearch,
+  ]
+
+}
+
+/// GrantMode is whether a capability is off, asks each time, or is standing.
+public nonisolated enum Hearth_V1_GrantMode: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+  case notGranted // = 1
+  case ask // = 2
+  case allowed // = 3
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .notGranted
+    case 2: self = .ask
+    case 3: self = .allowed
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .notGranted: return 1
+    case .ask: return 2
+    case .allowed: return 3
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Hearth_V1_GrantMode] = [
+    .unspecified,
+    .notGranted,
+    .ask,
+    .allowed,
+  ]
+
+}
+
 /// Tier is the quality tier the org maps to a provider and model.
 public nonisolated enum Hearth_V1_Tier: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
@@ -107,6 +201,83 @@ public nonisolated enum Hearth_V1_BotStatus: SwiftProtobuf.Enum, Swift.CaseItera
     .disabled,
   ]
 
+}
+
+public nonisolated struct Hearth_V1_Grant: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var capability: Hearth_V1_Capability = .unspecified
+
+  public var mode: Hearth_V1_GrantMode = .unspecified
+
+  /// The folder for a files capability, absolute; empty otherwise.
+  public var folder: String = String()
+
+  /// Plain words for the row, from the core: "Read files", "Delete files".
+  public var title: String = String()
+
+  /// Whether allowed mode may be chosen; false where the owner must be asked
+  /// every time (see docs/architecture.md#5-security-model).
+  public var canAllow: Bool = false
+
+  /// True for the bot's own folder, which the owner cannot remove.
+  public var ownFolder: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_ListGrantsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var botID: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_ListGrantsResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var grants: [Hearth_V1_Grant] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_SetGrantsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var botID: String = String()
+
+  public var grants: [Hearth_V1_Grant] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Hearth_V1_SetGrantsResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var grants: [Hearth_V1_Grant] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 public nonisolated struct Hearth_V1_Bot: Sendable {
@@ -324,12 +495,200 @@ public nonisolated struct Hearth_V1_DraftBotResponse: Sendable {
 
 fileprivate nonisolated let _protobuf_package = "hearth.v1"
 
+nonisolated extension Hearth_V1_Capability: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CAPABILITY_UNSPECIFIED\0\u{1}CAPABILITY_FILES_READ\0\u{1}CAPABILITY_FILES_WRITE\0\u{1}CAPABILITY_FILES_DELETE\0\u{1}CAPABILITY_WEB_FETCH\0\u{1}CAPABILITY_WEB_SEARCH\0")
+}
+
+nonisolated extension Hearth_V1_GrantMode: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0GRANT_MODE_UNSPECIFIED\0\u{1}GRANT_MODE_NOT_GRANTED\0\u{1}GRANT_MODE_ASK\0\u{1}GRANT_MODE_ALLOWED\0")
+}
+
 nonisolated extension Hearth_V1_Tier: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TIER_UNSPECIFIED\0\u{1}TIER_FAST\0\u{1}TIER_BALANCED\0\u{1}TIER_BEST\0")
 }
 
 nonisolated extension Hearth_V1_BotStatus: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0BOT_STATUS_UNSPECIFIED\0\u{1}BOT_STATUS_IDLE\0\u{1}BOT_STATUS_WORKING\0\u{1}BOT_STATUS_PAUSED\0\u{1}BOT_STATUS_DISABLED\0")
+}
+
+nonisolated extension Hearth_V1_Grant: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Grant"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}capability\0\u{1}mode\0\u{1}folder\0\u{1}title\0\u{3}can_allow\0\u{3}own_folder\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.capability) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.mode) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.folder) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.title) }()
+      case 5: try { try decoder.decodeSingularBoolField(value: &self.canAllow) }()
+      case 6: try { try decoder.decodeSingularBoolField(value: &self.ownFolder) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.capability != .unspecified {
+      try visitor.visitSingularEnumField(value: self.capability, fieldNumber: 1)
+    }
+    if self.mode != .unspecified {
+      try visitor.visitSingularEnumField(value: self.mode, fieldNumber: 2)
+    }
+    if !self.folder.isEmpty {
+      try visitor.visitSingularStringField(value: self.folder, fieldNumber: 3)
+    }
+    if !self.title.isEmpty {
+      try visitor.visitSingularStringField(value: self.title, fieldNumber: 4)
+    }
+    if self.canAllow != false {
+      try visitor.visitSingularBoolField(value: self.canAllow, fieldNumber: 5)
+    }
+    if self.ownFolder != false {
+      try visitor.visitSingularBoolField(value: self.ownFolder, fieldNumber: 6)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_Grant, rhs: Hearth_V1_Grant) -> Bool {
+    if lhs.capability != rhs.capability {return false}
+    if lhs.mode != rhs.mode {return false}
+    if lhs.folder != rhs.folder {return false}
+    if lhs.title != rhs.title {return false}
+    if lhs.canAllow != rhs.canAllow {return false}
+    if lhs.ownFolder != rhs.ownFolder {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_ListGrantsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListGrantsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}bot_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.botID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.botID.isEmpty {
+      try visitor.visitSingularStringField(value: self.botID, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_ListGrantsRequest, rhs: Hearth_V1_ListGrantsRequest) -> Bool {
+    if lhs.botID != rhs.botID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_ListGrantsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListGrantsResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}grants\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.grants) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.grants.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.grants, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_ListGrantsResponse, rhs: Hearth_V1_ListGrantsResponse) -> Bool {
+    if lhs.grants != rhs.grants {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_SetGrantsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetGrantsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}bot_id\0\u{1}grants\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.botID) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.grants) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.botID.isEmpty {
+      try visitor.visitSingularStringField(value: self.botID, fieldNumber: 1)
+    }
+    if !self.grants.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.grants, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_SetGrantsRequest, rhs: Hearth_V1_SetGrantsRequest) -> Bool {
+    if lhs.botID != rhs.botID {return false}
+    if lhs.grants != rhs.grants {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Hearth_V1_SetGrantsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetGrantsResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}grants\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.grants) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.grants.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.grants, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Hearth_V1_SetGrantsResponse, rhs: Hearth_V1_SetGrantsResponse) -> Bool {
+    if lhs.grants != rhs.grants {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
 }
 
 nonisolated extension Hearth_V1_Bot: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
