@@ -4,8 +4,10 @@
 // key, which is typed into a field that opens inside the card, so signing in
 // reads as choosing a service rather than filling in a form. A service the
 // owner added by address is a card of the same shape under the name they gave
-// it, saying where it is and which model it answers with, and only Clear. The card is a
-// container of system buttons and a SecureField, so keyboard and VoiceOver
+// it, saying where it is and which model it answers with, with Edit and Clear;
+// Edit opens the same fields inside the card, prefilled, with the key field
+// empty and saying an empty key keeps the one stored, and the core's refusal
+// under them. The card is a container of system buttons and a SecureField, so keyboard and VoiceOver
 // behaviour is theirs; the card itself is one labelled group. It has no hover
 // fill and no selected stroke: it holds controls and is not a choice. The key
 // field slides in and out as a layout move; the pill and the Add Key and Clear
@@ -24,6 +26,8 @@ public struct ProviderCard: View {
     let onSignIn: () -> Void
     let onSetKey: (String) -> Void
     let onClear: () -> Void
+    let onSaveService: ((Hearth_V1_SetAPIKeyRequest) -> Void)?
+    let onListModels: ModelLister?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -33,8 +37,12 @@ public struct ProviderCard: View {
         isEditing: Binding<Bool>,
         onSignIn: @escaping () -> Void,
         onSetKey: @escaping (String) -> Void,
-        onClear: @escaping () -> Void
+        onClear: @escaping () -> Void,
+        onSaveService: ((Hearth_V1_SetAPIKeyRequest) -> Void)? = nil,
+        onListModels: ModelLister? = nil
     ) {
+        self.onSaveService = onSaveService
+        self.onListModels = onListModels
         self.account = account
         self.failure = failure
         self._isEditing = isEditing
@@ -74,6 +82,9 @@ public struct ProviderCard: View {
                 }
             }
         }
+        .onChange(of: account) { _, _ in
+            if isAddedService && isEditing && account.failure.isEmpty { isEditing = false }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(account.name), \(stateText)")
         .accessibilityHint(account.gives)
@@ -99,23 +110,45 @@ public struct ProviderCard: View {
         if provider == .chatgpt {
             chatGPTAction
         } else if isAddedService {
-            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                HStack {
-                    Text(account.label.isEmpty ? "No key" : "Key ends in …\(account.label)")
-                        .font(Theme.callout)
-                        .foregroundStyle(Theme.color(.textSecondary))
-                    Spacer()
-                    Button("Clear", action: onClear)
-                        .accessibilityLabel("Clear \(account.name)")
-                }
-                if let problem { FailureLabel(text: problem) }
-            }
+            serviceAction
         } else {
             KeyActions(
                 name: provider.displayName,
                 keyEnd: isSignedIn ? account.label : nil,
                 failure: problem, isEditing: $isEditing,
                 onSave: onSetKey, onClear: onClear)
+        }
+    }
+
+    @ViewBuilder
+    private var serviceAction: some View {
+        if isEditing, let onSaveService {
+            ServiceFields(
+                service: nil, account: account, failure: problem,
+                onCancel: { isEditing = false }, onSave: onSaveService,
+                onListModels: onListModels
+            )
+            .transition(
+                .asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity)
+            )
+            .animation(Theme.motion(Theme.move, reduceMotion: reduceMotion), value: isEditing)
+        } else {
+            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                HStack {
+                    Text(account.label.isEmpty ? "No key" : "Key ends in …\(account.label)")
+                        .font(Theme.callout)
+                        .foregroundStyle(Theme.color(.textSecondary))
+                    Spacer()
+                    if onSaveService != nil {
+                        Button("Edit") { isEditing = true }
+                            .accessibilityLabel("Edit \(account.name)")
+                    }
+                    Button("Clear", action: onClear)
+                        .accessibilityLabel("Clear \(account.name)")
+                }
+                if let problem { FailureLabel(text: problem) }
+            }
         }
     }
 
@@ -273,3 +306,29 @@ struct KeyActions: View {
         if refocus { focus = editing ? .key : .addKey }
     }
 }
+
+extension ProviderCard {
+    /// The states the gallery and previews show.
+    public enum PreviewState: String, CaseIterable, Sendable {
+        case addedService
+        case editing
+        case refused
+
+        static let refusal = "the address changed; paste the key again"
+
+        var isEditing: Bool { self != .addedService }
+        var failure: String? { self == .refused ? Self.refusal : nil }
+    }
+
+    /// An added service's card showing `state`, for the gallery and previews.
+    public init(previewState state: PreviewState) {
+        self.init(
+            account: Fixtures.customService, failure: state.failure,
+            isEditing: .constant(state.isEditing), onSignIn: {}, onSetKey: { _ in },
+            onClear: {}, onSaveService: { _ in }, onListModels: { _, _ in Fixtures.ollamaModels })
+    }
+}
+
+#Preview("Added service") { ProviderCard(previewState: .addedService).padding() }
+#Preview("Editing") { ProviderCard(previewState: .editing).padding() }
+#Preview("Refused") { ProviderCard(previewState: .refused).padding() }

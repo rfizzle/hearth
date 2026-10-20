@@ -1,7 +1,9 @@
 // AccessSheet shows what one bot can see and do: a heading and a lead, a row
 // for each capability with its plain name, what it lets the bot do and a
 // segmented control, then the folders the file capabilities reach, the bot's
-// own fixed and others added through the system's folder panel. The rows are
+// own fixed and others added through the system's folder panel, then a
+// collapsed Advanced disclosure with the model pinned for this bot and its job
+// description as the core keeps it. The rows are
 // controls, not text fields, so they sit in a plain stack separated by
 // hairlines rather than a grouped form. The whole body scrolls, and Cancel and
 // the one prominent Save float on a scroll edge at the bottom, as the hire
@@ -17,15 +19,24 @@ import SwiftUI
 /// The sheet that edits one bot's grants.
 public struct AccessSheet: View {
     let store: GrantsStore
+    let advanced: BotModelStore
     let botName: String
     let onDone: () -> Void
+
+    @State private var showsAdvanced: Bool
 
     @Environment(\.pickFolder) private var pickFolder
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// `onDone` runs after a Save the core accepted and after Cancel.
-    public init(store: GrantsStore, botName: String, onDone: @escaping () -> Void) {
+    /// Advanced starts collapsed unless `advancedOpen`.
+    public init(
+        store: GrantsStore, advanced: BotModelStore, botName: String,
+        advancedOpen: Bool = false, onDone: @escaping () -> Void
+    ) {
         self.store = store
+        self.advanced = advanced
+        _showsAdvanced = State(initialValue: advancedOpen)
         self.botName = botName
         self.onDone = onDone
     }
@@ -41,7 +52,8 @@ public struct AccessSheet: View {
                 }
                 capabilities
                 foldersSection
-                if let error = store.error {
+                advancedSection
+                if let error = store.error ?? advanced.error {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(Theme.color(.toneNegative))
                 }
@@ -53,7 +65,10 @@ public struct AccessSheet: View {
         .safeAreaBar(edge: .bottom) { buttons }
         .frame(width: Theme.Size.sheetWidth)
         .presentationSizing(.form)
-        .task { await store.load() }
+        .task {
+            await store.load()
+            await advanced.load()
+        }
     }
 
     private var capabilities: some View {
@@ -93,10 +108,41 @@ public struct AccessSheet: View {
         }
     }
 
+    private var advancedSection: some View {
+        DisclosureGroup("Advanced", isExpanded: $showsAdvanced) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    Text("Model").font(Theme.headline)
+                    ModelOptionPicker(
+                        options: advanced.options,
+                        pinned: Binding(get: { advanced.pinned }, set: { advanced.pinned = $0 }))
+                    Text("This bot uses this model whatever its tier says.")
+                        .font(Theme.caption)
+                        .foregroundStyle(Theme.color(.textSecondary))
+                }
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    Text("Job description").font(Theme.headline)
+                    Text(advanced.jobDescription)
+                        .font(Theme.monospaced)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Theme.Spacing.md)
+                        .background(
+                            Theme.color(.surfaceSecondary),
+                            in: RoundedRectangle(cornerRadius: Theme.Radius.md))
+                }
+            }
+            .padding(.top, Theme.Spacing.sm)
+        }
+        .font(Theme.headline)
+        .animation(Theme.motion(Theme.move, reduceMotion: reduceMotion), value: showsAdvanced)
+    }
+
     private var buttons: some View {
         HStack {
             Button("Cancel") {
                 store.discard()
+                advanced.discard()
                 onDone()
             }
             .keyboardShortcut(.cancelAction)
@@ -104,7 +150,7 @@ public struct AccessSheet: View {
             Button("Save") { Task { await save() } }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
-                .disabled(store.isSaving)
+                .disabled(store.isSaving || advanced.isSaving)
         }
         .padding(.horizontal, Theme.Spacing.xl)
         .padding(.vertical, Theme.Spacing.md)
@@ -112,7 +158,9 @@ public struct AccessSheet: View {
 
     private func save() async {
         await store.save()
-        if store.didSave { onDone() }
+        guard store.didSave else { return }
+        await advanced.save()
+        if advanced.didSave { onDone() }
     }
 }
 

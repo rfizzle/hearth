@@ -156,15 +156,21 @@ private struct AccessSheetHost: View {
     let bot: Hearth_V1_Bot
     @Environment(AppModel.self) private var model
     @State private var store: GrantsStore
+    @State private var advanced: BotModelStore
 
     init(session: Session, bot: Hearth_V1_Bot) {
         self.bot = bot
         _store = State(
             initialValue: GrantsStore(
                 client: session.client, relay: session.relay, botID: bot.id))
+        _advanced = State(
+            initialValue: BotModelStore(
+                client: session.client, models: session.models, bot: bot))
     }
 
     var body: some View {
-        AccessSheet(store: store, botName: bot.name, onDone: { model.accessBotID = nil })
+        AccessSheet(
+            store: store, advanced: advanced, botName: bot.name, onDone: { model.accessBotID = nil }
+        )
     }
 }

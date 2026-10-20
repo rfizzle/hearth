@@ -128,8 +128,11 @@ Forms are the system's grouped form. A sheet has a heading, a lead sentence, the
 form, and a row of buttons: Cancel on the left bound to Escape, and the one
 prominent button bound to Return, never two prominent buttons. Hiring is a sheet
 at a fixed width and no fixed height. Settings is the standard settings window
-opened with Command-comma, with a tab per pane (Accounts, Web Search, Usage). Nothing in it is specific to
-first run.
+opened with Command-comma, with a tab per pane (Accounts, Models, Web Search, Usage). Models is a row per
+tier, Fast, Balanced and Best, each with a menu of the models it may use; a
+model for one bot is pinned under a collapsed Advanced at the foot of its Access
+sheet, beside its job description, and nothing else. Nothing in it is specific
+to first run.
 
 ## Empty states and first run
 

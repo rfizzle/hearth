@@ -1,7 +1,8 @@
 // ServicePicker is the card for a service that has no card yet: at rest a
 // mark, a name and one button; opened, the services hearth knows as rows of a
-// mark and a name, searchable when there are more than eight, with "Custom
-// gateway" last; a service chosen, its fields inside the same card, prefilled
+// mark and a name, searchable when there are more than eight, a runtime found
+// running on this Mac first with a "Running" pill and how many models it has,
+// and "Custom gateway" last; a service chosen, its fields inside the same card, prefilled
 // and editable, with Save and Cancel and the core's refusal under them. The
 // rows are system buttons and the fields system text fields, so keyboard and
 // VoiceOver behaviour is theirs; the card is one labelled group. Like the
@@ -110,7 +111,7 @@ public struct ServicePicker: View {
                     .accessibilityLabel("Search services")
             }
             ForEach(matches, id: \.id) { service in
-                row(service.name) {
+                row(service.name, detail: Self.detail(service)) {
                     if service.kind == .builtin {
                         setStage(nil)
                         onChooseBuiltin(service)
@@ -131,18 +132,42 @@ public struct ServicePicker: View {
 
     private var matches: [Hearth_V1_KnownService] {
         let text = query.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty else { return services }
-        return services.filter { $0.name.localizedCaseInsensitiveContains(text) }
+        let ordered = Self.ordered(services)
+        guard !text.isEmpty else { return ordered }
+        return ordered.filter { $0.name.localizedCaseInsensitiveContains(text) }
     }
 
-    private func row(_ name: String, action: @escaping () -> Void) -> some View {
+    /// `services` with a runtime found running on this Mac first, since it
+    /// costs nothing to use; the core's order holds within each group.
+    nonisolated static func ordered(_ all: [Hearth_V1_KnownService]) -> [Hearth_V1_KnownService] {
+        all.filter(\.detected) + all.filter { !$0.detected }
+    }
+
+    /// The caption under a running runtime's name: how many models it has.
+    nonisolated static func detail(_ service: Hearth_V1_KnownService) -> String? {
+        guard service.detected else { return nil }
+        let count = service.models.count
+        return count == 1 ? "1 model" : "\(count) models"
+    }
+
+    private func row(
+        _ name: String, detail: String? = nil, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: Theme.Spacing.sm) {
                 ServiceMark(named: name, size: .regular)
-                Text(name)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.color(.textPrimary))
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(name)
+                        .font(Theme.body)
+                        .foregroundStyle(Theme.color(.textPrimary))
+                    if let detail {
+                        Text(detail)
+                            .font(Theme.caption)
+                            .foregroundStyle(Theme.color(.textSecondary))
+                    }
+                }
                 Spacer()
+                if detail != nil { Pill("Running", tone: .positive) }
                 Image(systemName: "chevron.right")
                     .foregroundStyle(Theme.color(.textSecondary))
                     .accessibilityHidden(true)
@@ -150,7 +175,7 @@ public struct ServicePicker: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(name)
+        .accessibilityLabel(detail.map { "\(name), running, \($0)" } ?? name)
     }
 
     private func setStage(_ next: Stage?) {
@@ -158,159 +183,6 @@ public struct ServicePicker: View {
             stage = next
         }
         if next == nil { query = "" }
-    }
-}
-
-/// The fields of a service being added: its name and address prefilled from
-/// the known service and editable, a key, and the default model with a hint.
-struct ServiceFields: View {
-    let service: Hearth_V1_KnownService?
-    let failure: String?
-    let onCancel: () -> Void
-    let onSave: (Hearth_V1_SetAPIKeyRequest) -> Void
-    let onListModels: ModelLister?
-
-    private enum Field { case name, address, key, model }
-
-    @State private var name: String
-    @State private var address: String
-    @State private var key = ""
-    @State private var model: String
-    /// The ids the service listed for the address and key typed; nil until
-    /// they are read, and again when they could not be.
-    @State private var models: [String]?
-    @State private var isListing = false
-    @FocusState private var focus: Field?
-
-    init(
-        service: Hearth_V1_KnownService?, failure: String?,
-        onCancel: @escaping () -> Void,
-        onSave: @escaping (Hearth_V1_SetAPIKeyRequest) -> Void,
-        onListModels: ModelLister? = nil
-    ) {
-        self.service = service
-        self.failure = failure
-        self.onCancel = onCancel
-        self.onSave = onSave
-        self.onListModels = onListModels
-        _name = State(initialValue: service?.name ?? "")
-        _address = State(initialValue: service?.baseURL ?? "")
-        _model = State(initialValue: service?.defaultModel ?? "")
-    }
-
-    private var isLocal: Bool { service?.kind == .local }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-            labelled("Name") {
-                TextField("Name", text: $name, prompt: Text("My company's gateway"))
-                    .focused($focus, equals: .name)
-            }
-            labelled("Address") {
-                TextField("Address", text: $address, prompt: Text("https://example.com/v1"))
-                    .focused($focus, equals: .address)
-            }
-            labelled("Key") {
-                SecureField(
-                    "Key", text: $key,
-                    prompt: Text(isLocal ? "Not needed on this Mac" : "Paste a key")
-                )
-                .focused($focus, equals: .key)
-            }
-            labelled("Model") {
-                HStack(spacing: Theme.Spacing.sm) {
-                    if let models {
-                        ModelPicker(models: models, selection: $model)
-                    } else {
-                        TextField("Model", text: $model, prompt: Text("gpt-4o"))
-                            .focused($focus, equals: .model)
-                    }
-                    if isListing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .accessibilityLabel("Reading the service's models")
-                    }
-                }
-            }
-            Text(
-                models == nil
-                    ? "The model your team uses, as the service names it."
-                    : "The models this service offers."
-            )
-            .font(Theme.caption)
-            .foregroundStyle(Theme.color(.textSecondary))
-            if let service, service.kind == .compatible, let help = URL(string: service.helpURL) {
-                Link("Where do I get a key?", destination: help)
-                    .font(Theme.callout)
-            }
-            if let failure { FailureLabel(text: failure) }
-            HStack {
-                Spacer()
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Save", action: save)
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(isIncomplete)
-            }
-        }
-        .textFieldStyle(.roundedBorder)
-        .onSubmit(save)
-        .task { focus = service == nil ? .name : (isLocal ? .model : .key) }
-        .task(id: Lookup(address: address, key: key)) { await listModels() }
-        .transition(.opacity)
-    }
-
-    /// What the model list depends on.
-    private struct Lookup: Equatable {
-        let address: String
-        let key: String
-    }
-
-    /// Reads the service's models once the address and key are typed and the
-    /// typing has paused; a list that could not be read leaves the typed id.
-    private func listModels() async {
-        models = nil
-        isListing = false
-        let address = address.trimmingCharacters(in: .whitespaces)
-        guard let onListModels, !address.isEmpty, !key.isEmpty || isLocal else { return }
-        do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
-        isListing = true
-        let listed = await onListModels(address, key)
-        guard !Task.isCancelled else { return }
-        isListing = false
-        models = listed?.isEmpty == false ? listed : nil
-    }
-
-    /// Save waits for what every service needs; whether a key is needed is
-    /// the core's to say.
-    private var isIncomplete: Bool {
-        [name, address, model].contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
-    }
-
-    private func labelled<Content: View>(
-        _ label: String, @ViewBuilder _ content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            Text(label)
-                .font(Theme.caption)
-                .foregroundStyle(Theme.color(.textSecondary))
-                .accessibilityHidden(true)
-            content()
-                .accessibilityLabel(label)
-        }
-    }
-
-    private func save() {
-        guard !isIncomplete else { return }
-        onSave(
-            .with {
-                $0.provider = .openaiCompatible
-                $0.displayName = name
-                $0.baseURL = address
-                $0.key = key
-                $0.defaultModel = model
-            })
     }
 }
 

@@ -58,6 +58,12 @@ extension Catalog {
             }
         })
         relay.start()
+        let models = ModelsStore(client: client, relay: EventRelay(client: client))
+        func advanced(_ override: String = "") -> BotModelStore {
+            var bot = Fixtures.bot
+            bot.modelOverride = override
+            return BotModelStore(client: client, models: models, bot: bot)
+        }
         let defaults = GrantsStore(
             client: client, relay: EventRelay(client: client), botID: Fixtures.bot.id)
         let widenedStore = GrantsStore(client: client, relay: relay, botID: Fixtures.bot.id)
@@ -65,11 +71,24 @@ extension Catalog {
             GalleryState(
                 name: "defaults", width: Theme.Size.sheetWidth,
                 view: AnyView(
-                    AccessSheet(store: defaults, botName: Fixtures.bot.name, onDone: {}))),
+                    AccessSheet(
+                        store: defaults, advanced: advanced(), botName: Fixtures.bot.name,
+                        onDone: {}))),
             GalleryState(
                 name: "extra folder", width: Theme.Size.sheetWidth,
                 view: AnyView(
-                    AccessSheet(store: widenedStore, botName: Fixtures.bot.name, onDone: {}))),
+                    AccessSheet(
+                        store: widenedStore, advanced: advanced(), botName: Fixtures.bot.name,
+                        onDone: {}))),
+            GalleryState(
+                name: "advanced", width: Theme.Size.sheetWidth,
+                view: AnyView(
+                    AccessSheet(
+                        store: GrantsStore(
+                            client: client, relay: EventRelay(client: client),
+                            botID: Fixtures.bot.id),
+                        advanced: advanced("anthropic::claude-opus-4-5"),
+                        botName: Fixtures.bot.name, advancedOpen: true, onDone: {}))),
         ]
     }
 }

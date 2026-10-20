@@ -40,6 +40,8 @@ public struct SignInPanel: View {
 
     @State private var editing: Hearth_V1_Provider?
     @State private var adding: ServicePicker.Stage?
+    /// The added service whose card is open to change, by its profile.
+    @State private var changing: String?
     /// Built-in cards chosen from the picker in Settings, shown although
     /// signed out.
     @State private var revealed: Set<Hearth_V1_Provider> = []
@@ -95,9 +97,12 @@ public struct SignInPanel: View {
             }
             ForEach(services, id: \.profile) { account in
                 ProviderCard(
-                    account: account, isEditing: .constant(false),
+                    account: account,
+                    failure: changing == account.profile ? serviceFailure : nil,
+                    isEditing: isChanging(account.profile),
                     onSignIn: {}, onSetKey: { _ in },
-                    onClear: { onRemoveService(account.profile) })
+                    onClear: { onRemoveService(account.profile) },
+                    onSaveService: onSaveService, onListModels: onListModels)
             }
             ServicePicker(
                 title: featured.isEmpty ? "Add a service" : "Another service",
@@ -168,13 +173,33 @@ public struct SignInPanel: View {
             })
     }
 
-    /// Opening the picker closes any key field.
+    /// Opening a service's fields closes the picker and any key field, and
+    /// forgets the picker's failure, which the card would otherwise show.
+    private func isChanging(_ profile: String) -> Binding<Bool> {
+        Binding(
+            get: { changing == profile },
+            set: { open in
+                if open {
+                    changing = profile
+                    editing = nil
+                    adding = nil
+                } else if changing == profile {
+                    changing = nil
+                    onCloseService()
+                }
+            })
+    }
+
+    /// Opening the picker closes any key field and any service being changed.
     private var addingStage: Binding<ServicePicker.Stage?> {
         Binding(
             get: { adding },
             set: { stage in
                 adding = stage
-                if stage != nil { editing = nil }
+                if stage != nil {
+                    editing = nil
+                    changing = nil
+                }
             })
     }
 }

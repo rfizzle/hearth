@@ -105,6 +105,9 @@ final class Session {
     /// What the bots cost: one store for the session, which the inspector,
     /// the Usage pane, the budget cards and the paused marks read.
     let usage: UsageStore
+    /// Which model each tier asks for: one store for the session, which the
+    /// Models pane and every Access sheet's Advanced choice read.
+    let models: ModelsStore
 
     private var fetchedOrg: Hearth_V1_Org?
     private var failure: String?
@@ -120,6 +123,7 @@ final class Session {
         accounts = AccountsStore(client: client, relay: relay)
         onboarding = OnboardingStore(client: client, accounts: accounts)
         usage = UsageStore(client: client, relay: relay)
+        models = ModelsStore(client: client, relay: relay)
         bots = BotListStore(client: client, relay: relay)
         inbox = InboxStore(client: client, relay: relay, usage: usage)
         bots.usage = usage

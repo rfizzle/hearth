@@ -1,6 +1,6 @@
 // SettingsView is the Settings window: Accounts and Web Search panes, each the
 // same stack of cards onboarding shows, over the session's one AccountsStore,
-// and the Usage pane over its UsageStore.
+// the Models pane over its ModelsStore, and the Usage pane over its UsageStore.
 // Accounts shows the configured cards and "Add a service", whose list holds
 // the rest. With no helper there is nothing to show yet.
 // See docs/design.md#forms-sheets-and-settings
@@ -20,6 +20,8 @@ struct SettingsView: View {
                 TabView {
                     pane { SignInPanel(accounts: accounts) }
                         .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
+                    pane { ModelsPane(store: session.models) }
+                        .tabItem { Label("Models", systemImage: "cpu") }
                     pane { IntegrationsPanel(accounts: accounts) }
                         .tabItem { Label("Web Search", systemImage: "magnifyingglass") }
                     pane { UsagePane(usage: session.usage, bots: session.bots) }
