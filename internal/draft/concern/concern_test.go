@@ -208,8 +208,8 @@ func TestCap_WordsAreOneLineAndSuggestionsAreCutAndClean(t *testing.T) {
 	if got[0].Concern != "Too long." || got[0].Suggestion != strings.Repeat("n", 80) {
 		t.Errorf("name = %+v, want one line and a suggestion cut to 80", got[0])
 	}
-	if got[1].Suggestion != "Line one.\nLine  two." {
-		t.Errorf("goal suggestion = %q, want a line break kept and the control character a space", got[1].Suggestion)
+	if got[1].Suggestion != "Line one.\nLine two." {
+		t.Errorf("goal suggestion = %q, want a line break kept and the control character dropped", got[1].Suggestion)
 	}
 	if strings.Contains(got[2].Suggestion, "\n") || got[2].Suggestion != "One line "+long {
 		t.Errorf("done_when suggestion = %q, want one line, under its 4,000 bound", got[2].Suggestion)
@@ -217,6 +217,27 @@ func TestCap_WordsAreOneLineAndSuggestionsAreCutAndClean(t *testing.T) {
 	huge := concern.Cap(nil, []concern.Concern{{Field: "context", Concern: "x", Suggestion: strings.Repeat("é", 5000)}})
 	if n := utf8.RuneCountInString(huge[0].Suggestion); n != 4000 {
 		t.Errorf("a context suggestion of 5,000 runes is %d, want it cut to 4,000", n)
+	}
+}
+
+func TestCap_InvisibleCharactersAreDropped(t *testing.T) {
+	const invisible = "\u202e\u2066\u2069\u200b\ufeff\U000E0041\x00\u0085"
+	got := concern.Cap(nil, []concern.Concern{
+		{Field: "name", Concern: "Too" + invisible + " long.", Suggestion: "Lau" + invisible + "nch"},
+		{Field: "goal", Concern: "Clearer.", Suggestion: "One.\n\tTwo " + invisible + "👩\u200d💻."},
+	})
+	if len(got) != 2 {
+		t.Fatalf("Cap = %+v", got)
+	}
+	if got[0].Concern != "Too long." || got[0].Suggestion != "Launch" {
+		t.Errorf("name = %+v, want the invisible characters dropped", got[0])
+	}
+	if want := "One.\n Two 👩\u200d💻."; got[1].Suggestion != want {
+		t.Errorf("goal suggestion = %q, want %q (a ZWJ kept, a line break kept, the tab a space)", got[1].Suggestion, want)
+	}
+	// Words made only of invisible characters are empty, so the concern is dropped.
+	if got := concern.Cap(nil, []concern.Concern{{Field: "goal", Concern: "\u200b\ufeff"}}); len(got) != 0 {
+		t.Errorf("Cap = %+v, want a concern of invisible words dropped", got)
 	}
 }
 

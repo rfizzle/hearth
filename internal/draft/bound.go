@@ -23,16 +23,18 @@ const (
 	dateLayout = "2006-01-02"
 )
 
-// line is s as a field that holds one line: trimmed, made one line, cut to
-// n characters and trimmed again, since the cut may leave a space.
+// line is s as a field that holds one line: trimmed, made one line, stripped
+// of invisible characters (memory.Plain), cut to n characters and trimmed
+// again, since the cut may leave a space.
 func line(s string, n int) string {
-	return strings.TrimSpace(cut(memory.OneLine(strings.TrimSpace(s)), n))
+	return strings.TrimSpace(cut(memory.OneLine(memory.Plain(strings.TrimSpace(s))), n))
 }
 
-// multi is s as a field that may span lines: trimmed and cut to n
-// characters.
+// multi is s as a field that may span lines: stripped of invisible
+// characters but for the line break and the tab (memory.Plain), trimmed and
+// cut to n characters.
 func multi(s string, n int) string {
-	return strings.TrimSpace(cut(strings.TrimSpace(s), n))
+	return strings.TrimSpace(cut(memory.Plain(strings.TrimSpace(s)), n))
 }
 
 // day is s when it is a day written yyyy-mm-dd, else empty: a date the model

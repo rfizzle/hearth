@@ -50,8 +50,8 @@ var oneLine = map[string]bool{
 // is dropped when its field is unknown, when its field already has a concern
 // from a rule or from an earlier model concern, or when its words are empty
 // or, after being made one line, over MaxConcern characters. Its suggestion
-// is made one line for a one-line field, stripped of control characters, and
-// cut to the field's bound; a suggestion for target_date that is not a day is
+// is made one line for a one-line field, stripped of control and invisible
+// characters (memory.Plain), and cut to the field's bound; a suggestion for target_date that is not a day is
 // removed.
 func Cap(rules, model []Concern) []Concern {
 	var out []Concern
@@ -70,7 +70,7 @@ func Cap(rules, model []Concern) []Concern {
 		if !known || taken[m.Field] {
 			continue
 		}
-		words := strings.TrimSpace(memory.OneLine(m.Concern))
+		words := strings.TrimSpace(memory.OneLine(memory.Plain(m.Concern)))
 		if words == "" || utf8.RuneCountInString(words) > MaxConcern {
 			continue
 		}
@@ -81,10 +81,10 @@ func Cap(rules, model []Concern) []Concern {
 }
 
 // suggestion is a model's replacement for field, made safe to put in an
-// editor: no control character but a line break (none at all for a one-line
-// field), cut at the field's bound.
+// editor: no invisible character (memory.Plain), no control character but a
+// line break (none at all for a one-line field), cut at the field's bound.
 func suggestion(field, s string, bound int) string {
-	s = strings.TrimSpace(s)
+	s = memory.Plain(strings.TrimSpace(s))
 	if oneLine[field] {
 		s = memory.OneLine(s)
 	} else {

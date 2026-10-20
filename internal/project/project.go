@@ -72,7 +72,10 @@ const (
 
 // Validate is nil when name, brief and targetDate may make a project: a name
 // of one to 80 runes on one line, four brief parts of one to 4,000 runes each, and a
-// target date that is empty or yyyy-mm-dd.
+// target date that is empty or yyyy-mm-dd. The name is refused when it holds
+// an invisible character (memory.Plain would drop one); a part is not, since
+// New, Propose and Edit strip the parts first (see plain), but a part that is
+// empty once stripped is empty.
 func Validate(name string, brief Brief, targetDate string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -80,6 +83,9 @@ func Validate(name string, brief Brief, targetDate string) error {
 	}
 	if memory.OneLine(name) != name {
 		return fmt.Errorf("%w: the name has a line break or a control character", ErrInvalid)
+	}
+	if memory.Plain(name) != name {
+		return fmt.Errorf("%w: the name has an invisible character", ErrInvalid)
 	}
 	if utf8.RuneCountInString(name) > maxName {
 		return fmt.Errorf("%w: the name is over %d characters", ErrInvalid, maxName)
@@ -91,7 +97,7 @@ func Validate(name string, brief Brief, targetDate string) error {
 		{"when it is done", brief.DoneWhen},
 	}
 	for _, p := range parts {
-		if strings.TrimSpace(p.text) == "" {
+		if strings.TrimSpace(memory.Plain(p.text)) == "" {
 			return fmt.Errorf("%w: %s is empty", ErrInvalid, p.what)
 		}
 		if utf8.RuneCountInString(p.text) > maxPart {
@@ -106,10 +112,25 @@ func Validate(name string, brief Brief, targetDate string) error {
 	return nil
 }
 
+// plain is b with each part stripped of format characters (bidirectional
+// overrides, zero-width and tag characters) and control characters but the
+// line break and the tab (memory.Plain). It is the one place a part's text
+// is cleaned; the name is refused by Validate instead, since silently
+// changing what a person calls something would surprise them.
+func plain(b Brief) Brief {
+	return Brief{
+		Goal:          memory.Plain(b.Goal),
+		Context:       memory.Plain(b.Context),
+		DoneLooksLike: memory.Plain(b.DoneLooksLike),
+		DoneWhen:      memory.Plain(b.DoneWhen),
+	}
+}
+
 // New is an active project as the owner creates it: the name trimmed, the
 // brief as given, the folder under root/Projects, and its conversation. The
 // ids and times are the store's to fill. It refuses what Validate refuses.
 func New(name string, brief Brief, targetDate, root string) (Project, org.Conversation, error) {
+	brief = plain(brief)
 	if err := Validate(name, brief, targetDate); err != nil {
 		return Project{}, org.Conversation{}, err
 	}
@@ -126,6 +147,7 @@ func New(name string, brief Brief, targetDate, root string) (Project, org.Conver
 // Propose is a project as the Chief of Staff proposes it: the same
 // validation as New, no folder, no conversation, State Proposed.
 func Propose(name string, brief Brief, byBotID, inConversationID string) (Project, error) {
+	brief = plain(brief)
 	if err := Validate(name, brief, ""); err != nil {
 		return Project{}, err
 	}
@@ -170,6 +192,7 @@ func (s State) String() string {
 // the target date replaced. It refuses what Validate refuses. The folder is
 // p's and stays.
 func Edit(p Project, name string, brief Brief, targetDate string) (Project, error) {
+	brief = plain(brief)
 	if err := Validate(name, brief, targetDate); err != nil {
 		return Project{}, err
 	}

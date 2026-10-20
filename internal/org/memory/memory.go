@@ -77,6 +77,28 @@ func Meter(pages []Page) (used, limit int64) {
 	return used, HandbookCap
 }
 
+// Plain is s with the characters that change how text reads or is read by a
+// model without showing: every format character (Unicode category Cf: the
+// bidirectional overrides and isolates, the zero-width spaces and joiners,
+// the byte order mark, the tag characters) except the zero-width joiner
+// U+200D, which emoji sequences need, and every control character (category
+// Cc) except the line break and the tab. They are dropped, not replaced, so
+// a word split by one rejoins. Text from a model, or typed by the owner, is
+// passed through it before it is stored or put in a later prompt.
+func Plain(s string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case r == '\n' || r == '\t' || r == zeroWidthJoiner:
+			return r
+		case unicode.In(r, unicode.Cf, unicode.Cc):
+			return -1
+		}
+		return r
+	}, s)
+}
+
+const zeroWidthJoiner = '\u200d'
+
 // OneLine is s with every control character and line or paragraph
 // separator, a line break among them, made a space, so text from a note, a
 // page title or a file name cannot start a line of its own where it is put.

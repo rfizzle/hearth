@@ -29,6 +29,30 @@ func TestMeter(t *testing.T) {
 	}
 }
 
+func TestPlain(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"plain text", "Ship the newsletter, é.", "Ship the newsletter, é."},
+		{"a right-to-left override", "a\u202eb", "ab"},
+		{"the isolates", "a\u2066b\u2067c\u2068d\u2069e", "abcde"},
+		{"a zero-width space", "a\u200bb", "ab"},
+		{"a byte order mark", "\ufeffab", "ab"},
+		{"a tag character", "a\U000E0041b", "ab"},
+		{"a NUL", "a\x00b", "ab"},
+		{"the next-line control", "a\u0085b", "ab"},
+		{"a carriage return", "a\rb", "ab"},
+		{"an escape", "a\x1b[31mb", "a[31mb"},
+		{"a ZWJ emoji sequence is kept", "👩\u200d💻", "👩\u200d💻"},
+		{"a newline and a tab are kept", "a\n\tb", "a\n\tb"},
+		{"a line separator is not format or control", "a\u2028b", "a\u2028b"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := Plain(tc.in); got != tc.want {
+				t.Errorf("Plain(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestOneLine(t *testing.T) {
 	if got := OneLine("a\nb\r\tc d é"); got != "a b  c d é" {
 		t.Fatalf("OneLine = %q", got)
