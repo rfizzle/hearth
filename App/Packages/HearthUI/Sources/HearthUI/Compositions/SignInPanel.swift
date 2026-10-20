@@ -1,35 +1,51 @@
-// SignInPanel is where the owner gives hearth a model to think with: a Sign in
-// with ChatGPT button, a provider picker with a key field, and one row per
-// account with its state. It composes system buttons, a Picker and a
-// SecureField, so keyboard and VoiceOver behaviour is theirs; each account row
-// reads as one element. The panel draws what it is given and calls back; the
-// ChatGPT page is opened here, through the openURL environment action, when
-// the owner's store publishes it.
+// SignInPanel is where the owner gives hearth a model to think with: a stack
+// of provider cards, one per account, each with its state and its own action
+// inline. It is a stack and not a grid because at the column's width a card
+// in a grid is too narrow for a name, a pill and a key field with two buttons,
+// and a stack gives one linear Tab and VoiceOver order. Only one card has its
+// key field open at a time. The panel draws what it is given and calls back;
+// the ChatGPT page is opened here, through the openURL environment action,
+// when the owner's store publishes it.
+// See docs/design.md#forms-sheets-and-settings
 
 import HearthDesign
 import HearthKit
 import SwiftUI
 
-/// The sign-in surface: ChatGPT, API keys and the accounts that exist.
+/// The sign-in surface: a card for ChatGPT and for each key provider.
 public struct SignInPanel: View {
     let accounts: [Hearth_V1_ProviderAccount]
     let loginURL: URL?
     let failure: String?
+    let footer: String?
     let onSignInWithChatGPT: () -> Void
     let onSetKey: (Hearth_V1_Provider, String) -> Void
     let onClear: (Hearth_V1_Provider) -> Void
 
-    @State private var provider: Hearth_V1_Provider = .anthropic
-    @State private var key = ""
+    @State private var editing: Hearth_V1_Provider?
     @Environment(\.openURL) private var openURL
-
-    /// The providers that sign in with a key.
-    static let keyProviders: [Hearth_V1_Provider] = [.anthropic, .gemini, .openrouter]
 
     public init(
         accounts: [Hearth_V1_ProviderAccount],
         loginURL: URL?,
         failure: String?,
+        footer: String? = nil,
+        onSignInWithChatGPT: @escaping () -> Void,
+        onSetKey: @escaping (Hearth_V1_Provider, String) -> Void,
+        onClear: @escaping (Hearth_V1_Provider) -> Void
+    ) {
+        self.init(
+            accounts: accounts, loginURL: loginURL, failure: failure, footer: footer,
+            editing: nil, onSignInWithChatGPT: onSignInWithChatGPT, onSetKey: onSetKey,
+            onClear: onClear)
+    }
+
+    init(
+        accounts: [Hearth_V1_ProviderAccount],
+        loginURL: URL?,
+        failure: String?,
+        footer: String?,
+        editing: Hearth_V1_Provider?,
         onSignInWithChatGPT: @escaping () -> Void,
         onSetKey: @escaping (Hearth_V1_Provider, String) -> Void,
         onClear: @escaping (Hearth_V1_Provider) -> Void
@@ -37,78 +53,49 @@ public struct SignInPanel: View {
         self.accounts = accounts
         self.loginURL = loginURL
         self.failure = failure
+        self.footer = footer
         self.onSignInWithChatGPT = onSignInWithChatGPT
         self.onSetKey = onSetKey
         self.onClear = onClear
+        self._editing = State(initialValue: editing)
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button("Sign in with ChatGPT", action: onSignInWithChatGPT)
-                .buttonStyle(.borderedProminent)
-            HStack {
-                Picker("Provider", selection: $provider) {
-                    ForEach(Self.keyProviders, id: \.self) { Text($0.displayName).tag($0) }
-                }
-                SecureField("API key", text: $key)
-                Button("Save") {
-                    onSetKey(provider, key)
-                    key = ""
-                }
-                .disabled(key.isEmpty)
-            }
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             ForEach(accounts, id: \.provider) { account in
-                AccountRow(account: account, onClear: { onClear(account.provider) })
+                ProviderCard(
+                    account: account,
+                    failure: editing == account.provider ? failure : nil,
+                    isEditing: isEditing(account.provider),
+                    onSignIn: onSignInWithChatGPT,
+                    onSetKey: { onSetKey(account.provider, $0) },
+                    onClear: { onClear(account.provider) })
             }
-            if let failure {
-                Text(failure)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.color(.textPrimary))
-                    .accessibilityLabel("Sign-in problem: \(failure)")
+            if let failure, editing == nil, !accounts.contains(where: { !$0.failure.isEmpty }) {
+                FailureLabel(text: failure)
+            }
+            if let footer {
+                Text(footer)
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.color(.textSecondary))
             }
         }
         .onChange(of: loginURL) { _, url in
             if let url { openURL(url) }
         }
     }
-}
 
-private struct AccountRow: View {
-    let account: Hearth_V1_ProviderAccount
-    let onClear: () -> Void
-
-    var body: some View {
-        HStack {
-            Text(account.provider.displayName)
-                .font(Theme.body)
-                .foregroundStyle(Theme.color(.textPrimary))
-            Spacer()
-            Text(status)
-                .font(Theme.body)
-                .foregroundStyle(Theme.color(.textSecondary))
-            if account.state == .signedIn {
-                Button("Clear", action: onClear)
-                    .accessibilityLabel("Clear \(account.provider.displayName)")
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var status: String {
-        switch account.state {
-        case .signedIn:
-            if account.label.isEmpty {
-                "Signed in"
-            } else if account.provider == .chatgpt {
-                "Signed in as \(account.label)"
-            } else {
-                "Key ends in …\(account.label)"
-            }
-        case .signingIn:
-            "Waiting for the browser…"
-        default:
-            "Signed out"
-        }
+    /// Opening one card's field closes the one that was open.
+    private func isEditing(_ provider: Hearth_V1_Provider) -> Binding<Bool> {
+        Binding(
+            get: { editing == provider },
+            set: { open in
+                if open {
+                    editing = provider
+                } else if editing == provider {
+                    editing = nil
+                }
+            })
     }
 }
 
@@ -133,31 +120,41 @@ extension SignInPanel {
         case signingIn
         case signedIn
         case failed
+        case addingKey
+
+        static let failureText = "ChatGPT sign-in did not finish. Try again."
 
         var accounts: [Hearth_V1_ProviderAccount] {
             switch self {
             case .signedIn:
                 Fixtures.accounts
-            case .signedOut, .signingIn, .failed:
+            case .signedOut, .signingIn, .failed, .addingKey:
                 [Hearth_V1_Provider.chatgpt, .anthropic, .gemini].map { provider in
                     .with {
                         $0.provider = provider
                         $0.state =
                             self == .signingIn && provider == .chatgpt ? .signingIn : .signedOut
+                        if self == .failed && provider == .chatgpt { $0.failure = Self.failureText }
                     }
                 }
             }
         }
 
         var failure: String? {
-            self == .failed ? "ChatGPT sign-in did not finish. Try again." : nil
+            self == .failed ? Self.failureText : nil
+        }
+
+        /// The card whose key field is open.
+        var editing: Hearth_V1_Provider? {
+            self == .addingKey ? .anthropic : nil
         }
     }
 
     /// A panel showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
-            accounts: state.accounts, loginURL: nil, failure: state.failure,
+            accounts: state.accounts, loginURL: nil, failure: state.failure, footer: nil,
+            editing: state.editing,
             onSignInWithChatGPT: {}, onSetKey: { _, _ in }, onClear: { _ in })
     }
 }
@@ -166,3 +163,4 @@ extension SignInPanel {
 #Preview("Signing in") { SignInPanel(previewState: .signingIn).padding() }
 #Preview("Signed in") { SignInPanel(previewState: .signedIn).padding() }
 #Preview("Failed") { SignInPanel(previewState: .failed).padding() }
+#Preview("Adding a key") { SignInPanel(previewState: .addingKey).padding() }

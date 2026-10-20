@@ -1,20 +1,22 @@
 // IntegrationsPanel lists the optional services behind tools, such as web
-// search: one row each with its name, what it switches on, a key field or the
-// stored key's last characters with Clear, and a help link to where a key
-// comes from. It composes a SecureField, buttons and a Link, so keyboard and
-// VoiceOver behaviour is theirs. The panel draws what it is given and calls
-// back; the same panel is the whole of a later Settings screen.
+// search, as the same stack of cards the sign-in panel uses: one card each
+// with its mark, what it switches on, a help link and an inline key flow. Only
+// one card has its field open at a time. The panel draws what it is given and
+// calls back; the same panel is the whole of a Settings pane.
+// See docs/design.md#forms-sheets-and-settings
 
 import HearthDesign
 import HearthKit
 import SwiftUI
 
-/// One row per integration, each with its key.
+/// One card per integration, each with its key.
 public struct IntegrationsPanel: View {
     let integrations: [Hearth_V1_IntegrationAccount]
     let failure: String?
     let onSetKey: (Hearth_V1_Integration, String) -> Void
     let onClear: (Hearth_V1_Integration) -> Void
+
+    @State private var editing: Hearth_V1_Integration?
 
     public init(
         integrations: [Hearth_V1_IntegrationAccount],
@@ -22,74 +24,49 @@ public struct IntegrationsPanel: View {
         onSetKey: @escaping (Hearth_V1_Integration, String) -> Void,
         onClear: @escaping (Hearth_V1_Integration) -> Void
     ) {
+        self.init(
+            integrations: integrations, failure: failure, editing: nil, onSetKey: onSetKey,
+            onClear: onClear)
+    }
+
+    init(
+        integrations: [Hearth_V1_IntegrationAccount],
+        failure: String?,
+        editing: Hearth_V1_Integration?,
+        onSetKey: @escaping (Hearth_V1_Integration, String) -> Void,
+        onClear: @escaping (Hearth_V1_Integration) -> Void
+    ) {
         self.integrations = integrations
         self.failure = failure
         self.onSetKey = onSetKey
         self.onClear = onClear
+        self._editing = State(initialValue: editing)
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             ForEach(integrations, id: \.integration) { account in
-                IntegrationRow(
+                IntegrationCard(
                     account: account,
+                    failure: failure,
+                    isEditing: isEditing(account.integration),
                     onSetKey: { onSetKey(account.integration, $0) },
                     onClear: { onClear(account.integration) })
             }
-            if let failure {
-                Text(failure)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.color(.textPrimary))
-                    .accessibilityLabel("Problem: \(failure)")
-            }
-        }
-    }
-}
-
-private struct IntegrationRow: View {
-    let account: Hearth_V1_IntegrationAccount
-    let onSetKey: (String) -> Void
-    let onClear: () -> Void
-
-    @State private var key = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(account.name)
-                .font(.headline)
-                .foregroundStyle(Theme.color(.textPrimary))
-            Text(summary)
-                .font(Theme.body)
-                .foregroundStyle(Theme.color(.textSecondary))
-            if account.configured {
-                HStack {
-                    Text("Key ends in …\(account.label)")
-                        .font(Theme.body)
-                        .foregroundStyle(Theme.color(.textPrimary))
-                    Button("Clear", action: onClear)
-                        .accessibilityLabel("Clear \(account.name) key")
-                }
-            } else {
-                HStack {
-                    SecureField("\(account.name) key", text: $key)
-                    Button("Save") {
-                        onSetKey(key)
-                        key = ""
-                    }
-                    .disabled(key.isEmpty)
-                }
-            }
-            if !account.helpURL.isEmpty, let help = URL(string: account.helpURL) {
-                Link("Where do I get a key?", destination: help)
-            }
         }
     }
 
-    private var summary: String {
-        switch account.kind {
-        case .webSearch: "Lets your team search the web."
-        default: "Adds a tool to your team."
-        }
+    /// Opening one card's field closes the one that was open.
+    private func isEditing(_ integration: Hearth_V1_Integration) -> Binding<Bool> {
+        Binding(
+            get: { editing == integration },
+            set: { open in
+                if open {
+                    editing = integration
+                } else if editing == integration {
+                    editing = nil
+                }
+            })
     }
 }
 
@@ -114,12 +91,17 @@ extension IntegrationsPanel {
         var failure: String? {
             self == .failed ? "That key was not accepted. Check it and try again." : nil
         }
+
+        /// The card whose key field is open: a rejected key stays under its field.
+        var editing: Hearth_V1_Integration? {
+            self == .failed ? .braveSearch : nil
+        }
     }
 
     /// A panel showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
         self.init(
-            integrations: state.integrations, failure: state.failure,
+            integrations: state.integrations, failure: state.failure, editing: state.editing,
             onSetKey: { _, _ in }, onClear: { _ in })
     }
 }

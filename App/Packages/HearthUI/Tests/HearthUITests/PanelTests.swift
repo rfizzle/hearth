@@ -4,8 +4,10 @@ import Testing
 
 @testable import HearthUI
 
-@Test func signInPanelHasFourPreviewStates() {
-    #expect(SignInPanel.PreviewState.allCases.count == 4)
+@Test func signInPanelHasFivePreviewStates() {
+    #expect(SignInPanel.PreviewState.allCases.count == 5)
+    #expect(SignInPanel.PreviewState.addingKey.editing == .anthropic)
+    #expect(SignInPanel.PreviewState.signedOut.editing == nil)
     #expect(SignInPanel.PreviewState.failed.failure != nil)
     #expect(SignInPanel.PreviewState.signedOut.failure == nil)
 }
