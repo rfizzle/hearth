@@ -115,6 +115,7 @@ func openCore(ctx context.Context, dataDir string) (rpc.Options, func(), error) 
 		Templates:       skill.Templates(),
 		ReservedFolders: reserved,
 		Drafter:         drafter(skill.Templates(), deps.Streams, deps.Scrub),
+		ProjectDrafter:  projectDrafter(deps.Streams, deps.Scrub),
 		Bus:             bus,
 		EnsureWorkspace: workspace.Ensure,
 		Handbook:        pages,
@@ -159,9 +160,9 @@ func reservedFolders(dir string) []string {
 // words the owner reads; a reply that cannot be read is not.
 func drafter(templates []org.RoleTemplate, streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub) rpc.Drafter {
 	return func(ctx context.Context, r rpc.DraftRequest) (rpc.Draft, error) {
-		stream, err := streams(org.Bot{Tier: org.TierFast})
+		stream, err := fastStream(streams)
 		if err != nil {
-			return rpc.Draft{}, wire.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+			return rpc.Draft{}, err
 		}
 		d, err := draft.Draft(ctx, draft.Input{
 			Description: r.Description, TemplateID: r.TemplateID, Tier: r.Tier,
@@ -171,6 +172,34 @@ func drafter(templates []org.RoleTemplate, streams func(org.Bot) (agent.Stream, 
 			err = wire.Unavailable(err)
 		}
 		return rpc.Draft{Name: d.Name, Role: d.Role, JobDescription: d.JobDescription, WorkingStyle: d.WorkingStyle, Tier: d.Tier}, err
+	}
+}
+
+// fastStream opens the model the Fast tier resolves to, or says in the words
+// the owner reads that none can be.
+func fastStream(streams func(org.Bot) (agent.Stream, error)) (agent.Stream, error) {
+	stream, err := streams(org.Bot{Tier: org.TierFast})
+	if err != nil {
+		return nil, wire.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+	}
+	return stream, nil
+}
+
+// projectDrafter proposes a project from the owner's paragraph with the model
+// the Fast tier resolves to, unavailable and malformed as drafter is. The
+// paragraph is the owner's, bounded by the handler, and goes to the model
+// scrubbed and as data; nothing in the reply is used beyond the proposal.
+func projectDrafter(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub) rpc.ProjectDrafter {
+	return func(ctx context.Context, description string) (rpc.ProjectDraft, error) {
+		stream, err := fastStream(streams)
+		if err != nil {
+			return rpc.ProjectDraft{}, err
+		}
+		d, err := draft.DraftProject(ctx, draft.ProjectInput{Description: description, Stream: stream, Scrub: scrub})
+		if errors.Is(err, draft.ErrUnavailable) {
+			err = wire.Unavailable(err)
+		}
+		return rpc.ProjectDraft{Name: d.Name, Brief: d.Brief, TargetDate: d.TargetDate, Concerns: d.Concerns}, err
 	}
 }
 

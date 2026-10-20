@@ -579,6 +579,224 @@ func (x *ListProjectsResponse) GetProjects() []*Project {
 	return nil
 }
 
+type DraftProjectRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// What the owner wants to get done, in their own words.
+	Description   string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DraftProjectRequest) Reset() {
+	*x = DraftProjectRequest{}
+	mi := &file_hearth_v1_project_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DraftProjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DraftProjectRequest) ProtoMessage() {}
+
+func (x *DraftProjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_project_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DraftProjectRequest.ProtoReflect.Descriptor instead.
+func (*DraftProjectRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DraftProjectRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type DraftProjectResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Brief *ProjectBrief          `protobuf:"bytes,2,opt,name=brief,proto3" json:"brief,omitempty"`
+	// yyyy-mm-dd, or empty when the owner named no day.
+	TargetDate    string     `protobuf:"bytes,3,opt,name=target_date,json=targetDate,proto3" json:"target_date,omitempty"`
+	Concerns      []*Concern `protobuf:"bytes,4,rep,name=concerns,proto3" json:"concerns,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DraftProjectResponse) Reset() {
+	*x = DraftProjectResponse{}
+	mi := &file_hearth_v1_project_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DraftProjectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DraftProjectResponse) ProtoMessage() {}
+
+func (x *DraftProjectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_project_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DraftProjectResponse.ProtoReflect.Descriptor instead.
+func (*DraftProjectResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DraftProjectResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DraftProjectResponse) GetBrief() *ProjectBrief {
+	if x != nil {
+		return x.Brief
+	}
+	return nil
+}
+
+func (x *DraftProjectResponse) GetTargetDate() string {
+	if x != nil {
+		return x.TargetDate
+	}
+	return ""
+}
+
+func (x *DraftProjectResponse) GetConcerns() []*Concern {
+	if x != nil {
+		return x.Concerns
+	}
+	return nil
+}
+
+type CheckProjectRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Brief         *ProjectBrief          `protobuf:"bytes,2,opt,name=brief,proto3" json:"brief,omitempty"`
+	TargetDate    string                 `protobuf:"bytes,3,opt,name=target_date,json=targetDate,proto3" json:"target_date,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckProjectRequest) Reset() {
+	*x = CheckProjectRequest{}
+	mi := &file_hearth_v1_project_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckProjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckProjectRequest) ProtoMessage() {}
+
+func (x *CheckProjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_project_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckProjectRequest.ProtoReflect.Descriptor instead.
+func (*CheckProjectRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CheckProjectRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CheckProjectRequest) GetBrief() *ProjectBrief {
+	if x != nil {
+		return x.Brief
+	}
+	return nil
+}
+
+func (x *CheckProjectRequest) GetTargetDate() string {
+	if x != nil {
+		return x.TargetDate
+	}
+	return ""
+}
+
+type CheckProjectResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Concerns      []*Concern             `protobuf:"bytes,1,rep,name=concerns,proto3" json:"concerns,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckProjectResponse) Reset() {
+	*x = CheckProjectResponse{}
+	mi := &file_hearth_v1_project_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckProjectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckProjectResponse) ProtoMessage() {}
+
+func (x *CheckProjectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_project_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckProjectResponse.ProtoReflect.Descriptor instead.
+func (*CheckProjectResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CheckProjectResponse) GetConcerns() []*Concern {
+	if x != nil {
+		return x.Concerns
+	}
+	return nil
+}
+
 type CreateProjectRequest struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -592,7 +810,7 @@ type CreateProjectRequest struct {
 
 func (x *CreateProjectRequest) Reset() {
 	*x = CreateProjectRequest{}
-	mi := &file_hearth_v1_project_proto_msgTypes[5]
+	mi := &file_hearth_v1_project_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +822,7 @@ func (x *CreateProjectRequest) String() string {
 func (*CreateProjectRequest) ProtoMessage() {}
 
 func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[5]
+	mi := &file_hearth_v1_project_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +835,7 @@ func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectRequest.ProtoReflect.Descriptor instead.
 func (*CreateProjectRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{5}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateProjectRequest) GetName() string {
@@ -657,7 +875,7 @@ type CreateProjectResponse struct {
 
 func (x *CreateProjectResponse) Reset() {
 	*x = CreateProjectResponse{}
-	mi := &file_hearth_v1_project_proto_msgTypes[6]
+	mi := &file_hearth_v1_project_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +887,7 @@ func (x *CreateProjectResponse) String() string {
 func (*CreateProjectResponse) ProtoMessage() {}
 
 func (x *CreateProjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[6]
+	mi := &file_hearth_v1_project_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +900,7 @@ func (x *CreateProjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectResponse.ProtoReflect.Descriptor instead.
 func (*CreateProjectResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{6}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateProjectResponse) GetProject() *Project {
@@ -705,7 +923,7 @@ type UpdateProjectRequest struct {
 
 func (x *UpdateProjectRequest) Reset() {
 	*x = UpdateProjectRequest{}
-	mi := &file_hearth_v1_project_proto_msgTypes[7]
+	mi := &file_hearth_v1_project_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -717,7 +935,7 @@ func (x *UpdateProjectRequest) String() string {
 func (*UpdateProjectRequest) ProtoMessage() {}
 
 func (x *UpdateProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[7]
+	mi := &file_hearth_v1_project_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -730,7 +948,7 @@ func (x *UpdateProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProjectRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProjectRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{7}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UpdateProjectRequest) GetId() string {
@@ -770,7 +988,7 @@ type UpdateProjectResponse struct {
 
 func (x *UpdateProjectResponse) Reset() {
 	*x = UpdateProjectResponse{}
-	mi := &file_hearth_v1_project_proto_msgTypes[8]
+	mi := &file_hearth_v1_project_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -782,7 +1000,7 @@ func (x *UpdateProjectResponse) String() string {
 func (*UpdateProjectResponse) ProtoMessage() {}
 
 func (x *UpdateProjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[8]
+	mi := &file_hearth_v1_project_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -795,7 +1013,7 @@ func (x *UpdateProjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProjectResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProjectResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{8}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateProjectResponse) GetProject() *Project {
@@ -814,7 +1032,7 @@ type MarkProjectDoneRequest struct {
 
 func (x *MarkProjectDoneRequest) Reset() {
 	*x = MarkProjectDoneRequest{}
-	mi := &file_hearth_v1_project_proto_msgTypes[9]
+	mi := &file_hearth_v1_project_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -826,7 +1044,7 @@ func (x *MarkProjectDoneRequest) String() string {
 func (*MarkProjectDoneRequest) ProtoMessage() {}
 
 func (x *MarkProjectDoneRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[9]
+	mi := &file_hearth_v1_project_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -839,7 +1057,7 @@ func (x *MarkProjectDoneRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarkProjectDoneRequest.ProtoReflect.Descriptor instead.
 func (*MarkProjectDoneRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{9}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *MarkProjectDoneRequest) GetId() string {
@@ -858,7 +1076,7 @@ type MarkProjectDoneResponse struct {
 
 func (x *MarkProjectDoneResponse) Reset() {
 	*x = MarkProjectDoneResponse{}
-	mi := &file_hearth_v1_project_proto_msgTypes[10]
+	mi := &file_hearth_v1_project_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -870,7 +1088,7 @@ func (x *MarkProjectDoneResponse) String() string {
 func (*MarkProjectDoneResponse) ProtoMessage() {}
 
 func (x *MarkProjectDoneResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[10]
+	mi := &file_hearth_v1_project_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,7 +1101,7 @@ func (x *MarkProjectDoneResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarkProjectDoneResponse.ProtoReflect.Descriptor instead.
 func (*MarkProjectDoneResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{10}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *MarkProjectDoneResponse) GetProject() *Project {
@@ -902,7 +1120,7 @@ type ArchiveProjectRequest struct {
 
 func (x *ArchiveProjectRequest) Reset() {
 	*x = ArchiveProjectRequest{}
-	mi := &file_hearth_v1_project_proto_msgTypes[11]
+	mi := &file_hearth_v1_project_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -914,7 +1132,7 @@ func (x *ArchiveProjectRequest) String() string {
 func (*ArchiveProjectRequest) ProtoMessage() {}
 
 func (x *ArchiveProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[11]
+	mi := &file_hearth_v1_project_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -927,7 +1145,7 @@ func (x *ArchiveProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveProjectRequest.ProtoReflect.Descriptor instead.
 func (*ArchiveProjectRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{11}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ArchiveProjectRequest) GetId() string {
@@ -946,7 +1164,7 @@ type ArchiveProjectResponse struct {
 
 func (x *ArchiveProjectResponse) Reset() {
 	*x = ArchiveProjectResponse{}
-	mi := &file_hearth_v1_project_proto_msgTypes[12]
+	mi := &file_hearth_v1_project_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -958,7 +1176,7 @@ func (x *ArchiveProjectResponse) String() string {
 func (*ArchiveProjectResponse) ProtoMessage() {}
 
 func (x *ArchiveProjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_project_proto_msgTypes[12]
+	mi := &file_hearth_v1_project_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -971,7 +1189,7 @@ func (x *ArchiveProjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveProjectResponse.ProtoReflect.Descriptor instead.
 func (*ArchiveProjectResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_project_proto_rawDescGZIP(), []int{12}
+	return file_hearth_v1_project_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ArchiveProjectResponse) GetProject() *Project {
@@ -985,7 +1203,7 @@ var File_hearth_v1_project_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_project_proto_rawDesc = "" +
 	"\n" +
-	"\x17hearth/v1/project.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x81\x01\n" +
+	"\x17hearth/v1/project.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15hearth/v1/setup.proto\"\x81\x01\n" +
 	"\fProjectBrief\x12\x12\n" +
 	"\x04goal\x18\x01 \x01(\tR\x04goal\x12\x18\n" +
 	"\acontext\x18\x02 \x01(\tR\acontext\x12&\n" +
@@ -1031,7 +1249,22 @@ const file_hearth_v1_project_proto_rawDesc = "" +
 	"\x13ListProjectsRequest\x12)\n" +
 	"\x10include_archived\x18\x01 \x01(\bR\x0fincludeArchived\"F\n" +
 	"\x14ListProjectsResponse\x12.\n" +
-	"\bprojects\x18\x01 \x03(\v2\x12.hearth.v1.ProjectR\bprojects\"\x9b\x01\n" +
+	"\bprojects\x18\x01 \x03(\v2\x12.hearth.v1.ProjectR\bprojects\"7\n" +
+	"\x13DraftProjectRequest\x12 \n" +
+	"\vdescription\x18\x01 \x01(\tR\vdescription\"\xaa\x01\n" +
+	"\x14DraftProjectResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
+	"\x05brief\x18\x02 \x01(\v2\x17.hearth.v1.ProjectBriefR\x05brief\x12\x1f\n" +
+	"\vtarget_date\x18\x03 \x01(\tR\n" +
+	"targetDate\x12.\n" +
+	"\bconcerns\x18\x04 \x03(\v2\x12.hearth.v1.ConcernR\bconcerns\"y\n" +
+	"\x13CheckProjectRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
+	"\x05brief\x18\x02 \x01(\v2\x17.hearth.v1.ProjectBriefR\x05brief\x12\x1f\n" +
+	"\vtarget_date\x18\x03 \x01(\tR\n" +
+	"targetDate\"F\n" +
+	"\x14CheckProjectResponse\x12.\n" +
+	"\bconcerns\x18\x01 \x03(\v2\x12.hearth.v1.ConcernR\bconcerns\"\x9b\x01\n" +
 	"\x14CreateProjectRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05brief\x18\x02 \x01(\v2\x17.hearth.v1.ProjectBriefR\x05brief\x12\x1f\n" +
@@ -1068,9 +1301,11 @@ const file_hearth_v1_project_proto_rawDesc = "" +
 	"\x12PROJECT_LIGHT_NONE\x10\x01\x12\x17\n" +
 	"\x13PROJECT_LIGHT_GREEN\x10\x02\x12\x18\n" +
 	"\x14PROJECT_LIGHT_YELLOW\x10\x03\x12\x15\n" +
-	"\x11PROJECT_LIGHT_RED\x10\x042\xc4\x03\n" +
+	"\x11PROJECT_LIGHT_RED\x10\x042\xea\x04\n" +
 	"\x0eProjectService\x12Q\n" +
-	"\fListProjects\x12\x1e.hearth.v1.ListProjectsRequest\x1a\x1f.hearth.v1.ListProjectsResponse\"\x00\x12T\n" +
+	"\fListProjects\x12\x1e.hearth.v1.ListProjectsRequest\x1a\x1f.hearth.v1.ListProjectsResponse\"\x00\x12Q\n" +
+	"\fDraftProject\x12\x1e.hearth.v1.DraftProjectRequest\x1a\x1f.hearth.v1.DraftProjectResponse\"\x00\x12Q\n" +
+	"\fCheckProject\x12\x1e.hearth.v1.CheckProjectRequest\x1a\x1f.hearth.v1.CheckProjectResponse\"\x00\x12T\n" +
 	"\rCreateProject\x12\x1f.hearth.v1.CreateProjectRequest\x1a .hearth.v1.CreateProjectResponse\"\x00\x12T\n" +
 	"\rUpdateProject\x12\x1f.hearth.v1.UpdateProjectRequest\x1a .hearth.v1.UpdateProjectResponse\"\x00\x12Z\n" +
 	"\x0fMarkProjectDone\x12!.hearth.v1.MarkProjectDoneRequest\x1a\".hearth.v1.MarkProjectDoneResponse\"\x00\x12W\n" +
@@ -1089,7 +1324,7 @@ func file_hearth_v1_project_proto_rawDescGZIP() []byte {
 }
 
 var file_hearth_v1_project_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hearth_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_hearth_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_hearth_v1_project_proto_goTypes = []any{
 	(ProjectState)(0),               // 0: hearth.v1.ProjectState
 	(ProjectLight)(0),               // 1: hearth.v1.ProjectLight
@@ -1098,48 +1333,61 @@ var file_hearth_v1_project_proto_goTypes = []any{
 	(*Project)(nil),                 // 4: hearth.v1.Project
 	(*ListProjectsRequest)(nil),     // 5: hearth.v1.ListProjectsRequest
 	(*ListProjectsResponse)(nil),    // 6: hearth.v1.ListProjectsResponse
-	(*CreateProjectRequest)(nil),    // 7: hearth.v1.CreateProjectRequest
-	(*CreateProjectResponse)(nil),   // 8: hearth.v1.CreateProjectResponse
-	(*UpdateProjectRequest)(nil),    // 9: hearth.v1.UpdateProjectRequest
-	(*UpdateProjectResponse)(nil),   // 10: hearth.v1.UpdateProjectResponse
-	(*MarkProjectDoneRequest)(nil),  // 11: hearth.v1.MarkProjectDoneRequest
-	(*MarkProjectDoneResponse)(nil), // 12: hearth.v1.MarkProjectDoneResponse
-	(*ArchiveProjectRequest)(nil),   // 13: hearth.v1.ArchiveProjectRequest
-	(*ArchiveProjectResponse)(nil),  // 14: hearth.v1.ArchiveProjectResponse
-	(*timestamppb.Timestamp)(nil),   // 15: google.protobuf.Timestamp
+	(*DraftProjectRequest)(nil),     // 7: hearth.v1.DraftProjectRequest
+	(*DraftProjectResponse)(nil),    // 8: hearth.v1.DraftProjectResponse
+	(*CheckProjectRequest)(nil),     // 9: hearth.v1.CheckProjectRequest
+	(*CheckProjectResponse)(nil),    // 10: hearth.v1.CheckProjectResponse
+	(*CreateProjectRequest)(nil),    // 11: hearth.v1.CreateProjectRequest
+	(*CreateProjectResponse)(nil),   // 12: hearth.v1.CreateProjectResponse
+	(*UpdateProjectRequest)(nil),    // 13: hearth.v1.UpdateProjectRequest
+	(*UpdateProjectResponse)(nil),   // 14: hearth.v1.UpdateProjectResponse
+	(*MarkProjectDoneRequest)(nil),  // 15: hearth.v1.MarkProjectDoneRequest
+	(*MarkProjectDoneResponse)(nil), // 16: hearth.v1.MarkProjectDoneResponse
+	(*ArchiveProjectRequest)(nil),   // 17: hearth.v1.ArchiveProjectRequest
+	(*ArchiveProjectResponse)(nil),  // 18: hearth.v1.ArchiveProjectResponse
+	(*timestamppb.Timestamp)(nil),   // 19: google.protobuf.Timestamp
+	(*Concern)(nil),                 // 20: hearth.v1.Concern
 }
 var file_hearth_v1_project_proto_depIdxs = []int32{
 	1,  // 0: hearth.v1.ProjectStatus.light:type_name -> hearth.v1.ProjectLight
 	2,  // 1: hearth.v1.Project.brief:type_name -> hearth.v1.ProjectBrief
 	0,  // 2: hearth.v1.Project.state:type_name -> hearth.v1.ProjectState
 	3,  // 3: hearth.v1.Project.status:type_name -> hearth.v1.ProjectStatus
-	15, // 4: hearth.v1.Project.created_at:type_name -> google.protobuf.Timestamp
-	15, // 5: hearth.v1.Project.activated_at:type_name -> google.protobuf.Timestamp
-	15, // 6: hearth.v1.Project.done_at:type_name -> google.protobuf.Timestamp
-	15, // 7: hearth.v1.Project.archived_at:type_name -> google.protobuf.Timestamp
-	15, // 8: hearth.v1.Project.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 4: hearth.v1.Project.created_at:type_name -> google.protobuf.Timestamp
+	19, // 5: hearth.v1.Project.activated_at:type_name -> google.protobuf.Timestamp
+	19, // 6: hearth.v1.Project.done_at:type_name -> google.protobuf.Timestamp
+	19, // 7: hearth.v1.Project.archived_at:type_name -> google.protobuf.Timestamp
+	19, // 8: hearth.v1.Project.updated_at:type_name -> google.protobuf.Timestamp
 	4,  // 9: hearth.v1.ListProjectsResponse.projects:type_name -> hearth.v1.Project
-	2,  // 10: hearth.v1.CreateProjectRequest.brief:type_name -> hearth.v1.ProjectBrief
-	4,  // 11: hearth.v1.CreateProjectResponse.project:type_name -> hearth.v1.Project
-	2,  // 12: hearth.v1.UpdateProjectRequest.brief:type_name -> hearth.v1.ProjectBrief
-	4,  // 13: hearth.v1.UpdateProjectResponse.project:type_name -> hearth.v1.Project
-	4,  // 14: hearth.v1.MarkProjectDoneResponse.project:type_name -> hearth.v1.Project
-	4,  // 15: hearth.v1.ArchiveProjectResponse.project:type_name -> hearth.v1.Project
-	5,  // 16: hearth.v1.ProjectService.ListProjects:input_type -> hearth.v1.ListProjectsRequest
-	7,  // 17: hearth.v1.ProjectService.CreateProject:input_type -> hearth.v1.CreateProjectRequest
-	9,  // 18: hearth.v1.ProjectService.UpdateProject:input_type -> hearth.v1.UpdateProjectRequest
-	11, // 19: hearth.v1.ProjectService.MarkProjectDone:input_type -> hearth.v1.MarkProjectDoneRequest
-	13, // 20: hearth.v1.ProjectService.ArchiveProject:input_type -> hearth.v1.ArchiveProjectRequest
-	6,  // 21: hearth.v1.ProjectService.ListProjects:output_type -> hearth.v1.ListProjectsResponse
-	8,  // 22: hearth.v1.ProjectService.CreateProject:output_type -> hearth.v1.CreateProjectResponse
-	10, // 23: hearth.v1.ProjectService.UpdateProject:output_type -> hearth.v1.UpdateProjectResponse
-	12, // 24: hearth.v1.ProjectService.MarkProjectDone:output_type -> hearth.v1.MarkProjectDoneResponse
-	14, // 25: hearth.v1.ProjectService.ArchiveProject:output_type -> hearth.v1.ArchiveProjectResponse
-	21, // [21:26] is the sub-list for method output_type
-	16, // [16:21] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	2,  // 10: hearth.v1.DraftProjectResponse.brief:type_name -> hearth.v1.ProjectBrief
+	20, // 11: hearth.v1.DraftProjectResponse.concerns:type_name -> hearth.v1.Concern
+	2,  // 12: hearth.v1.CheckProjectRequest.brief:type_name -> hearth.v1.ProjectBrief
+	20, // 13: hearth.v1.CheckProjectResponse.concerns:type_name -> hearth.v1.Concern
+	2,  // 14: hearth.v1.CreateProjectRequest.brief:type_name -> hearth.v1.ProjectBrief
+	4,  // 15: hearth.v1.CreateProjectResponse.project:type_name -> hearth.v1.Project
+	2,  // 16: hearth.v1.UpdateProjectRequest.brief:type_name -> hearth.v1.ProjectBrief
+	4,  // 17: hearth.v1.UpdateProjectResponse.project:type_name -> hearth.v1.Project
+	4,  // 18: hearth.v1.MarkProjectDoneResponse.project:type_name -> hearth.v1.Project
+	4,  // 19: hearth.v1.ArchiveProjectResponse.project:type_name -> hearth.v1.Project
+	5,  // 20: hearth.v1.ProjectService.ListProjects:input_type -> hearth.v1.ListProjectsRequest
+	7,  // 21: hearth.v1.ProjectService.DraftProject:input_type -> hearth.v1.DraftProjectRequest
+	9,  // 22: hearth.v1.ProjectService.CheckProject:input_type -> hearth.v1.CheckProjectRequest
+	11, // 23: hearth.v1.ProjectService.CreateProject:input_type -> hearth.v1.CreateProjectRequest
+	13, // 24: hearth.v1.ProjectService.UpdateProject:input_type -> hearth.v1.UpdateProjectRequest
+	15, // 25: hearth.v1.ProjectService.MarkProjectDone:input_type -> hearth.v1.MarkProjectDoneRequest
+	17, // 26: hearth.v1.ProjectService.ArchiveProject:input_type -> hearth.v1.ArchiveProjectRequest
+	6,  // 27: hearth.v1.ProjectService.ListProjects:output_type -> hearth.v1.ListProjectsResponse
+	8,  // 28: hearth.v1.ProjectService.DraftProject:output_type -> hearth.v1.DraftProjectResponse
+	10, // 29: hearth.v1.ProjectService.CheckProject:output_type -> hearth.v1.CheckProjectResponse
+	12, // 30: hearth.v1.ProjectService.CreateProject:output_type -> hearth.v1.CreateProjectResponse
+	14, // 31: hearth.v1.ProjectService.UpdateProject:output_type -> hearth.v1.UpdateProjectResponse
+	16, // 32: hearth.v1.ProjectService.MarkProjectDone:output_type -> hearth.v1.MarkProjectDoneResponse
+	18, // 33: hearth.v1.ProjectService.ArchiveProject:output_type -> hearth.v1.ArchiveProjectResponse
+	27, // [27:34] is the sub-list for method output_type
+	20, // [20:27] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_project_proto_init() }
@@ -1147,13 +1395,14 @@ func file_hearth_v1_project_proto_init() {
 	if File_hearth_v1_project_proto != nil {
 		return
 	}
+	file_hearth_v1_setup_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_project_proto_rawDesc), len(file_hearth_v1_project_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   13,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

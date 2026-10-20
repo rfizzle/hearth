@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
+
+// Concern is the Chief of Staff's thought about one field of a draft: what
+// looks weak and, when there is one, a replacement. The core makes it, by rule
+// or from the model's reply, and bounds it before it is served; the app shows
+// it beside the field and the owner uses the suggestion or keeps their own.
+// Nothing here blocks a create.
+message Concern {
+  // The field's name in the request it is about, such as "done_when".
+  string field = 1;
+  // One plain sentence, at most 200 characters.
+  string concern = 2;
+  // A replacement for the field, or empty when there is none.
+  string suggestion = 3;
+}

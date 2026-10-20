@@ -26,6 +26,9 @@ public protocol HearthClient: Sendable {
     /// Asks the model to propose a name, role, job description and working
     /// style from the owner's words. It only proposes; nothing is stored.
     func draftBot(_ request: Hearth_V1_DraftBotRequest) async throws -> Hearth_V1_DraftBotResponse
+    /// What looks weak about a hire, by rule and with no model: at most three
+    /// concerns, none blocking. Nothing is stored.
+    func checkBot(_ request: Hearth_V1_CheckBotRequest) async throws -> [Hearth_V1_Concern]
 
     /// The conversations `botID` is in; an empty id lists every conversation.
     func listConversations(botID: String) async throws -> [Hearth_V1_Conversation]
@@ -135,6 +138,12 @@ public protocol HearthClient: Sendable {
 
     /// Every project that is proposed, active or done; archived too when asked.
     func listProjects(includeArchived: Bool) async throws -> [Hearth_V1_Project]
+    /// Asks the model to turn a paragraph into a project's name, brief and
+    /// target date, with at most three concerns. It only proposes; nothing is
+    /// stored. Unavailable while no model is set up.
+    func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse
+    /// What looks weak about a project's fields, by rule and with no model.
+    func checkProject(_ request: Hearth_V1_CheckProjectRequest) async throws -> [Hearth_V1_Concern]
     /// Creates an active project, or confirms the proposal `request.proposalID` names.
     func createProject(_ request: Hearth_V1_CreateProjectRequest) async throws -> Hearth_V1_Project
     /// Replaces the name, brief and target date.

@@ -49,6 +49,9 @@ type Deps struct {
 	// Drafter proposes a bot from the owner's words; unset, a draft is
 	// unavailable.
 	Drafter Drafter
+	// ProjectDrafter proposes a project from the owner's paragraph;
+	// DraftProject asks it. Unset, a draft is unavailable.
+	ProjectDrafter ProjectDrafter
 	// Bus is what EventService streams.
 	Bus *orchestrate.Bus
 	// EnsureWorkspace creates the Hearth folder at a path UpdateOrg is

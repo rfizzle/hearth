@@ -169,6 +169,9 @@ private struct NoBotsClient: HearthClient {
     ) async throws -> Hearth_V1_DraftBotResponse {
         try await preview.draftBot(request)
     }
+    func checkBot(_ request: Hearth_V1_CheckBotRequest) async throws -> [Hearth_V1_Concern] {
+        try await preview.checkBot(request)
+    }
     func listBots() async throws -> [Hearth_V1_Bot] { [] }
     func listConversations(botID: String) async throws -> [Hearth_V1_Conversation] {
         try await preview.listConversations(botID: botID)
@@ -192,6 +195,14 @@ private struct NoBotsClient: HearthClient {
     }
     func listProjects(includeArchived: Bool) async throws -> [Hearth_V1_Project] {
         try await preview.listProjects(includeArchived: includeArchived)
+    }
+    func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse {
+        try await preview.draftProject(description: description)
+    }
+    func checkProject(
+        _ request: Hearth_V1_CheckProjectRequest
+    ) async throws -> [Hearth_V1_Concern] {
+        try await preview.checkProject(request)
     }
     func createProject(
         _ request: Hearth_V1_CreateProjectRequest

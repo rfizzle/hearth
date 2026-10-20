@@ -95,7 +95,7 @@ func projectToProto(p project.Project, st project.Status) *hearthv1.Project {
 	return &hearthv1.Project{
 		Id:                       p.ID,
 		Name:                     p.Name,
-		Brief:                    &hearthv1.ProjectBrief{Goal: p.Brief.Goal, Context: p.Brief.Context, DoneLooksLike: p.Brief.DoneLooksLike, DoneWhen: p.Brief.DoneWhen},
+		Brief:                    briefToProto(p.Brief),
 		State:                    hearthv1.ProjectState(p.State),
 		TargetDate:               p.TargetDate,
 		FolderPath:               p.FolderPath,
@@ -125,6 +125,10 @@ func statusToProto(st project.Status) *hearthv1.ProjectStatus {
 		LightLabel:        st.Label,
 		AllTasksDone:      st.AllDone,
 	}
+}
+
+func briefToProto(b project.Brief) *hearthv1.ProjectBrief {
+	return &hearthv1.ProjectBrief{Goal: b.Goal, Context: b.Context, DoneLooksLike: b.DoneLooksLike, DoneWhen: b.DoneWhen}
 }
 
 // briefFromProto is the brief a request carries; none is the empty brief,

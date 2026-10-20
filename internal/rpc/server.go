@@ -29,6 +29,9 @@ type (
 	DraftRequest = staff.DraftRequest
 	Draft        = staff.Draft
 	Drafter      = staff.Drafter
+
+	ProjectDraft   = staff.ProjectDraft
+	ProjectDrafter = staff.ProjectDrafter
 )
 
 // ConversationChanged is a conversation as it is now: its newest run, its
@@ -68,6 +71,9 @@ type Options struct {
 	// Drafter proposes a bot from the owner's words; BotService.DraftBot
 	// asks it. Unset, a draft is unavailable.
 	Drafter Drafter
+	// ProjectDrafter proposes a project from the owner's paragraph;
+	// ProjectService.DraftProject asks it. Unset, a draft is unavailable.
+	ProjectDrafter ProjectDrafter
 	// Bus is what EventService streams and the handlers publish to.
 	Bus *orchestrate.Bus
 	// EnsureWorkspace creates the Hearth folder at a path UpdateOrg is
@@ -118,7 +124,7 @@ func NewHandler(o Options) http.Handler {
 	staff.Register(mux, staff.Deps{
 		Version: o.Version, Interval: o.Interval, Words: o.Words,
 		Store: o.Store, Orchestrator: o.Orchestrator, Templates: o.Templates,
-		ReservedFolders: o.ReservedFolders, Drafter: o.Drafter, Bus: o.Bus,
+		ReservedFolders: o.ReservedFolders, Drafter: o.Drafter, ProjectDrafter: o.ProjectDrafter, Bus: o.Bus,
 		EnsureWorkspace: o.EnsureWorkspace, Books: deps, Events: accounts.Event, Publish: o.publish,
 	})
 	accounts.Register(mux, accounts.Deps{Accounts: o.Accounts, Integrations: o.Integrations, Books: deps, Publish: o.publish})

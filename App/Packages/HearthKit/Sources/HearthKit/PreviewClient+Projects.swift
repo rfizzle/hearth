@@ -8,6 +8,24 @@ extension PreviewClient {
         projectList.all().filter { includeArchived || $0.state != .archived }
     }
 
+    /// The core's hire rules are not repeated in the preview: no concerns.
+    public func checkBot(_ request: Hearth_V1_CheckBotRequest) async throws -> [Hearth_V1_Concern] {
+        []
+    }
+
+    public func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse {
+        Fixtures.projectDraft
+    }
+
+    /// The past-date rule in the core's words, before the fixtures' today; the
+    /// core's other rules are not repeated in the preview.
+    public func checkProject(
+        _ request: Hearth_V1_CheckProjectRequest
+    ) async throws -> [Hearth_V1_Concern] {
+        let date = request.targetDate
+        return !date.isEmpty && date < Fixtures.today ? [Fixtures.pastDate] : []
+    }
+
     public func createProject(
         _ request: Hearth_V1_CreateProjectRequest
     ) async throws -> Hearth_V1_Project {

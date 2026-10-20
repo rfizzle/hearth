@@ -17,6 +17,9 @@ var dmText string
 //go:embed draft.md
 var draftText string
 
+//go:embed draft_project.md
+var draftProjectText string
+
 //go:embed summary.md
 var summaryText string
 
@@ -40,6 +43,12 @@ type DraftInput struct {
 // RenderDraft returns the system text for turning an owner's description
 // into a proposed name, role, job description and working style.
 func RenderDraft(in DraftInput) string { return render("draft", draftText, in) }
+
+// RenderDraftProject returns the system text for turning an owner's
+// paragraph into a proposed project: a name, a brief and a target date. It
+// takes no input, a project draft starts from nothing, and the paragraph is
+// sent as the prompt, never inserted here, so it stays data.
+func RenderDraftProject() string { return render("draft_project", draftProjectText, nil) }
 
 // Input is what the framing is about.
 type Input struct {

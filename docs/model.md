@@ -108,6 +108,8 @@ A project is done when the owner marks it done. When every task has finished the
 
 **Question** (`Question`). A bot asking the owner something, with optional suggested answers. Pauses the task; the answer resumes it with the question and answer appended to the brief. A question may carry one control from a fixed set (a single or multiple choice, free text, yes or no, a date, a file or folder, a scale); the owner answers it in the thread or the Inbox and the bot reads the answer in fixed words, never as data.
 
+**Guided setup.** Hiring and a new project start as one question from the Chief of Staff, answered in the owner's words. A script hearth ships asks for what is still missing one step at a time, with the same controls a bot's question uses; the Fast tier only turns the paragraph into the fields and offers at most three concerns, each about one field, which the owner uses or keeps their own. Nothing is stored until they create, the form is one click away and remembered, and a hard refusal is the core's, in words.
+
 ### Knowledge
 
 **Handbook** (`HandbookPage`). Markdown pages the owner writes or imports (about me, my preferences, house style, project background). Every bot reads the pages tagged for its team or for everyone. Rendered as a simple page editor; no retrieval settings. Size is capped with a visible meter so the owner understands it all goes into context.

@@ -102,6 +102,26 @@ import Testing
     #expect(!draft.jobDescription.isEmpty && !draft.workingStyle.isEmpty)
 }
 
+@Test func draftProjectServesTheFixtureWithTwoConcerns() async throws {
+    let draft = try await PreviewClient().draftProject(description: "Start a newsletter")
+    #expect(draft == Fixtures.projectDraft)
+    #expect(draft.concerns.map(\.field) == ["done_when", "name"])
+    #expect(draft.concerns[0].suggestion.isEmpty == false)
+    #expect(draft.concerns[1].suggestion.isEmpty)
+    #expect(Fixtures.draft.concerns.map(\.field) == ["job_description"])
+}
+
+@Test func checkProjectFlagsOnlyADateBeforeTheFixturesToday() async throws {
+    let client = PreviewClient()
+    func check(_ date: String) async throws -> [Hearth_V1_Concern] {
+        try await client.checkProject(.with { $0.targetDate = date })
+    }
+    #expect(try await check("2026-10-19") == [Fixtures.pastDate])
+    #expect(try await check("2026-10-20").isEmpty)
+    #expect(try await check("").isEmpty)
+    #expect(try await client.checkBot(.with { $0.name = "Wren" }).isEmpty)
+}
+
 @Test func signInAnswersWithoutTheCredential() async throws {
     let client = PreviewClient()
     let account = try await client.setAPIKey(provider: .anthropic, key: "sk-secret-1234")

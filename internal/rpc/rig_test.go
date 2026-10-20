@@ -150,6 +150,21 @@ func drafterOver(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub)
 	}
 }
 
+// projectDrafterOver is the project drafter hearthd sets, over a stream source.
+func projectDrafterOver(streams func(org.Bot) (agent.Stream, error), scrub agent.Scrub) ProjectDrafter {
+	return func(ctx context.Context, description string) (ProjectDraft, error) {
+		stream, err := streams(org.Bot{Tier: org.TierFast})
+		if err != nil {
+			return ProjectDraft{}, wire.Unavailable(fmt.Errorf("%w: %s", draft.ErrUnavailable, agent.Explain(err)))
+		}
+		d, err := draft.DraftProject(ctx, draft.ProjectInput{Description: description, Stream: stream, Scrub: scrub})
+		if errors.Is(err, draft.ErrUnavailable) {
+			err = wire.Unavailable(err)
+		}
+		return ProjectDraft{Name: d.Name, Brief: d.Brief, TargetDate: d.TargetDate, Concerns: d.Concerns}, err
+	}
+}
+
 func newRig(t *testing.T, steps ...step) *rig { return newRigWith(t, false, steps...) }
 
 // newCoordinatedRig is a rig whose orchestrator answers project conversations
@@ -206,6 +221,7 @@ func newRigWith(t *testing.T, coordinated bool, steps ...step) *rig {
 			Integrations:    &integration.Integrations{Keys: accounts.Keys},
 			Templates:       skill.Templates(),
 			Drafter:         drafterOver(func(org.Bot) (agent.Stream, error) { return sc.stream, nil }, nil),
+			ProjectDrafter:  projectDrafterOver(func(org.Bot) (agent.Stream, error) { return sc.stream, nil }, nil),
 			Bus:             bus,
 			ReservedFolders: []string{filepath.Join(dir, "data")},
 			EnsureWorkspace: workspace.Ensure,

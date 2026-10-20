@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/rfizzle/hearth/internal/draft/concern"
 	"github.com/rfizzle/hearth/internal/keystore"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/intro"
@@ -33,6 +34,11 @@ func TierFromProto(t hearthv1.Tier) (org.Tier, error) {
 		return org.Tier(t), nil
 	}
 	return 0, Invalid("tier is required")
+}
+
+// ConcernToProto is a concern as the app shows it beside its field.
+func ConcernToProto(c concern.Concern) *hearthv1.Concern {
+	return &hearthv1.Concern{Field: c.Field, Concern: c.Concern, Suggestion: c.Suggestion}
 }
 
 // BotToProto is a bot as the app shows it.

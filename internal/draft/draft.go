@@ -2,7 +2,6 @@ package draft
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -58,45 +57,53 @@ var tiers = map[string]org.Tier{"fast": org.TierFast, "balanced": org.TierBalanc
 // reached is ErrUnavailable and an answer that cannot be read ErrMalformed,
 // each wrapping the plain words.
 func Draft(ctx context.Context, in Input) (Result, error) {
-	if in.Stream == nil {
-		return Result{}, fmt.Errorf("%w: no model is set up; sign in to one in Settings", ErrUnavailable)
-	}
 	fin := framing.DraftInput{}
 	for _, t := range in.Templates {
 		if t.ID == in.TemplateID {
 			fin = framing.DraftInput{Role: t.Role, Starting: t.JobDescription}
 		}
 	}
+	out, err := ask(ctx, framing.RenderDraft(fin), in.Description, in.Stream, in.Scrub)
+	if err != nil {
+		return Result{}, err
+	}
+	return parse(out, in.Tier)
+}
+
+// ask runs the one model call a draft makes: the framing as the system text
+// and the owner's words as the prompt, so they stay data; no tools, one
+// round, a wall. The words come back or an ErrUnavailable.
+func ask(ctx context.Context, system, prompt string, stream agent.Stream, scrub agent.Scrub) (string, error) {
+	if stream == nil {
+		return "", fmt.Errorf("%w: no model is set up; sign in to one in Settings", ErrUnavailable)
+	}
 	out, err := agent.Run(ctx, agent.Input{
-		System:    framing.RenderDraft(fin),
-		Prompt:    in.Description,
-		Stream:    in.Stream,
-		Scrub:     in.Scrub,
+		System:    system,
+		Prompt:    prompt,
+		Stream:    stream,
+		Scrub:     scrub,
 		MaxRounds: 1,
 		MaxWall:   wall,
 	})
 	if err != nil {
-		return Result{}, fmt.Errorf("%w: %s", ErrUnavailable, agent.Explain(err))
+		return "", fmt.Errorf("%w: %s", ErrUnavailable, agent.Explain(err))
 	}
-	return parse(out.Text, in.Tier)
+	return out.Text, nil
 }
 
-// parse reads the model's text defensively. asked is the tier to keep when
-// the reply names none that is known.
-func parse(text string, asked org.Tier) (Result, error) {
-	start, end := strings.Index(text, "{"), strings.LastIndex(text, "}")
-	if start < 0 || end < start {
-		return Result{}, ErrMalformed
-	}
-	var r reply
-	if err := json.Unmarshal([]byte(text[start:end+1]), &r); err != nil {
-		return Result{}, ErrMalformed
+// parse reads the model's text strictly: one object, no field the reply
+// struct lacks, every string bounded (see bound.go). asked is the tier to keep
+// when the reply names none that is known.
+func parse(raw string, asked org.Tier) (Result, error) {
+	r, err := read[reply](raw)
+	if err != nil {
+		return Result{}, err
 	}
 	res := Result{
-		Name:           strings.TrimSpace(r.Name),
-		Role:           strings.TrimSpace(r.Role),
-		JobDescription: strings.TrimSpace(r.JobDescription),
-		WorkingStyle:   strings.TrimSpace(r.WorkingStyle),
+		Name:           line(r.Name, maxName),
+		Role:           line(r.Role, maxRole),
+		JobDescription: multi(r.JobDescription, maxPart),
+		WorkingStyle:   line(r.WorkingStyle, maxStyle),
 		Tier:           asked,
 	}
 	if res.JobDescription == "" {

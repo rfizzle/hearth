@@ -88,6 +88,10 @@ public final class LiveClient: HearthClient {
         try await bots.draftBot(request: request).value()
     }
 
+    public func checkBot(_ request: Hearth_V1_CheckBotRequest) async throws -> [Hearth_V1_Concern] {
+        try await bots.checkBot(request: request).value().concerns
+    }
+
     public func listBots() async throws -> [Hearth_V1_Bot] {
         try await bots.listBots(request: Hearth_V1_ListBotsRequest()).value().bots
     }

@@ -8,6 +8,17 @@ extension LiveClient {
         return try await projects.listProjects(request: request).value().projects
     }
 
+    public func draftProject(description: String) async throws -> Hearth_V1_DraftProjectResponse {
+        let request = Hearth_V1_DraftProjectRequest.with { $0.description_p = description }
+        return try await projects.draftProject(request: request).value()
+    }
+
+    public func checkProject(
+        _ request: Hearth_V1_CheckProjectRequest
+    ) async throws -> [Hearth_V1_Concern] {
+        try await projects.checkProject(request: request).value().concerns
+    }
+
     public func createProject(
         _ request: Hearth_V1_CreateProjectRequest
     ) async throws -> Hearth_V1_Project {

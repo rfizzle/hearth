@@ -76,7 +76,7 @@ func TestDraft_ReadsTheStrictShape(t *testing.T) {
 }
 
 func TestDraft_FillsWhatTheReplyLeavesOut(t *testing.T) {
-	m := &model{reply: `{"job_description": "You help.", "tier": "turbo", "extra": 1}`}
+	m := &model{reply: `{"job_description": "You help.", "tier": "turbo"}`}
 	got, err := draft.Draft(t.Context(), draft.Input{Description: "help me", Tier: org.TierBalanced, Stream: m.stream})
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +95,8 @@ func TestDraft_MalformedReplies(t *testing.T) {
 		"blank job description": `{"job_description": "  "}`,
 		"an array":              `["a"]`,
 		"wrong type":            `{"job_description": 7}`,
+		"unknown field":         `{"job_description": "You help.", "extra": 1}`,
+		"two objects":           `{"job_description": "You help."} {"job_description": "Again."}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			m := &model{reply: reply}

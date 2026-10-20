@@ -36,6 +36,12 @@ const (
 	// ProjectServiceListProjectsProcedure is the fully-qualified name of the ProjectService's
 	// ListProjects RPC.
 	ProjectServiceListProjectsProcedure = "/hearth.v1.ProjectService/ListProjects"
+	// ProjectServiceDraftProjectProcedure is the fully-qualified name of the ProjectService's
+	// DraftProject RPC.
+	ProjectServiceDraftProjectProcedure = "/hearth.v1.ProjectService/DraftProject"
+	// ProjectServiceCheckProjectProcedure is the fully-qualified name of the ProjectService's
+	// CheckProject RPC.
+	ProjectServiceCheckProjectProcedure = "/hearth.v1.ProjectService/CheckProject"
 	// ProjectServiceCreateProjectProcedure is the fully-qualified name of the ProjectService's
 	// CreateProject RPC.
 	ProjectServiceCreateProjectProcedure = "/hearth.v1.ProjectService/CreateProject"
@@ -53,6 +59,14 @@ const (
 // ProjectServiceClient is a client for the hearth.v1.ProjectService service.
 type ProjectServiceClient interface {
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// DraftProject asks the model to turn a paragraph into a project's name,
+	// brief and target date, with at most three concerns. It only proposes:
+	// nothing is stored until the owner sends CreateProject. The description is
+	// at most 4,000 characters; with no model set up it is unavailable.
+	DraftProject(context.Context, *connect.Request[v1.DraftProjectRequest]) (*connect.Response[v1.DraftProjectResponse], error)
+	// CheckProject says what looks weak about a project's fields by rule, with
+	// no model. It proposes only: nothing is stored. At most three concerns.
+	CheckProject(context.Context, *connect.Request[v1.CheckProjectRequest]) (*connect.Response[v1.CheckProjectResponse], error)
 	// CreateProject makes an active project with its folder and conversation.
 	// With proposal_id it confirms that proposal instead, applying the other
 	// fields as edits; the proposal's id is kept.
@@ -85,6 +99,18 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
 			connect.WithClientOptions(opts...),
 		),
+		draftProject: connect.NewClient[v1.DraftProjectRequest, v1.DraftProjectResponse](
+			httpClient,
+			baseURL+ProjectServiceDraftProjectProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("DraftProject")),
+			connect.WithClientOptions(opts...),
+		),
+		checkProject: connect.NewClient[v1.CheckProjectRequest, v1.CheckProjectResponse](
+			httpClient,
+			baseURL+ProjectServiceCheckProjectProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("CheckProject")),
+			connect.WithClientOptions(opts...),
+		),
 		createProject: connect.NewClient[v1.CreateProjectRequest, v1.CreateProjectResponse](
 			httpClient,
 			baseURL+ProjectServiceCreateProjectProcedure,
@@ -115,6 +141,8 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
 	listProjects    *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
+	draftProject    *connect.Client[v1.DraftProjectRequest, v1.DraftProjectResponse]
+	checkProject    *connect.Client[v1.CheckProjectRequest, v1.CheckProjectResponse]
 	createProject   *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
 	updateProject   *connect.Client[v1.UpdateProjectRequest, v1.UpdateProjectResponse]
 	markProjectDone *connect.Client[v1.MarkProjectDoneRequest, v1.MarkProjectDoneResponse]
@@ -124,6 +152,16 @@ type projectServiceClient struct {
 // ListProjects calls hearth.v1.ProjectService.ListProjects.
 func (c *projectServiceClient) ListProjects(ctx context.Context, req *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
 	return c.listProjects.CallUnary(ctx, req)
+}
+
+// DraftProject calls hearth.v1.ProjectService.DraftProject.
+func (c *projectServiceClient) DraftProject(ctx context.Context, req *connect.Request[v1.DraftProjectRequest]) (*connect.Response[v1.DraftProjectResponse], error) {
+	return c.draftProject.CallUnary(ctx, req)
+}
+
+// CheckProject calls hearth.v1.ProjectService.CheckProject.
+func (c *projectServiceClient) CheckProject(ctx context.Context, req *connect.Request[v1.CheckProjectRequest]) (*connect.Response[v1.CheckProjectResponse], error) {
+	return c.checkProject.CallUnary(ctx, req)
 }
 
 // CreateProject calls hearth.v1.ProjectService.CreateProject.
@@ -149,6 +187,14 @@ func (c *projectServiceClient) ArchiveProject(ctx context.Context, req *connect.
 // ProjectServiceHandler is an implementation of the hearth.v1.ProjectService service.
 type ProjectServiceHandler interface {
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// DraftProject asks the model to turn a paragraph into a project's name,
+	// brief and target date, with at most three concerns. It only proposes:
+	// nothing is stored until the owner sends CreateProject. The description is
+	// at most 4,000 characters; with no model set up it is unavailable.
+	DraftProject(context.Context, *connect.Request[v1.DraftProjectRequest]) (*connect.Response[v1.DraftProjectResponse], error)
+	// CheckProject says what looks weak about a project's fields by rule, with
+	// no model. It proposes only: nothing is stored. At most three concerns.
+	CheckProject(context.Context, *connect.Request[v1.CheckProjectRequest]) (*connect.Response[v1.CheckProjectResponse], error)
 	// CreateProject makes an active project with its folder and conversation.
 	// With proposal_id it confirms that proposal instead, applying the other
 	// fields as edits; the proposal's id is kept.
@@ -175,6 +221,18 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		ProjectServiceListProjectsProcedure,
 		svc.ListProjects,
 		connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
+		connect.WithHandlerOptions(opts...),
+	)
+	projectServiceDraftProjectHandler := connect.NewUnaryHandler(
+		ProjectServiceDraftProjectProcedure,
+		svc.DraftProject,
+		connect.WithSchema(projectServiceMethods.ByName("DraftProject")),
+		connect.WithHandlerOptions(opts...),
+	)
+	projectServiceCheckProjectHandler := connect.NewUnaryHandler(
+		ProjectServiceCheckProjectProcedure,
+		svc.CheckProject,
+		connect.WithSchema(projectServiceMethods.ByName("CheckProject")),
 		connect.WithHandlerOptions(opts...),
 	)
 	projectServiceCreateProjectHandler := connect.NewUnaryHandler(
@@ -205,6 +263,10 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		switch r.URL.Path {
 		case ProjectServiceListProjectsProcedure:
 			projectServiceListProjectsHandler.ServeHTTP(w, r)
+		case ProjectServiceDraftProjectProcedure:
+			projectServiceDraftProjectHandler.ServeHTTP(w, r)
+		case ProjectServiceCheckProjectProcedure:
+			projectServiceCheckProjectHandler.ServeHTTP(w, r)
 		case ProjectServiceCreateProjectProcedure:
 			projectServiceCreateProjectHandler.ServeHTTP(w, r)
 		case ProjectServiceUpdateProjectProcedure:
@@ -224,6 +286,14 @@ type UnimplementedProjectServiceHandler struct{}
 
 func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProjectService.ListProjects is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) DraftProject(context.Context, *connect.Request[v1.DraftProjectRequest]) (*connect.Response[v1.DraftProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProjectService.DraftProject is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) CheckProject(context.Context, *connect.Request[v1.CheckProjectRequest]) (*connect.Response[v1.CheckProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.ProjectService.CheckProject is not implemented"))
 }
 
 func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error) {

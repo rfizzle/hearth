@@ -2,10 +2,10 @@ package staff
 
 import (
 	"context"
-	"errors"
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/draft/concern"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/inbox"
@@ -72,21 +72,38 @@ func (s *botService) GetBot(ctx context.Context, req *connect.Request[hearthv1.G
 // See docs/model.md#people
 func (s *botService) DraftBot(ctx context.Context, req *connect.Request[hearthv1.DraftBotRequest]) (*connect.Response[hearthv1.DraftBotResponse], error) {
 	m := req.Msg
-	if err := wire.Need("description", m.GetDescription()); err != nil {
+	if err := askable(m.GetDescription(), 0, s.opts.Drafter != nil); err != nil {
 		return nil, err
 	}
 	tier, err := wire.TierFromProto(m.GetTier())
 	if err != nil {
 		return nil, err
 	}
-	if s.opts.Drafter == nil {
-		return nil, wire.Fail(wire.Unavailable(errors.New("no model is set up; sign in to one in Settings")))
-	}
 	d, err := s.opts.Drafter(ctx, DraftRequest{Description: m.GetDescription(), TemplateID: m.GetTemplateId(), Tier: tier})
+	var concerns []concern.Concern
+	if err == nil {
+		concerns, err = s.check(ctx, d.Name, d.Role, d.JobDescription)
+	}
 	return wire.Reply(&hearthv1.DraftBotResponse{
 		Name: d.Name, Role: d.Role, JobDescription: d.JobDescription,
 		WorkingStyle: d.WorkingStyle, Tier: hearthv1.Tier(d.Tier),
+		Concerns: wire.Each(concerns, wire.ConcernToProto),
 	}, err)
+}
+
+// CheckBot says what looks weak about a hire, by rule and with no model. It
+// reads the bots and stores nothing.
+// See docs/model.md#owner-interaction
+func (s *botService) CheckBot(ctx context.Context, req *connect.Request[hearthv1.CheckBotRequest]) (*connect.Response[hearthv1.CheckBotResponse], error) {
+	m := req.Msg
+	concerns, err := s.check(ctx, m.GetName(), m.GetRole(), m.GetJobDescription())
+	return wire.Reply(&hearthv1.CheckBotResponse{Concerns: wire.Each(concerns, wire.ConcernToProto)}, err)
+}
+
+// check is the rule concerns for a hire against the bots the org has.
+func (s *botService) check(ctx context.Context, name, role, jobDescription string) ([]concern.Concern, error) {
+	bots, err := s.opts.Store.Bots(ctx)
+	return concern.Cap(concern.Bot(name, role, jobDescription, bots), nil), err
 }
 
 // ListGrants is what the bot may do, one row per capability and per folder.

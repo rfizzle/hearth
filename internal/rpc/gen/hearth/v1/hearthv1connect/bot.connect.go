@@ -44,6 +44,8 @@ const (
 	BotServiceGetBotProcedure = "/hearth.v1.BotService/GetBot"
 	// BotServiceDraftBotProcedure is the fully-qualified name of the BotService's DraftBot RPC.
 	BotServiceDraftBotProcedure = "/hearth.v1.BotService/DraftBot"
+	// BotServiceCheckBotProcedure is the fully-qualified name of the BotService's CheckBot RPC.
+	BotServiceCheckBotProcedure = "/hearth.v1.BotService/CheckBot"
 	// BotServiceListGrantsProcedure is the fully-qualified name of the BotService's ListGrants RPC.
 	BotServiceListGrantsProcedure = "/hearth.v1.BotService/ListGrants"
 	// BotServiceSetGrantsProcedure is the fully-qualified name of the BotService's SetGrants RPC.
@@ -69,6 +71,9 @@ type BotServiceClient interface {
 	// DraftBot asks the model to propose a bot from a description. It only
 	// proposes: nothing is stored until the owner sends CreateBot.
 	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
+	// CheckBot says what looks weak about a hire by rule, with no model. It
+	// proposes only: nothing is stored. At most three concerns.
+	CheckBot(context.Context, *connect.Request[v1.CheckBotRequest]) (*connect.Response[v1.CheckBotResponse], error)
 	// ListGrants is what the bot may do, one row per capability and, for the
 	// file capabilities, one row per folder.
 	ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error)
@@ -127,6 +132,12 @@ func NewBotServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(botServiceMethods.ByName("DraftBot")),
 			connect.WithClientOptions(opts...),
 		),
+		checkBot: connect.NewClient[v1.CheckBotRequest, v1.CheckBotResponse](
+			httpClient,
+			baseURL+BotServiceCheckBotProcedure,
+			connect.WithSchema(botServiceMethods.ByName("CheckBot")),
+			connect.WithClientOptions(opts...),
+		),
 		listGrants: connect.NewClient[v1.ListGrantsRequest, v1.ListGrantsResponse](
 			httpClient,
 			baseURL+BotServiceListGrantsProcedure,
@@ -179,6 +190,7 @@ type botServiceClient struct {
 	listBots      *connect.Client[v1.ListBotsRequest, v1.ListBotsResponse]
 	getBot        *connect.Client[v1.GetBotRequest, v1.GetBotResponse]
 	draftBot      *connect.Client[v1.DraftBotRequest, v1.DraftBotResponse]
+	checkBot      *connect.Client[v1.CheckBotRequest, v1.CheckBotResponse]
 	listGrants    *connect.Client[v1.ListGrantsRequest, v1.ListGrantsResponse]
 	setGrants     *connect.Client[v1.SetGrantsRequest, v1.SetGrantsResponse]
 	updateBot     *connect.Client[v1.UpdateBotRequest, v1.UpdateBotResponse]
@@ -211,6 +223,11 @@ func (c *botServiceClient) GetBot(ctx context.Context, req *connect.Request[v1.G
 // DraftBot calls hearth.v1.BotService.DraftBot.
 func (c *botServiceClient) DraftBot(ctx context.Context, req *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error) {
 	return c.draftBot.CallUnary(ctx, req)
+}
+
+// CheckBot calls hearth.v1.BotService.CheckBot.
+func (c *botServiceClient) CheckBot(ctx context.Context, req *connect.Request[v1.CheckBotRequest]) (*connect.Response[v1.CheckBotResponse], error) {
+	return c.checkBot.CallUnary(ctx, req)
 }
 
 // ListGrants calls hearth.v1.BotService.ListGrants.
@@ -257,6 +274,9 @@ type BotServiceHandler interface {
 	// DraftBot asks the model to propose a bot from a description. It only
 	// proposes: nothing is stored until the owner sends CreateBot.
 	DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error)
+	// CheckBot says what looks weak about a hire by rule, with no model. It
+	// proposes only: nothing is stored. At most three concerns.
+	CheckBot(context.Context, *connect.Request[v1.CheckBotRequest]) (*connect.Response[v1.CheckBotResponse], error)
 	// ListGrants is what the bot may do, one row per capability and, for the
 	// file capabilities, one row per folder.
 	ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error)
@@ -309,6 +329,12 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 		BotServiceDraftBotProcedure,
 		svc.DraftBot,
 		connect.WithSchema(botServiceMethods.ByName("DraftBot")),
+		connect.WithHandlerOptions(opts...),
+	)
+	botServiceCheckBotHandler := connect.NewUnaryHandler(
+		BotServiceCheckBotProcedure,
+		svc.CheckBot,
+		connect.WithSchema(botServiceMethods.ByName("CheckBot")),
 		connect.WithHandlerOptions(opts...),
 	)
 	botServiceListGrantsHandler := connect.NewUnaryHandler(
@@ -365,6 +391,8 @@ func NewBotServiceHandler(svc BotServiceHandler, opts ...connect.HandlerOption) 
 			botServiceGetBotHandler.ServeHTTP(w, r)
 		case BotServiceDraftBotProcedure:
 			botServiceDraftBotHandler.ServeHTTP(w, r)
+		case BotServiceCheckBotProcedure:
+			botServiceCheckBotHandler.ServeHTTP(w, r)
 		case BotServiceListGrantsProcedure:
 			botServiceListGrantsHandler.ServeHTTP(w, r)
 		case BotServiceSetGrantsProcedure:
@@ -406,6 +434,10 @@ func (UnimplementedBotServiceHandler) GetBot(context.Context, *connect.Request[v
 
 func (UnimplementedBotServiceHandler) DraftBot(context.Context, *connect.Request[v1.DraftBotRequest]) (*connect.Response[v1.DraftBotResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.DraftBot is not implemented"))
+}
+
+func (UnimplementedBotServiceHandler) CheckBot(context.Context, *connect.Request[v1.CheckBotRequest]) (*connect.Response[v1.CheckBotResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hearth.v1.BotService.CheckBot is not implemented"))
 }
 
 func (UnimplementedBotServiceHandler) ListGrants(context.Context, *connect.Request[v1.ListGrantsRequest]) (*connect.Response[v1.ListGrantsResponse], error) {

@@ -3,6 +3,7 @@ syntax = "proto3";
 package hearth.v1;
 
 import "google/protobuf/timestamp.proto";
+import "hearth/v1/setup.proto";
 
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
@@ -11,6 +12,14 @@ option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearth
 // archiving. Status is derived by the core and set through nothing here.
 service ProjectService {
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {}
+  // DraftProject asks the model to turn a paragraph into a project's name,
+  // brief and target date, with at most three concerns. It only proposes:
+  // nothing is stored until the owner sends CreateProject. The description is
+  // at most 4,000 characters; with no model set up it is unavailable.
+  rpc DraftProject(DraftProjectRequest) returns (DraftProjectResponse) {}
+  // CheckProject says what looks weak about a project's fields by rule, with
+  // no model. It proposes only: nothing is stored. At most three concerns.
+  rpc CheckProject(CheckProjectRequest) returns (CheckProjectResponse) {}
   // CreateProject makes an active project with its folder and conversation.
   // With proposal_id it confirms that proposal instead, applying the other
   // fields as edits; the proposal's id is kept.
@@ -108,6 +117,29 @@ message ListProjectsRequest {
 
 message ListProjectsResponse {
   repeated Project projects = 1;
+}
+
+message DraftProjectRequest {
+  // What the owner wants to get done, in their own words.
+  string description = 1;
+}
+
+message DraftProjectResponse {
+  string name = 1;
+  ProjectBrief brief = 2;
+  // yyyy-mm-dd, or empty when the owner named no day.
+  string target_date = 3;
+  repeated Concern concerns = 4;
+}
+
+message CheckProjectRequest {
+  string name = 1;
+  ProjectBrief brief = 2;
+  string target_date = 3;
+}
+
+message CheckProjectResponse {
+  repeated Concern concerns = 1;
 }
 
 message CreateProjectRequest {

@@ -1360,8 +1360,11 @@ type DraftBotResponse struct {
 	// Plain sentences: what they do, how they work, what good looks like.
 	JobDescription string `protobuf:"bytes,3,opt,name=job_description,json=jobDescription,proto3" json:"job_description,omitempty"`
 	// One line, such as "Direct and brief; leads with the answer".
-	WorkingStyle  string `protobuf:"bytes,4,opt,name=working_style,json=workingStyle,proto3" json:"working_style,omitempty"`
-	Tier          Tier   `protobuf:"varint,5,opt,name=tier,proto3,enum=hearth.v1.Tier" json:"tier,omitempty"`
+	WorkingStyle string `protobuf:"bytes,4,opt,name=working_style,json=workingStyle,proto3" json:"working_style,omitempty"`
+	Tier         Tier   `protobuf:"varint,5,opt,name=tier,proto3,enum=hearth.v1.Tier" json:"tier,omitempty"`
+	// What looks weak about the draft, by rule: at most three, each about one
+	// field. The app shows them beside the fields; nothing blocks a hire.
+	Concerns      []*Concern `protobuf:"bytes,6,rep,name=concerns,proto3" json:"concerns,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1431,6 +1434,117 @@ func (x *DraftBotResponse) GetTier() Tier {
 	return Tier_TIER_UNSPECIFIED
 }
 
+func (x *DraftBotResponse) GetConcerns() []*Concern {
+	if x != nil {
+		return x.Concerns
+	}
+	return nil
+}
+
+type CheckBotRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Role           string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	JobDescription string                 `protobuf:"bytes,3,opt,name=job_description,json=jobDescription,proto3" json:"job_description,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CheckBotRequest) Reset() {
+	*x = CheckBotRequest{}
+	mi := &file_hearth_v1_bot_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckBotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckBotRequest) ProtoMessage() {}
+
+func (x *CheckBotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_bot_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckBotRequest.ProtoReflect.Descriptor instead.
+func (*CheckBotRequest) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *CheckBotRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CheckBotRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *CheckBotRequest) GetJobDescription() string {
+	if x != nil {
+		return x.JobDescription
+	}
+	return ""
+}
+
+type CheckBotResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Concerns      []*Concern             `protobuf:"bytes,1,rep,name=concerns,proto3" json:"concerns,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckBotResponse) Reset() {
+	*x = CheckBotResponse{}
+	mi := &file_hearth_v1_bot_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckBotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckBotResponse) ProtoMessage() {}
+
+func (x *CheckBotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_bot_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckBotResponse.ProtoReflect.Descriptor instead.
+func (*CheckBotResponse) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CheckBotResponse) GetConcerns() []*Concern {
+	if x != nil {
+		return x.Concerns
+	}
+	return nil
+}
+
 type UpdateBotRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1447,7 +1561,7 @@ type UpdateBotRequest struct {
 
 func (x *UpdateBotRequest) Reset() {
 	*x = UpdateBotRequest{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[19]
+	mi := &file_hearth_v1_bot_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1459,7 +1573,7 @@ func (x *UpdateBotRequest) String() string {
 func (*UpdateBotRequest) ProtoMessage() {}
 
 func (x *UpdateBotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[19]
+	mi := &file_hearth_v1_bot_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1472,7 +1586,7 @@ func (x *UpdateBotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBotRequest.ProtoReflect.Descriptor instead.
 func (*UpdateBotRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{19}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpdateBotRequest) GetId() string {
@@ -1540,7 +1654,7 @@ type UpdateBotResponse struct {
 
 func (x *UpdateBotResponse) Reset() {
 	*x = UpdateBotResponse{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[20]
+	mi := &file_hearth_v1_bot_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1552,7 +1666,7 @@ func (x *UpdateBotResponse) String() string {
 func (*UpdateBotResponse) ProtoMessage() {}
 
 func (x *UpdateBotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[20]
+	mi := &file_hearth_v1_bot_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1565,7 +1679,7 @@ func (x *UpdateBotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBotResponse.ProtoReflect.Descriptor instead.
 func (*UpdateBotResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{20}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *UpdateBotResponse) GetBot() *Bot {
@@ -1592,7 +1706,7 @@ type Note struct {
 
 func (x *Note) Reset() {
 	*x = Note{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[21]
+	mi := &file_hearth_v1_bot_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1604,7 +1718,7 @@ func (x *Note) String() string {
 func (*Note) ProtoMessage() {}
 
 func (x *Note) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[21]
+	mi := &file_hearth_v1_bot_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1617,7 +1731,7 @@ func (x *Note) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Note.ProtoReflect.Descriptor instead.
 func (*Note) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{21}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Note) GetId() string {
@@ -1678,7 +1792,7 @@ type ListNotesRequest struct {
 
 func (x *ListNotesRequest) Reset() {
 	*x = ListNotesRequest{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[22]
+	mi := &file_hearth_v1_bot_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1690,7 +1804,7 @@ func (x *ListNotesRequest) String() string {
 func (*ListNotesRequest) ProtoMessage() {}
 
 func (x *ListNotesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[22]
+	mi := &file_hearth_v1_bot_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1703,7 +1817,7 @@ func (x *ListNotesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNotesRequest.ProtoReflect.Descriptor instead.
 func (*ListNotesRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{22}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ListNotesRequest) GetBotId() string {
@@ -1724,7 +1838,7 @@ type ListNotesResponse struct {
 
 func (x *ListNotesResponse) Reset() {
 	*x = ListNotesResponse{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[23]
+	mi := &file_hearth_v1_bot_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1736,7 +1850,7 @@ func (x *ListNotesResponse) String() string {
 func (*ListNotesResponse) ProtoMessage() {}
 
 func (x *ListNotesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[23]
+	mi := &file_hearth_v1_bot_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1749,7 +1863,7 @@ func (x *ListNotesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNotesResponse.ProtoReflect.Descriptor instead.
 func (*ListNotesResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{23}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListNotesResponse) GetNotes() []*Note {
@@ -1776,7 +1890,7 @@ type EditNoteRequest struct {
 
 func (x *EditNoteRequest) Reset() {
 	*x = EditNoteRequest{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[24]
+	mi := &file_hearth_v1_bot_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1788,7 +1902,7 @@ func (x *EditNoteRequest) String() string {
 func (*EditNoteRequest) ProtoMessage() {}
 
 func (x *EditNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[24]
+	mi := &file_hearth_v1_bot_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1801,7 +1915,7 @@ func (x *EditNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditNoteRequest.ProtoReflect.Descriptor instead.
 func (*EditNoteRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{24}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *EditNoteRequest) GetId() string {
@@ -1827,7 +1941,7 @@ type EditNoteResponse struct {
 
 func (x *EditNoteResponse) Reset() {
 	*x = EditNoteResponse{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[25]
+	mi := &file_hearth_v1_bot_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1839,7 +1953,7 @@ func (x *EditNoteResponse) String() string {
 func (*EditNoteResponse) ProtoMessage() {}
 
 func (x *EditNoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[25]
+	mi := &file_hearth_v1_bot_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1852,7 +1966,7 @@ func (x *EditNoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditNoteResponse.ProtoReflect.Descriptor instead.
 func (*EditNoteResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{25}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *EditNoteResponse) GetNote() *Note {
@@ -1871,7 +1985,7 @@ type DeleteNoteRequest struct {
 
 func (x *DeleteNoteRequest) Reset() {
 	*x = DeleteNoteRequest{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[26]
+	mi := &file_hearth_v1_bot_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1883,7 +1997,7 @@ func (x *DeleteNoteRequest) String() string {
 func (*DeleteNoteRequest) ProtoMessage() {}
 
 func (x *DeleteNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[26]
+	mi := &file_hearth_v1_bot_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1896,7 +2010,7 @@ func (x *DeleteNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteNoteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteNoteRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{26}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DeleteNoteRequest) GetId() string {
@@ -1914,7 +2028,7 @@ type DeleteNoteResponse struct {
 
 func (x *DeleteNoteResponse) Reset() {
 	*x = DeleteNoteResponse{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[27]
+	mi := &file_hearth_v1_bot_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1926,7 +2040,7 @@ func (x *DeleteNoteResponse) String() string {
 func (*DeleteNoteResponse) ProtoMessage() {}
 
 func (x *DeleteNoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[27]
+	mi := &file_hearth_v1_bot_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1939,7 +2053,7 @@ func (x *DeleteNoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteNoteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteNoteResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{27}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{29}
 }
 
 type PinNoteRequest struct {
@@ -1952,7 +2066,7 @@ type PinNoteRequest struct {
 
 func (x *PinNoteRequest) Reset() {
 	*x = PinNoteRequest{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[28]
+	mi := &file_hearth_v1_bot_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1964,7 +2078,7 @@ func (x *PinNoteRequest) String() string {
 func (*PinNoteRequest) ProtoMessage() {}
 
 func (x *PinNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[28]
+	mi := &file_hearth_v1_bot_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1977,7 +2091,7 @@ func (x *PinNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PinNoteRequest.ProtoReflect.Descriptor instead.
 func (*PinNoteRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{28}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *PinNoteRequest) GetId() string {
@@ -2003,7 +2117,7 @@ type PinNoteResponse struct {
 
 func (x *PinNoteResponse) Reset() {
 	*x = PinNoteResponse{}
-	mi := &file_hearth_v1_bot_proto_msgTypes[29]
+	mi := &file_hearth_v1_bot_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2015,7 +2129,7 @@ func (x *PinNoteResponse) String() string {
 func (*PinNoteResponse) ProtoMessage() {}
 
 func (x *PinNoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_bot_proto_msgTypes[29]
+	mi := &file_hearth_v1_bot_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2028,7 +2142,7 @@ func (x *PinNoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PinNoteResponse.ProtoReflect.Descriptor instead.
 func (*PinNoteResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{29}
+	return file_hearth_v1_bot_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *PinNoteResponse) GetNote() *Note {
@@ -2042,7 +2156,7 @@ var File_hearth_v1_bot_proto protoreflect.FileDescriptor
 
 const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\n" +
-	"\x13hearth/v1/bot.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x01\n" +
+	"\x13hearth/v1/bot.proto\x12\thearth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15hearth/v1/setup.proto\"\xd2\x01\n" +
 	"\x05Grant\x125\n" +
 	"\n" +
 	"capability\x18\x01 \x01(\x0e2\x15.hearth.v1.CapabilityR\n" +
@@ -2116,13 +2230,20 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\vdescription\x18\x01 \x01(\tR\vdescription\x12\x1f\n" +
 	"\vtemplate_id\x18\x02 \x01(\tR\n" +
 	"templateId\x12#\n" +
-	"\x04tier\x18\x03 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\"\xad\x01\n" +
+	"\x04tier\x18\x03 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\"\xdd\x01\n" +
 	"\x10DraftBotResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12'\n" +
 	"\x0fjob_description\x18\x03 \x01(\tR\x0ejobDescription\x12#\n" +
 	"\rworking_style\x18\x04 \x01(\tR\fworkingStyle\x12#\n" +
-	"\x04tier\x18\x05 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\"\x89\x02\n" +
+	"\x04tier\x18\x05 \x01(\x0e2\x0f.hearth.v1.TierR\x04tier\x12.\n" +
+	"\bconcerns\x18\x06 \x03(\v2\x12.hearth.v1.ConcernR\bconcerns\"b\n" +
+	"\x0fCheckBotRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12'\n" +
+	"\x0fjob_description\x18\x03 \x01(\tR\x0ejobDescription\"B\n" +
+	"\x10CheckBotResponse\x12.\n" +
+	"\bconcerns\x18\x01 \x03(\v2\x12.hearth.v1.ConcernR\bconcerns\"\x89\x02\n" +
 	"\x10UpdateBotRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -2189,14 +2310,15 @@ const file_hearth_v1_bot_proto_rawDesc = "" +
 	"\x0fBOT_STATUS_IDLE\x10\x01\x12\x16\n" +
 	"\x12BOT_STATUS_WORKING\x10\x02\x12\x15\n" +
 	"\x11BOT_STATUS_PAUSED\x10\x03\x12\x17\n" +
-	"\x13BOT_STATUS_DISABLED\x10\x042\xfe\x06\n" +
+	"\x13BOT_STATUS_DISABLED\x10\x042\xc5\a\n" +
 	"\n" +
 	"BotService\x12T\n" +
 	"\rListTemplates\x12\x1f.hearth.v1.ListTemplatesRequest\x1a .hearth.v1.ListTemplatesResponse\"\x00\x12H\n" +
 	"\tCreateBot\x12\x1b.hearth.v1.CreateBotRequest\x1a\x1c.hearth.v1.CreateBotResponse\"\x00\x12E\n" +
 	"\bListBots\x12\x1a.hearth.v1.ListBotsRequest\x1a\x1b.hearth.v1.ListBotsResponse\"\x00\x12?\n" +
 	"\x06GetBot\x12\x18.hearth.v1.GetBotRequest\x1a\x19.hearth.v1.GetBotResponse\"\x00\x12E\n" +
-	"\bDraftBot\x12\x1a.hearth.v1.DraftBotRequest\x1a\x1b.hearth.v1.DraftBotResponse\"\x00\x12K\n" +
+	"\bDraftBot\x12\x1a.hearth.v1.DraftBotRequest\x1a\x1b.hearth.v1.DraftBotResponse\"\x00\x12E\n" +
+	"\bCheckBot\x12\x1a.hearth.v1.CheckBotRequest\x1a\x1b.hearth.v1.CheckBotResponse\"\x00\x12K\n" +
 	"\n" +
 	"ListGrants\x12\x1c.hearth.v1.ListGrantsRequest\x1a\x1d.hearth.v1.ListGrantsResponse\"\x00\x12H\n" +
 	"\tSetGrants\x12\x1b.hearth.v1.SetGrantsRequest\x1a\x1c.hearth.v1.SetGrantsResponse\"\x00\x12H\n" +
@@ -2220,7 +2342,7 @@ func file_hearth_v1_bot_proto_rawDescGZIP() []byte {
 }
 
 var file_hearth_v1_bot_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_hearth_v1_bot_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_hearth_v1_bot_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_hearth_v1_bot_proto_goTypes = []any{
 	(Capability)(0),               // 0: hearth.v1.Capability
 	(GrantMode)(0),                // 1: hearth.v1.GrantMode
@@ -2246,18 +2368,21 @@ var file_hearth_v1_bot_proto_goTypes = []any{
 	(*GetBotResponse)(nil),        // 21: hearth.v1.GetBotResponse
 	(*DraftBotRequest)(nil),       // 22: hearth.v1.DraftBotRequest
 	(*DraftBotResponse)(nil),      // 23: hearth.v1.DraftBotResponse
-	(*UpdateBotRequest)(nil),      // 24: hearth.v1.UpdateBotRequest
-	(*UpdateBotResponse)(nil),     // 25: hearth.v1.UpdateBotResponse
-	(*Note)(nil),                  // 26: hearth.v1.Note
-	(*ListNotesRequest)(nil),      // 27: hearth.v1.ListNotesRequest
-	(*ListNotesResponse)(nil),     // 28: hearth.v1.ListNotesResponse
-	(*EditNoteRequest)(nil),       // 29: hearth.v1.EditNoteRequest
-	(*EditNoteResponse)(nil),      // 30: hearth.v1.EditNoteResponse
-	(*DeleteNoteRequest)(nil),     // 31: hearth.v1.DeleteNoteRequest
-	(*DeleteNoteResponse)(nil),    // 32: hearth.v1.DeleteNoteResponse
-	(*PinNoteRequest)(nil),        // 33: hearth.v1.PinNoteRequest
-	(*PinNoteResponse)(nil),       // 34: hearth.v1.PinNoteResponse
-	(*timestamppb.Timestamp)(nil), // 35: google.protobuf.Timestamp
+	(*CheckBotRequest)(nil),       // 24: hearth.v1.CheckBotRequest
+	(*CheckBotResponse)(nil),      // 25: hearth.v1.CheckBotResponse
+	(*UpdateBotRequest)(nil),      // 26: hearth.v1.UpdateBotRequest
+	(*UpdateBotResponse)(nil),     // 27: hearth.v1.UpdateBotResponse
+	(*Note)(nil),                  // 28: hearth.v1.Note
+	(*ListNotesRequest)(nil),      // 29: hearth.v1.ListNotesRequest
+	(*ListNotesResponse)(nil),     // 30: hearth.v1.ListNotesResponse
+	(*EditNoteRequest)(nil),       // 31: hearth.v1.EditNoteRequest
+	(*EditNoteResponse)(nil),      // 32: hearth.v1.EditNoteResponse
+	(*DeleteNoteRequest)(nil),     // 33: hearth.v1.DeleteNoteRequest
+	(*DeleteNoteResponse)(nil),    // 34: hearth.v1.DeleteNoteResponse
+	(*PinNoteRequest)(nil),        // 35: hearth.v1.PinNoteRequest
+	(*PinNoteResponse)(nil),       // 36: hearth.v1.PinNoteResponse
+	(*Concern)(nil),               // 37: hearth.v1.Concern
+	(*timestamppb.Timestamp)(nil), // 38: google.protobuf.Timestamp
 }
 var file_hearth_v1_bot_proto_depIdxs = []int32{
 	0,  // 0: hearth.v1.Grant.capability:type_name -> hearth.v1.Capability
@@ -2279,41 +2404,45 @@ var file_hearth_v1_bot_proto_depIdxs = []int32{
 	10, // 16: hearth.v1.GetBotResponse.bot:type_name -> hearth.v1.Bot
 	2,  // 17: hearth.v1.DraftBotRequest.tier:type_name -> hearth.v1.Tier
 	2,  // 18: hearth.v1.DraftBotResponse.tier:type_name -> hearth.v1.Tier
-	2,  // 19: hearth.v1.UpdateBotRequest.tier:type_name -> hearth.v1.Tier
-	10, // 20: hearth.v1.UpdateBotResponse.bot:type_name -> hearth.v1.Bot
-	35, // 21: hearth.v1.Note.created_at:type_name -> google.protobuf.Timestamp
-	26, // 22: hearth.v1.ListNotesResponse.notes:type_name -> hearth.v1.Note
-	26, // 23: hearth.v1.EditNoteResponse.note:type_name -> hearth.v1.Note
-	26, // 24: hearth.v1.PinNoteResponse.note:type_name -> hearth.v1.Note
-	14, // 25: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
-	16, // 26: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
-	18, // 27: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
-	20, // 28: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
-	22, // 29: hearth.v1.BotService.DraftBot:input_type -> hearth.v1.DraftBotRequest
-	6,  // 30: hearth.v1.BotService.ListGrants:input_type -> hearth.v1.ListGrantsRequest
-	8,  // 31: hearth.v1.BotService.SetGrants:input_type -> hearth.v1.SetGrantsRequest
-	24, // 32: hearth.v1.BotService.UpdateBot:input_type -> hearth.v1.UpdateBotRequest
-	27, // 33: hearth.v1.BotService.ListNotes:input_type -> hearth.v1.ListNotesRequest
-	29, // 34: hearth.v1.BotService.EditNote:input_type -> hearth.v1.EditNoteRequest
-	31, // 35: hearth.v1.BotService.DeleteNote:input_type -> hearth.v1.DeleteNoteRequest
-	33, // 36: hearth.v1.BotService.PinNote:input_type -> hearth.v1.PinNoteRequest
-	15, // 37: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
-	17, // 38: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
-	19, // 39: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
-	21, // 40: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
-	23, // 41: hearth.v1.BotService.DraftBot:output_type -> hearth.v1.DraftBotResponse
-	7,  // 42: hearth.v1.BotService.ListGrants:output_type -> hearth.v1.ListGrantsResponse
-	9,  // 43: hearth.v1.BotService.SetGrants:output_type -> hearth.v1.SetGrantsResponse
-	25, // 44: hearth.v1.BotService.UpdateBot:output_type -> hearth.v1.UpdateBotResponse
-	28, // 45: hearth.v1.BotService.ListNotes:output_type -> hearth.v1.ListNotesResponse
-	30, // 46: hearth.v1.BotService.EditNote:output_type -> hearth.v1.EditNoteResponse
-	32, // 47: hearth.v1.BotService.DeleteNote:output_type -> hearth.v1.DeleteNoteResponse
-	34, // 48: hearth.v1.BotService.PinNote:output_type -> hearth.v1.PinNoteResponse
-	37, // [37:49] is the sub-list for method output_type
-	25, // [25:37] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	37, // 19: hearth.v1.DraftBotResponse.concerns:type_name -> hearth.v1.Concern
+	37, // 20: hearth.v1.CheckBotResponse.concerns:type_name -> hearth.v1.Concern
+	2,  // 21: hearth.v1.UpdateBotRequest.tier:type_name -> hearth.v1.Tier
+	10, // 22: hearth.v1.UpdateBotResponse.bot:type_name -> hearth.v1.Bot
+	38, // 23: hearth.v1.Note.created_at:type_name -> google.protobuf.Timestamp
+	28, // 24: hearth.v1.ListNotesResponse.notes:type_name -> hearth.v1.Note
+	28, // 25: hearth.v1.EditNoteResponse.note:type_name -> hearth.v1.Note
+	28, // 26: hearth.v1.PinNoteResponse.note:type_name -> hearth.v1.Note
+	14, // 27: hearth.v1.BotService.ListTemplates:input_type -> hearth.v1.ListTemplatesRequest
+	16, // 28: hearth.v1.BotService.CreateBot:input_type -> hearth.v1.CreateBotRequest
+	18, // 29: hearth.v1.BotService.ListBots:input_type -> hearth.v1.ListBotsRequest
+	20, // 30: hearth.v1.BotService.GetBot:input_type -> hearth.v1.GetBotRequest
+	22, // 31: hearth.v1.BotService.DraftBot:input_type -> hearth.v1.DraftBotRequest
+	24, // 32: hearth.v1.BotService.CheckBot:input_type -> hearth.v1.CheckBotRequest
+	6,  // 33: hearth.v1.BotService.ListGrants:input_type -> hearth.v1.ListGrantsRequest
+	8,  // 34: hearth.v1.BotService.SetGrants:input_type -> hearth.v1.SetGrantsRequest
+	26, // 35: hearth.v1.BotService.UpdateBot:input_type -> hearth.v1.UpdateBotRequest
+	29, // 36: hearth.v1.BotService.ListNotes:input_type -> hearth.v1.ListNotesRequest
+	31, // 37: hearth.v1.BotService.EditNote:input_type -> hearth.v1.EditNoteRequest
+	33, // 38: hearth.v1.BotService.DeleteNote:input_type -> hearth.v1.DeleteNoteRequest
+	35, // 39: hearth.v1.BotService.PinNote:input_type -> hearth.v1.PinNoteRequest
+	15, // 40: hearth.v1.BotService.ListTemplates:output_type -> hearth.v1.ListTemplatesResponse
+	17, // 41: hearth.v1.BotService.CreateBot:output_type -> hearth.v1.CreateBotResponse
+	19, // 42: hearth.v1.BotService.ListBots:output_type -> hearth.v1.ListBotsResponse
+	21, // 43: hearth.v1.BotService.GetBot:output_type -> hearth.v1.GetBotResponse
+	23, // 44: hearth.v1.BotService.DraftBot:output_type -> hearth.v1.DraftBotResponse
+	25, // 45: hearth.v1.BotService.CheckBot:output_type -> hearth.v1.CheckBotResponse
+	7,  // 46: hearth.v1.BotService.ListGrants:output_type -> hearth.v1.ListGrantsResponse
+	9,  // 47: hearth.v1.BotService.SetGrants:output_type -> hearth.v1.SetGrantsResponse
+	27, // 48: hearth.v1.BotService.UpdateBot:output_type -> hearth.v1.UpdateBotResponse
+	30, // 49: hearth.v1.BotService.ListNotes:output_type -> hearth.v1.ListNotesResponse
+	32, // 50: hearth.v1.BotService.EditNote:output_type -> hearth.v1.EditNoteResponse
+	34, // 51: hearth.v1.BotService.DeleteNote:output_type -> hearth.v1.DeleteNoteResponse
+	36, // 52: hearth.v1.BotService.PinNote:output_type -> hearth.v1.PinNoteResponse
+	40, // [40:53] is the sub-list for method output_type
+	27, // [27:40] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_bot_proto_init() }
@@ -2321,13 +2450,14 @@ func file_hearth_v1_bot_proto_init() {
 	if File_hearth_v1_bot_proto != nil {
 		return
 	}
+	file_hearth_v1_setup_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_bot_proto_rawDesc), len(file_hearth_v1_bot_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   30,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

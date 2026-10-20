@@ -3,6 +3,7 @@ syntax = "proto3";
 package hearth.v1;
 
 import "google/protobuf/timestamp.proto";
+import "hearth/v1/setup.proto";
 
 option go_package = "github.com/rfizzle/hearth/internal/rpc/gen/hearth/v1;hearthv1";
 
@@ -18,6 +19,9 @@ service BotService {
   // DraftBot asks the model to propose a bot from a description. It only
   // proposes: nothing is stored until the owner sends CreateBot.
   rpc DraftBot(DraftBotRequest) returns (DraftBotResponse) {}
+  // CheckBot says what looks weak about a hire by rule, with no model. It
+  // proposes only: nothing is stored. At most three concerns.
+  rpc CheckBot(CheckBotRequest) returns (CheckBotResponse) {}
   // ListGrants is what the bot may do, one row per capability and, for the
   // file capabilities, one row per folder.
   rpc ListGrants(ListGrantsRequest) returns (ListGrantsResponse) {}
@@ -213,6 +217,19 @@ message DraftBotResponse {
   // One line, such as "Direct and brief; leads with the answer".
   string working_style = 4;
   Tier tier = 5;
+  // What looks weak about the draft, by rule: at most three, each about one
+  // field. The app shows them beside the fields; nothing blocks a hire.
+  repeated Concern concerns = 6;
+}
+
+message CheckBotRequest {
+  string name = 1;
+  string role = 2;
+  string job_description = 3;
+}
+
+message CheckBotResponse {
+  repeated Concern concerns = 1;
 }
 
 message UpdateBotRequest {

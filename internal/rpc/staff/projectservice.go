@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/rfizzle/hearth/internal/draft/concern"
 	"github.com/rfizzle/hearth/internal/orchestrate"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/project"
@@ -38,6 +39,37 @@ func (s *projectService) list(ctx context.Context, includeArchived bool) ([]*hea
 		out = append(out, projectToProto(p, st))
 	}
 	return out, nil
+}
+
+// DraftProject asks the model, at the Fast tier, to turn the owner's
+// paragraph into a project's fields. It stores nothing: the app shows the
+// proposal and sends CreateProject with whatever the owner settles on. The
+// paragraph is bounded here, before it goes anywhere; the concerns are the
+// rules' first, then the model's, at most three.
+// See docs/model.md#owner-interaction
+func (s *projectService) DraftProject(ctx context.Context, req *connect.Request[hearthv1.DraftProjectRequest]) (*connect.Response[hearthv1.DraftProjectResponse], error) {
+	description := req.Msg.GetDescription()
+	if err := askable(description, maxDescription, s.opts.ProjectDrafter != nil); err != nil {
+		return nil, err
+	}
+	d, err := s.opts.ProjectDrafter(ctx, description)
+	var concerns []concern.Concern
+	if err == nil {
+		concerns = concern.Cap(concern.Project(d.Name, d.Brief, d.TargetDate, time.Now()), d.Concerns)
+	}
+	return wire.Reply(&hearthv1.DraftProjectResponse{
+		Name: d.Name, Brief: briefToProto(d.Brief), TargetDate: d.TargetDate,
+		Concerns: wire.Each(concerns, wire.ConcernToProto),
+	}, err)
+}
+
+// CheckProject says what looks weak about a project's fields, by rule and
+// with no model. It reads nothing and stores nothing.
+// See docs/model.md#owner-interaction
+func (s *projectService) CheckProject(_ context.Context, req *connect.Request[hearthv1.CheckProjectRequest]) (*connect.Response[hearthv1.CheckProjectResponse], error) {
+	m := req.Msg
+	rules := concern.Project(m.GetName(), briefFromProto(m.GetBrief()), m.GetTargetDate(), time.Now())
+	return wire.Reply(&hearthv1.CheckProjectResponse{Concerns: wire.Each(concern.Cap(rules, nil), wire.ConcernToProto)}, nil)
 }
 
 // CreateProject makes an active project, or confirms the proposal named by

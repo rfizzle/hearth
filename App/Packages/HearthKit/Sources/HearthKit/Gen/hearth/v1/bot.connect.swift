@@ -32,6 +32,11 @@ public protocol Hearth_V1_BotServiceClientInterface: Sendable {
     @available(iOS 13, *)
     func `draftBot`(request: Hearth_V1_DraftBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_DraftBotResponse>
 
+    /// CheckBot says what looks weak about a hire by rule, with no model. It
+    /// proposes only: nothing is stored. At most three concerns.
+    @available(iOS 13, *)
+    func `checkBot`(request: Hearth_V1_CheckBotRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_CheckBotResponse>
+
     /// ListGrants is what the bot may do, one row per capability and, for the
     /// file capabilities, one row per folder.
     @available(iOS 13, *)
@@ -96,6 +101,11 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
     }
 
     @available(iOS 13, *)
+    public func `checkBot`(request: Hearth_V1_CheckBotRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_CheckBotResponse> {
+        return await self.client.unary(path: "/hearth.v1.BotService/CheckBot", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
     public func `listGrants`(request: Hearth_V1_ListGrantsRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_ListGrantsResponse> {
         return await self.client.unary(path: "/hearth.v1.BotService/ListGrants", idempotencyLevel: .unknown, request: request, headers: headers)
     }
@@ -137,6 +147,7 @@ public final class Hearth_V1_BotServiceClient: Hearth_V1_BotServiceClientInterfa
             public static let listBots = Connect.MethodSpec(name: "ListBots", service: "hearth.v1.BotService", type: .unary)
             public static let getBot = Connect.MethodSpec(name: "GetBot", service: "hearth.v1.BotService", type: .unary)
             public static let draftBot = Connect.MethodSpec(name: "DraftBot", service: "hearth.v1.BotService", type: .unary)
+            public static let checkBot = Connect.MethodSpec(name: "CheckBot", service: "hearth.v1.BotService", type: .unary)
             public static let listGrants = Connect.MethodSpec(name: "ListGrants", service: "hearth.v1.BotService", type: .unary)
             public static let setGrants = Connect.MethodSpec(name: "SetGrants", service: "hearth.v1.BotService", type: .unary)
             public static let updateBot = Connect.MethodSpec(name: "UpdateBot", service: "hearth.v1.BotService", type: .unary)

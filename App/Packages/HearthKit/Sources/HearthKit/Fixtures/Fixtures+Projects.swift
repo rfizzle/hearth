@@ -96,3 +96,37 @@ extension Fixtures {
         },
     ]
 }
+
+extension Fixtures {
+    /// What the model proposes for "I want to start a studio newsletter": two
+    /// concerns, one with a suggestion and one without.
+    public static let projectDraft = Hearth_V1_DraftProjectResponse.with {
+        $0.name = "Launch the newsletter"
+        $0.brief = .with {
+            $0.goal = "Send the first issue of the studio newsletter."
+            $0.context = "We have 400 subscribers from the old mailing list and no template."
+            $0.doneLooksLike = "A template, a first issue and a sending schedule."
+            $0.doneWhen = "The first issue has gone out."
+        }
+        $0.targetDate = "2026-11-20"
+        $0.concerns = [
+            .with {
+                $0.field = "done_when"
+                $0.concern = "\u{201C}Gone out\u{201D} is hard to check. Try a number or a date."
+                $0.suggestion = "The first issue has reached every address on the list"
+            },
+            .with {
+                $0.field = "name"
+                $0.concern =
+                    "The name reads like the goal. A short name is easier to find in the sidebar."
+            },
+        ]
+    }
+
+    /// The rule for a date before today, in the core's words. The preview
+    /// client computes only this one; the core's other rules are its own.
+    static let pastDate = Hearth_V1_Concern.with {
+        $0.field = "target_date"
+        $0.concern = "That date has already passed."
+    }
+}

@@ -126,6 +126,14 @@ public enum Fixtures {
             + "what you could not confirm."
         $0.workingStyle = "Direct and brief; leads with the answer; asks before guessing"
         $0.tier = .balanced
+        $0.concerns = [
+            .with {
+                $0.field = "job_description"
+                $0.concern =
+                    "This says what the job is called more than what they'd do. "
+                    + "Two or three sentences about the work help them do it well."
+            }
+        ]
     }
 
     /// Dana, a research lead on the team hired from the first template, idle.
@@ -247,6 +255,9 @@ public enum Fixtures {
 
     /// The page a preview ChatGPT sign-in would open.
     public static let authorizeURL = URL(staticString: "https://auth.openai.com/oauth/authorize")
+
+    /// The day the fixtures call today, yyyy-mm-dd; the date check reads it.
+    static let today = "2026-10-20"
 
     /// 2026-10-20 09:00 UTC plus `minutes`, the clock every fixture reads.
     static func time(_ minutes: Int64) -> Google_Protobuf_Timestamp {

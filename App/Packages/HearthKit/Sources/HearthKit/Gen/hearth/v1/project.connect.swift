@@ -17,6 +17,18 @@ public protocol Hearth_V1_ProjectServiceClientInterface: Sendable {
     @available(iOS 13, *)
     func `listProjects`(request: Hearth_V1_ListProjectsRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_ListProjectsResponse>
 
+    /// DraftProject asks the model to turn a paragraph into a project's name,
+    /// brief and target date, with at most three concerns. It only proposes:
+    /// nothing is stored until the owner sends CreateProject. The description is
+    /// at most 4,000 characters; with no model set up it is unavailable.
+    @available(iOS 13, *)
+    func `draftProject`(request: Hearth_V1_DraftProjectRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_DraftProjectResponse>
+
+    /// CheckProject says what looks weak about a project's fields by rule, with
+    /// no model. It proposes only: nothing is stored. At most three concerns.
+    @available(iOS 13, *)
+    func `checkProject`(request: Hearth_V1_CheckProjectRequest, headers: Connect.Headers) async -> ResponseMessage<Hearth_V1_CheckProjectResponse>
+
     /// CreateProject makes an active project with its folder and conversation.
     /// With proposal_id it confirms that proposal instead, applying the other
     /// fields as edits; the proposal's id is kept.
@@ -53,6 +65,16 @@ public final class Hearth_V1_ProjectServiceClient: Hearth_V1_ProjectServiceClien
     }
 
     @available(iOS 13, *)
+    public func `draftProject`(request: Hearth_V1_DraftProjectRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_DraftProjectResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProjectService/DraftProject", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
+    public func `checkProject`(request: Hearth_V1_CheckProjectRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_CheckProjectResponse> {
+        return await self.client.unary(path: "/hearth.v1.ProjectService/CheckProject", idempotencyLevel: .unknown, request: request, headers: headers)
+    }
+
+    @available(iOS 13, *)
     public func `createProject`(request: Hearth_V1_CreateProjectRequest, headers: Connect.Headers = [:]) async -> ResponseMessage<Hearth_V1_CreateProjectResponse> {
         return await self.client.unary(path: "/hearth.v1.ProjectService/CreateProject", idempotencyLevel: .unknown, request: request, headers: headers)
     }
@@ -75,6 +97,8 @@ public final class Hearth_V1_ProjectServiceClient: Hearth_V1_ProjectServiceClien
     public enum Metadata {
         public enum Methods {
             public static let listProjects = Connect.MethodSpec(name: "ListProjects", service: "hearth.v1.ProjectService", type: .unary)
+            public static let draftProject = Connect.MethodSpec(name: "DraftProject", service: "hearth.v1.ProjectService", type: .unary)
+            public static let checkProject = Connect.MethodSpec(name: "CheckProject", service: "hearth.v1.ProjectService", type: .unary)
             public static let createProject = Connect.MethodSpec(name: "CreateProject", service: "hearth.v1.ProjectService", type: .unary)
             public static let updateProject = Connect.MethodSpec(name: "UpdateProject", service: "hearth.v1.ProjectService", type: .unary)
             public static let markProjectDone = Connect.MethodSpec(name: "MarkProjectDone", service: "hearth.v1.ProjectService", type: .unary)
