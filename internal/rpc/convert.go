@@ -114,12 +114,19 @@ func runToProto(r org.Run) *hearthv1.Run {
 }
 
 // providerNames is the contract's provider enum against provider's names.
-// OpenAI-compatible has an enum value and no provider behind it yet.
 var providerNames = map[hearthv1.Provider]provider.Provider{
-	hearthv1.Provider_PROVIDER_CHATGPT:    provider.ChatGPT,
-	hearthv1.Provider_PROVIDER_ANTHROPIC:  provider.Anthropic,
-	hearthv1.Provider_PROVIDER_GEMINI:     provider.Gemini,
-	hearthv1.Provider_PROVIDER_OPENROUTER: provider.OpenRouter,
+	hearthv1.Provider_PROVIDER_CHATGPT:           provider.ChatGPT,
+	hearthv1.Provider_PROVIDER_ANTHROPIC:         provider.Anthropic,
+	hearthv1.Provider_PROVIDER_GEMINI:            provider.Gemini,
+	hearthv1.Provider_PROVIDER_OPENROUTER:        provider.OpenRouter,
+	hearthv1.Provider_PROVIDER_OPENAI_COMPATIBLE: provider.Compatible,
+}
+
+// knownKinds is the contract's known-service kinds against provider's.
+var knownKinds = map[hearthv1.KnownServiceKind]provider.KnownKind{
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_BUILTIN:    provider.Builtin,
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_COMPATIBLE: provider.CompatibleService,
+	hearthv1.KnownServiceKind_KNOWN_SERVICE_KIND_LOCAL:      provider.Local,
 }
 
 // integrationNames is the contract's integration enum against integration's
@@ -163,10 +170,25 @@ func toProto[E, N comparable](names map[E]N, n N) E {
 // provider's Account holds none.
 func accountToProto(a provider.Account) *hearthv1.ProviderAccount {
 	return &hearthv1.ProviderAccount{
-		Provider: toProto(providerNames, a.Provider),
-		State:    accountStates[a.State],
-		Label:    a.Label,
-		Failure:  a.Failure,
+		Provider:     toProto(providerNames, a.Provider),
+		State:        accountStates[a.State],
+		Label:        a.Label,
+		Failure:      a.Failure,
+		Profile:      a.Profile,
+		DisplayName:  a.DisplayName,
+		BaseUrl:      a.BaseURL,
+		DefaultModel: a.DefaultModel,
+	}
+}
+
+func knownServiceToProto(k provider.KnownService) *hearthv1.KnownService {
+	return &hearthv1.KnownService{
+		Id:           k.ID,
+		Name:         k.Name,
+		BaseUrl:      k.BaseURL,
+		HelpUrl:      k.HelpURL,
+		DefaultModel: k.DefaultModel,
+		Kind:         toProto(knownKinds, k.Kind),
 	}
 }
 

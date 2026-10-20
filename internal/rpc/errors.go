@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/hearth/internal/draft"
 	"github.com/rfizzle/hearth/internal/integration"
 	"github.com/rfizzle/hearth/internal/orchestrate"
+	"github.com/rfizzle/hearth/internal/provider"
 	"github.com/rfizzle/hearth/internal/store"
 )
 
@@ -23,7 +24,7 @@ func fail(err error) error {
 	switch {
 	case errors.As(err, &coded):
 		return err
-	case errors.Is(err, store.ErrNotFound):
+	case errors.Is(err, store.ErrNotFound), errors.Is(err, provider.ErrNoProfile):
 		code = connect.CodeNotFound
 	case errors.Is(err, store.ErrFolderTaken):
 		code = connect.CodeAlreadyExists

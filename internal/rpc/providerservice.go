@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 
 	"connectrpc.com/connect"
 
@@ -13,17 +14,28 @@ func (s *providerService) ListAccounts(_ context.Context, _ *connect.Request[hea
 	return reply(&hearthv1.ListAccountsResponse{Accounts: each(s.opts.Accounts.List(), accountToProto)}, nil)
 }
 
-// SetAPIKey keeps a key. The base URL belongs to the OpenAI-compatible
-// provider, which hearth cannot use yet, so it is not read.
+// SetAPIKey keeps a key, or for an OpenAI-compatible service the key and
+// the service's settings as a profile. The account it returns carries the
+// key's last four characters, never the key.
+// See docs/model.md#providers-and-models
 func (s *providerService) SetAPIKey(_ context.Context, req *connect.Request[hearthv1.SetAPIKeyRequest]) (*connect.Response[hearthv1.SetAPIKeyResponse], error) {
-	if err := need("key", req.Msg.GetKey()); err != nil {
-		return nil, err
-	}
-	p, err := fromProto(providerNames, req.Msg.GetProvider())
+	m := req.Msg
+	p, err := fromProto(providerNames, m.GetProvider())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.opts.Accounts.SetKey(p, req.Msg.GetKey()); err != nil {
+	if p == provider.Compatible {
+		acct, err := s.opts.Accounts.SetProfile(provider.Profile{ID: m.GetProfile(), Name: m.GetDisplayName(), BaseURL: m.GetBaseUrl(), DefaultModel: m.GetDefaultModel()}, m.GetKey())
+		if err != nil && !errors.Is(err, provider.ErrNoProfile) {
+			// The provider words, for the person, what to fix.
+			err = invalid("%v", err)
+		}
+		return reply(&hearthv1.SetAPIKeyResponse{Account: accountToProto(acct)}, err)
+	}
+	if err := need("key", m.GetKey()); err != nil {
+		return nil, err
+	}
+	if err := s.opts.Accounts.SetKey(p, m.GetKey()); err != nil {
 		// The provider words, for the person, why it cannot take this key.
 		return nil, invalid("%v", err)
 	}
@@ -34,6 +46,12 @@ func (s *providerService) ClearCredential(ctx context.Context, req *connect.Requ
 	p, err := fromProto(providerNames, req.Msg.GetProvider())
 	if err != nil {
 		return nil, err
+	}
+	if p == provider.Compatible {
+		if err := need("profile", req.Msg.GetProfile()); err != nil {
+			return nil, err
+		}
+		return reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.ClearProfile(req.Msg.GetProfile()))
 	}
 	return reply(&hearthv1.ClearCredentialResponse{}, s.opts.Accounts.Clear(ctx, p))
 }
@@ -60,8 +78,8 @@ func (s *providerService) account(p provider.Provider) *hearthv1.ProviderAccount
 	return nil
 }
 
-// ListKnownServices is declared by the contract before the table behind it
-// exists.
+// ListKnownServices is the provider's table of services, for the app's
+// picker.
 func (s *providerService) ListKnownServices(context.Context, *connect.Request[hearthv1.ListKnownServicesRequest]) (*connect.Response[hearthv1.ListKnownServicesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, nil)
+	return reply(&hearthv1.ListKnownServicesResponse{Services: each(provider.KnownServices(), knownServiceToProto)}, nil)
 }
