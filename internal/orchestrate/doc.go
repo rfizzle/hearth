@@ -50,6 +50,11 @@
 //   - Every tool call goes through the dispatcher with the bot's grants. The
 //     tools are built for each run, so a search key set after launch counts
 //     from the next message.
+//   - Only the coordinator is offered propose_project, through a grant it
+//     holds for that run alone, never stored and never listed. A proposal is
+//     stored as a proposed project carrying the bot and the conversation,
+//     with no folder, and one name is proposed once at a time per
+//     conversation; the owner's confirmation, not a run, makes it a project.
 //
 // Seams it is handed: the store, a function from a tier to a stream, the
 // scrub, a function that names the coordinator, the page fetcher, a function that says whether a search service is

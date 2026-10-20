@@ -161,6 +161,7 @@ Rules:
 | `internal/orchestrate/after` | The work after a run that ended done: tidying the bot's notes and folding the conversation's older text into its summary | new |
 | `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
+| `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
 | `internal/tools/describe` | Plain-English effect strings for approval cards | shhh `describe` precedent |
 | `internal/native` | Tool proxies to the app's NativeToolService | new |

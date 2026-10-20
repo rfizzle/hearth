@@ -13,15 +13,20 @@ package toolset
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rfizzle/hearth/internal/agent"
 	"github.com/rfizzle/hearth/internal/orchestrate/bus"
+	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/org/memory"
+	"github.com/rfizzle/hearth/internal/project"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/ask"
 	"github.com/rfizzle/hearth/internal/tools/files"
 	notes "github.com/rfizzle/hearth/internal/tools/memory"
+	"github.com/rfizzle/hearth/internal/tools/propose"
 	"github.com/rfizzle/hearth/internal/tools/web"
 )
 
@@ -58,6 +63,51 @@ func Remember(db Notes, b *bus.Bus, botID, convID, msgID string) tools.Definitio
 			all, err := db.Notes(ctx, botID)
 			return len(all), err
 		},
+	})
+}
+
+// ErrAlreadyProposed refuses a proposal whose name is already waiting for the
+// owner in the same conversation.
+var ErrAlreadyProposed = errors.New("already proposed: a project with this name is waiting for the owner's decision in this conversation; do not propose it again")
+
+// Projects is where a proposal is stored and found; the store's *DB is one.
+type Projects interface {
+	CreateProject(ctx context.Context, p project.Project, conv org.Conversation) (project.Project, error)
+	Projects(ctx context.Context, includeArchived bool) ([]project.Project, error)
+}
+
+// Propose is the propose_project tool for the bot botID in the conversation
+// convID. Each valid proposal is checked by project.Propose, refused with
+// ErrAlreadyProposed while a proposal of the same name, trimmed, is open in
+// convID, stored as a proposed project carrying botID and convID, and
+// published on b with the status that status gives it. The name and brief
+// are stored as the model wrote them.
+// See docs/model.md#5-the-chief-of-staffs-routing-policy.
+func Propose(db Projects, b *bus.Bus, status func(ctx context.Context, id string) (project.Status, error), botID, convID string) tools.Definition {
+	return propose.Definition(func(ctx context.Context, name string, brief project.Brief) (project.Project, error) {
+		p, err := project.Propose(name, brief, botID, convID)
+		if err != nil {
+			return project.Project{}, err
+		}
+		all, err := db.Projects(ctx, false)
+		if err != nil {
+			return project.Project{}, err
+		}
+		for _, o := range all {
+			if o.State == project.Proposed && o.ProposedInConversationID == convID && strings.TrimSpace(o.Name) == p.Name {
+				return project.Project{}, ErrAlreadyProposed
+			}
+		}
+		stored, err := db.CreateProject(ctx, p, org.Conversation{})
+		if err != nil {
+			return project.Project{}, err
+		}
+		st, err := status(ctx, stored.ID)
+		if err != nil {
+			return project.Project{}, err
+		}
+		b.Publish(bus.ProjectChanged{Project: stored, Status: st})
+		return stored, nil
 	})
 }
 

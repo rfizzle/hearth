@@ -208,12 +208,20 @@ func projectGrants(botID, folder string) []org.Grant {
 	}
 }
 
+// proposeGrant is the grant the Chief of Staff has for a run to propose a
+// project, in memory only, never stored and never listed: the role gives it,
+// not the owner.
+// See docs/model.md#access.
+func proposeGrant(botID string) org.Grant {
+	return org.Grant{BotID: botID, Capability: project.CanPropose, Mode: org.ModeAllowed}
+}
+
 // dispatcher is what checks bot's calls in the conversation convID, made
 // in answer to the message msgID: every tool configured now, the bot's
 // grants with the read on the Inbox every bot has, and the conversation's
 // allowances, read fresh so a decision counts from the next call. In a
 // project's conversation, proj, the folder is the root and the bot may read
-// and write there.
+// and write there. The coordinator may also propose a project.
 func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID string, proj *project.Project) (tools.Dispatcher, error) {
 	grants, err := s.d.Store.GrantsFor(ctx, bot.ID)
 	if err != nil {
@@ -235,7 +243,12 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID str
 	if err != nil {
 		return tools.Dispatcher{}, err
 	}
-	reg, err := s.registry(bot.ID, convID, msgID)
+	extra := []tools.Definition{toolset.Remember(s.d.Store, s.d.Bus, bot.ID, convID, msgID)}
+	if c, ok := s.Coordinator(ctx); ok && c.ID == bot.ID {
+		grants = append(grants, proposeGrant(bot.ID))
+		extra = append(extra, toolset.Propose(s.d.Store, s.d.Bus, s.status, bot.ID, convID))
+	}
+	reg, err := s.registry(append(extra, s.extra...))
 	if err != nil {
 		return tools.Dispatcher{}, err
 	}
@@ -244,14 +257,13 @@ func (s *Service) dispatcher(ctx context.Context, bot org.Bot, convID, msgID str
 
 // registry is every tool configured now: the file tools, asking the owner,
 // web.fetch when there is a fetcher, web.search when a search service has a
-// key, and remember for the bot botID in convID, linked to msgID.
-func (s *Service) registry(botID, convID, msgID string) (*tools.Registry, error) {
+// key, then extra, the tools of this run alone.
+func (s *Service) registry(extra []tools.Definition) (*tools.Registry, error) {
 	var searcher web.Searcher
 	if s.d.Searcher != nil {
 		if found, ok := s.d.Searcher(); ok {
 			searcher = found
 		}
 	}
-	extra := append([]tools.Definition{toolset.Remember(s.d.Store, s.d.Bus, botID, convID, msgID)}, s.extra...)
 	return toolset.Registry(s.d.Fetcher.ForRun(), searcher, extra...)
 }

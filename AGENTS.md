@@ -117,7 +117,7 @@ internal/             dependencies point down only; only rpc/, orchestrate/, ass
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists); gateway/ is the address check, the model list and the known services, models/ the choice among models
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
-  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner)
+  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal)
     files/            files.read, files.write and files.delete inside a granted folder (exists)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
