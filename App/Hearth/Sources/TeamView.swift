@@ -1,11 +1,12 @@
 // TeamView is the window once the org exists: the bots in the sidebar and the
 // selected bot's conversation in the detail column, with Hire Someone… as an
 // icon-only toolbar item over the sidebar and the bot's folder as the one
-// item beside Access… over the conversation. The Inbox row opens the Inbox
-// in the detail column. Nobody hired shows the invitation in the detail
-// column; nobody selected says to choose. The hire sheet and the Access sheet are
-// presented here, and the helper notice sits over the top of the detail column until the owner
-// dismisses it.
+// item beside Access… and the inspector toggle over the conversation. The
+// inspector opens beside it with what the bot remembers. The Inbox row opens
+// the Inbox in the detail column. Nobody hired shows the invitation in the
+// detail column; nobody selected says to choose. The hire sheet and the Access
+// sheet are presented here, and the helper notice sits over the top of the
+// detail column until the owner dismisses it.
 // See docs/design.md#window-anatomy and docs/model.md#9-failure-handling
 
 import HearthDesign
@@ -75,12 +76,19 @@ struct TeamView: View {
 
     @ViewBuilder
     private var detail: some View {
+        @Bindable var model = model
         if session.bots.selected == .inbox {
             InboxScreen(store: session.inbox, bots: session.bots.bots)
         } else if let bot = session.bots.selectedBot {
             ConversationScreen(store: session.conversation(for: bot), bot: bot)
                 .id(bot.id)
                 .navigationSubtitle(bot.role)
+                .inspector(isPresented: $model.showsInspector) {
+                    InspectorView(notes: session.notes(for: bot))
+                        .inspectorColumnWidth(
+                            min: Theme.Size.inspectorMin, ideal: Theme.Size.inspectorIdeal,
+                            max: Theme.Size.inspectorMax)
+                }
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button("Access…", systemImage: "lock.open") {
@@ -95,6 +103,13 @@ struct TeamView: View {
                         }
                         .labelStyle(.iconOnly)
                         .help("Show \(bot.name)'s folder in Finder")
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Show Inspector", systemImage: "sidebar.trailing") {
+                            model.showsInspector.toggle()
+                        }
+                        .labelStyle(.iconOnly)
+                        .help("Show or hide what \(bot.name) remembers")
                     }
                 }
         } else if session.bots.showsHireAffordance {

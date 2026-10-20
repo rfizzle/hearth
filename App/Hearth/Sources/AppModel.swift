@@ -24,6 +24,9 @@ final class AppModel {
     /// The bot whose Access sheet is open; the toolbar, the Team menu and a
     /// bot's context menu set it.
     var accessBotID: String?
+    /// Whether the inspector is open beside the conversation; the toolbar and
+    /// the View menu set it.
+    var showsInspector = false
     /// Whether the window tells the owner the helper restarted under it.
     private(set) var helperRestarted = false
 
@@ -95,6 +98,7 @@ final class Session {
     private var checked = false
     @ObservationIgnored let relay: EventRelay
     @ObservationIgnored private var conversations: [String: ConversationStore] = [:]
+    @ObservationIgnored private var noteStores: [String: NotesStore] = [:]
 
     init(client: any HearthClient, relay: EventRelay, selection: String?) {
         self.client = client
@@ -136,6 +140,15 @@ final class Session {
             client: client, relay: relay, conversationID: bot.dmConversationID,
             inbox: inbox)
         conversations[bot.dmConversationID] = store
+        return store
+    }
+
+    /// The notes store for `bot`, kept so the inspector does not refetch each
+    /// time the owner comes back to someone.
+    func notes(for bot: Hearth_V1_Bot) -> NotesStore {
+        if let store = noteStores[bot.id] { return store }
+        let store = NotesStore(client: client, relay: relay, botID: bot.id)
+        noteStores[bot.id] = store
         return store
     }
 }

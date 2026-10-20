@@ -81,8 +81,8 @@ sidebar of 200 to 320 pt. Long text never runs the width of a wide window.
 
 One main window with two columns: the team in the sidebar, the conversation
 beside it. The window is titled by what is selected, never by the app's name.
-There is no inspector yet; when notes and access arrive they get one, and an
-empty one now would be worse than none.
+An inspector opens at the trailing edge (260 to 380 pt, ⌥⌘I): collapsible
+sections about the selected bot, Notes first; a note is pinned or edited in place.
 
 - **Sidebar.** "Your team": one row per bot with its mark, name and role. The
   system gives it its glass and vibrancy.

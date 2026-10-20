@@ -1,8 +1,9 @@
 // HearthApp is the app's entry point and its wiring: the app delegate owns the
 // helper supervisor so the helper is stopped when the app quits, and the model
 // that builds the stores over each helper. One main window, a Settings window
-// and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A, so the New
-// Window item a window group would put there is removed.
+// and the Debug menu; the Team menu carries Hire Someone… on ⌘N and Access… on ⌥⌘A, and
+// View carries Show Inspector on ⌥⌘I, so the New Window item a window group would
+// put there is removed.
 // See docs/design.md#window-anatomy
 
 import AppKit
@@ -31,6 +32,13 @@ struct HearthApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             SidebarCommands()
+            CommandGroup(after: .sidebar) {
+                Button(appDelegate.model.showsInspector ? "Hide Inspector" : "Show Inspector") {
+                    appDelegate.model.showsInspector.toggle()
+                }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+                .disabled(appDelegate.model.session?.bots.selectedBot == nil)
+            }
             TeamCommands(model: appDelegate.model)
             DebugCommands()
         }

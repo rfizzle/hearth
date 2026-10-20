@@ -94,6 +94,9 @@ public enum Theme {
         public static let sidebarMin: CGFloat = 200
         public static let sidebarIdeal: CGFloat = 240
         public static let sidebarMax: CGFloat = 320
+        public static let inspectorMin: CGFloat = 260
+        public static let inspectorIdeal: CGFloat = 300
+        public static let inspectorMax: CGFloat = 380
     }
 
     /// Feedback that follows a click, a swap or a fade.
