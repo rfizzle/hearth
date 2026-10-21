@@ -31,6 +31,11 @@ extension Catalog {
                     JumpToLatestButton(previewState: $0)
                 }),
             GalleryPage(
+                package: package, name: "ProducedCard",
+                states: GalleryState.each(ProducedCard.PreviewState.self, width: 560) {
+                    ProducedCard(previewState: $0)
+                } + [Self.nothingProduced]),
+            GalleryPage(
                 package: package, name: "FileRow",
                 states: GalleryState.each(FileRow.PreviewState.self, width: 560) { state in
                     let thumbnail = state == .thumbnail ? Self.sampleThumbnail : nil
@@ -90,6 +95,26 @@ extension Catalog {
                     ToolCallRow(call: messages[3].tool, result: messages[4])
                     ToolCallRow(call: messages[5].tool, result: messages[6])
                     ToolCallRow(call: messages[7].tool, result: nil)
+                }))
+    }
+
+    /// A conversation that produced nothing: the card is absent.
+    static var nothingProduced: GalleryState {
+        GalleryState(
+            name: "absent", width: 560,
+            view: AnyView(
+                Group {
+                    if ProducedList(
+                        messages: Fixtures.dmMessages.map { message in
+                            var bare = message
+                            bare.files = []
+                            return bare
+                        }
+                    ).isEmpty {
+                        Text("No card: nothing in this conversation produced a file.")
+                            .font(Theme.callout)
+                            .foregroundStyle(Theme.color(.textSecondary))
+                    }
                 }))
     }
 

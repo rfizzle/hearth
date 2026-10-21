@@ -11,7 +11,8 @@
 // the same card, and a chip on the card fills the composer without sending.
 // A finished run is one RunTrace line, "Worked for 4m 12s", that opens to the
 // bot's narration; its last text stays below it as the answer.
-// Scrolling up is never undone: see FollowsLatest.
+// Scrolling up is never undone: see FollowsLatest. What the thread produced is
+// one small card at the transcript's top edge: see ShowsProduced.
 // The window is titled by the bot's name, or by the title given.
 // A project's conversation is the same screen with the ProjectHeader pinned
 // above the transcript, the Chief of Staff answering, the project's name as
@@ -245,6 +246,7 @@ public struct ConversationScreen: View {
             .frame(maxWidth: .infinity)
         }
         .modifier(FollowsLatest(isWriting: store.isWorking))
+        .modifier(ShowsProduced(messages: store.messages, conversationID: store.conversationID))
     }
 
     /// The owner's own message, which moves in; a system notice is the core's.
