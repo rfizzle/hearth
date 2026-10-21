@@ -18,7 +18,7 @@ private struct ScrollMetrics: Equatable {
 }
 
 struct FollowsLatest: ViewModifier {
-    /// Whether the bot is still writing, which turns the arrow into a pulse.
+    /// Whether the bot is still writing, which widens the button to say so.
     let isWriting: Bool
 
     @State private var following = true
