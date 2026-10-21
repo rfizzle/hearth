@@ -2,12 +2,16 @@ package grid
 
 import (
 	"bytes"
+	"compress/zlib"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -20,10 +24,10 @@ import (
 
 // update rewrites the golden: go test ./internal/render/paper/grid -run TestGolden -update
 //
-// The golden is the PDF's bytes, which pass through compress/flate: a Go
-// toolchain upgrade may change its output without any change here. When the
-// golden fails after a toolchain bump and nothing else, re-bless it with
-// -update in the same commit as the bump and say so.
+// The golden is compared after flatten: every Flate stream inflated, its
+// /Length blanked and the cross-reference table cut, because compress/flate's
+// bytes differ between Go releases (CI builds with go.mod's version, a
+// developer's Mac with a newer one) while what the PDF draws does not.
 var update = flag.Bool("update", false, "rewrite the golden file under testdata")
 
 var modTime = time.Date(2026, 10, 20, 9, 30, 0, 0, time.UTC)
@@ -119,9 +123,58 @@ func TestGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("the kitchen sink's PDF differs from %s (%d bytes, want %d); if only the Go toolchain changed, re-bless with -update", path, len(got), len(want))
+	if !bytes.Equal(flatten(t, got), flatten(t, want)) {
+		t.Errorf("the kitchen sink's PDF draws differently from %s; re-bless with -update if the change is intended", path)
 	}
+}
+
+// streamLength is a stream dictionary's /Length; /Length1 is not matched.
+var streamLength = regexp.MustCompile(`/Length (\d+)`)
+
+// flatten is pdf with every Flate stream inflated and its /Length blanked, and
+// nothing from the cross-reference table on, so two PDFs that draw the same
+// thing compare equal whichever compress/flate wrote them.
+func flatten(t *testing.T, pdf []byte) []byte {
+	t.Helper()
+	const open = ">>\nstream\n"
+	var out bytes.Buffer
+	rest := pdf
+	for {
+		at := bytes.Index(rest, []byte(open))
+		if at < 0 {
+			break
+		}
+		dict := rest[:at]
+		start := bytes.LastIndex(dict, []byte("<<"))
+		m := streamLength.FindSubmatch(dict[max(start, 0):])
+		if start < 0 || m == nil {
+			t.Fatalf("a stream without a /Length near byte %d", len(pdf)-len(rest)+at)
+		}
+		n, err := strconv.Atoi(string(m[1]))
+		body := at + len(open)
+		if err != nil || body+n > len(rest) {
+			t.Fatalf("a stream's /Length %s runs past the file", m[1])
+		}
+		data := rest[body : body+n]
+		if bytes.Contains(dict[start:], []byte("/FlateDecode")) {
+			r, err := zlib.NewReader(bytes.NewReader(data))
+			if err != nil {
+				t.Fatalf("a Flate stream does not open: %v", err)
+			}
+			if data, err = io.ReadAll(r); err != nil {
+				t.Fatalf("a Flate stream does not inflate: %v", err)
+			}
+		}
+		out.Write(streamLength.ReplaceAll(dict, []byte("/Length _")))
+		out.WriteString(open)
+		out.Write(data)
+		rest = rest[body+n:]
+	}
+	if x := bytes.Index(rest, []byte("\nxref\n")); x >= 0 {
+		rest = rest[:x]
+	}
+	out.Write(rest)
+	return out.Bytes()
 }
 
 // TestTextInOrder reads the kitchen sink back: the title, every heading,
