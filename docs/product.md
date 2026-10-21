@@ -12,9 +12,9 @@ hearth is a native Mac app where you run a small organisation of AI employees: e
 
 ### Who it is for
 
-- A person, not a company. One Mac, one owner, one org. (Multi-user orgs are out of scope; see `product.md#scope-boundary`.)
+- One person at work: a founder or an employee at a small company, using hearth for their job. One Mac, one owner, one org. (Multi-user orgs are out of scope; see `product.md#scope-boundary`.)
 - Less technical than a developer. They use Mail, Calendar, Notes, Shortcuts and ChatGPT. They have never seen a system prompt and should not have to.
-- They want help with recurring real-world work: research, writing, planning, keeping on top of a calendar and inbox, organising files, preparing for things.
+- They want help with recurring business work: market research, marketing campaigns, finance and status reports, writing for customers, planning launches, keeping on top of a calendar and inbox. Every example, template and sample the app ships is drawn from that work, not from personal life.
 
 ### Why an org, and not "a chat with an AI"
 
