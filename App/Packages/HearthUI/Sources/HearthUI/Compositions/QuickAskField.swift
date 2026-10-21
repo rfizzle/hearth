@@ -144,13 +144,13 @@ extension QuickAskField {
         case replyStreaming
 
         var draft: String {
-            self == .typed ? "What did the heat pump brief say about grants?" : ""
+            self == .typed ? "What did the pricing brief say about free plans?" : ""
         }
 
         var reply: [Hearth_V1_Message] {
             guard self == .replyStreaming else { return [] }
             var asked = Fixtures.sendResponse.message
-            asked.content = "Remind me what the brief said about grants?"
+            asked.content = "Remind me what the brief said about free plans?"
             var answer = Fixtures.streamingReply
             answer.content = Fixtures.replyDeltas[0]
             return [asked, answer]

@@ -35,7 +35,7 @@ import Testing
     #expect(chosen.reply == Fixtures.question.suggestedAnswers[0])
     #expect(WidgetDraft().canAnswer(nil, prose: chosen.reply))
     #expect(!WidgetDraft().canAnswer(nil, prose: " \n"))
-    #expect(PromptCard.prose("  Both kinds\n") == "Both kinds")
+    #expect(PromptCard.prose("  The wider market\n") == "The wider market")
     #expect(PromptCard(previewState: .unknownControl).item.hasWidget)
     #expect(PromptCard(previewState: .unknownControl).widget == nil)
     #expect(!PromptCard(previewState: .prose).item.hasWidget)
@@ -77,7 +77,8 @@ import Testing
     #expect(PromptCard.PreviewState.allCases.count == 17)
     #expect(PromptCard(previewState: .empty).widget != nil)
     #expect(PromptCard.answerText(PromptCard.PreviewState.answered.item) == "Two pages")
-    #expect(PromptCard.answerText(PromptCard.PreviewState.answeredInWords.item) == "Both kinds")
+    #expect(
+        PromptCard.answerText(PromptCard.PreviewState.answeredInWords.item) == "The wider market")
     #expect(PromptCard(previewState: .answered).isQuiet)
     #expect(!PromptCard(previewState: .valid).isQuiet)
     // The thread's form of an answered question carries the choice.

@@ -8,8 +8,8 @@ extension Fixtures {
     /// The reply's text, one delta at a time; the DM shows it after the first.
     public static let replyDeltas = [
         "I've written the brief and saved it in my folder. ",
-        "It covers how a heat pump works, what a 1930s house needs first ",
-        "(loft and wall insulation, bigger radiators), and the grants on offer.",
+        "It covers what each competitor charges a month, what their plans include ",
+        "(API calls, seats, support), and where our new tier would sit.",
     ]
 
     /// The events PreviewClient's subscribe replays, ascending by sequence.
@@ -97,7 +97,7 @@ extension Fixtures {
         remembered.text = "Prefers a one-line answer before the detail."
         remembered.createdAt = time(20)
         var edited = notes[1]
-        edited.text = "The owner's house is a 1930s semi in Leeds."
+        edited.text = "Our product is an AI writing tool for teams of five to fifty."
 
         let events: [Hearth_V1_SubscribeResponse.OneOf_Event] = [
             .usageTick(
@@ -139,7 +139,7 @@ extension Fixtures {
 }
 
 extension Fixtures {
-    /// A fourth script: the owner marks a project done, so the project
+    /// A fourth script: the owner marks the launch done, so the project
     /// arrives with its new state. Sequences start at 1.
     public static let projectEvents: [Hearth_V1_SubscribeResponse] = {
         var finished = projects[0]
@@ -162,7 +162,7 @@ extension Fixtures {
         var changed = dmConversation
         changed.summary =
             summaryText
-            + " The brief is written and saved in her folder; the grants are still open."
+            + " The brief is written and saved in her folder; the free plans are still open."
         return [
             .with {
                 $0.sequence = 1

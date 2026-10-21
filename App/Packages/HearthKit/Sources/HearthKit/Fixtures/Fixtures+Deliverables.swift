@@ -1,5 +1,5 @@
 // The office's figures and the deliverable templates the preview serves: the
-// newsletter project at 3 of 7 with its light, what the org has cost this
+// launch project at 3 of 7 with its light, what the org has cost this
 // month, the Inbox count, and a project that is gone.
 
 import Foundation
@@ -17,9 +17,9 @@ extension Fixtures {
     /// Open items in the Inbox, as the preview's Inbox count reads.
     public static let inboxOpen = 2.0
 
-    /// A scripted subscription: the newsletter project's fourth task is done,
+    /// A scripted subscription: the launch project's fourth task is done,
     /// so its status arrives with 4 of 7. A client that is handed it serves
-    /// 4 of 7 on the next read of `project.tasks/project-newsletter`.
+    /// 4 of 7 on the next read of `project.tasks/project-launch`.
     public static let measureEvents: [Hearth_V1_SubscribeResponse] = {
         var changed = projects[0]
         changed.status.tasksDone += 1

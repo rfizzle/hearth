@@ -31,7 +31,7 @@ extension Catalog {
                     setupSheet("asking \u{201C}done when\u{201D}", canDraft: false, height: 520) {
                         $0.paragraph = paragraph
                         await $0.draft()
-                        $0.drafts["name", default: WidgetDraft()].text = "Launch the newsletter"
+                        $0.drafts["name", default: WidgetDraft()].text = "Launch the API tier"
                         await $0.next()
                     },
                     setupSheet("card with concerns", height: 940) {
@@ -73,8 +73,8 @@ extension Catalog {
         "I need someone to read up on our competitors and tell me what they are doing."
 
     private static let paragraph =
-        "I want to start a newsletter for the studio. About 400 people are on the old mailing "
-        + "list and we have no template. First issue before the end of November."
+        "We are launching our new API tier next month. About 400 customers are on the starter "
+        + "plan and there is no pricing page yet. Live before the end of November."
 
     /// A sheet whose store `prepare` walks to the state shown.
     private static func setupSheet(

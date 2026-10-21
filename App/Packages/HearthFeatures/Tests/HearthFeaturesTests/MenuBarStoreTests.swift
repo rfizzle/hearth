@@ -170,14 +170,14 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
     #expect(!rig.store.canAsk)
     #expect(await rig.store.ask() == false)
 
-    rig.store.draft = "Add a section on running costs."
+    rig.store.draft = "Add a section on the free plans."
     #expect(rig.store.canAsk)
     #expect(await rig.store.ask())
     #expect(rig.store.draft.isEmpty)
     #expect(rig.store.error == nil)
     #expect(rig.store.replyBot?.id == Fixtures.bot.id)
     #expect(rig.store.replyConversationID == Fixtures.bot.dmConversationID)
-    #expect(rig.store.reply.map(\.content) == ["Add a section on running costs."])
+    #expect(rig.store.reply.map(\.content) == ["Add a section on the free plans."])
     // The run is queued, so a second ask to Dana waits for it.
     rig.store.draft = "And the noise?"
     #expect(!rig.store.canAsk)

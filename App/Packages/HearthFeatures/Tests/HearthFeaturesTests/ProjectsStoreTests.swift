@@ -15,7 +15,7 @@ import Testing
     await sidebar.projects.load()
     #expect(
         sidebar.projects.listed.map(\.id) == [
-            "project-newsletter", "project-office", "project-tax",
+            "project-launch", "project-office", "project-tax",
         ])
     #expect(sidebar.projects.proposals.map(\.id) == ["project-website"])
     #expect(sidebar.projects.error == nil)
@@ -26,9 +26,9 @@ import Testing
     let sidebar = makeSidebar()
     await sidebar.projects.load()
     let request = Hearth_V1_CreateProjectRequest.with {
-        $0.name = "Plan the summer party"
+        $0.name = "Plan the launch event"
         $0.brief = .with {
-            $0.goal = "A party for the studio and its clients."
+            $0.goal = "An evening for our customers to try the API tier."
             $0.context = "Last year's was in the courtyard."
             $0.doneLooksLike = "A date, a venue and the invitations sent."
             $0.doneWhen = "The invitations have gone out."
@@ -37,12 +37,12 @@ import Testing
     let created = try #require(await sidebar.projects.create(request))
     #expect(
         sidebar.projects.listed.map(\.id) == [
-            "project-newsletter", "project-office", created.id, "project-tax",
+            "project-launch", "project-office", created.id, "project-tax",
         ])
     #expect(sidebar.projects.saveError == nil)
 
     sidebar.selected = .project(created.id)
-    #expect(sidebar.selectedProject?.name == "Plan the summer party")
+    #expect(sidebar.selectedProject?.name == "Plan the launch event")
 }
 
 @MainActor
@@ -63,9 +63,9 @@ import Testing
 @Test func markingDoneMovesTheRowAfterTheActiveOnes() async {
     let store = makeSidebar().projects
     await store.load()
-    await store.markDone(id: "project-newsletter")
-    #expect(store.project(id: "project-newsletter")?.state == .done)
-    #expect(store.listed.map(\.id) == ["project-office", "project-newsletter", "project-tax"])
+    await store.markDone(id: "project-launch")
+    #expect(store.project(id: "project-launch")?.state == .done)
+    #expect(store.listed.map(\.id) == ["project-office", "project-launch", "project-tax"])
 }
 
 @MainActor
@@ -74,7 +74,7 @@ import Testing
     await sidebar.projects.load()
     sidebar.selected = .project("project-tax")
     await sidebar.projects.archive(id: "project-tax")
-    #expect(sidebar.projects.listed.map(\.id) == ["project-newsletter", "project-office"])
+    #expect(sidebar.projects.listed.map(\.id) == ["project-launch", "project-office"])
     #expect(sidebar.selectedProject == nil)
 }
 
@@ -83,7 +83,7 @@ import Testing
     let store = makeSidebar().projects
     await store.load()
     for event in Fixtures.projectEvents { await store.handle(event) }
-    #expect(store.project(id: "project-newsletter")?.state == .done)
+    #expect(store.project(id: "project-launch")?.state == .done)
 
     var paused = Fixtures.projects[1]
     paused.status.tasksTotal = 2

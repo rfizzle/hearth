@@ -19,24 +19,29 @@ public struct ProjectExample: Identifiable, Equatable, Sendable {
     /// The four examples, in the order the sidebar shows them.
     public static let all: [ProjectExample] = [
         ProjectExample(
-            id: "trip", symbol: "airplane", title: "Plan a trip",
-            line: "Where to go, what to book and when.",
-            paragraph: "I want to plan a trip. Help me pick a place, a rough budget and dates, "
-                + "and list what I need to book."),
+            id: "campaign", symbol: "megaphone", title: "Run a marketing campaign",
+            line: "Who it is for, the message and the channels.",
+            paragraph: "We want more small agencies to try our product this quarter. Help me "
+                + "plan a campaign: who it is for, what we say, which channels we use and a "
+                + "six-week schedule."),
         ProjectExample(
-            id: "newsletter", symbol: "envelope", title: "Launch a newsletter",
-            line: "A first issue, out to your readers.",
-            paragraph: "I want to start a newsletter. Help me choose what it is about, "
-                + "draft the first issue and get it sent."),
+            id: "finance-report", symbol: "chart.bar.doc.horizontal",
+            title: "Write the monthly finance report",
+            line: "Revenue, spend and runway on one page.",
+            paragraph: "I need our finance report for last month. Pull together revenue, spend "
+                + "by team and how many months of runway we have, and point out anything that "
+                + "moved a lot."),
         ProjectExample(
-            id: "finances", symbol: "chart.pie", title: "Tidy the finances",
-            line: "Bills, subscriptions and records in order.",
-            paragraph: "I want to get my finances in order. Go through my bills and "
-                + "subscriptions, and set up a simple record of what I owe and what I pay."),
+            id: "market", symbol: "magnifyingglass", title: "Research a market",
+            line: "How big it is, who sells there and what they charge.",
+            paragraph: "We are thinking of selling to law firms. Find out how big the market "
+                + "is, who we would compete with and what they charge, and tell me if it is "
+                + "worth a closer look."),
         ProjectExample(
-            id: "skill", symbol: "book", title: "Learn a skill",
-            line: "A plan and a few weeks of practice.",
-            paragraph: "I want to learn a new skill. Help me choose a first goal, make a "
-                + "weekly practice plan and keep track of how it is going."),
+            id: "launch", symbol: "shippingbox", title: "Launch a product update",
+            line: "A date, the release notes and a note to customers.",
+            paragraph: "We are launching our new API tier next month. Help me set the date, "
+                + "write the release notes and the email to customers, and list what has to "
+                + "be ready first."),
     ]
 }

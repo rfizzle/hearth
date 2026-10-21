@@ -90,11 +90,11 @@ extension PromptCard {
         static func question(_ kind: WidgetSample.Kind) -> String {
             switch kind {
             case .single: "How long should the brief be?"
-            case .multiple: "Which rooms should the brief cover?"
-            case .freeText: "Anything about the house I should know?"
+            case .multiple: "Which competitors should the brief cover?"
+            case .freeText: "Anything about our pricing I should know?"
             case .yesNo: "There's an older brief.md in my folder. Keep it?"
-            case .date: "When is the surveyor coming?"
-            case .path: "Where are the house's floor plans?"
+            case .date: "When is the pricing meeting?"
+            case .path: "Where are last quarter's sales figures?"
             case .scale: "How useful was the last brief?"
             }
         }

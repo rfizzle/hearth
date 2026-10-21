@@ -75,7 +75,7 @@ extension LightCard {
         var light: Deliverable.Light {
             switch self {
             case .positive:
-                return .init(label: "Newsletter", tone: .positive, word: "On track")
+                return .init(label: "API tier launch", tone: .positive, word: "On track")
             case .negative:
                 return .init(
                     label: "Venue", tone: .negative, word: "Stopped",

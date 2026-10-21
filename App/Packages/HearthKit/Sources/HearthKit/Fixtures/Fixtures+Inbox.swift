@@ -12,7 +12,7 @@ extension Fixtures {
     public static let deleteCall = Hearth_V1_ToolCall.with {
         $0.callID = "call-4"
         $0.name = "files.delete"
-        $0.argumentsJson = #"{"path":"Heat pump brief.md"}"#
+        $0.argumentsJson = #"{"path":"Competitor pricing brief.md"}"#
         $0.summary = "Delete brief.md from Dana's folder"
     }
 
@@ -55,8 +55,9 @@ extension Fixtures {
         $0.runID = "run-1"
         $0.messageID = "message-20"
         $0.title = "Dana has a question"
-        $0.question = "Should the brief cover air-source pumps only, or ground-source too?"
-        $0.suggestedAnswers = ["Air-source only", "Both kinds"]
+        $0.question =
+            "Should the brief cover our three closest competitors, or the wider market too?"
+        $0.suggestedAnswers = ["The three only", "The wider market"]
         $0.createdAt = time(10)
     }
 
@@ -73,7 +74,7 @@ extension Fixtures {
                 .with {
                     $0.id = "two-pages"
                     $0.label = "Two pages"
-                    $0.detail = "Room for a running-cost table"
+                    $0.detail = "Room for a price table"
                 },
                 .with {
                     $0.id = "slides"

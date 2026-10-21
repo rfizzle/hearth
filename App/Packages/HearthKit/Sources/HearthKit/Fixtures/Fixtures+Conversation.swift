@@ -19,13 +19,13 @@ extension Fixtures {
 
     /// What Dana remembers of the part of the DM before the loaded page.
     public static let summaryText =
-        "You asked Dana for a one-page brief on heat pumps for a 1930s house. "
-        + "She prefers pounds to dollars and wants the grants listed last."
+        "You asked Dana for a one-page brief on what our competitors charge for API access. "
+        + "You want prices per month, not per call, and the free plans listed last."
 
     /// The brief Dana wrote, in her folder.
     public static let briefFile = Hearth_V1_FileRef.with {
-        $0.path = bot.folderPath + "/Heat pump brief.md"
-        $0.name = "Heat pump brief.md"
+        $0.path = bot.folderPath + "/Competitor pricing brief.md"
+        $0.name = "Competitor pricing brief.md"
     }
 
     /// The run that failed before the owner asked again.
@@ -51,22 +51,24 @@ extension Fixtures {
 
     /// The DM's ten messages, ascending by seq.
     public static let dmMessages: [Hearth_V1_Message] = [
-        dmMessage(1, minute: 0, text: "Write me a one-page brief on heat pumps for a 1930s house."),
+        dmMessage(
+            1, minute: 0,
+            text: "Write me a one-page brief on what our competitors charge for API access."),
         dmMessage(2, minute: 1, run: failedRun.id, kind: .system, text: failedRun.failure),
         dmMessage(3, minute: 5, text: "Try again, please."),
         dmMessage(4, minute: 6, run: workingRun.id, kind: .toolCall, text: "", tool: searchCall),
         dmMessage(
             5, minute: 6, run: workingRun.id, kind: .toolResult,
-            text: "1. Heat pumps in older homes, energysavingtrust.org.uk", tool: searchCall),
+            text: "1. API pricing for AI writing tools, northwind.ai", tool: searchCall),
         dmMessage(6, minute: 7, run: workingRun.id, kind: .toolCall, text: "", tool: fetchCall),
         dmMessage(
             7, minute: 7, run: workingRun.id, kind: .toolResult,
-            text: "Air-source heat pumps suit older homes once the loft and walls are insulated.",
+            text: "The Team plan is $49 a month and includes 50,000 API calls.",
             tool: fetchCall),
         dmMessage(8, minute: 12, run: workingRun.id, kind: .toolCall, text: "", tool: writeCall),
         dmMessage(
             9, minute: 13, run: workingRun.id, kind: .toolResult,
-            text: "Wrote Heat pump brief.md.", tool: writeCall, files: [briefFile]),
+            text: "Wrote Competitor pricing brief.md.", tool: writeCall, files: [briefFile]),
         streamingReply,
     ]
 
@@ -76,7 +78,7 @@ extension Fixtures {
 
     /// What PreviewClient's send answers: the owner's message and a queued run.
     public static let sendResponse = Hearth_V1_SendResponse.with {
-        $0.message = dmMessage(11, minute: 20, text: "Add a section on running costs.")
+        $0.message = dmMessage(11, minute: 20, text: "Add a section on the free plans.")
         $0.run = Hearth_V1_Run.with {
             $0.id = "run-3"
             $0.conversationID = dmConversation.id
@@ -89,22 +91,22 @@ extension Fixtures {
     static let searchCall = Hearth_V1_ToolCall.with {
         $0.callID = "call-1"
         $0.name = "web.search"
-        $0.argumentsJson = #"{"query":"heat pumps in 1930s houses"}"#
-        $0.summary = "Search the web for heat pumps in 1930s houses"
+        $0.argumentsJson = #"{"query":"API pricing for AI writing tools"}"#
+        $0.summary = "Search the web for API pricing for AI writing tools"
     }
 
     static let fetchCall = Hearth_V1_ToolCall.with {
         $0.callID = "call-2"
         $0.name = "web.fetch"
-        $0.argumentsJson = #"{"url":"https://energysavingtrust.org.uk/heat-pumps"}"#
-        $0.summary = "Read a page on energysavingtrust.org.uk"
+        $0.argumentsJson = #"{"url":"https://northwind.ai/pricing"}"#
+        $0.summary = "Read a page on northwind.ai"
     }
 
     static let writeCall = Hearth_V1_ToolCall.with {
         $0.callID = "call-3"
         $0.name = "files.write"
-        $0.argumentsJson = #"{"path":"Heat pump brief.md"}"#
-        $0.summary = "Write Heat pump brief.md in Dana's folder"
+        $0.argumentsJson = #"{"path":"Competitor pricing brief.md"}"#
+        $0.summary = "Write Competitor pricing brief.md in Dana's folder"
     }
 
     /// One DM message; an empty `run` makes it the owner's.

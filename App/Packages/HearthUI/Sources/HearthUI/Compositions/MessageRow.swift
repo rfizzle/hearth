@@ -183,8 +183,8 @@ extension MessageRow {
                 var message = Fixtures.dmMessages[0]
                 message.content =
                     message.content
-                    + " I want it to cover what it costs to install, what it costs to run, "
-                    + "what grants there are, and whether the walls and loft need doing first."
+                    + " I want it to cover what each plan costs, what the free plans include, "
+                    + "how they count API calls, and where our new tier would sit."
                 return message
             case .streaming:
                 return Fixtures.streamingReply

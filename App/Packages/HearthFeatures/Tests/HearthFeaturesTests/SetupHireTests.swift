@@ -28,7 +28,7 @@ private func freshHireDefaults() -> UserDefaults {
     UserDefaults(suiteName: "setup-hire-tests-\(UUID().uuidString)") ?? .standard
 }
 
-private let paragraph = "Someone to keep track of the studio's invoices."
+private let paragraph = "Someone to keep track of our invoices."
 
 @MainActor
 @Test func aRoleChipFillsTheBoxAndRemembersItsTemplate() async {

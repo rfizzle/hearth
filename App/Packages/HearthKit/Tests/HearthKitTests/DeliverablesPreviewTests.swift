@@ -6,11 +6,11 @@ import Testing
 
 @testable import HearthKit
 
-private let tasks = "project.tasks/project-newsletter"
+private let tasks = "project.tasks/project-launch"
 
-@Test func measuresReadTheNewsletterAtThreeOfSevenACostAnInboxCountAndAMissingOne() async throws {
+@Test func measuresReadTheLaunchAtThreeOfSevenACostAnInboxCountAndAMissingOne() async throws {
     let values = try await PreviewClient().readMeasures(ids: [
-        tasks, "project.light/project-newsletter", "usage.cost/org/2026-10", "inbox.open",
+        tasks, "project.light/project-launch", "usage.cost/org/2026-10", "inbox.open",
         Fixtures.goneProjectMeasure,
     ])
     #expect(values.map(\.id).first == tasks)

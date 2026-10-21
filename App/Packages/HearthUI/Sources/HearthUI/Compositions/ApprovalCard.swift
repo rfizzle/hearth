@@ -141,9 +141,10 @@ extension ApprovalCard {
             guard self == .alwaysAllowOffered else { return Fixtures.approval }
             var item = Fixtures.approval
             item.title = "Dana wants to write a file"
-            item.effect = "Writes Heat pump brief.md in Dana's folder, replacing what is there."
+            item.effect =
+                "Writes Competitor pricing brief.md in Dana's folder, replacing what is there."
             item.call.name = "files.write"
-            item.call.summary = "Write Heat pump brief.md in Dana's folder"
+            item.call.summary = "Write Competitor pricing brief.md in Dana's folder"
             return item
         }
 

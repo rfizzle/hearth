@@ -18,7 +18,7 @@ var today = time.Date(2026, 10, 20, 15, 30, 0, 0, time.UTC)
 const fullJob = "You look into the questions the owner brings you and report what you find. You keep every brief to one page."
 
 func TestProject_EachRule(t *testing.T) {
-	good := project.Brief{Goal: "Send the first issue of the studio newsletter.", DoneLooksLike: "A template, a first issue. A schedule.", DoneWhen: "The first issue is in 400 inboxes."}
+	good := project.Brief{Goal: "Send the launch email for the new API tier.", DoneLooksLike: "A pricing page, a launch email. A schedule.", DoneWhen: "The launch email is in 400 inboxes."}
 	with := func(f func(*project.Brief)) project.Brief {
 		b := good
 		f(&b)
@@ -32,51 +32,51 @@ func TestProject_EachRule(t *testing.T) {
 		want   []concern.Concern
 		reason string
 	}{
-		{name: "nothing weak", pname: "Newsletter", brief: good, date: "2026-11-20"},
+		{name: "nothing weak", pname: "API tier", brief: good, date: "2026-11-20"},
 		{
-			name: "empty done_when suggests the first sentence", pname: "Newsletter",
+			name: "empty done_when suggests the first sentence", pname: "API tier",
 			brief: with(func(b *project.Brief) { b.DoneWhen = "  " }),
 			want: []concern.Concern{{
 				Field:      "done_when",
 				Concern:    "I can't tell when this is done yet. One sentence that's true exactly then.",
-				Suggestion: "A template, a first issue.",
+				Suggestion: "A pricing page, a launch email.",
 			}},
 		},
 		{
-			name: "empty done_when with nothing to suggest from", pname: "Newsletter",
+			name: "empty done_when with nothing to suggest from", pname: "API tier",
 			brief: with(func(b *project.Brief) { b.DoneWhen, b.DoneLooksLike = "", "" }),
 			want: []concern.Concern{{
 				Field: "done_when", Concern: "I can't tell when this is done yet. One sentence that's true exactly then.",
 			}},
 		},
 		{
-			name: "a vague word and no digit", pname: "Newsletter",
+			name: "a vague word and no digit", pname: "API tier",
 			brief: with(func(b *project.Brief) { b.DoneWhen = "The list is Better than before." }),
 			want: []concern.Concern{{
 				Field: "done_when", Concern: "“better” is hard to check. A number or a date makes it something we can tick.",
 			}},
 		},
-		{name: "a vague word beside a digit", pname: "Newsletter", brief: with(func(b *project.Brief) { b.DoneWhen = "Some 400 people read it." })},
-		{name: "a vague word only inside a longer word", pname: "Newsletter", brief: with(func(b *project.Brief) { b.DoneWhen = "Something has shipped." })},
+		{name: "a vague word beside a digit", pname: "API tier", brief: with(func(b *project.Brief) { b.DoneWhen = "Some 400 people read it." })},
+		{name: "a vague word only inside a longer word", pname: "API tier", brief: with(func(b *project.Brief) { b.DoneWhen = "Something has shipped." })},
 		{
-			name: "a date before today", pname: "Newsletter", brief: good, date: "2026-10-19",
+			name: "a date before today", pname: "API tier", brief: good, date: "2026-10-19",
 			want: []concern.Concern{{Field: "target_date", Concern: "That date has already passed."}},
 		},
-		{name: "today is not passed", pname: "Newsletter", brief: good, date: "2026-10-20"},
-		{name: "a date that does not parse is the core's refusal", pname: "Newsletter", brief: good, date: "last week"},
+		{name: "today is not passed", pname: "API tier", brief: good, date: "2026-10-20"},
+		{name: "a date that does not parse is the core's refusal", pname: "API tier", brief: good, date: "last week"},
 		{
-			name: "a name that restates the goal", pname: "Send the first issue of the newsletter",
+			name: "a name that restates the goal", pname: "Send the launch email for the API tier",
 			brief: good,
 			want:  []concern.Concern{{Field: "name", Concern: "The name reads like the goal. A short name is easier to find in the sidebar."}},
 		},
-		{name: "four words is a short enough name", pname: "Send the first issue", brief: good},
-		{name: "a long name with a word the goal lacks", pname: "Send the first issue of the weekly newsletter", brief: good},
+		{name: "four words is a short enough name", pname: "Send the launch email", brief: good},
+		{name: "a long name with a word the goal lacks", pname: "Send the launch email for the weekly API tier", brief: good},
 		{
-			name: "three at once, in field order", pname: "Send the first issue of the newsletter",
+			name: "three at once, in field order", pname: "Send the launch email for the API tier",
 			brief: with(func(b *project.Brief) { b.DoneWhen = "" }), date: "2020-01-01",
 			want: []concern.Concern{
 				{Field: "name", Concern: "The name reads like the goal. A short name is easier to find in the sidebar."},
-				{Field: "done_when", Concern: "I can't tell when this is done yet. One sentence that's true exactly then.", Suggestion: "A template, a first issue."},
+				{Field: "done_when", Concern: "I can't tell when this is done yet. One sentence that's true exactly then.", Suggestion: "A pricing page, a launch email."},
 				{Field: "target_date", Concern: "That date has already passed."},
 			},
 		},

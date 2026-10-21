@@ -58,9 +58,9 @@ extension FolderRow {
         var path: String {
             switch self {
             case .own: Fixtures.bot.folderPath
-            case .added: "/Users/sam/Documents/Heat pumps"
+            case .added: "/Users/sam/Documents/Pricing"
             case .longPath:
-                "/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Projects/2026/Home energy/Research"
+                "/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/Projects/2026/API tier launch/Research"
             }
         }
     }

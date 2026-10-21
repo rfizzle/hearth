@@ -73,7 +73,7 @@ extension Catalog {
         Task {
             await store.load()
             store.pick(Fixtures.bot)
-            store.draft = "Add a section on running costs."
+            store.draft = "Add a section on the free plans."
             await store.ask()
             relay.start()
         }

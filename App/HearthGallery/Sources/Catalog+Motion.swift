@@ -223,7 +223,7 @@ extension Catalog {
             var body: some View {
                 Composer(
                     label: "Message Dana", isWorking: flag.isOn,
-                    draft: "Add a section on running costs.",
+                    draft: "Add a section on the free plans.",
                     onSend: { _ in true }, onStop: {})
             }
         }

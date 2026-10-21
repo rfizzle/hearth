@@ -98,10 +98,11 @@ extension ProgressCard {
             switch self {
             case .plain:
                 return .init(
-                    label: "Launch the newsletter", done: 3, total: 7, caption: "3 of 7 tasks done")
+                    label: "Launch the API tier", done: 3, total: 7, caption: "3 of 7 tasks done")
             case .allDone:
                 return .init(
-                    label: "Plan the event", done: 5, total: 5, caption: "Everything is booked")
+                    label: "Plan the launch event", done: 5, total: 5,
+                    caption: "Everything is booked")
             case .written, .live, .missing:
                 guard case .progress(let progress) = widget.content else {
                     preconditionFailure("the kitchen sink's second widget is a progress")

@@ -130,7 +130,7 @@ func TestKitchenSink(t *testing.T) {
 		"3 of 7", `<rect width="42.857" height="8"`,
 		"Waiting on you", "On track", "Stopped", "Idle", "Not read yet",
 		"Venue &lt;shortlist&gt;", "$1,262.50", "60.3%", ">6<",
-		"Send the first issue", "Confirmed Tuesday", "list-decimal",
+		"Send the launch email", "Confirmed Tuesday", "list-decimal",
 		"<h2>Heading one reads as two</h2>", "<h6>Six</h6>",
 		"<em>emphasis</em>", "<strong>strong</strong>", "<del>struck</del>", "<code>code &lt;b&gt;</code>",
 		`<a href="https://example.com/a?b=1&amp;c=2" rel="noopener noreferrer">link</a>`,

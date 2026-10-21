@@ -7,18 +7,18 @@ import Foundation
 import FoundationModels
 import HearthNative
 
-let teams = ["Travel", "Money", "Home"]
+let teams = ["Marketing", "Finance", "Research"]
 let fixtures: [(request: String, team: String)] = [
-    ("Find me a flight to Lisbon in March", "Travel"),
-    ("Book a hotel near the conference in Austin", "Travel"),
-    ("What should I pack for ten days in Japan?", "Travel"),
-    ("How much did I spend on restaurants last month?", "Money"),
-    ("Set up a budget for the new year", "Money"),
-    ("Is my quarterly tax estimate due soon?", "Money"),
-    ("The kitchen tap is dripping, who should I call?", "Home"),
-    ("Make a cleaning schedule for the week", "Home"),
-    ("Remind me when the boiler service is due", "Home"),
-    ("Plan a weekend trip to Vermont and tell me the cost", "Travel"),
+    ("Write the launch email for the API tier", "Marketing"),
+    ("Plan a six-week campaign for small agencies", "Marketing"),
+    ("Which channels should we use for the spring launch?", "Marketing"),
+    ("How much did we spend on software last month?", "Finance"),
+    ("Set up a budget for the new year", "Finance"),
+    ("How many months of runway do we have?", "Finance"),
+    ("What do our competitors charge for API access?", "Research"),
+    ("Compare three CRM tools for a ten-person team", "Research"),
+    ("How big is the market for AI tools in law firms?", "Research"),
+    ("Draft the monthly finance report and tell me what moved", "Finance"),
 ]
 
 print("availability: \(SystemLanguageModel.default.availability)")

@@ -9,9 +9,9 @@ import (
 	"github.com/rfizzle/hearth/internal/org/intro"
 )
 
-func TestTemplates_LoadsTheThreeRoles(t *testing.T) {
+func TestTemplates_LoadsTheFiveRoles(t *testing.T) {
 	got := Templates()
-	want := []string{"planner", "research-analyst", "writer"}
+	want := []string{"finance-analyst", "marketing-lead", "planner", "research-analyst", "writer"}
 	if len(got) != len(want) {
 		t.Fatalf("Templates = %d, want %d", len(got), len(want))
 	}
@@ -78,7 +78,7 @@ func TestTemplates_CarryTheirIntroductions(t *testing.T) {
 	bot, _, _ := ChiefOfStaff(filepath.Join("/", "Users", "me", "Hearth"))
 	if !strings.HasPrefix(bot.Introduction.Purpose, "I run your office.") ||
 		bot.Introduction.How[1].Symbol != "arrow.triangle.branch" ||
-		bot.Introduction.Try[0] != "Help me plan a week in Lisbon in May" {
+		bot.Introduction.Try[0] != "Summarise this week's customer calls" {
 		t.Errorf("the Chief of Staff's introduction = %+v, want the template's", bot.Introduction)
 	}
 }

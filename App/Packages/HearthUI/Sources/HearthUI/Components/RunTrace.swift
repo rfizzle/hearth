@@ -227,7 +227,7 @@ extension RunTrace {
                     })
             }
             return [
-                said("trace-1", "I'll look at what is written on heat pumps in older houses."),
+                said("trace-1", "I'll look at what our competitors charge for API access."),
                 .tools([call(3, 4), call(5, 6)]),
                 said("trace-2", "That is enough to write the brief."),
                 .tools([call(7, 8)]),

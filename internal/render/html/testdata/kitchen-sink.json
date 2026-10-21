@@ -10,9 +10,9 @@
       {"kind": "metric", "label": "Tokens", "value": 1234567.891, "format": "integer", "unit": "tokens", "delta": {"value": 1200}},
       {"kind": "metric", "label": "Ratio", "value": 3.14159, "decimals": 2},
       {"kind": "metric", "label": "Not read yet", "measure": "inbox.open/org"},
-      {"kind": "progress", "label": "Launch the newsletter", "done": 3, "total": 7, "caption": "3 of 7 tasks done", "measure": "project.tasks/this"},
+      {"kind": "progress", "label": "Launch the API tier", "done": 3, "total": 7, "caption": "3 of 7 tasks done", "measure": "project.tasks/this"},
       {"kind": "progress", "label": "Nothing to do", "done": 0, "total": 0},
-      {"kind": "light", "label": "Newsletter", "tone": "attention", "word": "Waiting on you", "measure": "project.light/this"},
+      {"kind": "light", "label": "API tier launch", "tone": "attention", "word": "Waiting on you", "measure": "project.light/this"},
       {"kind": "light", "label": "Venue", "tone": "positive", "word": "On track", "caption": "Booked"},
       {"kind": "light", "label": "Printing", "tone": "negative", "word": "Stopped"},
       {"kind": "light", "label": "Archive", "tone": "neutral", "word": "Idle", "span": 2}
@@ -23,10 +23,10 @@
       {"kind": "pie", "title": "Spend by employee", "slices": [{"label": "Dana", "value": 12.4}, {"label": "Sam", "value": 6.1}, {"label": "Ari", "value": 3}, {"label": "Bo", "value": 2}, {"label": "Cy", "value": 1}, {"label": "Di", "value": 1}, {"label": "Ed", "value": 0.5}, {"label": "Flo", "value": 0}], "format": "currency"}
     ]},
     {"heading": "Open items", "columns": 3, "widgets": [
-      {"kind": "table", "title": "Open items", "span": 3, "columns": [{"header": "Item", "align": "left"}, {"header": "Owner", "align": "center"}, {"header": "Cost", "align": "right", "format": "currency"}, {"header": "Share", "align": "right", "format": "percent"}, {"header": "Count", "format": "integer"}], "rows": [["Newsletter copy", "Dana", 12.5, 40, 3], ["Venue <shortlist>", "Sam", 1250, 60.25, 2.5]], "footer": ["Total", "", 1262.5, 100, 5.5]},
+      {"kind": "table", "title": "Open items", "span": 3, "columns": [{"header": "Item", "align": "left"}, {"header": "Owner", "align": "center"}, {"header": "Cost", "align": "right", "format": "currency"}, {"header": "Share", "align": "right", "format": "percent"}, {"header": "Count", "format": "integer"}], "rows": [["Launch email", "Dana", 12.5, 40, 3], ["Venue <shortlist>", "Sam", 1250, 60.25, 2.5]], "footer": ["Total", "", 1262.5, 100, 5.5]},
       {"kind": "list", "title": "Bullets", "items": [{"text": "First"}, {"text": "Second", "detail": "With a detail"}]},
       {"kind": "list", "title": "Steps", "style": "numbered", "items": [{"text": "Draft"}, {"text": "Review"}]},
-      {"kind": "list", "title": "Next week", "style": "check", "items": [{"text": "Send the first issue", "done": false}, {"text": "Book the venue", "done": true, "detail": "Confirmed Tuesday"}]}
+      {"kind": "list", "title": "Next week", "style": "check", "items": [{"text": "Send the launch email", "done": false}, {"text": "Book the venue", "done": true, "detail": "Confirmed Tuesday"}]}
     ]},
     {"heading": "Notes", "columns": 1, "widgets": [
       {"kind": "callout", "tone": "attention", "title": "Needs you", "markdown": "Two tasks are waiting on an answer. **Open the Inbox** to unblock them."},

@@ -23,7 +23,7 @@ import Testing
 @Test func aControlTheOwnerMayDeclineTakesWordsInstead() {
     let multiple = WidgetSample.widget(.multiple)
     #expect(!WidgetDraft().canAnswer(multiple, prose: ""))
-    #expect(WidgetDraft().canAnswer(multiple, prose: "Only the loft"))
+    #expect(WidgetDraft().canAnswer(multiple, prose: "Only Scribeworks"))
     #expect(WidgetDraft().answer(for: multiple) == nil)
     // Other chosen and left blank is no answer, so words still answer an
     // optional single choice.
@@ -51,9 +51,9 @@ import Testing
     #expect(otherAnswer?.value == nil)
 
     var ticked = WidgetDraft()
-    ticked.choices = ["loft", "kitchen"]
+    ticked.choices = ["scribeworks", "quillmate"]
     let multiple = WidgetSample.widget(.multiple)
-    #expect(ticked.answer(for: multiple)?.choiceIds.ids == ["kitchen", "loft"])
+    #expect(ticked.answer(for: multiple)?.choiceIds.ids == ["quillmate", "scribeworks"])
 }
 
 @Test func anAnswerReadsBackInWords() {
@@ -67,7 +67,7 @@ import Testing
         let text = WidgetDraft.text(of: answer, in: widget)
         switch kind {
         case .single: #expect(text == "Two pages")
-        case .multiple: #expect(text == "Kitchen and Loft")
+        case .multiple: #expect(text == "Quillmate and Scribeworks")
         case .yesNo: #expect(text == "Keep it")
         case .scale: #expect(text == "4 of 5")
         case .path: #expect(text == draft.path)

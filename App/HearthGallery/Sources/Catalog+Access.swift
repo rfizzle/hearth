@@ -31,7 +31,7 @@ extension Catalog {
     @MainActor
     static var accessSheetStates: [GalleryState] {
         let client = PreviewClient()
-        let extra = "/Users/preview/Documents/Heat pumps"
+        let extra = "/Users/preview/Documents/Pricing"
         let widened = Fixtures.grants.flatMap { grant -> [Hearth_V1_Grant] in
             guard !grant.folder.isEmpty else { return [grant] }
             var other = grant

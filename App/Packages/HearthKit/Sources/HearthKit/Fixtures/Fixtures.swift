@@ -1,5 +1,5 @@
 // Fixtures is the one org previews, the gallery, snapshots and store tests
-// share: a named org, three role templates, one bot, the accounts behind
+// share: a named org, four role templates, one bot, the accounts behind
 // sign-in and the web-search integration. The bot's DM and a scripted reply
 // live in the sibling files.
 // Everything is fixed, so a golden never changes because the clock moved.
@@ -14,7 +14,7 @@ public enum Fixtures {
 
     /// A named org with its Hearth folder.
     public static let org = Hearth_V1_Org.with {
-        $0.name = "Harbor Street Studio"
+        $0.name = "Harbor Labs"
         $0.workspacePath = workspacePath
         $0.coordinatorBotID = chiefOfStaff.id
     }
@@ -22,11 +22,12 @@ public enum Fixtures {
     /// The same org before a Chief of Staff is hired: project conversations
     /// show "Hire a Chief of Staff" where the composer would be.
     public static let orgWithoutCoordinator = Hearth_V1_Org.with {
-        $0.name = "Harbor Street Studio"
+        $0.name = "Harbor Labs"
         $0.workspacePath = workspacePath
     }
 
-    /// Three templates: a research lead, a writer and a scheduler.
+    /// Four templates: a research lead, a writer, a marketing lead and a
+    /// finance analyst.
     public static let templates: [Hearth_V1_RoleTemplate] = [
         .with {
             $0.id = "template-research-lead"
@@ -41,20 +42,29 @@ public enum Fixtures {
         .with {
             $0.id = "template-writer"
             $0.role = "Writer"
-            $0.summary = "Drafts letters, posts and summaries in the owner's voice."
+            $0.summary = "Drafts emails, posts and summaries in the owner's voice."
             $0.jobDescription =
                 "You write drafts for the owner. Match their tone, keep it plain, "
                 + "and save each draft as a Markdown file in your folder."
             $0.suggestedTier = .best
         },
         .with {
-            $0.id = "template-scheduler"
-            $0.role = "Scheduler"
-            $0.summary = "Keeps the calendar tidy and proposes times."
+            $0.id = "template-marketing-lead"
+            $0.role = "Marketing Lead"
+            $0.summary = "Plans campaigns and writes launch copy and channel plans."
             $0.jobDescription =
-                "You look after the owner's calendar. Propose times, never "
-                + "accept on their behalf, and say what moved and why."
-            $0.suggestedTier = .fast
+                "You run marketing for the owner's company. Give one plan: the message, "
+                + "the channels, a schedule and the copy each channel needs."
+            $0.suggestedTier = .balanced
+        },
+        .with {
+            $0.id = "template-finance-analyst"
+            $0.role = "Finance Analyst"
+            $0.summary = "Writes the monthly finance report and tracks spend and runway."
+            $0.jobDescription =
+                "You look after the numbers. Write the monthly report, check spend by "
+                + "team against the budget and say how many months of runway are left."
+            $0.suggestedTier = .best
         },
     ]
 
@@ -79,9 +89,9 @@ public enum Fixtures {
             },
         ]
         $0.tryAsking = [
-            "Compare two standing desks under $500",
-            "Is it worth switching to a heat pump?",
-            "What changed in the new tax rules?",
+            "Compare three CRM tools for a ten-person team",
+            "What do our competitors charge for API access?",
+            "How big is the market for AI in law firms?",
         ]
     }
 
@@ -109,8 +119,8 @@ public enum Fixtures {
             },
         ]
         $0.tryAsking = [
-            "Help me plan a week in Lisbon in May",
-            "What would a heat pump cost for a small house?",
+            "Summarise this week's customer calls",
+            "Get the monthly finance report started",
             "Remember that I prefer short answers",
         ]
     }

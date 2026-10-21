@@ -1,4 +1,4 @@
-// The org's projects: a launch in flight with one task waiting on the owner,
+// The org's projects: the API tier launch in flight with one task waiting on the owner,
 // a move with no tasks yet, a finished tax pack and a proposal from the Chief
 // of Staff that waits for the owner's click.
 
@@ -12,18 +12,19 @@ extension Fixtures {
     /// Four projects: two active, one done, one proposed.
     public static let projects: [Hearth_V1_Project] = [
         .with {
-            $0.id = "project-newsletter"
-            $0.name = "Launch the newsletter"
+            $0.id = "project-launch"
+            $0.name = "Launch the API tier"
             $0.brief = .with {
-                $0.goal = "Send the first issue of the studio newsletter."
-                $0.context = "We have 400 subscribers from the old mailing list and no template."
-                $0.doneLooksLike = "A template, a first issue and a sending schedule."
-                $0.doneWhen = "The first issue is in 400 inboxes."
+                $0.goal = "Launch the new API tier to our customers."
+                $0.context =
+                    "400 customers are on the starter plan. No pricing page or launch email yet."
+                $0.doneLooksLike = "A pricing page, a launch email and a help article."
+                $0.doneWhen = "The launch email is in 400 inboxes."
             }
             $0.state = .active
             $0.targetDate = "2026-11-20"
-            $0.folderPath = workspacePath + "/Projects/Launch the newsletter"
-            $0.conversationID = "conversation-project-newsletter"
+            $0.folderPath = workspacePath + "/Projects/Launch the API tier"
+            $0.conversationID = "conversation-project-launch"
             $0.status = .with {
                 $0.tasksTotal = 7
                 $0.tasksDone = 3
@@ -41,7 +42,7 @@ extension Fixtures {
             $0.id = "project-office"
             $0.name = "Move the office"
             $0.brief = .with {
-                $0.goal = "Move the studio to the new unit on Canal Road."
+                $0.goal = "Move the team to the new office on Canal Road."
                 $0.context = "The lease here ends in January."
                 $0.doneLooksLike = "Desks, network and post all working at the new address."
                 $0.doneWhen = "Everyone works from Canal Road."
@@ -82,9 +83,9 @@ extension Fixtures {
             $0.id = "project-website"
             $0.name = "Refresh the website"
             $0.brief = .with {
-                $0.goal = "Bring the studio website up to date."
-                $0.context = "The portfolio stops in 2024 and the contact form is broken."
-                $0.doneLooksLike = "New portfolio, working form, same look."
+                $0.goal = "Bring the company website up to date."
+                $0.context = "The customer stories stop in 2024 and the contact form is broken."
+                $0.doneLooksLike = "New customer stories, working form, same look."
                 $0.doneWhen = "The new site is live."
             }
             $0.state = .proposed
@@ -98,22 +99,23 @@ extension Fixtures {
 }
 
 extension Fixtures {
-    /// What the model proposes for "I want to start a studio newsletter": two
-    /// concerns, one with a suggestion and one without.
+    /// What the model proposes for "We are launching our new API tier next
+    /// month": two concerns, one with a suggestion and one without.
     public static let projectDraft = Hearth_V1_DraftProjectResponse.with {
-        $0.name = "Launch the newsletter"
+        $0.name = "Launch the API tier"
         $0.brief = .with {
-            $0.goal = "Send the first issue of the studio newsletter."
-            $0.context = "We have 400 subscribers from the old mailing list and no template."
-            $0.doneLooksLike = "A template, a first issue and a sending schedule."
-            $0.doneWhen = "The first issue has gone out."
+            $0.goal = "Launch the new API tier to our customers."
+            $0.context =
+                "400 customers are on the starter plan. No pricing page or launch email yet."
+            $0.doneLooksLike = "A pricing page, a launch email and a help article."
+            $0.doneWhen = "The launch email has gone out."
         }
         $0.targetDate = "2026-11-20"
         $0.concerns = [
             .with {
                 $0.field = "done_when"
                 $0.concern = "\u{201C}Gone out\u{201D} is hard to check. Try a number or a date."
-                $0.suggestion = "The first issue has reached every address on the list"
+                $0.suggestion = "The launch email has reached every customer on the starter plan"
             },
             .with {
                 $0.field = "name"

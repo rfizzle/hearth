@@ -136,9 +136,9 @@ extension DeliverableChip {
             switch self {
             case .threeFiles:
                 return DeliverableGroup(
-                    spec: file("Newsletter dashboard.deliverable.json"),
-                    html: file("Newsletter dashboard.html"),
-                    pdf: file("Newsletter dashboard.pdf"))
+                    spec: file("Launch dashboard.deliverable.json"),
+                    html: file("Launch dashboard.html"),
+                    pdf: file("Launch dashboard.pdf"))
             case .loneSpec:
                 return DeliverableGroup(
                     spec: file("Weekly digest.deliverable.json"), html: nil, pdf: nil)
@@ -150,7 +150,7 @@ extension DeliverableChip {
 
         var title: String? {
             switch self {
-            case .threeFiles: "Newsletter dashboard"
+            case .threeFiles: "Launch dashboard"
             case .loneSpec: "Weekly digest"
             case .undecodable: nil
             }

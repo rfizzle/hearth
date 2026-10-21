@@ -11,11 +11,11 @@ extension Fixtures {
 
     /// Five things Dana remembers, the first pinned.
     public static let notes: [Hearth_V1_Note] = [
-        note(1, "The owner prefers metric units and plain English.", pinned: true),
-        note(2, "The owner's house is a 1930s semi.", pinned: false),
-        note(3, "Grants worth checking first: the boiler upgrade scheme.", pinned: false),
+        note(1, "The owner prefers plain English and prices in dollars.", pinned: true),
+        note(2, "Our product is an AI writing tool for small teams.", pinned: false),
+        note(3, "Competitors worth checking first: Northwind and Quillmate.", pinned: false),
         note(4, "Send briefs as Markdown in the Dana folder.", pinned: false),
-        note(5, "The loft was insulated in 2019; the walls were not.", pinned: false),
+        note(5, "Our starter plan is $20 a month; the API tier has no price yet.", pinned: false),
     ]
 
     private static func note(_ number: Int, _ text: String, pinned: Bool) -> Hearth_V1_Note {
@@ -35,7 +35,7 @@ extension Fixtures {
         .with {
             $0.id = "page-house-style"
             $0.title = "House style"
-            $0.markdown = "# House style\n\nWrite plainly. Lead with the answer. Use metric units."
+            $0.markdown = "# House style\n\nWrite plainly. Lead with the answer. Prices in dollars."
             $0.scope = .with { $0.everyone = true }
             $0.bytes = Int64($0.markdown.utf8.count)
             $0.updatedAt = time(10)
@@ -43,7 +43,8 @@ extension Fixtures {
         .with {
             $0.id = "page-sources"
             $0.title = "Sources Dana trusts"
-            $0.markdown = "# Sources\n\n- Energy Saving Trust\n- Ofgem\n- The owner's own surveys"
+            $0.markdown =
+                "# Sources\n\n- Competitors' own pricing pages\n- Reviews on G2\n- Our customer calls"
             $0.scope = .with { $0.botID = bot.id }
             $0.bytes = Int64($0.markdown.utf8.count)
             $0.updatedAt = time(12)

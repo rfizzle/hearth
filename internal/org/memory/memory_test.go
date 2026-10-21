@@ -31,7 +31,7 @@ func TestMeter(t *testing.T) {
 
 func TestPlain(t *testing.T) {
 	for _, tc := range []struct{ name, in, want string }{
-		{"plain text", "Ship the newsletter, é.", "Ship the newsletter, é."},
+		{"plain text", "Ship the launch email, é.", "Ship the launch email, é."},
 		{"a right-to-left override", "a\u202eb", "ab"},
 		{"the isolates", "a\u2066b\u2067c\u2068d\u2069e", "abcde"},
 		{"a zero-width space", "a\u200bb", "ab"},

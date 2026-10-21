@@ -40,6 +40,8 @@ public struct ExampleCard: View {
                     Text(title)
                         .font(Theme.headline)
                         .foregroundStyle(Theme.color(.textPrimary))
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(line)
                         .font(Theme.callout)
                         .foregroundStyle(Theme.color(.textSecondary))
@@ -68,14 +70,14 @@ extension ExampleCard {
 
         var title: String {
             switch self {
-            case .short: "Plan a trip"
-            case .longest: "Research Lead for the whole household"
+            case .short: "Research a market"
+            case .longest: "Research Lead for the whole sales team"
             }
         }
 
         var line: String {
             switch self {
-            case .short: "Where to go, what to book and when."
+            case .short: "How big it is, who sells there and what they charge."
             case .longest:
                 "Finds sources, reads them and writes short briefs you can read in a minute."
             }
@@ -84,7 +86,7 @@ extension ExampleCard {
 
     /// A card showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
-        self.init(symbol: "map", title: state.title, line: state.line, action: {})
+        self.init(symbol: "magnifyingglass", title: state.title, line: state.line, action: {})
     }
 }
 

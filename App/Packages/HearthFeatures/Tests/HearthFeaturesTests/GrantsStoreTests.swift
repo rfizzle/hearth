@@ -14,7 +14,7 @@ private func store() -> GrantsStore {
         client: client, relay: EventRelay(client: client), botID: Fixtures.bot.id)
 }
 
-private let extraFolder = "/Users/preview/Documents/Heat pumps"
+private let extraFolder = "/Users/preview/Documents/Pricing"
 
 @MainActor
 @Test func theRowsComeFromTheFixtureGrantsInTheCoresOrder() async {

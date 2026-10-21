@@ -35,7 +35,7 @@ private func store() -> ConversationStore {
     let store = store()
     await store.load()
     let count = store.messages.count
-    store.fill("Help me plan a week in Lisbon in May")
+    store.fill("Summarise this week's customer calls")
     #expect(store.messages.count == count)
     #expect(store.run == nil)
 }

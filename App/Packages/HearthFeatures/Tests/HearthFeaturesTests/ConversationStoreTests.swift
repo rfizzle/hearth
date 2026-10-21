@@ -123,7 +123,7 @@ private struct After {
     let store = store()
     await store.load()
     #expect(!store.isWorking)
-    await store.send("Add a section on running costs.")
+    await store.send("Add a section on the free plans.")
     #expect(store.messages.last == Fixtures.sendResponse.message)
     #expect(store.run?.id == Fixtures.sendResponse.run.id)
     #expect(store.isWorking)
@@ -164,7 +164,7 @@ private struct After {
     var done = Fixtures.sendResponse.run
     done.state = .done
     await store.handle(.with { $0.event = .runChanged(.with { $0.run = done }) })
-    await store.send("Add a section on running costs.")
+    await store.send("Add a section on the free plans.")
     #expect(store.run?.state == .done)
     #expect(!store.isWorking)
 }

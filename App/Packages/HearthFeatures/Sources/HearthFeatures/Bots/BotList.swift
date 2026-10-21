@@ -114,6 +114,7 @@ public struct TeamEmptyView: View {
             ("research", "magnifyingglass"), ("writ", "square.and.pencil"),
             ("schedul", "calendar"), ("edit", "pencil.line"), ("account", "chart.pie"),
             ("book", "book"), ("plan", "map"), ("assist", "tray.full"),
+            ("market", "megaphone"), ("financ", "chart.bar.doc.horizontal"),
         ]
         return symbols.first { role.contains($0.0) }?.1 ?? "person.crop.circle"
     }

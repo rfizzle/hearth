@@ -107,37 +107,37 @@ extension SetupScript {
             question: "What do you want to get done?",
             secondLine: "Tell me in your own words.",
             example:
-                "I want to start a newsletter for the studio. About 400 people are on the old "
-                + "mailing list and there is no template yet. I'd like the first issue out "
-                + "before the end of November.",
+                "We are launching our new API tier next month. About 400 customers are on the "
+                + "starter plan, and there is no pricing page or launch email yet. I'd like it "
+                + "live before the end of November.",
             seeds: "goal"),
         fields: [
             Field(
                 id: "name", label: "Name", question: "What should we call it?",
                 secondLine: "Short; it\u{2019}s the name in the sidebar.",
-                example: "Launch the newsletter", widget: .line(80)),
+                example: "Launch the API tier", widget: .line(80)),
             Field(
                 id: "done_when", label: "Done when",
                 question: "How will we know it\u{2019}s done?",
                 secondLine: "One sentence that is true exactly when it is.",
-                example: "The first issue has gone out to the list",
+                example: "The launch email has gone out to every customer",
                 widget: .line(4000)),
             Field(
                 id: "goal", label: "Goal", question: "What is it for?",
                 secondLine: "A sentence or two on why it matters.",
-                example: "Keep the studio in touch with the people who already like its work",
+                example: "Give our bigger customers a plan that lets them build on us",
                 widget: .lines(4000), group: "Brief"),
             Field(
                 id: "context", label: "Context",
                 question: "What should the team know before they start?",
                 secondLine: "What exists already, and anything they should not miss.",
-                example: "About 400 subscribers on the old mailing list and no template yet",
+                example: "About 400 customers on the starter plan and no pricing page yet",
                 widget: .lines(4000), group: "Brief"),
             Field(
                 id: "done_looks_like", label: "What done looks like",
                 question: "What does finished look like?",
                 secondLine: "The things that will exist when it is done.",
-                example: "A template, a first issue and a sending schedule",
+                example: "A pricing page, a launch email and a help article",
                 widget: .lines(4000), group: "Brief"),
             Field(
                 id: "target_date", label: "Target date", question: "When should it be done by?",

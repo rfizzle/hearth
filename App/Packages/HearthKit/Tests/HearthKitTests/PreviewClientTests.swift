@@ -51,7 +51,7 @@ import Testing
 
     let made = try await client.createProject(
         .with {
-            $0.name = "Plan the party"
+            $0.name = "Plan the launch event"
             $0.brief = Fixtures.projects[1].brief
         })
     #expect(made.state == .active)
@@ -77,10 +77,10 @@ import Testing
     let edited = try await client.updateProject(
         .with {
             $0.id = "project-office"
-            $0.name = "Move the studio"
+            $0.name = "Move to Canal Road"
             $0.targetDate = "2027-01-10"
         })
-    #expect(edited.name == "Move the studio")
+    #expect(edited.name == "Move to Canal Road")
     #expect(edited.targetDate == "2027-01-10")
     #expect(edited.folderPath == Fixtures.projects[1].folderPath)
     await #expect(throws: PreviewError.self) {
@@ -103,7 +103,7 @@ import Testing
 }
 
 @Test func draftProjectServesTheFixtureWithTwoConcerns() async throws {
-    let draft = try await PreviewClient().draftProject(description: "Start a newsletter")
+    let draft = try await PreviewClient().draftProject(description: "Launch our API tier")
     #expect(draft == Fixtures.projectDraft)
     #expect(draft.concerns.map(\.field) == ["done_when", "name"])
     #expect(draft.concerns[0].suggestion.isEmpty == false)
@@ -174,8 +174,8 @@ import Testing
     #expect(decided.item.state == .closed && decided.item.decision == .deny)
     #expect(decided.item.outcome == "Denied")
 
-    let answered = try await client.answer(itemID: Fixtures.question.id, "Both kinds")
-    #expect(answered.item.state == .closed && answered.item.answer == "Both kinds")
+    let answered = try await client.answer(itemID: Fixtures.question.id, "The wider market")
+    #expect(answered.item.state == .closed && answered.item.answer == "The wider market")
 
     let acknowledged = try await client.acknowledge(itemID: Fixtures.failure.id)
     #expect(acknowledged.state == .closed)

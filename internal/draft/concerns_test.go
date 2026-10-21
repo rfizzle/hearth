@@ -10,11 +10,11 @@ import (
 )
 
 const concernsArray = `"concerns": [` +
-	`{"field": "goal", "concern": "Too broad.", "suggestion": "Ship the first issue."}, ` +
+	`{"field": "goal", "concern": "Too broad.", "suggestion": "Ship the launch email."}, ` +
 	`{"field": "tier", "concern": "Not a field.", "suggestion": ""}]`
 
 var wantConcerns = []concern.Concern{
-	{Field: "goal", Concern: "Too broad.", Suggestion: "Ship the first issue."},
+	{Field: "goal", Concern: "Too broad.", Suggestion: "Ship the launch email."},
 	{Field: "tier", Concern: "Not a field.", Suggestion: ""},
 }
 

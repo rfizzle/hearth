@@ -44,7 +44,7 @@ extension SuggestionChip {
         var text: String {
             switch self {
             case .short: "Remember that I prefer short answers"
-            case .longest: "What would a heat pump cost for a small house?"
+            case .longest: "What do our competitors charge for API access?"
             }
         }
     }

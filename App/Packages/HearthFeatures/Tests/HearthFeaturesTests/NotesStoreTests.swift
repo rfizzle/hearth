@@ -83,7 +83,7 @@ private func noteEvents() -> [Hearth_V1_SubscribeResponse] {
     await store.handle(events[1])
     #expect(
         store.notes.first { $0.id == "note-2" }?.text
-            == "The owner's house is a 1930s semi in Leeds.")
+            == "Our product is an AI writing tool for teams of five to fifty.")
     #expect(store.notes.count == 6)
 
     await store.handle(events[2])

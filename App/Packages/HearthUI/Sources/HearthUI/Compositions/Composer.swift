@@ -212,9 +212,9 @@ extension Composer {
         var draft: String {
             switch self {
             case .empty, .waiting, .targeted: ""
-            case .drafted, .working, .twoChips: "Add a section on running costs."
+            case .drafted, .working, .twoChips: "Add a section on the free plans."
             case .threeLines:
-                "Add a section on running costs.\nKeep it to one paragraph.\nUse pounds, not dollars."
+                "Add a section on the free plans.\nKeep it to one paragraph.\nPrices per month, not per call."
             }
         }
     }

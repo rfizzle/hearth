@@ -119,10 +119,10 @@ private func integrationEvent() -> Hearth_V1_SubscribeResponse {
     onboarding.next()
     #expect(onboarding.step == .nameAndFolder)
     #expect(!onboarding.canFinish)
-    onboarding.name = "Harbor Street Studio"
+    onboarding.name = "Harbor Labs"
     onboarding.path = "/Users/test/Elsewhere"
     await onboarding.done()
-    #expect(onboarding.org?.name == "Harbor Street Studio")
+    #expect(onboarding.org?.name == "Harbor Labs")
     #expect(onboarding.org?.workspacePath == "/Users/test/Elsewhere")
     #expect(onboarding.error == nil)
 }

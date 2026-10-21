@@ -15,20 +15,20 @@ import (
 	"github.com/rfizzle/hearth/internal/project"
 )
 
-const strictProject = "```json\n" + `{"name": " Launch the newsletter ", "goal": "Send the first issue.", "context": "400 subscribers.", ` +
-	`"done_looks_like": "A template and a first issue.", "done_when": "The first issue is in 400 inboxes.", "target_date": "2026-11-20"}` + "\n```"
+const strictProject = "```json\n" + `{"name": " Launch the API tier ", "goal": "Send the launch email.", "context": "400 customers.", ` +
+	`"done_looks_like": "A pricing page and a launch email.", "done_when": "The launch email is in 400 inboxes.", "target_date": "2026-11-20"}` + "\n```"
 
 func TestDraftProject_ReadsTheStrictShape(t *testing.T) {
 	m := &model{reply: "Here you go:\n" + strictProject + "\nHope that helps."}
-	got, err := draft.DraftProject(t.Context(), draft.ProjectInput{Description: "start a newsletter", Stream: m.stream})
+	got, err := draft.DraftProject(t.Context(), draft.ProjectInput{Description: "launch our API tier", Stream: m.stream})
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := draft.ProjectResult{
-		Name: "Launch the newsletter",
+		Name: "Launch the API tier",
 		Brief: project.Brief{
-			Goal: "Send the first issue.", Context: "400 subscribers.",
-			DoneLooksLike: "A template and a first issue.", DoneWhen: "The first issue is in 400 inboxes.",
+			Goal: "Send the launch email.", Context: "400 customers.",
+			DoneLooksLike: "A pricing page and a launch email.", DoneWhen: "The launch email is in 400 inboxes.",
 		},
 		TargetDate: "2026-11-20",
 	}
@@ -47,10 +47,10 @@ func TestDraftProject_ReadsTheStrictShape(t *testing.T) {
 			prompt = msg.Content
 		}
 	}
-	if prompt != "start a newsletter" {
+	if prompt != "launch our API tier" {
 		t.Errorf("the model was sent %q, want the paragraph as typed", prompt)
 	}
-	if !strings.Contains(system, "done_looks_like") || strings.Contains(system, "start a newsletter") {
+	if !strings.Contains(system, "done_looks_like") || strings.Contains(system, "launch our API tier") {
 		t.Errorf("the system text lacks the shape or holds the paragraph:\n%s", system)
 	}
 }

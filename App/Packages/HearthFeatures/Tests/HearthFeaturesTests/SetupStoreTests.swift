@@ -29,7 +29,7 @@ private func freshDefaults() -> UserDefaults {
     UserDefaults(suiteName: "setup-tests-\(UUID().uuidString)") ?? .standard
 }
 
-private let paragraph = "I want to start a studio newsletter."
+private let paragraph = "We are launching our new API tier next month."
 
 @MainActor
 @Test func aFullDraftGoesStraightToTheCardWithItsConcerns() async {
@@ -42,8 +42,8 @@ private let paragraph = "I want to start a studio newsletter."
     #expect(store.step == .card)
     #expect(store.progress == "Last step")
     #expect(store.primaryLabel == "Create")
-    #expect(store.drafts["name"]?.text == "Launch the newsletter")
-    #expect(store.drafts["done_when"]?.text == "The first issue has gone out.")
+    #expect(store.drafts["name"]?.text == "Launch the API tier")
+    #expect(store.drafts["done_when"]?.text == "The launch email has gone out.")
     #expect(store.drafts["target_date"]?.date != nil)
     #expect(store.concerns(for: "done_when").count == 1)
     #expect(store.concerns(for: "name").count == 1)
@@ -99,7 +99,7 @@ private let paragraph = "I want to start a studio newsletter."
     #expect(store.concerns(for: "name").count == 1)
     store.keep(store.concerns(for: "name")[0])
     #expect(store.concerns.isEmpty)
-    #expect(store.drafts["name"]?.text == "Launch the newsletter")
+    #expect(store.drafts["name"]?.text == "Launch the API tier")
 }
 
 @MainActor
@@ -117,8 +117,8 @@ private let paragraph = "I want to start a studio newsletter."
     #expect(store.step == .asking("name"))
     #expect(store.progress == "A few more things")
     for (id, text) in [
-        ("name", "Newsletter"), ("done_when", "The first issue is out."),
-        ("context", "400 subscribers."), ("done_looks_like", "A first issue."),
+        ("name", "API tier"), ("done_when", "The API tier is live."),
+        ("context", "400 customers."), ("done_looks_like", "A pricing page."),
     ] {
         #expect(store.step == .asking(id))
         store.drafts[id, default: WidgetDraft()].text = text
@@ -167,12 +167,12 @@ private let paragraph = "I want to start a studio newsletter."
     let store = makeSetup(canDraft: false)
     store.paragraph = paragraph
     await store.draft()
-    store.drafts["name", default: WidgetDraft()].text = "Newsletter"
+    store.drafts["name", default: WidgetDraft()].text = "API tier"
     await store.next()
     #expect(store.step == .asking("done_when"))
     store.back()
     #expect(store.step == .asking("name"))
-    #expect(store.drafts["name"]?.text == "Newsletter")
+    #expect(store.drafts["name"]?.text == "API tier")
     store.back()
     #expect(store.step == .opener)
     #expect(store.paragraph == paragraph)
@@ -187,8 +187,9 @@ private let paragraph = "I want to start a studio newsletter."
     store.drafts["context", default: WidgetDraft()].text = "  Started in March.  "
     await store.primary()
     guard case .project(let project) = try #require(store.outcome) else { return }
-    #expect(project.name == "Launch the newsletter")
-    #expect(project.brief.doneWhen == "The first issue has reached every address on the list")
+    #expect(project.name == "Launch the API tier")
+    #expect(
+        project.brief.doneWhen == "The launch email has reached every customer on the starter plan")
     #expect(project.brief.context == "Started in March.")
     #expect(project.brief.goal == Fixtures.projectDraft.brief.goal)
     #expect(project.targetDate == "2026-11-20")
@@ -204,11 +205,11 @@ private let paragraph = "I want to start a studio newsletter."
     #expect(!store.canGoBack)
     #expect(store.canContinue)
     #expect(store.drafts["target_date"]?.date.map(ProjectRequest.text(from:)) == "2026-11-20")
-    store.drafts["name", default: WidgetDraft()].text = "Newsletter, first issue"
+    store.drafts["name", default: WidgetDraft()].text = "API tier, first release"
     await store.primary()
     guard case .project(let saved) = try #require(store.outcome) else { return }
     #expect(saved.id == project.id)
-    #expect(saved.name == "Newsletter, first issue")
+    #expect(saved.name == "API tier, first release")
     #expect(saved.brief == project.brief)
     #expect(saved.targetDate == "2026-11-20")
 }

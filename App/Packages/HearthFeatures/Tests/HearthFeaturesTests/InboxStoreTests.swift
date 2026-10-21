@@ -83,9 +83,9 @@ private func closed(_ item: Hearth_V1_InboxItem) -> Hearth_V1_InboxItem {
 
     let typed = await loadedStore()
     await typed.answer(
-        itemID: Fixtures.question.id, text: "Air-source, and a line on ground-source")
+        itemID: Fixtures.question.id, text: "The three, and a line on the wider market")
     #expect(
-        typed.answered[Fixtures.question.id]?.answer == "Air-source, and a line on ground-source")
+        typed.answered[Fixtures.question.id]?.answer == "The three, and a line on the wider market")
     await typed.handle(changed(closed(Fixtures.question)))
     #expect(typed.items(in: .needsDecision).map(\.kind) == [.approval, .question])
 }

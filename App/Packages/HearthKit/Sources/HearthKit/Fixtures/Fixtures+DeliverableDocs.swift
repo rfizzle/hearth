@@ -32,8 +32,8 @@ extension Fixtures {
 
     /// The measure ids the kitchen sink binds, as the core resolved them.
     public static let costMeasure = "usage.cost/org/\(measureMonth)"
-    public static let tasksMeasure = "project.tasks/project-newsletter"
-    public static let lightMeasure = "project.light/project-newsletter"
+    public static let tasksMeasure = "project.tasks/project-launch"
+    public static let lightMeasure = "project.light/project-launch"
 
     /// Every kind of widget in one dashboard, as the core writes it: sorted
     /// keys, explicit columns, a bound metric with the time it was read.
@@ -46,8 +46,8 @@ extension Fixtures {
                "format": "currency", "kind": "metric", "label": "Spent this month",
                "measure": "\(costMeasure)", "value": 12.4},
               {"as_of": "2026-10-20T09:30Z", "caption": "3 of 7 tasks done", "done": 3, "kind": "progress",
-               "label": "Launch the newsletter", "measure": "\(tasksMeasure)", "total": 7},
-              {"as_of": "2026-10-20T09:30Z", "kind": "light", "label": "Launch the newsletter",
+               "label": "Launch the API tier", "measure": "\(tasksMeasure)", "total": 7},
+              {"as_of": "2026-10-20T09:30Z", "kind": "light", "label": "Launch the API tier",
                "measure": "\(lightMeasure)", "tone": "attention", "word": "Waiting on you"}
             ]},
             {"columns": 2, "heading": "Trends", "widgets": [
@@ -63,10 +63,10 @@ extension Fixtures {
             {"columns": 1, "heading": "Open items", "widgets": [
               {"columns": [{"header": "Item"}, {"header": "Owner"}, {"align": "right", "header": "Due"}],
                "footer": ["Total", "", 2], "kind": "table",
-               "rows": [["Newsletter copy", "Dana", "Fri"], ["Venue shortlist", "Sam", 3]],
+               "rows": [["Launch email", "Dana", "Fri"], ["Pricing page", "Sam", 3]],
                "title": "Open items"},
-              {"items": [{"text": "Send the first issue"},
-                         {"detail": "Confirmed Tuesday", "done": true, "text": "Book the venue"}],
+              {"items": [{"text": "Send the launch email"},
+                         {"detail": "Confirmed Tuesday", "done": true, "text": "Set the price"}],
                "kind": "list", "style": "check", "title": "Next week"}
             ]},
             {"columns": 2, "heading": "Notes", "widgets": [
@@ -74,7 +74,7 @@ extension Fixtures {
                "markdown": "Two tasks are waiting on an answer. **Open the Inbox** to unblock them.",
                "title": "Needs you", "tone": "attention"},
               {"kind": "text",
-               "markdown": "## What happened\\n\\nThe first issue went out to 240 people; \
+               "markdown": "## What happened\\n\\nThe beta invite went out to 240 customers; \
         see [the plan](https://example.com/plan).\\n\\n- one\\n- two\\n\\n\
         | a | b |\\n|---|---|\\n| 1 | 2 |\\n"}
             ]}
@@ -110,7 +110,7 @@ extension Fixtures {
     }()
 
     /// What a live read of the kitchen sink's measures returns: the org has
-    /// cost $3.45, the newsletter is 4 of 7 and on track.
+    /// cost $3.45, the launch is 4 of 7 and on track.
     public static let liveMeasures: [String: Hearth_V1_MeasureValue] = [
         costMeasure: .with {
             $0.id = costMeasure
@@ -123,7 +123,7 @@ extension Fixtures {
         tasksMeasure: .with {
             $0.id = tasksMeasure
             $0.kind = .progress
-            $0.label = "Tasks done · Launch the newsletter"
+            $0.label = "Tasks done · Launch the API tier"
             $0.unit = "count"
             $0.done = 4
             $0.total = 7
@@ -132,7 +132,7 @@ extension Fixtures {
         lightMeasure: .with {
             $0.id = lightMeasure
             $0.kind = .light
-            $0.label = "Project status · Launch the newsletter"
+            $0.label = "Project status · Launch the API tier"
             $0.tone = .positive
             $0.word = "On track"
             $0.asOf = time(0)

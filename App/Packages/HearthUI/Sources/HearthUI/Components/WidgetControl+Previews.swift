@@ -28,7 +28,7 @@ enum WidgetSample {
         case .freeText:
             .with {
                 $0.freeText = .with {
-                    $0.placeholder = "Walls, windows, the boiler you have now…"
+                    $0.placeholder = "Plans, prices, the customers you lose to them…"
                     $0.maxLength = 120
                     $0.multiline = true
                 }
@@ -59,7 +59,7 @@ enum WidgetSample {
         $0.singleChoice = .with {
             $0.options = [
                 option("one-page", "One page", "The short brief you asked for"),
-                option("two-pages", "Two pages", "Room for a running-cost table"),
+                option("two-pages", "Two pages", "Room for a price table"),
                 option("slides", "Five slides"),
             ]
             $0.allowOther = true
@@ -69,9 +69,9 @@ enum WidgetSample {
     private static let multiple = Hearth_V1_Widget.with {
         $0.multipleChoice = .with {
             $0.options = [
-                option("living", "Living room"), option("kitchen", "Kitchen"),
-                option("bedrooms", "Bedrooms"), option("bathroom", "Bathroom"),
-                option("loft", "Loft", "Not insulated yet"),
+                option("northwind", "Northwind"), option("quillmate", "Quillmate"),
+                option("draftly", "Draftly"), option("penwise", "Penwise"),
+                option("scribeworks", "Scribeworks", "Sells only to large firms"),
             ]
             $0.max = 3
         }
@@ -109,11 +109,11 @@ enum WidgetSample {
     private static func fillValid(_ draft: inout WidgetDraft, _ kind: Kind) {
         switch kind {
         case .single: draft.choice = "two-pages"
-        case .multiple: draft.choices = ["kitchen", "loft"]
-        case .freeText: draft.text = "Solid brick walls, no cavity, a gas boiler from 2009."
+        case .multiple: draft.choices = ["quillmate", "scribeworks"]
+        case .freeText: draft.text = "Starter is $20 a month, and most customers ask about the API."
         case .yesNo: draft.yes = true
         case .date: draft.date = localDay(2026, 10, 24)
-        case .path: draft.path = Fixtures.bot.folderPath + "/Heat pump brief.md"
+        case .path: draft.path = Fixtures.bot.folderPath + "/Competitor pricing brief.md"
         case .scale: draft.scale = 4
         }
     }
@@ -121,10 +121,11 @@ enum WidgetSample {
     private static func fillInvalid(_ draft: inout WidgetDraft, _ kind: Kind) {
         switch kind {
         case .single: draft.choosesOther = true
-        case .multiple: draft.choices = ["living", "kitchen", "bedrooms", "loft"]
+        case .multiple: draft.choices = ["northwind", "quillmate", "draftly", "scribeworks"]
         case .freeText:
             draft.text = String(
-                repeating: "Solid brick walls, no cavity, a gas boiler from 2009. ", count: 3)
+                repeating: "Starter is $20 a month, and most customers ask about the API. ",
+                count: 3)
         case .date: draft.date = localDay(2026, 12, 25)
         // Nothing can be out of bounds here: a required control left empty.
         case .yesNo, .path, .scale: break

@@ -21,7 +21,7 @@ extension SetupScript {
             question: "Who do you need, and what would they do for you?",
             secondLine: "Tell me in your own words.",
             example:
-                "I need someone to keep track of the studio's invoices. Chase the ones that are "
+                "I need someone to keep track of our invoices. Chase the customers who pay "
                 + "late, tell me each Friday what is still outstanding, and never pay anything "
                 + "without asking me first.",
             seeds: "job_description"),

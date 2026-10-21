@@ -58,8 +58,8 @@ func checkOnboardingFlow(t *testing.T, c clients, r *rig) {
 	}
 
 	tpls := unary(t, c.bot.ListTemplates, &hearthv1.ListTemplatesRequest{}).GetTemplates()
-	if len(tpls) != 3 || tpls[0].GetJobDescription() == "" || len(tpls[0].GetIntroduction().GetHow()) != 3 || len(tpls[0].GetIntroduction().GetTryAsking()) != 3 {
-		t.Fatalf("ListTemplates = %v, want three, each with its introduction", tpls)
+	if len(tpls) != 5 || tpls[0].GetJobDescription() == "" || len(tpls[0].GetIntroduction().GetHow()) != 3 || len(tpls[0].GetIntroduction().GetTryAsking()) != 3 {
+		t.Fatalf("ListTemplates = %v, want five, each with its introduction", tpls)
 	}
 	if in := office[0].GetIntroduction(); !strings.HasPrefix(in.GetPurpose(), "I run your office.") || len(in.GetHow()) != 3 || len(in.GetTryAsking()) != 3 {
 		t.Fatalf("the Chief of Staff's introduction = %v, want the template's", in)

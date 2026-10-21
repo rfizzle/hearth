@@ -81,12 +81,12 @@ extension FileRow {
                 Fixtures.briefFile
             case .thumbnail:
                 .with {
-                    $0.name = "Heat pump quotes.pdf"
+                    $0.name = "Q3 sales figures.pdf"
                     $0.path = Fixtures.bot.folderPath + "/" + $0.name
                 }
             case .longName:
                 .with {
-                    $0.name = "Heat pump grants and installers within twenty miles, 2026.md"
+                    $0.name = "Competitor pricing and plans for teams of five to fifty, 2026.md"
                     $0.path = Fixtures.bot.folderPath + "/" + $0.name
                 }
             }

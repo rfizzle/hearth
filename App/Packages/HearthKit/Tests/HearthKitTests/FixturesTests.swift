@@ -6,8 +6,8 @@ import Testing
 
 @testable import HearthKit
 
-@Test func theOrgHasThreeTemplatesTheChiefOfStaffAndOneBot() {
-    #expect(Fixtures.templates.count == 3)
+@Test func theOrgHasFourTemplatesTheChiefOfStaffAndOneBot() {
+    #expect(Fixtures.templates.count == 4)
     #expect(Fixtures.bot.dmConversationID == Fixtures.dmConversation.id)
     #expect(Fixtures.bot.folderPath.hasPrefix(Fixtures.org.workspacePath))
     #expect(Fixtures.bot.scope == .team)
