@@ -55,7 +55,10 @@ struct HearthApp: App {
         // the same window forward.
         WindowGroup(id: DeliverableChip.windowID, for: String.self) { $path in
             if let path {
-                DeliverableScreen(path: path)
+                // A new helper is a new session, so a new store over its client.
+                let session = appDelegate.model.session
+                DeliverableScreen(path: path, client: session?.client, relay: session?.relay)
+                    .id(session.map(ObjectIdentifier.init))
                     .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
                     .environment(\.openInBrowser, OpenInBrowserAction { Browser.open(path: $0) })
             }

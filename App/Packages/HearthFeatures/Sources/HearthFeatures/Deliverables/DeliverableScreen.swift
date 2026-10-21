@@ -2,8 +2,9 @@
 // the cards DeliverableView draws from the spec file, scrolling. The toolbar
 // has Show in Finder, Open PDF (Quick Look), Open in Browser when those files
 // are beside the spec, and a menu with Reload. The file is read when the
-// window opens and again each time it becomes the key window. A file that does
-// not decode is one plain sentence. Nothing here loads the page: Open in
+// window opens and again each time it becomes the key window; a bound widget
+// is live (the subtitle says so) while the window has the session's client. A
+// file that does not decode is one plain sentence. Nothing here loads the page: Open in
 // Browser hands it to the system.
 // See docs/design.md#window-anatomy, docs/decisions.md (D45)
 
@@ -22,9 +23,10 @@ public struct DeliverableScreen: View {
     @Environment(\.controlActiveState) private var activeState
     @State private var previewURL: URL?
 
-    /// A window for the spec file at `path`.
-    public init(path: String) {
-        _store = State(initialValue: DeliverableStore(path: path))
+    /// A window for the spec file at `path`; given the session's `client` and
+    /// `relay` its bound widgets are live.
+    public init(path: String, client: (any HearthClient)? = nil, relay: EventRelay? = nil) {
+        _store = State(initialValue: DeliverableStore(path: path, client: client, relay: relay))
     }
 
     /// A window over `store`, for the gallery and previews.
@@ -36,6 +38,7 @@ public struct DeliverableScreen: View {
         content
             .frame(minWidth: 480, minHeight: 320)
             .navigationTitle(store.title)
+            .navigationSubtitle(store.isLive ? "Live" : "")
             .toolbar { toolbar }
             .quickLookPreview($previewURL)
             .task { await store.load() }
@@ -50,7 +53,7 @@ public struct DeliverableScreen: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         case .shown(let spec):
             ScrollView {
-                DeliverableView(spec: spec, values: [:])
+                DeliverableView(spec: spec, values: store.values.isEmpty ? nil : store.values)
                     .padding(Theme.Spacing.xl)
             }
         case .unreadable:
@@ -85,6 +88,7 @@ extension DeliverableScreen {
     /// The states the gallery shows.
     public enum PreviewState: String, CaseIterable, Sendable {
         case dashboard
+        case live
         case undecodable
     }
 
@@ -96,6 +100,11 @@ extension DeliverableScreen {
             self.init(
                 store: DeliverableStore(
                     path: path, previewing: Fixtures.kitchenSink, hasPage: true, hasPDF: true))
+        case .live:
+            self.init(
+                store: DeliverableStore(
+                    path: path, previewing: Fixtures.kitchenSink, hasPage: true, hasPDF: true,
+                    values: Fixtures.liveMeasures))
         case .undecodable:
             self.init(store: DeliverableStore(path: path))
         }

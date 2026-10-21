@@ -27,6 +27,7 @@ extension PreviewClient {
         guard ids.count <= 100 else {
             throw PageRefusal(message: "at most 100 ids at a time; \(ids.count) were asked")
         }
+        measureReads.record(ids)
         return ids.map(measure)
     }
 
@@ -105,6 +106,17 @@ extension PreviewClient {
         default: .neutral
         }
     }
+}
+
+/// The reads of measures a PreviewClient has served.
+public final class PreviewMeasureReads: @unchecked Sendable {
+    private let lock = NSLock()
+    private var reads: [[String]] = []
+
+    /// The ids of each read, in order.
+    public var all: [[String]] { lock.withLock { reads } }
+
+    func record(_ ids: [String]) { lock.withLock { reads.append(ids) } }
 }
 
 /// The owner's templates PreviewClient serves, kept so a save or a delete

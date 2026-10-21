@@ -36,6 +36,8 @@ public struct PreviewClient: HearthClient {
 
     /// The bot requests this client has been given, for tests.
     public let botRequests = PreviewBotRequests()
+    /// How many reads of measures this client has served, for tests.
+    public let measureReads = PreviewMeasureReads()
     let projectList = ProjectList()
     let templateList = TemplateList()
 
