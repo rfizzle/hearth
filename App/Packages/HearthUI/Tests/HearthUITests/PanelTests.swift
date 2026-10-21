@@ -206,7 +206,7 @@ import Testing
 @Test func theDeliverableWidgetsDeclareTheirStates() {
     #expect(DeliverableView.PreviewState.allCases.count == 9)
     #expect(MetricTile.PreviewState.allCases.count == 5)
-    #expect(ChartCard.PreviewState.allCases.count == 5)
+    #expect(ChartCard.PreviewState.allCases.count == 7)
     #expect(ProgressCard.PreviewState.live.bound.live?.done == 4)
     #expect(LightCard.PreviewState.missing.bound.tone == .attention)
 }

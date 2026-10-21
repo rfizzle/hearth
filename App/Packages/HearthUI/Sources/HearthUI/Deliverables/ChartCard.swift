@@ -33,9 +33,19 @@ public struct ChartCard: View {
     }
 
     let shape: Shape
+    @State private var category: String?
+    @State private var angle: Double?
 
     public init(_ shape: Shape) {
+        self.init(shape, category: nil, angle: nil)
+    }
+
+    /// A chart with the pointer already on `category` or `angle`, for the
+    /// gallery and previews.
+    init(_ shape: Shape, category: String?, angle: Double?) {
         self.shape = shape
+        _category = State(initialValue: category)
+        _angle = State(initialValue: angle)
     }
 
     public var body: some View {
@@ -71,7 +81,9 @@ public struct ChartCard: View {
                     )
                     .foregroundStyle(by: .value("Series", point.series))
                 }
+                rule(data)
             }
+            .chartXSelection(value: $category)
             .modifier(Axes(chart: data))
             .chartForegroundStyleScale(
                 domain: data.series.map(\.name), range: Self.hues(data.series.count))
@@ -93,7 +105,9 @@ public struct ChartCard: View {
                         .position(by: .value("Series", point.series))
                     }
                 }
+                rule(data)
             }
+            .chartXSelection(value: $category)
             .modifier(Axes(chart: data))
             .chartForegroundStyleScale(
                 domain: data.series.map(\.name), range: Self.hues(data.series.count))
@@ -109,12 +123,43 @@ public struct ChartCard: View {
                 domain: pie.slices.map(\.label), range: Self.hues(pie.slices.count)
             )
             .chartLegend(position: .trailing, alignment: .center)
+            .chartAngleSelection(value: $angle)
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    if let angle, let callout = ChartCallout.slice(pie, at: angle) {
+                        if let frame = proxy.plotFrame {
+                            ChartCalloutView(callout: callout)
+                                .position(x: geometry[frame].midX, y: geometry[frame].midY)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The rule line and callout at the category the pointer is on.
+    @ChartContentBuilder private func rule(_ data: Deliverable.Chart) -> some ChartContent {
+        if let category, let callout = ChartCallout.category(data, category) {
+            RuleMark(x: .value("Category", category))
+                .foregroundStyle(Theme.color(.textSecondary).opacity(0.4))
+                .lineStyle(StrokeStyle(lineWidth: 1))
+                .annotation(
+                    position: .top, spacing: 0,
+                    overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+                ) {
+                    ChartCalloutView(callout: callout)
+                }
         }
     }
 
     /// The hues for `count` series in order, wrapping past six.
     nonisolated static func hues(_ count: Int) -> [Color] {
-        (0..<count).map { Theme.chart($0 % 6 + 1) }
+        (0..<count).map(hue)
+    }
+
+    /// The hue of the series or slice at `index`, wrapping past six.
+    nonisolated static func hue(_ index: Int) -> Color {
+        Theme.chart(index % 6 + 1)
     }
 
     /// One value of one series at one category.
@@ -183,13 +228,16 @@ extension ChartCard {
         case bar = "bar, side by side"
         case stacked = "bar, stacked"
         case pie
+        case lineHovered = "line, pointer on a point"
+        case pieHovered = "pie, pointer on a slice"
 
         var shape: Shape {
             let trends = Fixtures.kitchenSink.sections[1].widgets.map(\.content)
             switch (self, trends[0], trends[1], trends[2]) {
-            case (.line, .line(let data), _, _): return .line(data)
+            case (.line, .line(let data), _, _), (.lineHovered, .line(let data), _, _):
+                return .line(data)
             case (.bar, _, .bar(let data), _): return .bar(data)
-            case (.pie, _, _, .pie(let pie)): return .pie(pie)
+            case (.pie, _, _, .pie(let pie)), (.pieHovered, _, _, .pie(let pie)): return .pie(pie)
             case (.lineOne, _, _, _):
                 guard
                     case .line(let data) = Fixtures.deliverable("weekly-digest").sections[2]
@@ -214,7 +262,15 @@ extension ChartCard {
 
     /// A chart showing `state`, for the gallery and previews.
     public init(previewState state: PreviewState) {
-        self.init(state.shape)
+        let shape = state.shape
+        switch (state, shape) {
+        case (.lineHovered, .line(let data)):
+            self.init(shape, category: data.categories[data.categories.count / 2], angle: nil)
+        case (.pieHovered, .pie(let pie)):
+            self.init(shape, category: nil, angle: (pie.slices.first?.value ?? 0) / 2)
+        default:
+            self.init(shape)
+        }
     }
 }
 

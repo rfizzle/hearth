@@ -4,7 +4,8 @@
 // links. The text is model output, so the renderer is held in: images are not
 // loaded (both image providers draw nothing; the core refuses images anyway),
 // raw HTML is never interpreted, and a link opens in the system browser or
-// mail only when it is http, https or mailto. The callout uses the same
+// mail only when it is http, https or mailto, and shows the hand over a
+// paragraph that holds one. The callout uses the same
 // renderer. This is the one file that imports MarkdownUI.
 // See docs/decisions.md (D47, D48)
 
@@ -55,6 +56,16 @@ struct DeliverableMarkdown: View {
                 FontSize(body)
             }
             .link { ForegroundColor(.accentColor) }
+            .paragraph { configuration in
+                // MarkdownUI draws a paragraph as one Text with link runs, so the
+                // hand cannot follow a single link: it shows over a paragraph
+                // that holds one, and the I-beam stays over the rest.
+                configuration.label
+                    .fixedSize(horizontal: false, vertical: true)
+                    .relativeLineSpacing(.em(0.15))
+                    .markdownMargin(top: .zero, bottom: .em(1))
+                    .pointerStyle(hasLink(configuration.content.renderMarkdown()) ? .link : nil)
+            }
             .code {
                 FontFamilyVariant(.monospaced)
                 FontSize(.em(0.92))
@@ -81,6 +92,12 @@ struct DeliverableMarkdown: View {
                     .padding(.vertical, HearthDesign.Theme.Spacing.xs)
                     .padding(.horizontal, HearthDesign.Theme.Spacing.sm)
             }
+    }
+
+    /// Whether `markdown` holds a link a reader can click.
+    nonisolated static func hasLink(_ markdown: String) -> Bool {
+        guard let text = try? AttributedString(markdown: markdown) else { return false }
+        return text.runs.contains { $0.link != nil }
     }
 
     private static func heading(_ configuration: BlockConfiguration, scale: Double) -> some View {
