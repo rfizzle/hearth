@@ -32,30 +32,112 @@ public struct ChartCard: View {
         }
     }
 
+    /// How the card is drawn: in the grid with its hover controls, large over
+    /// the window with a close button, or bare for the saved image.
+    enum Mode {
+        case card
+        case expanded(close: @MainActor () -> Void)
+        case image
+    }
+
     let shape: Shape
+    let mode: Mode
     @State private var category: String?
     @State private var angle: Double?
+    @State private var isHovering: Bool
+    @State private var id = UUID()
+    @FocusState private var focus: ChartControl?
+    @Environment(\.chartZoom) private var zoom
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(_ shape: Shape) {
         self.init(shape, category: nil, angle: nil)
     }
 
-    /// A chart with the pointer already on `category` or `angle`, for the
-    /// gallery and previews.
-    init(_ shape: Shape, category: String?, angle: Double?) {
+    /// A chart with the pointer already on `category` or `angle`, or on the
+    /// card itself, for the gallery and previews.
+    init(
+        _ shape: Shape, category: String? = nil, angle: Double? = nil, hovering: Bool = false,
+        mode: Mode = .card
+    ) {
         self.shape = shape
+        self.mode = mode
         _category = State(initialValue: category)
         _angle = State(initialValue: angle)
+        _isHovering = State(initialValue: hovering)
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
             WidgetTitle(text: title)
             chart
-                .frame(minHeight: 180)
+                .frame(minHeight: isExpanded ? 360 : 180)
                 .accessibilityLabel(title)
         }
         .deliverableCard()
+        .overlay(alignment: .topTrailing) { controls }
+        .onHover { isHovering = $0 }
+        .contextMenu { menuItems(includingExpand: true) }
+        .modifier(ZoomSource(id: id, zoom: isCard ? zoom : nil))
+    }
+
+    private var isCard: Bool {
+        if case .card = mode { return true }
+        return false
+    }
+
+    private var isExpanded: Bool {
+        if case .expanded = mode { return true }
+        return false
+    }
+
+    /// The buttons at the top trailing corner: expand and a menu on a card,
+    /// the menu and close when large. They show under the pointer or when
+    /// the keyboard is on one.
+    @ViewBuilder private var controls: some View {
+        switch mode {
+        case .image:
+            EmptyView()
+        case .card, .expanded:
+            HStack(spacing: Theme.Spacing.xs) {
+                if isCard, let zoom {
+                    Button("Expand", systemImage: "arrow.up.left.and.arrow.down.right") {
+                        zoom.expand(id, shape)
+                    }
+                    .focused($focus, equals: .expand)
+                }
+                Menu("More", systemImage: "ellipsis.circle") {
+                    menuItems(includingExpand: false)
+                }
+                .menuIndicator(.hidden)
+                .focused($focus, equals: .more)
+                if case .expanded(let close) = mode {
+                    Button("Close", systemImage: "xmark.circle.fill", action: close)
+                        .keyboardShortcut(.cancelAction)
+                        .focused($focus, equals: .close)
+                }
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(Theme.color(.textSecondary))
+            .padding(Theme.Spacing.sm)
+            .opacity(isHovering || focus != nil || isExpanded ? 1 : 0)
+            .animation(Theme.motion(Theme.quick, reduceMotion: reduceMotion), value: isHovering)
+        }
+    }
+
+    /// Expand, Copy Data and Save Image…, in the more menu and the context menu.
+    @ViewBuilder private func menuItems(includingExpand: Bool) -> some View {
+        if includingExpand, isCard, let zoom {
+            Button("Expand", systemImage: "arrow.up.left.and.arrow.down.right") {
+                zoom.expand(id, shape)
+            }
+        }
+        Button("Copy Data", systemImage: "doc.on.doc") { ChartExport.copyData(shape) }
+        Button("Save Image…", systemImage: "square.and.arrow.down") {
+            ChartExport.saveImage(shape, title: title, scheme: scheme)
+        }
     }
 
     private var title: String {
@@ -223,6 +305,7 @@ private struct Bounds: ViewModifier {
 extension ChartCard {
     /// The states the gallery and previews show.
     public enum PreviewState: String, CaseIterable, Sendable {
+        case buttons = "chart, buttons on hover"
         case line = "line, two series"
         case lineOne = "line, one series"
         case bar = "bar, side by side"
@@ -234,7 +317,8 @@ extension ChartCard {
         var shape: Shape {
             let trends = Fixtures.kitchenSink.sections[1].widgets.map(\.content)
             switch (self, trends[0], trends[1], trends[2]) {
-            case (.line, .line(let data), _, _), (.lineHovered, .line(let data), _, _):
+            case (.line, .line(let data), _, _), (.lineHovered, .line(let data), _, _),
+                (.buttons, .line(let data), _, _):
                 return .line(data)
             case (.bar, _, .bar(let data), _): return .bar(data)
             case (.pie, _, _, .pie(let pie)), (.pieHovered, _, _, .pie(let pie)): return .pie(pie)
@@ -266,6 +350,8 @@ extension ChartCard {
         switch (state, shape) {
         case (.lineHovered, .line(let data)):
             self.init(shape, category: data.categories[data.categories.count / 2], angle: nil)
+        case (.buttons, _):
+            self.init(shape, hovering: true)
         case (.pieHovered, .pie(let pie)):
             self.init(shape, category: nil, angle: (pie.slices.first?.value ?? 0) / 2)
         default:

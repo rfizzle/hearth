@@ -5,7 +5,8 @@
 // window opens and again each time it becomes the key window; a bound widget
 // is live (the subtitle says so) while the window has the session's client. A
 // file that does not decode is one plain sentence. Nothing here loads the page: Open in
-// Browser hands it to the system.
+// Browser hands it to the system. A chart opened large is an overlay over the
+// whole window.
 // See docs/design.md#window-anatomy, docs/decisions.md (D45)
 
 import HearthDesign
@@ -24,6 +25,15 @@ public struct DeliverableScreen: View {
     @State private var previewURL: URL?
     @State private var templates: TemplatesStore?
     @State private var isSavingTemplate = false
+    @State private var expanded: ExpandedTarget?
+    @Namespace private var zoom
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The chart open large, and the card it zoomed from.
+    private struct ExpandedTarget {
+        let id: UUID
+        let shape: ChartCard.Shape
+    }
 
     /// A window for the spec file at `path`; given the session's `client` and
     /// `relay` its bound widgets are live.
@@ -45,6 +55,19 @@ public struct DeliverableScreen: View {
             .navigationSubtitle(store.isLive ? "Live" : "")
             .toolbar { toolbar }
             .quickLookPreview($previewURL)
+            .environment(
+                \.chartZoom,
+                ChartZoom(namespace: zoom) { id, shape in
+                    setExpanded(ExpandedTarget(id: id, shape: shape))
+                }
+            )
+            .overlay {
+                if let expanded {
+                    ExpandedChart(id: expanded.id, shape: expanded.shape, namespace: zoom) {
+                        setExpanded(nil)
+                    }
+                }
+            }
             .sheet(isPresented: $isSavingTemplate) {
                 if let templates {
                     SaveTemplateSheet(
@@ -56,6 +79,10 @@ public struct DeliverableScreen: View {
             .onChange(of: activeState) { _, state in
                 if state == .key { Task { await store.load() } }
             }
+    }
+
+    private func setExpanded(_ target: ExpandedTarget?) {
+        withAnimation(ExpandedChart.animation(reduceMotion: reduceMotion)) { expanded = target }
     }
 
     @ViewBuilder private var content: some View {

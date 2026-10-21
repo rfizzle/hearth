@@ -58,8 +58,18 @@ extension Catalog {
             GalleryPage(
                 package: package, name: "ChartCard",
                 states: GalleryState.each(ChartCard.PreviewState.self, width: wide) {
-                    ChartCard(previewState: $0)
+                    ZoomHost(state: $0)
                 }),
+            GalleryPage(
+                package: package, name: "ExpandedChart",
+                states: [
+                    GalleryState(
+                        name: "chart, expanded", width: 760,
+                        view: AnyView(ExpandedPreview(state: .line).frame(height: 560))),
+                    GalleryState(
+                        name: "pie, expanded", width: 760,
+                        view: AnyView(ExpandedPreview(state: .pie).frame(height: 560))),
+                ]),
             GalleryPage(
                 package: package, name: "TableCard",
                 states: GalleryState.each(TableCard.PreviewState.self, width: wide) {
@@ -96,5 +106,29 @@ extension Catalog {
                     UnsupportedCard(previewState: $0)
                 }),
         ]
+    }
+}
+
+/// An expanded chart over a stand-in window, for the gallery.
+private struct ExpandedPreview: View {
+    let state: ChartCard.PreviewState
+    @Namespace private var namespace
+
+    var body: some View {
+        ZStack {
+            Theme.color(.surfacePrimary)
+            ExpandedChart(previewState: state, namespace: namespace)
+        }
+    }
+}
+
+/// A chart card in a window that can expand it, for the gallery.
+private struct ZoomHost: View {
+    let state: ChartCard.PreviewState
+    @Namespace private var namespace
+
+    var body: some View {
+        ChartCard(previewState: state)
+            .environment(\.chartZoom, ChartZoom(namespace: namespace) { _, _ in })
     }
 }
