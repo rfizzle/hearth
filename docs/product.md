@@ -22,7 +22,7 @@ The org metaphor is doing three jobs, in this order of importance:
 
 1. **Scoping access.** "The Research team can read the web and my Research folder. Nobody can send email without asking me." People already understand roles and permissions in terms of jobs. This is the part of the metaphor that makes the app safe to give real access to.
 2. **Routing without thinking.** You tell the Chief of Staff what you want; it goes to the right team and comes back done. You never have to pick the right prompt, model or tool.
-3. **Repeatable work.** A team with a lead and a standing brief is a workflow you can run again ("Monday planning", "weekly reading digest") without writing automation.
+3. **Repeatable work.** A team with a lead and a standing brief is a workflow you can run again ("Monday planning", "weekly status report") without writing automation.
 
 It is explicitly **not** a simulation. Bots do not chat among themselves for colour. Every bot-to-bot message exists because of a task somebody assigned, and every one of them is visible to the owner in a thread. The published lessons on multi-agent systems are consistent: free-form agent conversation burns tokens and produces little, and users lose track of who is doing what. hearth's structure is the discipline that keeps delegation useful (see `model.md#orchestration`).
 
@@ -51,12 +51,15 @@ It is explicitly **not** a simulation. Bots do not chat among themselves for col
 - Run **one org per app instance**, owned by the single logged-in Mac user.
 - Let the owner **create bots** from role templates or from a plain-language job description, with a name, avatar, team, and access grants.
 - Organise bots into **teams**, each with exactly one **lead**; and **org-level bots** (at least the default **Chief of Staff**) that coordinate across teams.
-- Provide **three kinds of conversation**: direct messages with a bot, team channels, and task threads created by delegation.
+- Provide **four kinds of conversation**: direct messages with a bot, projects, and (planned) team channels and task threads created by delegation.
+- Group work into **projects**: a name, a four-part brief, a folder, a conversation of their own, and a status the app works out from the tasks.
 - Let any bot with the right scope **assign work** to a team or bot below it, with the result returned into the thread the owner can read.
 - Keep an **Inbox** of things that need the owner: approvals, questions from bots, finished deliverables.
 - Write deliverables as **files into a Workspace folder** the owner chooses (default `~/Documents/Hearth`), one subfolder per team.
+- Shape what bots produce into **reports and dashboards**: one page that opens in a browser, a PDF and a Word file, with live figures from the office's own numbers.
+- **Read** the files the owner drops in: PDF, Word, Excel, PowerPoint, RTF and pictures, with text recognition done in a sandboxed service.
 - Keep **memory in plain language**: a per-bot Notes list the owner can read and edit, and an org Handbook of pages shared with every bot.
-- Give bots **tools** limited to: reading and writing in granted folders, fetching web pages and searching the web, Calendar and Reminders, Contacts, running the owner's Shortcuts, and asking the owner a question. Each tool is granted per bot or per team.
+- Give bots **tools** limited to: reading, writing and rendering a Markdown file to PDF and Word in granted folders, writing a deliverable, fetching web pages and searching the web, Calendar and Reminders, Contacts, running the owner's Shortcuts, and asking the owner a question. Each tool is granted per bot or per team.
 - Support **recurring assignments** that run on a schedule while the app is running.
 - Show **usage and cost** per bot, team and month, with budgets that pause work when exceeded.
 - Support **multiple providers** through the llm library: ChatGPT plan sign-in (the only account-based sign-in; Anthropic and Google forbid subscription use from third-party apps, so those take API keys), Gemini, OpenRouter, and any OpenAI-compatible endpoint (which is how local models arrive). Model choice is presented as quality tiers, with the exact model under Advanced.
@@ -69,7 +72,7 @@ It is explicitly **not** a simulation. Bots do not chat among themselves for col
 - Native Swift/SwiftUI app with a bundled Go core that owns providers, the agent loop, orchestration, tools and storage. (D1, decided 2026-10-19)
 - Local-first: all data in SQLite and files under the user's control. No hearth server.
 - Stay free, open source and locally run: OpenAI's open-source sign-in programme excludes paid or hosted apps, and that programme is what makes "Sign in with ChatGPT" possible for a non-technical audience.
-- Follow the shhh conventions for Go: Makefile targets, golangci-lint, astimate ceilings, docs/ and .plan/ layout, E-/S- numbering.
+- Follow the shhh conventions for Go: Makefile targets, golangci-lint, astimate ceilings, docs/ layout.
 
 ### hearth WILL NOT (in this product, not just this release)
 

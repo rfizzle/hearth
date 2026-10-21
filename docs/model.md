@@ -88,7 +88,7 @@ No peer-to-peer assignment. No upward assignment (a member cannot give the lead 
 | tasks | The tasks that carry this project's reference (see Assignment, rule 9) |
 | folder | `Projects/<name>/` in the Workspace; the project's deliverables go here, team folders keep team-owned work |
 | conversation | The project's own conversation; its task threads nest under it |
-| budget | An optional cost cap on the project's tasks together, a total rather than a monthly figure because a project ends |
+| budget | Planned. An optional cost cap on the project's tasks together, a total rather than a monthly figure because a project ends |
 | state | `proposed` → `active` → `done` / `archived`. Only the owner moves it: confirming a proposal, marking it done, archiving it. Archived keeps the folder and the conversation; nothing is deleted. |
 | status | Derived by rule and set by nobody: the count of tasks in each state, shown as a pie with "3 of 7 done", and one light with its word: yellow "Waiting on you" when any task waits on the owner (a failed task with its Retry counts), red "Paused on budget" when any is paused on budget, green "On track" otherwise, none "No tasks yet" while it has no tasks. |
 

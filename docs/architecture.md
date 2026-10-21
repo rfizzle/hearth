@@ -29,7 +29,7 @@ Hearth.app
 
 **Why a subprocess and not a linked library.** Crash isolation (a Go panic cannot take the UI down), independent testing of the core from a CLI (`hearthd --repl`, like `shhh serve`), no cgo, no Go/Swift thread coexistence, and a contract that a future iOS companion could speak to a core running elsewhere. gomobile has no first-class macOS path; cgo c-shared makes streaming callbacks painful and couples the runtimes. (D2, decided 2026-10-19)
 
-**Why Connect-RPC over a Unix socket.** One proto file is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it works over a socket with no ports and no TLS. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19; D16 settled the transport: loopback TCP with a per-launch token)
+**Why Connect-RPC over loopback.** One proto package is the contract; generated Swift and Go clients; server-streaming maps directly onto token streaming; it needs no TLS on the loopback interface. JSON-RPC (shhh's `internal/rpc`) is the fallback if the Swift Connect toolchain proves heavy; the proto still defines the messages. (D3, decided 2026-10-19; D16 settled the transport: loopback TCP with a per-launch token)
 
 ### 2. Responsibilities
 
@@ -54,15 +54,15 @@ Hearth.app
 
 ### 3. The contract (sketch)
 
-One `hearth.v1` proto package, fourteen files. Built today:
+One `hearth.v1` proto package, sixteen files. Built today:
 
 ```
 HearthService     Ping, StreamHello (the spike)
 OrgService        GetOrg, UpdateOrg
-BotService        ListTemplates, CreateBot, ListBots, GetBot, DraftBot, UpdateBot, ListGrants, SetGrants, ListNotes, EditNote, DeleteNote, PinNote
+BotService        ListTemplates, CreateBot, ListBots, GetBot, DraftBot, CheckBot, UpdateBot, ListGrants, SetGrants, ListNotes, EditNote, DeleteNote, PinNote
 HandbookService   ListPages, PutPage, DeletePage (the pages every bot reads, with a context meter)
 ConversationService  ListConversations, GetConversation (with the latest run), ListMessages (paged), Send(returns run), Cancel, Retry
-ProjectService    ListProjects, CreateProject (or confirm a proposal), UpdateProject, MarkProjectDone, ArchiveProject
+ProjectService    ListProjects, DraftProject, CheckProject, CreateProject (or confirm a proposal), UpdateProject, MarkProjectDone, ArchiveProject
 InboxService      ListInbox, Decide(approval), Answer(question, or a widget), Acknowledge
 UsageService      Summary(by bot/month), SetBudgets, Resume
 ProviderService   ListAccounts, SetAPIKey, ClearCredential, StartChatGPTLogin (returns the page the app opens), ListKnownServices, ListServiceModels (before or after a key is saved), Tiers, SetTiers, SyncCredentials, ExportCredential
@@ -79,8 +79,10 @@ OrgService        ExportOrg, ImportOrg
 BotService        Delete
 TeamService       List, Create, Update, Delete
 TaskService       List, Get, Assign, Cancel, Retry, ListSchedules, UpsertSchedule
-NativeService (served by the app, called by the core; Ping and ExtractText are built, on unless the owner turns it off, and text recognition runs in a sandboxed XPC service the app kills on a timeout or crash, never in the app's own process; the rest planned): Ping, ExtractText, Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
+NativeService (the rest of it, served by the app and called by the core): Calendar*, Reminders*, Contacts*, RunShortcut, OnDeviceGenerate, StoreCredential/LoadCredential, Notify
 ```
+
+Built today, beside the list above: `NativeService` (served by the app, called by the core): Ping and ExtractText. It is on unless the owner turns it off, and text recognition runs in a sandboxed XPC service the app kills on a timeout or crash, never in the app's own process.
 
 Streaming: `Send` returns immediately; the token stream arrives on `Subscribe` as `MessageDelta{conversation, message, text}` so the UI has one place to consume events and reconnects are simple. A heartbeat keeps a quiet subscription under the client's idle timeout, and the app reconnects from the last sequence it saw.
 
@@ -112,7 +114,7 @@ Lifecycle: the app launches `hearthd` with a per-launch token, the core binds a 
 - **Developer ID, notarised, Sparkle 2 updates** first. A Mac App Store build is a possible later SKU that would lose Shortcuts execution, Mail automation and wide file access, and would need the helper signed with `app-sandbox` + `inherit`. (D5, decided 2026-10-19)
 - Licence MIT or Apache-2.0 to keep the App Store option open and to satisfy OpenAI's open-source sign-in programme. (D6, decided 2026-10-19)
 - Minimum macOS 26 (Foundation Models, Liquid Glass, current App Intents). Apple Silicon only unless there is a reason to pay for Intel. (D7, decided 2026-10-19)
-- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, skills-check, astimate ceilings), `make ci-swift` for Swift, a notarised build on tags.
+- CI: GitHub Actions on macOS runners: `make ci` for Go (fmt-check, vet, lint, test, docs-check, skills-check, proto-check, tokens-check, astimate ceilings), `make ci-swift` for Swift, a notarised build on tags.
 
 ### 7. What is lifted from shhh and how
 
@@ -134,7 +136,7 @@ internal/rpc                     Connect handlers; translate proto <-> domain; n
 internal/orchestrate             tasks, runs, scheduler, budgets, waits (model.md#orchestration)
 internal/assembly                a run's context within byte caps, dropped files, the summary and the notes' tidy
 internal/agent                   one bot's turn: the loop, tool rounds, retry, compaction (lifted from shhh)
-internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, internal/deliverable, internal/measure, internal/render/chart, internal/render/html, internal/render/paper, internal/render/docx, internal/render/fonts and internal/native exist; the rest of render is planned)
+internal/tools  internal/handbook  internal/meter  internal/provider  internal/integration  (internal/document, internal/deliverable, internal/measure, internal/render/chart, internal/render/html, internal/render/paper, internal/render/docx, internal/render/fonts and internal/native exist)
 internal/org                     domain types: Bot, Team, Grant, Conversation, Message, Task, Run
 internal/org/widget              the closed catalogue of controls a bot may ask with; stdlib only
 internal/org/intro               a bot's introduction card and the rule that assembles one; stdlib only
@@ -165,7 +167,8 @@ Rules:
 | `internal/org/memory` | Bot notes and handbook pages, their caps, and the pure rules for which pages a bot reads and how full the handbook is | new |
 | `internal/org/usage` | Usage records, the month's totals, budgets, and the rule that says how near a budget the spending is | new |
 | `internal/project` | Project types and the derived status rule | new |
-| `internal/draft` | Turns a few words from the owner into a proposed bot with one model call outside any conversation | new |
+| `internal/draft` | Turns a few words from the owner into a proposed bot, or a paragraph into a proposed project, with one model call outside any conversation | new |
+| `internal/draft/concern` | What looks weak about a project or a hire, by rule: the Chief of Staff's thoughts about one field each, in fixed words | new |
 | `internal/workspace` | The Hearth folder's layout and path containment | new |
 | `internal/store` | SQLite repositories, migrations, export/import | shhh pattern |
 | `internal/store/migrate` | The ordered schema steps and the runner that applies the ones a file has not seen | new |
@@ -178,7 +181,7 @@ Rules:
 | `internal/orchestrate/park` | What a run that waits on the owner leaves behind: the thread message and the Inbox item, the wording of each decision, the grant for an always-allow | new |
 | `internal/orchestrate/record` | What one run writes as it goes: its messages, steps and how it ended, stored and published; the agent's sink | new |
 | `internal/orchestrate/toolset` | The tools one run is handed, built from the bot's grants | new |
-| `internal/tools` | `Definition{Tool, Execute, Describe}` registry (`Describe` is planned); files, web, assign, ask_owner, remember | shhh shape, new contents |
+| `internal/tools` | `Definition{Tool, Execute, Describe}` registry; files, web, assign, ask_owner, remember | shhh shape, new contents |
 | `internal/tools/ask` | `ask_owner`: a question in words or with one control, refused before it waits when the control is malformed | new |
 | `internal/tools/propose` | `propose_project`: the Chief of Staff offers the owner a project as a card; the text is bounded before it is stored and nothing starts until the owner confirms | new |
 | `internal/tools/memory` | `remember`: appends one note for the calling bot through functions the orchestrator hands it, and says when the notes are full | new |
@@ -194,8 +197,9 @@ Rules:
 | `internal/render/fonts` | The embedded faces a PDF is set in, Source Sans 3 and Source Code Pro, with their licence | new |
 | `internal/tools/deliverables` | `deliverables.write`: validates before the gate, fills measures, writes the spec, the page and the PDF beside each other | new |
 | `internal/rpc/deliverables` | The handlers of `MeasureService` and `DeliverableService` | new |
-| `scripts/tokens` (planned) | Generates the chart hues and the Tailwind theme from the design tokens | new |
-| `scripts/tailwind` (planned) | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |
+| `scripts/tokens` | Generates the chart hues and the Tailwind theme from the design tokens | new |
+| `scripts/tokenscheck` | Fails when a colour pairing in the design tokens is below its WCAG 2.2 minimum in light or dark | new |
+| `scripts/tailwind` | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |
 | `internal/native` | Proxies to the app's NativeService, ExtractText first | new |
 | `internal/tools/files` | `files.read`, `files.write`, `files.render`, `files.delete` inside the folders a bot's grants name | new |
 | `internal/tools/web` | `web.fetch` of public pages under the address policy, and `web.search` behind a seam, Brave first | new |
@@ -217,7 +221,7 @@ Rules:
 | `internal/assembly` | A run's context, built in a fixed order within byte caps (framing, handbook, notes, summary, window, the parked round, attachments); dropped files brought where the bot may read them; and the side runs after a run: the conversation's summary and tidying a bot's notes | new |
 | `cmd/hearthd` | Assembly, `--repl` harness for driving the core without the app | new |
 
-Planned, with no directory yet: `internal/tools/describe` (plain-English effect strings for approval cards), and a scrub of tool results for key shapes. Bot notes live in `org/memory`, `tools/memory` and `assembly`.
+Planned, with no code yet: a scrub of tool results for key shapes. Bot notes live in `org/memory`, `tools/memory` and `assembly`.
 
 Each package states its contract the Go way: a `doc.go` whose package comment names the responsibility, the invariants the type system does not hold, and the seams it is handed. Behaviour that spans packages (assignment, approvals, budgets, schedules) is already written down in `model.md#orchestration`; code cites those headings. No per-package spec files and no approval states: shhh's convention, which has held up, rather than overwatch's, which became paperwork.
 
@@ -230,11 +234,10 @@ The packages listed as "lifted" are extracted from shhh into a shared Go module 
 Every change passes, in this order, before it lands:
 
 ```
-make fmt-check vet lint test docs-check     # shhh's set, same golangci config shape
-make astimate                                # astimate check --base <landing head>; new in hearth: wired into make ci
+make ci     # fmt-check vet lint test docs-check skills-check proto-check tokens-check astimate
 ```
 
-Once the proto exists, a check that the generated code is current joins them: buf lint and a breaking-change check against the last tag, with the committed generated code required to match.
+`proto-check` is buf lint and a breaking-change check against master. Whether the committed generated code matches the proto (`make proto-drift`) and the Tailwind build (`make tailwind-check`) need the network and run outside `make ci`.
 
 astimate: ship `astimate.yaml` as the embedded default from the astimate repo plus hearth's exemptions section. Capacity ceilings are absolute, so the package map above is designed with them in mind: `orchestrate` and `store` are the two packages most likely to approach a ceiling and are split by responsibility early (`orchestrate/schedule`, `store/migrate`) rather than later.
 

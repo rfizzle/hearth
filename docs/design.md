@@ -102,6 +102,26 @@ button; a folder is declined in a line under the chips. Any file chip opens in Q
 and from its context menu. A summary of earlier turns is a quiet row above the oldest message,
 "Earlier in this conversation", that opens to show it.
 
+A finished run folds into one quiet line, "Worked for 4m 12s", closed. Opened, it shows what the
+bot said as plain text and each unbroken burst of tool calls as one line with one icon, counted by
+rule ("Read 3 files, searched the web, wrote 1 file"); the files a burst made stay under its line.
+Opening moves with the layout move, so the answer below slides rather than jumps. A run with no
+known times reads "Worked on this".
+
+The transcript follows new messages while the bottom is in view and stops once the person scrolls
+up. Then a round glass button floats above the composer to jump to the latest message. While the
+bot is still writing it widens into a capsule that says "Still writing" beside the arrow, so work
+is not missed and the person is not pulled down to it.
+
+A chart is a card with hover callouts. Its menu has Expand, Copy Data (tab-separated text that
+Numbers and Excel paste as a table) and Save Image (a PNG at twice the size). Expanded, it grows
+out of its card over a dimmed backdrop, up to 1000 points wide, and closes on a button, Escape or a
+click outside; under Reduce Motion it fades in instead.
+
+A conversation that produced files gets a small glass card at the top edge of its transcript: the
+deliverables as chips, then other files as rows, five at most with "Show all". The header folds it
+into one pill, "Produced 4 items", and back; the fold moves with the quick token.
+
 A bot's question is a card with the question, the control it asked for (a choice, a date, a
 folder) and one prominent button to answer. An answered card goes quiet: no stroke, no buttons,
 the choice in words where the control was.
@@ -120,7 +140,9 @@ per tier with a menu of the models it may use; a bot's own model is pinned under
 
 An empty screen says what is missing and offers the one thing to do about it, in plain words
 ("Nobody here yet. Hire someone to get started."), with the system's empty-state layout. Nothing
-apologises and nothing lists features.
+apologises and nothing lists features. The one exception is an empty team or project list, which
+offers a few example cards: a symbol, a title and one line, such as "Research a market". Pressing
+one opens the usual setup with the example filled in and creates nothing.
 
 A conversation with a bot opens with the bot's introduction on a card, not in the flat transcript:
 who it is, what it is here for, three lines on how to work with it and three things to try, the

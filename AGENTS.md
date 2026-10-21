@@ -40,32 +40,23 @@ rule); `documentation` is hearth's delta; `sound-patterns` settles style
 
 | Task | Command |
 |------|---------|
-| Build the helper | `make build` |
-| Test one package | `go test ./internal/<pkg>` |
-| Hermetic tests | `make test` |
-| Format | `make fmt` |
-| Static checks | `make fmt-check vet lint` |
+| Build the helper / Hearth.app | `make build` / `make app-build` |
+| Test one package / all, hermetic | `go test ./internal/<pkg>` / `make test` |
+| Format / static checks | `make fmt` / `make fmt-check vet lint` |
 | Docs citations and ids | `make docs-check` |
 | Regenerate the contract / lint it and check breaking changes (offline) | `make proto` / `make proto-check` |
 | Generated code matches the contract / the Tailwind CSS (network) | `make proto-drift` / `make tailwind-check` |
-| Shared skills match their source | `make skills-check` |
-| Refresh shared skills from `../skills` | `make skills-sync` |
+| Shared skills match their source / refresh from `../skills` | `make skills-check` / `make skills-sync` |
 | Contract / integration tests | `make test-contract` / `make test-integration` |
-| CI pipeline | `make ci` |
-| Everything before a push | `make prepush` |
-| Quality ceiling | `make astimate` |
-| Known vulnerabilities | `make vulncheck` |
-| Install the opt-in pre-push hook | `make hooks` |
+| CI pipeline / everything before a push | `make ci` / `make prepush` |
+| Quality ceiling / known vulnerabilities | `make astimate` / `make vulncheck` |
 | Sign in with ChatGPT, then try it (live, by hand) | `hearthd login chatgpt`, `hearthd say "hello"` |
 | Serve the contract by hand (data in `--data-dir`, default Application Support) | `hearthd serve --token <t> --data-dir <dir>` |
 | Swift gates / format Swift | `make ci-swift` / `make swift-fmt` |
 | Open the gallery (`GALLERY_ARGS="--page <Name>"`) | `make gallery-open` |
 | Capture a gallery page to `.cache/gallery/<Name>.png` / record the Motion page playing to `Motion.mov` | `make gallery-shot PAGE=<Name>` / `make gallery-record` |
-| Build Hearth.app | `make app-build` |
-| Sign the bundle | `make app-sign` |
-| Notarise and staple | `make notarize` |
-| Check signatures | `make app-verify` |
-| List every target | `make help` |
+| Sign the bundle / notarise and staple / check signatures | `make app-sign` / `make notarize` / `make app-verify` |
+| Install the opt-in pre-push hook / list every target | `make hooks` / `make help` |
 
 Agents run `make ci`; the orchestrator runs `make prepush`, the same checks, at
 every checkpoint and before a push. The hook `make hooks` installs runs it; it
@@ -116,12 +107,21 @@ internal/             dependencies point down only
   framing/            the fixed DM text around a job description, embedded and rendered (exists)
   provider/           accounts, the key store seam, tier to model, login for the app (exists); gateway/ is the address check, the model list and the known services, models/ the choice among models
   integration/        the web-search key over the key store, and the searcher a run gets (exists)
-  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal); document/ reads a file as text, PDF, Word, PowerPoint, CSV, Excel and RTF, and an image's kind and size (exists, below tools); render/chart is the chart layout and its SVG, render/html a spec as one inert web page, render/paper a Markdown file as a PDF in the print style and paper/grid a spec as one, render/docx the same as a Word file and render/fonts its embedded faces (exist); native/ asks the app to read picture pages (exists); deliverables/ writes a spec, its page and its PDF (exists)
+  tools/              the tool registry, and the check every call passes against the bot's grants (exists; ask/ is ask_owner, propose/ the Chief of Staff's project proposal, deliverables/ writes a spec, its page and its PDF)
     memory/ files/    remember appends a note for the calling bot; files.read, files.write, files.render and files.delete work inside a granted folder (exist)
     web/              web.fetch of public pages only, and web.search over a search service, Brave first (exists)
-  deliverable/        the spec of a shaped deliverable, its ten widgets, the refusals in words and the canonical JSON; template/ is the five shipped and the owner's; measure/ is the office's figures read by id, aliases resolved at write time (exists)
+  deliverable/        the spec of a shaped deliverable, its ten widgets, the refusals in words and the canonical JSON; template/ is the five shipped and the owner's (exists)
+  measure/            the office's figures read by id, aliases resolved at write time (exists)
+  document/           reads a file as text: PDF, Word, PowerPoint, CSV, Excel, RTF, and an image's kind and size; pdftext/, office/, sheet/, rtf/ and picture/ below it (exists)
+  render/             chart/ the chart layout and its SVG, html/ a spec as one inert web page, paper/ a Markdown file as a PDF in the print style (grid/ a spec as one), docx/ the same as a Word file, fonts/ the embedded faces (exist)
+  native/             the core's client of the app's native service: asks the app to read picture pages (exists)
+  keystore/           named secrets: the file store for a hand-run core, the memory store the app syncs into (exists)
+  meter/              the usage ledger: prices, the month's totals, the budget rails (exists)
+  handbook/           the owner's pages for every bot or one, and the block a run carries (exists)
+  draft/              a few words into a proposed bot or project, one model call; concern/ is the weak-spot rules, in fixed words (exists)
   skill/              the shipped role templates as SKILL.md bundles, listed through agentcore's skill package (exists)
-  org/                domain types, grant resolution, budget math (exists); intro/ is a bot's introduction card and the rule that assembles one; project/ is a project's types, the moves its state allows, and the rule that derives its status from its tasks
+  org/                domain types, grant resolution, budget math (exists); inbox/, intro/ (a bot's introduction card), memory/, usage/ and widget/ (the controls a bot may ask with) below it
+  project/            a project's types, the moves its state allows, and the rule that derives its status from its tasks (exists)
   workspace/          the Hearth folder's layout and path containment, a bot's and a project's folder (exists)
   store/              SQLite, migrations, repositories (exists); store/migrate holds the schema steps, store/books the notes, handbook, usage, budgets and tiers, store/sqlrow the row mechanics they share
 proto/hearth/v1       the contract; generated Go under internal/rpc/gen
@@ -129,14 +129,14 @@ proto/hearth/v1       the contract; generated Go under internal/rpc/gen
 
 ```
 App/                  Package.swift root: the app, the gallery and HearthReader, the sandboxed XPC reading service
-  Hearth/             app target: the main window (onboarding, then team and conversation), Settings, the Team menu, helper lifecycle, one event relay, DI
+  Hearth/             app target: the main window (onboarding, then team and conversation), Settings, the Team menu, the menu bar extra, the global hotkey, helper lifecycle, one event relay, DI
   HearthGallery/      every component and composition in every state
   Packages/
     HearthKit/        generated client, HearthClient, LiveClient, PreviewClient
     HearthDesign/     tokens and primitives (the look: docs/design.md)
     HearthUI/         components and compositions
     HearthFeatures/   one @Observable store and screens per feature
-    HearthNative/     EventKit, Contacts, Shortcuts, Keychain, notifications; HearthReading, the text extractor
+    HearthNative/     EventKit, Contacts, Shortcuts, Keychain, notifications, the native loopback service the core calls; HearthReading, the text extractor
 ```
 
 Swift imports point down: `Hearth` -> `HearthFeatures` -> `HearthUI` ->
@@ -175,7 +175,7 @@ from `Hearth`; `HearthReader` imports `HearthReading` alone.
   `make proto && make proto-drift` after editing the proto, outside `make ci`.
   `make tailwind-check` (also outside ci) downloads the pinned Tailwind CLI to
   `.cache/tailwind`; `make tokens-gen` writes its theme and the chart palette.
-- **`make proto` regenerates two files per proto on each side** (fourteen
+- **`make proto` regenerates two files per proto on each side** (sixteen
   protos today); generate once at the end of a contract change.
 - **Git has no identity on the VM.** Commit with `git -c user.name=... -c
   user.email=...`, or set the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables.
