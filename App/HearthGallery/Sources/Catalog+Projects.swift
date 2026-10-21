@@ -92,7 +92,8 @@ extension Catalog {
                 .frame(height: 620)))
     }
 
-    /// Everyone hired and no project yet: the "Projects" header alone.
+    /// Everyone hired and no project yet: the "Projects" header over one line
+    /// and the four example cards.
     private static func sidebarWithoutProjects() -> GalleryState {
         let client = PreviewClient()
         let relay = EventRelay(client: client)
@@ -104,7 +105,7 @@ extension Catalog {
         }
         return GalleryState(
             name: "no projects", width: Theme.Size.sidebarIdeal,
-            view: AnyView(SidebarList(store: sidebar).frame(height: 320)))
+            view: AnyView(SidebarList(store: sidebar, onExample: { _ in }).frame(height: 560)))
     }
 }
 

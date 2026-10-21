@@ -14,13 +14,18 @@ extension Catalog {
                 package: package, name: "TierPicker",
                 states: GalleryState.each(TierPicker.PreviewState.self, width: 480) {
                     TierPicker(previewState: $0)
-                })
+                }),
+            GalleryPage(
+                package: package, name: "ExampleCard",
+                states: GalleryState.each(ExampleCard.PreviewState.self, width: 320) {
+                    ExampleCard(previewState: $0).padding(Theme.Spacing.lg)
+                }),
         ]
     }
 
     /// The sidebar with a team whose bots are idle, working and paused above
     /// the projects, and the empty team with one project: the team's header
-    /// alone beside the detail column's invitation.
+    /// alone beside the detail column's invitation and its role cards.
     @MainActor
     static var botListStates: [GalleryState] {
         var working = Fixtures.bot
@@ -72,9 +77,12 @@ extension Catalog {
                     HStack(spacing: 0) {
                         SidebarList(store: empty).frame(width: Theme.Size.sidebarIdeal)
                         Divider()
-                        TeamEmptyView(onHire: {})
+                        TeamEmptyView(templates: Fixtures.templates, onHire: {})
                     }
-                    .frame(height: 320))),
+                    .frame(height: 420))),
+            GalleryState(
+                name: "nobody hired, no templates", width: 480,
+                view: AnyView(TeamEmptyView(onHire: {}).frame(height: 300))),
         ]
     }
 }

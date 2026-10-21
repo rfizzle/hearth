@@ -8,7 +8,9 @@
 // uses the system's .secondary style rather than the text token so sidebar
 // vibrancy applies over the glass pane. With nobody on the team its section
 // shows only the header; the invitation to hire is TeamEmptyView, which the
-// window shows in the detail column. A bot's context menu offers Access… when
+// window shows in the detail column: one line, an ExampleCard for each role
+// template the core serves (a press opens the hire setup with it picked) and
+// Hire Someone… under them. A bot's context menu offers Access… when
 // the window gives it.
 // See docs/design.md#window-anatomy and docs/model.md#owner-interaction
 
@@ -53,21 +55,67 @@ public struct BotList: View {
 
 /// The detail column's empty state when nobody is hired yet.
 public struct TeamEmptyView: View {
+    let templates: [Hearth_V1_RoleTemplate]
     let onHire: () -> Void
+    let onPick: (Hearth_V1_RoleTemplate) -> Void
 
-    public init(onHire: @escaping () -> Void) {
+    /// The invitation, with a card for each of `templates` (at most four);
+    /// `onPick` starts the hire setup with that role, `onHire` with none.
+    public init(
+        templates: [Hearth_V1_RoleTemplate] = [], onHire: @escaping () -> Void,
+        onPick: @escaping (Hearth_V1_RoleTemplate) -> Void = { _ in }
+    ) {
+        self.templates = templates
         self.onHire = onHire
+        self.onPick = onPick
     }
 
     public var body: some View {
-        ContentUnavailableView {
-            Label("Nobody here yet", systemImage: "person.2")
-        } description: {
-            Text("Hire someone to get started.")
-        } actions: {
+        VStack(spacing: Theme.Spacing.lg) {
+            Image(systemName: "person.2")
+                .font(.system(size: 40))
+                .foregroundStyle(Theme.color(.textSecondary))
+                .accessibilityHidden(true)
+            Text("Nobody here yet")
+                .font(Theme.title)
+            Text(line)
+                .font(Theme.body)
+                .foregroundStyle(Theme.color(.textSecondary))
+            if !templates.isEmpty {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 220), spacing: Theme.Spacing.md)],
+                    spacing: Theme.Spacing.md
+                ) {
+                    ForEach(templates.prefix(4), id: \.id) { template in
+                        ExampleCard(
+                            symbol: Self.symbol(for: template), title: template.role,
+                            line: template.summary
+                        ) { onPick(template) }
+                    }
+                }
+                .frame(maxWidth: 520)
+            }
             Button("Hire Someone…", action: onHire)
                 .buttonStyle(.borderedProminent)
         }
+        .padding(Theme.Spacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var line: String {
+        templates.isEmpty
+            ? "Hire someone to get started." : "Start with a role, or describe your own."
+    }
+
+    /// A symbol for a role: by what the role is called, else a person.
+    static func symbol(for template: Hearth_V1_RoleTemplate) -> String {
+        let role = template.role.lowercased()
+        let symbols = [
+            ("research", "magnifyingglass"), ("writ", "square.and.pencil"),
+            ("schedul", "calendar"), ("edit", "pencil.line"), ("account", "chart.pie"),
+            ("book", "book"), ("plan", "map"), ("assist", "tray.full"),
+        ]
+        return symbols.first { role.contains($0.0) }?.1 ?? "person.crop.circle"
     }
 }
 

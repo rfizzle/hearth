@@ -230,3 +230,39 @@ private let paragraph = "I want to start a studio newsletter."
         #expect(!draft.isEmpty(for: field.widget), "\(field.id)")
     }
 }
+
+@MainActor
+@Test func theStoreOpensWithTheGivenParagraphAndWithNone() {
+    let example = ProjectExample.all[0]
+    let given = SetupStore(
+        script: .project, client: PreviewClient(),
+        projects: makeSidebar(client: PreviewClient()).projects, opening: example.paragraph,
+        defaults: freshDefaults())
+    #expect(given.step == .opener)
+    #expect(given.paragraph == example.paragraph)
+    #expect(given.canContinue)
+    let none = makeSetup()
+    #expect(none.paragraph.isEmpty)
+    #expect(!none.canContinue)
+}
+
+@MainActor
+@Test func aGivenTemplateOpensTheHireWithItPickedAndAnEditIgnoresTheParagraph() {
+    let writer = Fixtures.templates[1]
+    let client = PreviewClient()
+    let hire = SetupStore(
+        script: .hire, client: client, projects: makeSidebar(client: client).projects,
+        template: writer, defaults: freshDefaults())
+    #expect(hire.templateID == writer.id)
+    #expect(hire.paragraph == writer.jobDescription)
+    #expect(hire.drafts["role"]?.text == writer.role)
+    let editing = makeSetup(editing: Fixtures.projects[0])
+    #expect(editing.step == .form)
+    #expect(editing.paragraph.isEmpty)
+}
+
+@Test func theFourProjectExamplesEachHaveAParagraph() {
+    #expect(ProjectExample.all.count == 4)
+    #expect(Set(ProjectExample.all.map(\.id)).count == 4)
+    #expect(ProjectExample.all.allSatisfy { !$0.paragraph.isEmpty && !$0.title.isEmpty })
+}

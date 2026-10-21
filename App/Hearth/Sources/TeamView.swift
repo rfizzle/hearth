@@ -9,7 +9,10 @@
 // it says so instead. A project the Chief of Staff proposed is a card in the
 // conversation it was proposed in, and creating it selects it. A project's
 // toolbar has its folder and a menu to edit, mark done or archive it.
-// Nobody on the team shows the invitation in the detail column; nothing
+// Nobody on the team shows the invitation in the detail column, with an
+// example card for each role template that opens the hire setup with it
+// picked; no project shows example cards in the sidebar that open the project
+// setup with a paragraph filled in; nothing
 // selected says to choose. The Access and setup sheets are presented here (a
 // hire and a new project are the Chief of Staff's guided setup, a project's
 // edit its form), and the helper notice sits over the top of the detail column
@@ -29,6 +32,8 @@ struct TeamView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.revealInFinder) private var revealInFinder
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The role templates the empty team's cards are drawn from.
+    @State private var templates: [Hearth_V1_RoleTemplate] = []
 
     var body: some View {
         @Bindable var model = model
@@ -36,7 +41,11 @@ struct TeamView: View {
             SidebarList(
                 store: session.sidebar, inbox: session.inbox,
                 onAccess: { model.accessBotID = $0.id },
-                onEditProject: { model.editingProjectID = $0.id }
+                onEditProject: { model.editingProjectID = $0.id },
+                onExample: {
+                    model.projectOpening = $0.paragraph
+                    model.isCreatingProject = true
+                }
             )
             .navigationSplitViewColumnWidth(
                 min: Theme.Size.sidebarMin, ideal: Theme.Size.sidebarIdeal,
@@ -75,15 +84,25 @@ struct TeamView: View {
             session.sidebar.selectOfficeIfNothingSelected()
         }
         .task { await session.usage.load() }
-        .sheet(isPresented: $model.isHiring) {
-            SetupSheetHost(session: session, script: .hire, editing: nil)
-        }
+        .task { templates = (try? await session.client.listTemplates()) ?? [] }
+        .sheet(
+            isPresented: $model.isHiring, onDismiss: { model.hireTemplate = nil },
+            content: {
+                SetupSheetHost(
+                    session: session, script: .hire, editing: nil, template: model.hireTemplate)
+            }
+        )
         .sheet(isPresented: isChangingAccess) {
             if let bot = accessBot { AccessSheetHost(session: session, bot: bot) }
         }
-        .sheet(isPresented: $model.isCreatingProject) {
-            SetupSheetHost(session: session, script: .project, editing: nil)
-        }
+        .sheet(
+            isPresented: $model.isCreatingProject, onDismiss: { model.projectOpening = nil },
+            content: {
+                SetupSheetHost(
+                    session: session, script: .project, editing: nil,
+                    opening: model.projectOpening)
+            }
+        )
         .sheet(isPresented: isEditingProject) {
             if let project = editingProject {
                 SetupSheetHost(session: session, script: .project, editing: project)
@@ -166,8 +185,14 @@ struct TeamView: View {
                 }
             }
         } else if session.bots.showsHireAffordance {
-            TeamEmptyView(onHire: { model.isHiring = true })
-                .navigationTitle(session.org?.name ?? "Hearth")
+            TeamEmptyView(
+                templates: templates, onHire: { model.isHiring = true },
+                onPick: {
+                    model.hireTemplate = $0
+                    model.isHiring = true
+                }
+            )
+            .navigationTitle(session.org?.name ?? "Hearth")
         } else {
             ContentUnavailableView(
                 "No one selected", systemImage: "bubble.left.and.bubble.right",
@@ -232,13 +257,20 @@ private struct SetupSheetHost: View {
     @Environment(AppModel.self) private var model
     @State private var store: SetupStore
 
-    init(session: Session, script: SetupScript, editing: Hearth_V1_Project?) {
+    /// A presentation of `script`; `opening` starts the opener's box with that
+    /// paragraph and `template` with that role picked, as an example card
+    /// does. With neither it opens as it always has.
+    init(
+        session: Session, script: SetupScript, editing: Hearth_V1_Project?,
+        opening: String? = nil, template: Hearth_V1_RoleTemplate? = nil
+    ) {
         self.session = session
         self.editing = editing
         _store = State(
             initialValue: SetupStore(
                 script: script, client: session.client, projects: session.projects,
-                canDraft: Self.canDraft(session), editing: editing))
+                canDraft: Self.canDraft(session), editing: editing,
+                opening: opening, template: template))
     }
 
     var body: some View {

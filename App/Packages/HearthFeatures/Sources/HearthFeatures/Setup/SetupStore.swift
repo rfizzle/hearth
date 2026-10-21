@@ -91,10 +91,13 @@ public final class SetupStore {
     /// A store for `script` over `client`, saving through `projects`;
     /// `editing` opens the form on that project. `preferenceKey` and
     /// `defaults` are where "Just show me the form" is remembered; tests and
-    /// the gallery pass their own.
+    /// the gallery pass their own. `opening` starts the opener's box with
+    /// that paragraph, and `template` with that role picked as its chip
+    /// would; with neither the box starts empty.
     public init(
         script: SetupScript, client: any HearthClient, projects: ProjectsStore,
         canDraft: Bool = true, editing: Hearth_V1_Project? = nil,
+        opening: String? = nil, template: Hearth_V1_RoleTemplate? = nil,
         preferenceKey: String? = nil, defaults: UserDefaults = .standard
     ) {
         self.script = script
@@ -116,6 +119,10 @@ public final class SetupStore {
         }
         initialDrafts = starting
         drafts = starting
+        if editing == nil {
+            if let opening { paragraph = opening }
+            if let template, script.offersStarters { pick(template) }
+        }
     }
 
     /// Whether the sheet goes on without a model.

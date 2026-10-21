@@ -17,6 +17,8 @@ public final class ProjectsStore {
     /// Every proposed, active and done project, in the order the core sent
     /// them; new ones come last.
     public private(set) var projects: [Hearth_V1_Project] = []
+    /// Whether the list has loaded once, so an empty one is known to be empty.
+    public private(set) var loaded = false
     /// The last failed load, done or archive's text, if one failed.
     public private(set) var error: String?
     /// The last failed create or edit's text, shown under the sheet's form.
@@ -58,6 +60,7 @@ public final class ProjectsStore {
     public func load() async {
         do {
             projects = try await client.listProjects(includeArchived: false)
+            loaded = true
             error = nil
         } catch {
             self.error = error.localizedDescription

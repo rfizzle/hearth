@@ -30,12 +30,16 @@ final class AppModel {
     private(set) var session: Session?
     /// Whether the hire sheet is open; the toolbar and the Team menu set it.
     var isHiring = false
+    /// The role template an example card picked for the hire sheet, if one did.
+    var hireTemplate: Hearth_V1_RoleTemplate?
     /// The bot whose Access sheet is open; the toolbar, the Team menu and a
     /// bot's context menu set it.
     var accessBotID: String?
     /// Whether the new-project sheet is open; the toolbar and the File menu
     /// set it.
     var isCreatingProject = false
+    /// The paragraph an example card filled in for the new-project sheet.
+    var projectOpening: String?
     /// The project whose edit sheet is open; a project's context menu sets it.
     var editingProjectID: String?
     /// Whether the inspector is open beside the conversation; the toolbar and
