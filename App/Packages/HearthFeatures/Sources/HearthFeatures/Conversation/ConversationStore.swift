@@ -20,6 +20,7 @@
 
 import Foundation
 import HearthKit
+import HearthUI
 import Observation
 
 /// The store behind a conversation screen.
@@ -35,12 +36,16 @@ public final class ConversationStore {
         /// An approval request or a question, with its Inbox item while that
         /// is open.
         case request(Hearth_V1_Message, item: Hearth_V1_InboxItem?)
+        /// A finished run's calls and interim texts folded into one line;
+        /// `duration` is nil when the run's times are not known.
+        case worked(id: String, duration: TimeInterval?, steps: [TraceStep])
 
         public var id: String {
             switch self {
             case .message(let message): message.id
             case .tool(_, let id, _): id
             case .request(let message, _): message.id
+            case .worked(let id, _, _): id
             }
         }
     }
@@ -144,26 +149,12 @@ public final class ConversationStore {
         isPaused ? "\(botName) is paused" : nil
     }
 
-    /// The transcript as rows: each tool call carries its result, matched by
-    /// call id, and a result whose call is not loaded stands alone; a request
-    /// carries its item while that is open.
+    /// The transcript as rows: each tool call carries its result, a request
+    /// its item while that is open, and a finished run is folded into one
+    /// worked row with its last text left outside as the answer.
     public var rows: [Row] {
-        let results = Dictionary(
-            messages.filter { $0.kind == .toolResult }.map { ($0.tool.callID, $0) },
-            uniquingKeysWith: { _, last in last })
-        let calls = Set(messages.filter { $0.kind == .toolCall }.map(\.tool.callID))
-        return messages.compactMap { message in
-            switch message.kind {
-            case .toolCall:
-                .tool(call: message.tool, id: message.id, result: results[message.tool.callID])
-            case .toolResult:
-                calls.contains(message.tool.callID)
-                    ? nil : .tool(call: message.tool, id: message.id, result: message)
-            case .approvalRequest, .question:
-                .request(message, item: inbox?.openItem(forMessage: message.id))
-            default:
-                .message(message)
-            }
+        ConversationRows.build(messages: messages, run: run) {
+            inbox?.openItem(forMessage: $0)
         }
     }
 

@@ -1,7 +1,10 @@
 // The rows and controls a conversation is built from.
 
 import CoreGraphics
+import HearthDesign
+import HearthKit
 import HearthUI
+import SwiftUI
 
 extension Catalog {
     static var conversation: [GalleryPage] {
@@ -17,6 +20,11 @@ extension Catalog {
                 states: GalleryState.each(ToolCallRow.PreviewState.self, width: 560) {
                     ToolCallRow(previewState: $0)
                 }),
+            GalleryPage(
+                package: package, name: "RunTrace",
+                states: GalleryState.each(RunTrace.PreviewState.self, width: 560) {
+                    RunTrace(previewState: $0)
+                } + [Self.stillWorking]),
             GalleryPage(
                 package: package, name: "FileRow",
                 states: GalleryState.each(FileRow.PreviewState.self, width: 560) { state in
@@ -67,6 +75,19 @@ extension Catalog {
 }
 
 extension Catalog {
+    /// The same run while it works: not folded, every row as it arrived.
+    static var stillWorking: GalleryState {
+        let messages = Fixtures.dmMessages
+        return GalleryState(
+            name: "stillWorking", width: 560,
+            view: AnyView(
+                VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+                    ToolCallRow(call: messages[3].tool, result: messages[4])
+                    ToolCallRow(call: messages[5].tool, result: messages[6])
+                    ToolCallRow(call: messages[7].tool, result: nil)
+                }))
+    }
+
     /// A page of text lines, standing in for what Quick Look makes of a PDF.
     static let sampleThumbnail: CGImage? = {
         let side = 56

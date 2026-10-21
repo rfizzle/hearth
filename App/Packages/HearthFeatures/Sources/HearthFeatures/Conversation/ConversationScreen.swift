@@ -9,6 +9,8 @@
 // and a bot without one says hello instead; once it has messages the card
 // collapses to an "About <name>" row pinned under the title, which opens into
 // the same card, and a chip on the card fills the composer without sending.
+// A finished run is one RunTrace line, "Worked for 4m 12s", that opens to the
+// bot's narration; its last text stays below it as the answer.
 // The window is titled by the bot's name, or by the title given.
 // A project's conversation is the same screen with the ProjectHeader pinned
 // above the transcript, the Chief of Staff answering, the project's name as
@@ -224,6 +226,8 @@ public struct ConversationScreen: View {
                     case .tool(let call, _, let result):
                         ToolCallRow(call: call, result: result)
                             .transition(.identity)
+                    case .worked(_, let duration, let steps):
+                        RunTrace(duration: duration, steps: steps)
                     case .request(let message, let item):
                         RequestRow(
                             message: message, item: item, inbox: store.inbox, bot: bot,
