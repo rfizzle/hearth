@@ -9,7 +9,8 @@
       "r": 110,
       "end": 108,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Alpha: 30 (30%)"
     },
     {
       "kind": "text",
@@ -28,7 +29,8 @@
       "start": 108,
       "end": 180,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Beta: 20 (20%)"
     },
     {
       "kind": "text",
@@ -47,7 +49,8 @@
       "start": 180,
       "end": 234,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Gamma: 15 (15%)"
     },
     {
       "kind": "text",
@@ -66,7 +69,8 @@
       "start": 234,
       "end": 277.2,
       "fill": "chart.4",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Delta: 12 (12%)"
     },
     {
       "kind": "text",
@@ -85,7 +89,8 @@
       "start": 277.2,
       "end": 313.2,
       "fill": "chart.5",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Epsilon: 10 (10%)"
     },
     {
       "kind": "text",
@@ -104,7 +109,8 @@
       "start": 313.2,
       "end": 342,
       "fill": "chart.6",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Zeta: 8 (8%)"
     },
     {
       "kind": "text",
@@ -123,7 +129,8 @@
       "start": 342,
       "end": 352.8,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Eta: 3 (3%)"
     },
     {
       "kind": "wedge",
@@ -133,7 +140,8 @@
       "start": 352.8,
       "end": 360,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Theta is a …: 2 (2%)"
     },
     {
       "kind": "rect",

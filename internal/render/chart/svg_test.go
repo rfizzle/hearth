@@ -65,3 +65,32 @@ func TestEscapeKeepsQuotesAndAmpersands(t *testing.T) {
 		t.Errorf("esc = %s", got)
 	}
 }
+
+func TestSVGTitlesEveryMark(t *testing.T) {
+	bar := deliverable.Widget{Kind: deliverable.Bar, Categories: []string{"a", "b"},
+		Series: []deliverable.Series{{Name: "x<y", Values: []float64{1, 2}}, {Name: "z", Values: []float64{3, 4}}}}
+	line := deliverable.Widget{Kind: deliverable.Line, Categories: []string{"a", "b", "c"},
+		Series: []deliverable.Series{{Name: "s", Values: []float64{1, 2, 3}}}}
+	pie := deliverable.Widget{Kind: deliverable.Pie, Slices: []deliverable.Slice{{Label: "p&q", Value: 1}, {Label: "r", Value: 3}}}
+	for name, c := range map[string]struct {
+		w    deliverable.Widget
+		want int
+	}{"bar": {bar, 4}, "line": {line, 3}, "pie": {pie, 2}} {
+		d, err := Layout(c.w)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := string(SVG(d))
+		if got := strings.Count(out, "<title>"); got != c.want {
+			t.Errorf("%s: %d titles, want %d:\n%s", name, got, c.want, out)
+		}
+	}
+	d, _ := Layout(pie)
+	if out := string(SVG(d)); !strings.Contains(out, "<title>p&amp;q: 1 (25%)</title>") {
+		t.Errorf("the wedge title is wrong: %s", out)
+	}
+	d, _ = Layout(bar)
+	if out := string(SVG(d)); !strings.Contains(out, "<title>x&lt;y, a: 1</title>") {
+		t.Errorf("the bar title is wrong: %s", out)
+	}
+}

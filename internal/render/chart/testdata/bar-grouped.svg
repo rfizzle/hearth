@@ -12,17 +12,17 @@
 <text x="259" y="288" font-size="11" text-anchor="middle" fill="currentColor">Q2</text>
 <text x="389" y="288" font-size="11" text-anchor="middle" fill="currentColor">Q3</text>
 <text x="519" y="288" font-size="11" text-anchor="middle" fill="currentColor">A rather lo…</text>
-<rect x="77" y="90.13" width="34.67" height="99.2" fill="#2F6FDB" stroke="none" class="c1"/>
-<rect x="111.67" y="189.33" width="34.67" height="49.6" fill="#C25E00" stroke="none" class="c2"/>
-<rect x="146.33" y="181.07" width="34.67" height="8.27" fill="#2E8B57" stroke="none" class="c3"/>
-<rect x="207" y="189.33" width="34.67" height="33.07" fill="#2F6FDB" stroke="none" class="c1"/>
-<rect x="241.67" y="164.53" width="34.67" height="24.8" fill="#C25E00" stroke="none" class="c2"/>
-<rect x="276.33" y="189.33" width="34.67" height="4.13" fill="#2E8B57" stroke="none" class="c3"/>
-<rect x="337" y="126.92" width="34.67" height="62.41" fill="#2F6FDB" stroke="none" class="c1"/>
-<rect x="371.67" y="189.33" width="34.67" height="74.4" fill="#C25E00" stroke="none" class="c2"/>
-<rect x="467" y="24" width="34.67" height="165.33" fill="#2F6FDB" stroke="none" class="c1"/>
-<rect x="501.67" y="151.93" width="34.67" height="37.41" fill="#C25E00" stroke="none" class="c2"/>
-<rect x="536.33" y="189.33" width="34.67" height="16.53" fill="#2E8B57" stroke="none" class="c3"/>
+<rect x="77" y="90.13" width="34.67" height="99.2" fill="#2F6FDB" stroke="none" class="c1"><title>Revenue, Q1: 120</title></rect>
+<rect x="111.67" y="189.33" width="34.67" height="49.6" fill="#C25E00" stroke="none" class="c2"><title>Costs, Q1: -60</title></rect>
+<rect x="146.33" y="181.07" width="34.67" height="8.27" fill="#2E8B57" stroke="none" class="c3"><title>Refunds, Q1: 10</title></rect>
+<rect x="207" y="189.33" width="34.67" height="33.07" fill="#2F6FDB" stroke="none" class="c1"><title>Revenue, Q2: -40</title></rect>
+<rect x="241.67" y="164.53" width="34.67" height="24.8" fill="#C25E00" stroke="none" class="c2"><title>Costs, Q2: 30</title></rect>
+<rect x="276.33" y="189.33" width="34.67" height="4.13" fill="#2E8B57" stroke="none" class="c3"><title>Refunds, Q2: -5</title></rect>
+<rect x="337" y="126.92" width="34.67" height="62.41" fill="#2F6FDB" stroke="none" class="c1"><title>Revenue, Q3: 75.5</title></rect>
+<rect x="371.67" y="189.33" width="34.67" height="74.4" fill="#C25E00" stroke="none" class="c2"><title>Costs, Q3: -90</title></rect>
+<rect x="467" y="24" width="34.67" height="165.33" fill="#2F6FDB" stroke="none" class="c1"><title>Revenue, A rather lo…: 200</title></rect>
+<rect x="501.67" y="151.93" width="34.67" height="37.41" fill="#C25E00" stroke="none" class="c2"><title>Costs, A rather lo…: 45.25</title></rect>
+<rect x="536.33" y="189.33" width="34.67" height="16.53" fill="#2E8B57" stroke="none" class="c3"><title>Refunds, A rather lo…: -20</title></rect>
 <rect x="16" y="295" width="10" height="10" fill="#2F6FDB" stroke="none" class="c1"/>
 <text x="30" y="304" font-size="11" text-anchor="start" fill="currentColor">Revenue</text>
 <rect x="205.33" y="295" width="10" height="10" fill="#C25E00" stroke="none" class="c2"/>

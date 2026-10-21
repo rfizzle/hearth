@@ -9,7 +9,8 @@
       "r": 110,
       "end": 252,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Done: 7 (70%)"
     },
     {
       "kind": "text",
@@ -28,7 +29,8 @@
       "start": 252,
       "end": 360,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Open: 3 (30%)"
     },
     {
       "kind": "text",

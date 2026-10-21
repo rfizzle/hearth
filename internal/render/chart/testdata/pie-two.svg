@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" role="img" font-family="sans-serif">
-<path d="M300 150 L300 40 A110 110 0 1 1 195.38 183.99 Z" fill="#2F6FDB" stroke="none" class="c1"/>
+<path d="M300 150 L300 40 A110 110 0 1 1 195.38 183.99 Z" fill="#2F6FDB" stroke="none" class="c1"><title>Done: 7 (70%)</title></path>
 <text x="401.94" y="228.06" font-size="11" text-anchor="start" fill="currentColor">70%</text>
-<path d="M300 150 L195.38 183.99 A110 110 0 0 1 300 40 Z" fill="#C25E00" stroke="none" class="c2"/>
+<path d="M300 150 L195.38 183.99 A110 110 0 0 1 300 40 Z" fill="#C25E00" stroke="none" class="c2"><title>Open: 3 (30%)</title></path>
 <text x="198.06" y="79.94" font-size="11" text-anchor="end" fill="currentColor">30%</text>
 <rect x="16" y="335" width="10" height="10" fill="#2F6FDB" stroke="none" class="c1"/>
 <text x="30" y="344" font-size="11" text-anchor="start" fill="currentColor">Done</text>

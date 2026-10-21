@@ -15,9 +15,9 @@
 <text x="428" y="312" font-size="11" text-anchor="middle" fill="currentColor">Thu</text>
 <text x="532" y="312" font-size="11" text-anchor="middle" fill="currentColor">Fri</text>
 <polyline points="116,241.6 220,150.93 324,205.33 428,60.27 532,132.8" fill="none" stroke="#2F6FDB" stroke-width="2" class="c1" stroke-linejoin="round"/>
-<circle cx="116" cy="241.6" r="3" fill="#2F6FDB" stroke="none" class="c1"/>
-<circle cx="220" cy="150.93" r="3" fill="#2F6FDB" stroke="none" class="c1"/>
-<circle cx="324" cy="205.33" r="3" fill="#2F6FDB" stroke="none" class="c1"/>
-<circle cx="428" cy="60.27" r="3" fill="#2F6FDB" stroke="none" class="c1"/>
-<circle cx="532" cy="132.8" r="3" fill="#2F6FDB" stroke="none" class="c1"/>
+<circle cx="116" cy="241.6" r="3" fill="#2F6FDB" stroke="none" class="c1"><title>Mon: 3</title></circle>
+<circle cx="220" cy="150.93" r="3" fill="#2F6FDB" stroke="none" class="c1"><title>Tue: 8</title></circle>
+<circle cx="324" cy="205.33" r="3" fill="#2F6FDB" stroke="none" class="c1"><title>Wed: 5</title></circle>
+<circle cx="428" cy="60.27" r="3" fill="#2F6FDB" stroke="none" class="c1"><title>Thu: 13</title></circle>
+<circle cx="532" cy="132.8" r="3" fill="#2F6FDB" stroke="none" class="c1"><title>Fri: 9</title></circle>
 </svg>

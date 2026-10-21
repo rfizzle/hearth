@@ -144,7 +144,8 @@
       "w": 104,
       "h": 74.4,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q1: 120"
     },
     {
       "kind": "rect",
@@ -153,7 +154,8 @@
       "w": 104,
       "h": 37.2,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q1: -60"
     },
     {
       "kind": "rect",
@@ -162,7 +164,8 @@
       "w": 104,
       "h": 6.2,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, Q1: 10"
     },
     {
       "kind": "rect",
@@ -171,7 +174,8 @@
       "w": 104,
       "h": 24.8,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q2: -40"
     },
     {
       "kind": "rect",
@@ -180,7 +184,8 @@
       "w": 104,
       "h": 18.6,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q2: 30"
     },
     {
       "kind": "rect",
@@ -189,7 +194,8 @@
       "w": 104,
       "h": 3.1,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, Q2: -5"
     },
     {
       "kind": "rect",
@@ -198,7 +204,8 @@
       "w": 104,
       "h": 46.81,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q3: 75.5"
     },
     {
       "kind": "rect",
@@ -207,7 +214,8 @@
       "w": 104,
       "h": 55.8,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q3: -90"
     },
     {
       "kind": "rect",
@@ -216,7 +224,8 @@
       "w": 104,
       "h": 124,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q4: 200"
     },
     {
       "kind": "rect",
@@ -225,7 +234,8 @@
       "w": 104,
       "h": 28.06,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q4: 45.25"
     },
     {
       "kind": "rect",
@@ -234,7 +244,8 @@
       "w": 104,
       "h": 12.4,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, Q4: -20"
     },
     {
       "kind": "rect",

@@ -80,9 +80,9 @@ func look(it Item) string {
 func item(b *strings.Builder, it Item) {
 	switch it.Kind {
 	case Rect:
-		b.WriteString("<rect" + attr("x", it.X) + attr("y", it.Y) + attr("width", it.W) + attr("height", it.H) + look(it) + "/>\n")
+		b.WriteString("<rect" + attr("x", it.X) + attr("y", it.Y) + attr("width", it.W) + attr("height", it.H) + look(it) + tail(it))
 	case Line:
-		b.WriteString("<line" + attr("x1", it.X) + attr("y1", it.Y) + attr("x2", it.X2) + attr("y2", it.Y2) + look(it) + "/>\n")
+		b.WriteString("<line" + attr("x1", it.X) + attr("y1", it.Y) + attr("x2", it.X2) + attr("y2", it.Y2) + look(it) + tail(it))
 	case Polyline:
 		pts := make([]string, len(it.Points))
 		for i, p := range it.Points {
@@ -90,7 +90,7 @@ func item(b *strings.Builder, it Item) {
 		}
 		b.WriteString(`<polyline points="` + strings.Join(pts, " ") + `"` + look(it) + ` stroke-linejoin="round"/>` + "\n")
 	case Circle:
-		b.WriteString("<circle" + attr("cx", it.X) + attr("cy", it.Y) + attr("r", it.R) + look(it) + "/>\n")
+		b.WriteString("<circle" + attr("cx", it.X) + attr("cy", it.Y) + attr("r", it.R) + look(it) + tail(it))
 	case Wedge:
 		x1, y1 := OnCircle(it.X, it.Y, it.R, it.Start)
 		x2, y2 := OnCircle(it.X, it.Y, it.R, it.End)
@@ -100,7 +100,7 @@ func item(b *strings.Builder, it Item) {
 		}
 		d := "M" + num(it.X) + " " + num(it.Y) + " L" + num(x1) + " " + num(y1) +
 			" A" + num(it.R) + " " + num(it.R) + " 0 " + large + " 1 " + num(x2) + " " + num(y2) + " Z"
-		b.WriteString(`<path d="` + d + `"` + look(it) + "/>\n")
+		b.WriteString(`<path d="` + d + `"` + look(it) + tail(it))
 	case Text:
 		b.WriteString("<text" + attr("x", it.X) + attr("y", it.Y) + attr("font-size", it.Size) +
 			` text-anchor="` + anchor(it.Anchor) + `"` + paint("fill", it.Fill) + ">" + esc(it.Text) + "</text>\n")
@@ -116,4 +116,22 @@ func anchor(a Anchor) string {
 		return "end"
 	}
 	return "start"
+}
+
+// tail closes a mark: self-closed, or holding its tooltip as a <title>.
+func tail(it Item) string {
+	if it.Title == "" {
+		return "/>\n"
+	}
+	return "><title>" + esc(it.Title) + "</title></" + tagOf(it.Kind) + ">\n"
+}
+
+func tagOf(k Kind) string {
+	switch k {
+	case Rect:
+		return "rect"
+	case Circle:
+		return "circle"
+	}
+	return "path"
 }

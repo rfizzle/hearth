@@ -171,7 +171,8 @@
       "y": 241.6,
       "r": 3,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Mon: 3"
     },
     {
       "kind": "circle",
@@ -179,7 +180,8 @@
       "y": 150.93,
       "r": 3,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Tue: 8"
     },
     {
       "kind": "circle",
@@ -187,7 +189,8 @@
       "y": 205.33,
       "r": 3,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Wed: 5"
     },
     {
       "kind": "circle",
@@ -195,7 +198,8 @@
       "y": 60.27,
       "r": 3,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Thu: 13"
     },
     {
       "kind": "circle",
@@ -203,7 +207,8 @@
       "y": 132.8,
       "r": 3,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Fri: 9"
     }
   ]
 }

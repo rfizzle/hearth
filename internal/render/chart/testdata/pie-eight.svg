@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" role="img" font-family="sans-serif">
-<path d="M300 150 L300 40 A110 110 0 0 1 404.62 183.99 Z" fill="#2F6FDB" stroke="none" class="c1"/>
+<path d="M300 150 L300 40 A110 110 0 0 1 404.62 183.99 Z" fill="#2F6FDB" stroke="none" class="c1"><title>Alpha: 30 (30%)</title></path>
 <text x="401.94" y="79.94" font-size="11" text-anchor="start" fill="currentColor">30%</text>
-<path d="M300 150 L404.62 183.99 A110 110 0 0 1 300 260 Z" fill="#C25E00" stroke="none" class="c2"/>
+<path d="M300 150 L404.62 183.99 A110 110 0 0 1 300 260 Z" fill="#C25E00" stroke="none" class="c2"><title>Beta: 20 (20%)</title></path>
 <text x="374.06" y="255.94" font-size="11" text-anchor="start" fill="currentColor">20%</text>
-<path d="M300 150 L300 260 A110 110 0 0 1 211.01 214.66 Z" fill="#2E8B57" stroke="none" class="c3"/>
+<path d="M300 150 L300 260 A110 110 0 0 1 211.01 214.66 Z" fill="#2E8B57" stroke="none" class="c3"><title>Gamma: 15 (15%)</title></path>
 <text x="242.8" y="266.27" font-size="11" text-anchor="end" fill="currentColor">15%</text>
-<path d="M300 150 L211.01 214.66 A110 110 0 0 1 190.87 136.21 Z" fill="#8E44C9" stroke="none" class="c4"/>
+<path d="M300 150 L211.01 214.66 A110 110 0 0 1 190.87 136.21 Z" fill="#8E44C9" stroke="none" class="c4"><title>Delta: 12 (12%)</title></path>
 <text x="177.96" y="185.33" font-size="11" text-anchor="end" fill="currentColor">12%</text>
-<path d="M300 150 L190.87 136.21 A110 110 0 0 1 219.81 74.7 Z" fill="#C7358A" stroke="none" class="c5"/>
+<path d="M300 150 L190.87 136.21 A110 110 0 0 1 219.81 74.7 Z" fill="#C7358A" stroke="none" class="c5"><title>Epsilon: 10 (10%)</title></path>
 <text x="185.99" y="100.35" font-size="11" text-anchor="end" fill="currentColor">10%</text>
-<path d="M300 150 L219.81 74.7 A110 110 0 0 1 266.01 45.38 Z" fill="#00899A" stroke="none" class="c6"/>
+<path d="M300 150 L219.81 74.7 A110 110 0 0 1 266.01 45.38 Z" fill="#00899A" stroke="none" class="c6"><title>Zeta: 8 (8%)</title></path>
 <text x="232.49" y="47.61" font-size="11" text-anchor="end" fill="currentColor">8%</text>
-<path d="M300 150 L266.01 45.38 A110 110 0 0 1 286.21 40.87 Z" fill="#2F6FDB" stroke="none" class="c1"/>
-<path d="M300 150 L286.21 40.87 A110 110 0 0 1 300 40 Z" fill="#C25E00" stroke="none" class="c2"/>
+<path d="M300 150 L266.01 45.38 A110 110 0 0 1 286.21 40.87 Z" fill="#2F6FDB" stroke="none" class="c1"><title>Eta: 3 (3%)</title></path>
+<path d="M300 150 L286.21 40.87 A110 110 0 0 1 300 40 Z" fill="#C25E00" stroke="none" class="c2"><title>Theta is a …: 2 (2%)</title></path>
 <rect x="16" y="311" width="10" height="10" fill="#2F6FDB" stroke="none" class="c1"/>
 <text x="30" y="320" font-size="11" text-anchor="start" fill="currentColor">Alpha</text>
 <rect x="158" y="311" width="10" height="10" fill="#C25E00" stroke="none" class="c2"/>

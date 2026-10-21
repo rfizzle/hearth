@@ -126,7 +126,8 @@
       "w": 34.67,
       "h": 99.2,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q1: 120"
     },
     {
       "kind": "rect",
@@ -135,7 +136,8 @@
       "w": 34.67,
       "h": 49.6,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q1: -60"
     },
     {
       "kind": "rect",
@@ -144,7 +146,8 @@
       "w": 34.67,
       "h": 8.27,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, Q1: 10"
     },
     {
       "kind": "rect",
@@ -153,7 +156,8 @@
       "w": 34.67,
       "h": 33.07,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q2: -40"
     },
     {
       "kind": "rect",
@@ -162,7 +166,8 @@
       "w": 34.67,
       "h": 24.8,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q2: 30"
     },
     {
       "kind": "rect",
@@ -171,7 +176,8 @@
       "w": 34.67,
       "h": 4.13,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, Q2: -5"
     },
     {
       "kind": "rect",
@@ -180,7 +186,8 @@
       "w": 34.67,
       "h": 62.41,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, Q3: 75.5"
     },
     {
       "kind": "rect",
@@ -189,7 +196,8 @@
       "w": 34.67,
       "h": 74.4,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, Q3: -90"
     },
     {
       "kind": "rect",
@@ -198,7 +206,8 @@
       "w": 34.67,
       "h": 165.33,
       "fill": "chart.1",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Revenue, A rather lo…: 200"
     },
     {
       "kind": "rect",
@@ -207,7 +216,8 @@
       "w": 34.67,
       "h": 37.41,
       "fill": "chart.2",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Costs, A rather lo…: 45.25"
     },
     {
       "kind": "rect",
@@ -216,7 +226,8 @@
       "w": 34.67,
       "h": 16.53,
       "fill": "chart.3",
-      "stroke": "none"
+      "stroke": "none",
+      "title": "Refunds, A rather lo…: -20"
     },
     {
       "kind": "rect",

@@ -86,6 +86,8 @@ type Item struct {
 	Text   string  `json:"text,omitempty"`
 	Size   float64 `json:"size,omitempty"`
 	Anchor Anchor  `json:"anchor,omitempty"`
+	// Title is the tooltip of a mark: its label and formatted value.
+	Title string `json:"title,omitempty"`
 }
 
 // Drawing is the items in paint order inside a W by H space.
@@ -207,9 +209,9 @@ func cartesian(w deliverable.Widget) (Drawing, error) {
 		}
 	}
 	if w.Kind == deliverable.Line {
-		lines(&d, w.Series, left, slot, y)
+		lines(&d, w, left, slot, y)
 	} else {
-		bars(&d, w.Series, stacked, left, slot, y)
+		bars(&d, w, stacked, left, slot, y)
 	}
 	if len(w.Series) > 1 {
 		names := make([]string, len(w.Series))
@@ -221,16 +223,17 @@ func cartesian(w deliverable.Widget) (Drawing, error) {
 	return d, nil
 }
 
-func lines(d *Drawing, series []deliverable.Series, left, slot float64, y func(float64) float64) {
-	for i, s := range series {
+func lines(d *Drawing, w deliverable.Widget, left, slot float64, y func(float64) float64) {
+	for i, s := range w.Series {
 		pts := make([]Point, len(s.Values))
 		for j, v := range s.Values {
 			pts[j] = Point{X: round2(left + (float64(j)+0.5)*slot), Y: round2(y(v))}
 		}
 		d.Items = append(d.Items, Item{Kind: Polyline, Points: pts, Stroke: PaletteID(i), Fill: None, Width: 2})
 		if len(pts) <= pointsTo {
-			for _, p := range pts {
-				d.Items = append(d.Items, Item{Kind: Circle, X: p.X, Y: p.Y, R: 3, Fill: PaletteID(i), Stroke: None})
+			for j, p := range pts {
+				d.Items = append(d.Items, Item{Kind: Circle, X: p.X, Y: p.Y, R: 3, Fill: PaletteID(i), Stroke: None,
+					Title: markTitle(w, s.Name, j, s.Values[j])})
 			}
 		}
 	}
@@ -238,18 +241,20 @@ func lines(d *Drawing, series []deliverable.Series, left, slot float64, y func(f
 
 // bars draws each category's group centred in its slot with a gap of 0.2 of
 // the slot; stacked series share one bar, positives up and negatives down.
-func bars(d *Drawing, series []deliverable.Series, stacked bool, left, slot float64, y func(float64) float64) {
+func bars(d *Drawing, w deliverable.Widget, stacked bool, left, slot float64, y func(float64) float64) {
+	series := w.Series
 	region := slot * (1 - barGap)
 	each := region / float64(len(series))
 	if stacked {
 		each = region
 	}
-	rect := func(x, from, to float64, i int) {
+	rect := func(x, from, to float64, i, c int) {
 		top, bot := math.Min(y(from), y(to)), math.Max(y(from), y(to))
 		if round2(bot-top) == 0 {
 			return
 		}
-		d.Items = append(d.Items, Item{Kind: Rect, X: round2(x), Y: round2(top), W: round2(each), H: round2(bot - top), Fill: PaletteID(i), Stroke: None})
+		d.Items = append(d.Items, Item{Kind: Rect, X: round2(x), Y: round2(top), W: round2(each), H: round2(bot - top), Fill: PaletteID(i), Stroke: None,
+			Title: markTitle(w, series[i].Name, c, series[i].Values[c])})
 	}
 	for c := range series[0].Values {
 		x0 := left + float64(c)*slot + (slot-region)/2
@@ -258,12 +263,12 @@ func bars(d *Drawing, series []deliverable.Series, stacked bool, left, slot floa
 			v := s.Values[c]
 			switch {
 			case !stacked:
-				rect(x0+float64(i)*each, 0, v, i)
+				rect(x0+float64(i)*each, 0, v, i, c)
 			case v >= 0:
-				rect(x0, up, up+v, i)
+				rect(x0, up, up+v, i, c)
 				up += v
 			default:
-				rect(x0, down+v, down, i)
+				rect(x0, down+v, down, i, c)
 				down += v
 			}
 		}
@@ -339,4 +344,14 @@ func clean(v float64) float64 {
 		return 0
 	}
 	return r
+}
+
+// markTitle is the tooltip of one value: "Series, category: value", with the
+// series left out when the chart has only one.
+func markTitle(w deliverable.Widget, series string, c int, v float64) string {
+	t := cut(w.Categories[c]) + ": " + deliverable.Format(v, w.Format, -1)
+	if len(w.Series) > 1 {
+		t = cut(series) + ", " + t
+	}
+	return t
 }

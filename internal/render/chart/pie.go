@@ -40,10 +40,12 @@ func pie(w deliverable.Widget) (Drawing, error) {
 		start := round2(run / sum * 360)
 		run += s.Value
 		end := round2(run / sum * 360)
+		title := cut(s.Label) + ": " + deliverable.Format(s.Value, w.Format, -1) + " (" +
+			strconv.FormatFloat(math.Round(s.Value/sum*100), 'f', 0, 64) + "%)"
 		if s.Value == sum {
-			d.Items = append(d.Items, Item{Kind: Circle, X: pieX, Y: pieY, R: pieR, Fill: PaletteID(i), Stroke: None})
+			d.Items = append(d.Items, Item{Kind: Circle, X: pieX, Y: pieY, R: pieR, Fill: PaletteID(i), Stroke: None, Title: title})
 		} else {
-			d.Items = append(d.Items, Item{Kind: Wedge, X: pieX, Y: pieY, R: pieR, Start: start, End: end, Fill: PaletteID(i), Stroke: None})
+			d.Items = append(d.Items, Item{Kind: Wedge, X: pieX, Y: pieY, R: pieR, Start: start, End: end, Fill: PaletteID(i), Stroke: None, Title: title})
 		}
 		if share := s.Value / sum; share >= minLabelled {
 			x, y := OnCircle(pieX, pieY, pieR+16, (start+end)/2)
