@@ -13,7 +13,7 @@ extension Catalog {
         [
             GalleryPage(
                 package: "HearthFeatures", name: "Settings",
-                states: [usagePane()]),
+                states: [usagePane(), deliverablesPane()]),
             GalleryPage(
                 package: "HearthFeatures", name: "ModelsPane", states: [modelsPane()]),
             GalleryPage(
@@ -33,6 +33,33 @@ extension Catalog {
             view: AnyView(
                 ModelsPane(store: ModelsStore(client: client, relay: EventRelay(client: client)))
                     .padding(Theme.Spacing.xl)))
+    }
+
+    /// The Deliverables pane: the five shipped templates, one saved by the
+    /// owner and one whose file does not load.
+    static func deliverablesPane() -> GalleryState {
+        let client = PreviewClient()
+        client.keepTemplate(
+            .with {
+                $0.id = "office-week"
+                $0.name = "Office week"
+                $0.when = "How the office did this week, with the tasks and the spend."
+                $0.path = Fixtures.workspacePath + "/Templates/office-week.deliverable.json"
+                $0.json = Fixtures.kitchenSinkJSON
+            })
+        client.keepTemplate(
+            .with {
+                $0.id = "board-update"
+                $0.name = "Board update"
+                $0.when = "A quarterly note for the board."
+                $0.path = Fixtures.workspacePath + "/Templates/board-update.deliverable.json"
+                $0.problem = "section 2: the example widget bar is not in allow"
+            })
+        let store = TemplatesStore(client: client)
+        return GalleryState(
+            name: "deliverables", width: Theme.Size.sheetWidth,
+            view: AnyView(
+                TemplatesPane(store: store).padding(Theme.Spacing.xl)))
     }
 
     /// The Usage pane for Dana, near her budget, with the team above her.

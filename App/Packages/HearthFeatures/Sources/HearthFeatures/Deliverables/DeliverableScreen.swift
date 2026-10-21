@@ -1,7 +1,7 @@
 // DeliverableScreen is a shaped deliverable in its own window: the title and
 // the cards DeliverableView draws from the spec file, scrolling. The toolbar
 // has Show in Finder, Open PDF (Quick Look), Open in Browser when those files
-// are beside the spec, and a menu with Reload. The file is read when the
+// are beside the spec, and a menu with Save as Template and Reload. The file is read when the
 // window opens and again each time it becomes the key window; a bound widget
 // is live (the subtitle says so) while the window has the session's client. A
 // file that does not decode is one plain sentence. Nothing here loads the page: Open in
@@ -22,16 +22,20 @@ public struct DeliverableScreen: View {
     @Environment(\.openInBrowser) private var openInBrowser
     @Environment(\.controlActiveState) private var activeState
     @State private var previewURL: URL?
+    @State private var templates: TemplatesStore?
+    @State private var isSavingTemplate = false
 
     /// A window for the spec file at `path`; given the session's `client` and
     /// `relay` its bound widgets are live.
     public init(path: String, client: (any HearthClient)? = nil, relay: EventRelay? = nil) {
         _store = State(initialValue: DeliverableStore(path: path, client: client, relay: relay))
+        _templates = State(initialValue: client.map { TemplatesStore(client: $0) })
     }
 
     /// A window over `store`, for the gallery and previews.
-    public init(store: DeliverableStore) {
+    public init(store: DeliverableStore, templates: TemplatesStore? = nil) {
         _store = State(initialValue: store)
+        _templates = State(initialValue: templates)
     }
 
     public var body: some View {
@@ -41,6 +45,13 @@ public struct DeliverableScreen: View {
             .navigationSubtitle(store.isLive ? "Live" : "")
             .toolbar { toolbar }
             .quickLookPreview($previewURL)
+            .sheet(isPresented: $isSavingTemplate) {
+                if let templates {
+                    SaveTemplateSheet(
+                        store: templates, specPath: store.path, title: store.title
+                    ) { isSavingTemplate = false }
+                }
+            }
             .task { await store.load() }
             .onChange(of: activeState) { _, state in
                 if state == .key { Task { await store.load() } }
@@ -78,6 +89,12 @@ public struct DeliverableScreen: View {
                 }
             }
             Menu("More", systemImage: "ellipsis.circle") {
+                if templates != nil, case .shown = store.state {
+                    Button("Save as Template…") {
+                        templates?.clearError()
+                        isSavingTemplate = true
+                    }
+                }
                 Button("Reload") { Task { await store.load() } }
             }
         }

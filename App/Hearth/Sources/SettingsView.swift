@@ -2,7 +2,8 @@
 // shows in the menu bar and the quick ask's global shortcut; Accounts and Web
 // Search panes, each the same stack of cards onboarding shows, over the
 // session's one AccountsStore, the Models pane over its ModelsStore, and the
-// Usage pane over its UsageStore. Accounts shows the configured cards and "Add
+// Usage pane over its UsageStore, and the Deliverables pane over its
+// TemplatesStore. Accounts shows the configured cards and "Add
 // a service", whose list holds the rest. With no helper only General works;
 // the second tab says what the helper is doing.
 // See docs/design.md#forms-sheets-and-settings
@@ -31,6 +32,10 @@ struct SettingsView: View {
                         .tabItem { Label("Web Search", systemImage: "magnifyingglass") }
                     pane { UsagePane(usage: session.usage, bots: session.bots) }
                         .tabItem { Label("Usage", systemImage: "chart.bar") }
+                    pane { TemplatesPane(store: session.templates) }
+                        .tabItem {
+                            Label("Deliverables", systemImage: "chart.bar.doc.horizontal")
+                        }
                 }
             } else {
                 Text(model.supervisor.status)

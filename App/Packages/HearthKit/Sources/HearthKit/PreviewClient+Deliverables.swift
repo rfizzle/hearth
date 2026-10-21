@@ -53,6 +53,13 @@ extension PreviewClient {
         try templateList.delete(id)
     }
 
+    /// Puts `template` among the owner's, as a file the core found there, for
+    /// the gallery and the tests (one with a `problem` is a file that fails
+    /// to load).
+    public func keepTemplate(_ template: Hearth_V1_DeliverableTemplate) {
+        templateList.keep(template)
+    }
+
     private func measure(_ id: String) -> Hearth_V1_MeasureValue {
         let now = Fixtures.time(0)
         var value = Hearth_V1_MeasureValue.with {
@@ -154,6 +161,14 @@ final class TemplateList: @unchecked Sendable {
             templates.append(saved)
             templates.sort { $0.id < $1.id }
             return saved
+        }
+    }
+
+    func keep(_ template: Hearth_V1_DeliverableTemplate) {
+        lock.withLock {
+            templates.removeAll { $0.id == template.id }
+            templates.append(template)
+            templates.sort { $0.id < $1.id }
         }
     }
 

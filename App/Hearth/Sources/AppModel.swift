@@ -179,6 +179,9 @@ final class Session {
     /// Which model each tier asks for: one store for the session, which the
     /// Models pane and every Access sheet's Advanced choice read.
     let models: ModelsStore
+    /// The deliverable templates: one store for the session, which the
+    /// Deliverables pane reads.
+    let templates: TemplatesStore
     /// What the menu bar extra and the quick ask show: one store for the
     /// session, over the bots and the Inbox, so it lives as long as they do.
     let menuBar: MenuBarStore
@@ -198,6 +201,7 @@ final class Session {
         onboarding = OnboardingStore(client: client, accounts: accounts)
         usage = UsageStore(client: client, relay: relay)
         models = ModelsStore(client: client, relay: relay)
+        templates = TemplatesStore(client: client)
         bots = BotListStore(client: client, relay: relay)
         projects = ProjectsStore(client: client, relay: relay)
         sidebar = SidebarStore(bots: bots, projects: projects, selected: selection)

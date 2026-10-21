@@ -3,7 +3,9 @@
 // shipped template's sample; then each widget in each of its states; the chip
 // in the transcript and the window.
 
+import HearthDesign
 import HearthFeatures
+import HearthKit
 import HearthUI
 import SwiftUI
 
@@ -23,6 +25,26 @@ extension Catalog {
                 states: GalleryState.each(DeliverableScreen.PreviewState.self, width: 720) {
                     DeliverableScreen(previewState: $0).frame(height: 560)
                 }),
+            GalleryPage(
+                package: "HearthFeatures", name: "SaveTemplateSheet",
+                states: [
+                    GalleryState(
+                        name: "empty", width: Theme.Size.sheetWidth,
+                        view: AnyView(
+                            SaveTemplateSheet(
+                                store: TemplatesStore(client: PreviewClient()),
+                                specPath: "/none.deliverable.json", title: "Office this week"
+                            ) {})),
+                    GalleryState(
+                        name: "refused", width: Theme.Size.sheetWidth,
+                        view: AnyView(
+                            SaveTemplateSheet(
+                                store: TemplatesStore(
+                                    client: PreviewClient(),
+                                    error: "report is a shipped template; pick another id"),
+                                specPath: "/none.deliverable.json", title: "Report"
+                            ) {})),
+                ]),
             GalleryPage(
                 package: package, name: "DeliverableView",
                 states: GalleryState.each(DeliverableView.PreviewState.self, width: 580) {
