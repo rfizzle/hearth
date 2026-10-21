@@ -26,6 +26,11 @@ extension Catalog {
                     RunTrace(previewState: $0)
                 } + [Self.stillWorking]),
             GalleryPage(
+                package: package, name: "JumpToLatestButton",
+                states: GalleryState.each(JumpToLatestButton.PreviewState.self, width: 560) {
+                    JumpToLatestButton(previewState: $0)
+                }),
+            GalleryPage(
                 package: package, name: "FileRow",
                 states: GalleryState.each(FileRow.PreviewState.self, width: 560) { state in
                     let thumbnail = state == .thumbnail ? Self.sampleThumbnail : nil
