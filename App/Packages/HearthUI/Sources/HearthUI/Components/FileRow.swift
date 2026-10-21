@@ -2,7 +2,8 @@
 // drawn as a bordered chip with the Finder's icon for its type. Clicking it, or
 // Return on it when focused, calls the revealInFinder environment action with
 // the file's path; Space opens Quick Look on it, and the context menu offers
-// both. It is a focusable view with the button trait rather than a Button,
+// both. It shows the file's thumbnail from the fileThumbnail action, and the
+// type's icon without one. It is a focusable view with the button trait rather than a Button,
 // since a Button takes Space for itself. Its label names the file and the
 // action, so a list of several reads apart; the app only names the path, and
 // Quick Look is the system's.
@@ -26,7 +27,7 @@ public struct FileRow: View {
 
     public var body: some View {
         HStack(spacing: Theme.Spacing.xs) {
-            FileIcon(filename: file.name)
+            FileThumbnail(file: file)
             Text(file.name)
                 .font(Theme.callout)
                 .foregroundStyle(Theme.color(.textPrimary))
@@ -71,11 +72,18 @@ extension FileRow {
     public enum PreviewState: String, CaseIterable, Sendable {
         case brief
         case longName
+        /// A PDF whose thumbnail the gallery supplies.
+        case thumbnail
 
         var file: Hearth_V1_FileRef {
             switch self {
             case .brief:
                 Fixtures.briefFile
+            case .thumbnail:
+                .with {
+                    $0.name = "Heat pump quotes.pdf"
+                    $0.path = Fixtures.bot.folderPath + "/" + $0.name
+                }
             case .longName:
                 .with {
                     $0.name = "Heat pump grants and installers within twenty miles, 2026.md"
@@ -92,4 +100,5 @@ extension FileRow {
 }
 
 #Preview("Brief") { FileRow(previewState: .brief).padding() }
+#Preview("Thumbnail") { FileRow(previewState: .thumbnail).padding() }
 #Preview("Long name") { FileRow(previewState: .longName).padding() }

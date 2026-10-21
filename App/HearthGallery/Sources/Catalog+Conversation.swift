@@ -1,5 +1,6 @@
 // The rows and controls a conversation is built from.
 
+import CoreGraphics
 import HearthUI
 
 extension Catalog {
@@ -18,8 +19,10 @@ extension Catalog {
                 }),
             GalleryPage(
                 package: package, name: "FileRow",
-                states: GalleryState.each(FileRow.PreviewState.self, width: 560) {
-                    FileRow(previewState: $0)
+                states: GalleryState.each(FileRow.PreviewState.self, width: 560) { state in
+                    let thumbnail = state == .thumbnail ? Self.sampleThumbnail : nil
+                    FileRow(previewState: state)
+                        .environment(\.fileThumbnail, FileThumbnailAction { _, _ in thumbnail })
                 }),
             GalleryPage(
                 package: package, name: "AttachmentChip",
@@ -61,4 +64,26 @@ extension Catalog {
                 }),
         ]
     }
+}
+
+extension Catalog {
+    /// A page of text lines, standing in for what Quick Look makes of a PDF.
+    static let sampleThumbnail: CGImage? = {
+        let side = 56
+        guard
+            let context = CGContext(
+                data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side))
+        context.setFillColor(CGColor(gray: 0.35, alpha: 1))
+        context.fill(CGRect(x: 8, y: 40, width: 24, height: 6))
+        context.setFillColor(CGColor(gray: 0.7, alpha: 1))
+        for line in 0..<5 {
+            context.fill(CGRect(x: 8, y: 30 - line * 6, width: line == 4 ? 20 : 40, height: 3))
+        }
+        return context.makeImage()
+    }()
 }

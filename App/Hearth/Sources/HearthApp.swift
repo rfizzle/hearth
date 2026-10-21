@@ -24,6 +24,10 @@ struct HearthApp: App {
             ContentView()
                 .environment(appDelegate.model)
                 .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
+                .environment(
+                    \.fileThumbnail,
+                    FileThumbnailAction { await Thumbnails.shared.thumbnail(path: $0, side: $1) }
+                )
                 .environment(\.openInBrowser, OpenInBrowserAction { Browser.open(path: $0) })
                 .environment(
                     \.pickFolder,
@@ -60,6 +64,12 @@ struct HearthApp: App {
                 DeliverableScreen(path: path, client: session?.client, relay: session?.relay)
                     .id(session.map(ObjectIdentifier.init))
                     .environment(\.revealInFinder, RevealInFinderAction { Finder.reveal(path: $0) })
+                    .environment(
+                        \.fileThumbnail,
+                        FileThumbnailAction {
+                            await Thumbnails.shared.thumbnail(path: $0, side: $1)
+                        }
+                    )
                     .environment(\.openInBrowser, OpenInBrowserAction { Browser.open(path: $0) })
             }
         }

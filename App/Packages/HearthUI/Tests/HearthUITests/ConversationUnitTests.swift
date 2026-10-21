@@ -63,7 +63,7 @@ import Testing
     #expect(ToolCallRow.summary(call) == call.summary)
     #expect(ToolCallRow.summary(.with { $0.name = "web.fetch" }) == "web.fetch")
     #expect(ToolCallRow.PreviewState.runningExpanded.messages.result == nil)
-    #expect(FileRow.PreviewState.allCases.count == 2)
+    #expect(FileRow.PreviewState.allCases.count == 3)
 }
 
 @MainActor

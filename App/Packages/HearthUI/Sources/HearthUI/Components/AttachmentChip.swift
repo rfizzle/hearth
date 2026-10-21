@@ -25,7 +25,7 @@ public struct AttachmentChip: View {
 
     public var body: some View {
         HStack(spacing: Theme.Spacing.xs) {
-            FileIcon(filename: file.name)
+            FileThumbnail(file: file)
             Text(file.name)
                 .font(Theme.callout)
                 .foregroundStyle(Theme.color(.textPrimary))
