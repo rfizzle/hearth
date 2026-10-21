@@ -189,9 +189,10 @@ Rules:
 | `internal/measure` | The closed registry of measure ids and one read over the store, the meter and the project rule | new |
 | `internal/render/chart` | One deterministic chart layout feeding the SVG and the PDF; the six hues | new |
 | `internal/render/html` | A spec to a self-contained web page, no script, with a content-security-policy | new |
-| `internal/render/paper` | A Markdown file to a PDF in the print style, reproducibly, for `files.render`; a spec's PDF with vector charts on the same page is planned | new |
+| `internal/render/paper` | A Markdown file to a PDF in the print style, reproducibly, for `files.render`, and the page a spec is drawn on | new |
+| `internal/render/paper/grid` | A spec to a PDF: the same grid of cards, the charts drawn as vectors from the shared layout, at most 60 pages | new |
 | `internal/render/fonts` | The embedded faces a PDF is set in, Source Sans 3 and Source Code Pro, with their licence | new |
-| `internal/tools/deliverables` (planned) | `deliverables.write`: validates before the gate, fills measures, writes the spec, the page and the PDF beside each other | new |
+| `internal/tools/deliverables` | `deliverables.write`: validates before the gate, fills measures, writes the spec, the page and the PDF beside each other | new |
 | `internal/rpc/deliverables` | The handlers of `MeasureService` and `DeliverableService` | new |
 | `scripts/tokens` (planned) | Generates the chart hues and the Tailwind theme from the design tokens | new |
 | `scripts/tailwind` (planned) | The pinned Tailwind standalone CLI's version and sums and the build that makes the page's stylesheet; run at build time only | new |

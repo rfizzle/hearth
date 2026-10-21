@@ -33,8 +33,8 @@ func ParsePaper(s string) (Paper, error) {
 	return "", fmt.Errorf("paper must be letter or a4, not %q", s)
 }
 
-// MaxPages is the most pages a document is drawn on. A longer one stops at
-// the end of this page.
+// MaxPages is the most pages a document is drawn on, unless Limit sets
+// fewer. A longer one stops at the end of the last page.
 const MaxPages = 200
 
 // ErrRender is a document fpdf could not finish. It says nothing of the
@@ -87,19 +87,24 @@ type Document struct {
 	Style Style
 	pdf   *fpdf.Fpdf
 	full  bool
+	limit int
 	bars  []bar
 }
 
 // bar is a quote's left edge, open from y on the current page.
 type bar struct{ x, y float64 }
 
-// New is an empty document on paper with its first page added.
-func New(p Paper, s Style) (*Document, error) {
-	size := "Letter"
+// New is an empty document on paper, portrait or landscape, with its first
+// page added.
+func New(p Paper, landscape bool, s Style) (*Document, error) {
+	size, orient := "Letter", "P"
 	if p == A4 {
 		size = "A4"
 	}
-	f := fpdf.New("P", "pt", size, "")
+	if landscape {
+		orient = "L"
+	}
+	f := fpdf.New(orient, "pt", size, "")
 	for _, face := range fonts.Faces() {
 		if len(face.Data) == 0 {
 			return nil, ErrRender
@@ -109,7 +114,7 @@ func New(p Paper, s Style) (*Document, error) {
 	if f.Err() {
 		return nil, ErrRender
 	}
-	d := &Document{Style: s, pdf: f}
+	d := &Document{Style: s, pdf: f, limit: MaxPages}
 	f.SetMargins(s.Margin, s.Margin, s.Margin)
 	f.SetAutoPageBreak(true, s.Margin)
 	f.SetCellMargin(0)
@@ -129,9 +134,12 @@ func New(p Paper, s Style) (*Document, error) {
 // PDF is the fpdf document, for drawing what the helpers here do not.
 func (d *Document) PDF() *fpdf.Fpdf { return d.pdf }
 
-// Full reports whether the document reached MaxPages and refused another.
-// A renderer stops drawing once it is.
+// Full reports whether the document reached its page limit and refused
+// another. A renderer stops drawing once it is.
 func (d *Document) Full() bool { return d.full }
+
+// Limit sets the most pages the document is drawn on, at most MaxPages.
+func (d *Document) Limit(pages int) { d.limit = min(max(pages, 1), MaxPages) }
 
 // Width is the width between the current left margin and the right one.
 func (d *Document) Width() float64 {
@@ -178,10 +186,12 @@ func (d *Document) Space(h float64) {
 	}
 }
 
-// Need starts a new page unless h more points fit above the bottom margin.
+// Need starts a new page unless h more points fit above the bottom margin,
+// the one fpdf breaks pages at.
 func (d *Document) Need(h float64) {
 	_, ph := d.pdf.GetPageSize()
-	if d.pdf.GetY()+h > ph-d.Style.Margin && d.accept() {
+	_, _, _, bottom := d.pdf.GetMargins()
+	if d.pdf.GetY()+h > ph-bottom && d.accept() {
 		d.pdf.AddPage()
 	}
 }
@@ -218,16 +228,16 @@ func (d *Document) CloseBar() {
 }
 
 // accept is fpdf's page-break check: it closes the open edges on this page
-// and refuses a page past MaxPages.
+// and refuses a page past the limit.
 func (d *Document) accept() bool {
-	if d.pdf.PageCount() >= MaxPages {
+	if d.pdf.PageCount() >= d.limit {
 		d.full = true
 		return false
 	}
 	_, ph := d.pdf.GetPageSize()
-	_, top, _, _ := d.pdf.GetMargins()
+	_, top, _, bottom := d.pdf.GetMargins()
 	for i, b := range d.bars {
-		d.hairline(b.x, b.y, b.x, ph-d.Style.Margin)
+		d.hairline(b.x, b.y, b.x, ph-bottom)
 		d.bars[i].y = top
 	}
 	return true

@@ -284,7 +284,7 @@ func TestClean(t *testing.T) {
 // TestDocument draws on a page directly, as a second entry point would: a
 // quote's edge across a page break, a rule, and the dates from Finish.
 func TestDocument(t *testing.T) {
-	d, err := New(A4, Print())
+	d, err := New(A4, false, Print())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,8 +312,43 @@ func TestDocument(t *testing.T) {
 	}
 }
 
-func TestRenderIsNotYet(t *testing.T) {
-	if out, _, err := Render(deliverable.Spec{Version: 1}, Options{}); !errors.Is(err, ErrNotYet) || out != nil {
-		t.Errorf("Render = %d bytes, %v; want ErrNotYet and nothing", len(out), err)
+// TestDocumentShaped draws a deliverable's prose on a landscape page held to
+// two pages: # reads as ##, the title is not taken from it, a refused source
+// draws nothing, and the limit stops the document.
+func TestDocumentShaped(t *testing.T) {
+	d, err := New(Letter, true, Print())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w, h := d.PDF().GetPageSize(); w != 792 || h != 612 {
+		t.Fatalf("a landscape Letter page is %v by %v", w, h)
+	}
+	d.Limit(2)
+	if err := d.Markdown(context.Background(), []byte("# Heading\n\nSome **prose**.")); err != nil {
+		t.Fatalf("Markdown: %v", err)
+	}
+	if err := d.Markdown(context.Background(), []byte(strings.Repeat("[a](", 100000))); !errors.Is(err, deliverable.ErrTooComplex) {
+		t.Errorf("a source the checker refuses = %v", err)
+	}
+	if err := d.Markdown(context.Background(), make([]byte, MaxSource+1)); !errors.Is(err, ErrTooLarge) {
+		t.Errorf("a source over the cap = %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := d.Markdown(ctx, []byte("text")); !errors.Is(err, context.Canceled) {
+		t.Errorf("a cancelled draw = %v", err)
+	}
+	for i := 0; i < 200 && !d.Full(); i++ {
+		if err := d.Markdown(context.Background(), []byte("A paragraph.")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out, pages, err := d.Finish("", time.Time{})
+	if err != nil || pages != 2 || !d.Full() {
+		t.Fatalf("Finish = %d pages, full %v, %v", pages, d.Full(), err)
+	}
+	got := text(t, out)
+	if !strings.HasPrefix(got[0], "Heading Some prose") || bytes.Contains(out, []byte("/Title")) {
+		t.Errorf("page one reads %q; the prose's # became the title: %v", got[0], bytes.Contains(out, []byte("/Title")))
 	}
 }

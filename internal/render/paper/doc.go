@@ -1,15 +1,15 @@
 // Package paper draws a document as a PDF in hearth's print style: a
-// Markdown file today, through Markdown.
+// Markdown file through Markdown, and the page a shaped deliverable is drawn
+// on by its own package below this one.
 //
-// Responsibility: the page (Document: the paper, the margins, the embedded
-// fonts, "1 of 3" in the footer, the page cap, the PDF's fixed producer and
-// its dates) and the style table it draws with (Style, the print form of
-// docs/design.md), and one entry point that walks a Markdown tree onto it:
-// headings, paragraphs with bold, italic, struck and code text, links as
-// text with their address, lists and task lists, quotes, code blocks,
-// tables, rules and images. Another entry point can draw onto the same
-// Document; Render, for a shaped deliverable, answers ErrNotYet until it
-// does.
+// Responsibility: the page (Document: the paper and its orientation, the
+// margins, the embedded fonts, "1 of 3" in the footer, the page cap, the
+// PDF's fixed producer and its dates) and the style table it draws with
+// (Style, the print form of docs/design.md), and the walk of a Markdown tree
+// onto it: headings, paragraphs with bold, italic, struck and code text,
+// links as text with their address, lists and task lists, quotes, code
+// blocks, tables, rules and images. A deliverable's text and callouts are
+// walked the same way into a card, through Document.Markdown.
 //
 // Invariants the types do not hold:
 //   - A render is reproducible: no clock (the PDF's dates are the source's

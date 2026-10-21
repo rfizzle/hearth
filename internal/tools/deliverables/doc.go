@@ -32,10 +32,12 @@
 //     the calling bot and the conversation's project; a subject that does
 //     not exist is a refusal.
 //
-//   - Until a deliverable can be drawn as a PDF, the PDF step returns
-//     paper.ErrNotYet and the tool writes two files and says so.
+//   - The PDF's dates are the time the files are written, read once from
+//     the clock it is handed, so the renderer never reads one; a
+//     deliverable longer than the PDF's page cap is refused in words and
+//     nothing is written.
 //
 // It imports tools, org, workspace, deliverable, deliverable/template,
-// measure, render/html, render/paper and tools/files.
+// measure, render/html, render/paper/grid and tools/files.
 // See docs/decisions.md for D44, D46 and D47.
 package deliverables

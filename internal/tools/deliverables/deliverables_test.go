@@ -21,6 +21,9 @@ import (
 
 var readAt = time.Date(2026, 10, 21, 9, 30, 45, 0, time.UTC)
 
+// written is the clock the files are written by: the PDF's dates.
+var written = time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)
+
 // figures is a fake measure reader: aliases resolve as the registry resolves
 // them, and each read id answers from values.
 type figures struct {
@@ -75,7 +78,7 @@ func newRig(t *testing.T, mode org.Mode, projectID string) rig {
 		"usage.tokens/org/2026-10":  {Kind: measure.Number, Number: 4000, Unit: "tokens"},
 		"handbook.meter/everyone":   {Kind: measure.Progress, Done: 900, Total: 800},
 	}}
-	def := Definition(Options{Templates: template.Shipped, Measures: r.f, BotID: "bot1", ProjectID: projectID})
+	def := Definition(Options{Templates: template.Shipped, Measures: r.f, BotID: "bot1", ProjectID: projectID, Now: func() time.Time { return written }})
 	reg, err := tools.NewRegistry(def)
 	if err != nil {
 		t.Fatal(err)
@@ -132,21 +135,23 @@ func TestWrite_ADigest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("deliverables.write: %v", err)
 	}
-	specPath, pagePath := filepath.Join(r.folder, "weekly-digest.deliverable.json"), filepath.Join(r.folder, "weekly-digest.html")
-	want := []org.FileRef{{Path: specPath, Name: "weekly-digest.deliverable.json"}, {Path: pagePath, Name: "weekly-digest.html"}}
+	specPath, pagePath, pdfPath := filepath.Join(r.folder, "weekly-digest.deliverable.json"), filepath.Join(r.folder, "weekly-digest.html"), filepath.Join(r.folder, "weekly-digest.pdf")
+	want := []org.FileRef{{Path: specPath, Name: "weekly-digest.deliverable.json"}, {Path: pagePath, Name: "weekly-digest.html"}, {Path: pdfPath, Name: "weekly-digest.pdf"}}
 	if !slices.Equal(res.Files, want) {
 		t.Errorf("Files = %+v, want %+v", res.Files, want)
 	}
-	for _, w := range []string{"Wrote weekly-digest.deliverable.json and weekly-digest.html (a weekly digest, 6 widgets, 3 bound to live measures).", "The PDF is not made yet"} {
-		if !strings.Contains(res.Text, w) {
-			t.Errorf("result %q is missing %q", res.Text, w)
-		}
+	if w := "Wrote weekly-digest.deliverable.json, weekly-digest.html and weekly-digest.pdf (a weekly digest, 6 widgets, 3 bound to live measures)."; res.Text != w {
+		t.Errorf("result %q, want %q", res.Text, w)
 	}
 	if strings.Contains(res.Text, r.folder) {
 		t.Errorf("result %q names the absolute folder", res.Text)
 	}
-	if got := r.entries(t); !slices.Equal(got, []string{"weekly-digest.deliverable.json", "weekly-digest.html"}) {
+	if got := r.entries(t); !slices.Equal(got, []string{"weekly-digest.deliverable.json", "weekly-digest.html", "weekly-digest.pdf"}) {
 		t.Errorf("the folder holds %v", got)
+	}
+	pdf, err := os.ReadFile(pdfPath)
+	if err != nil || !bytes.HasPrefix(pdf, []byte("%PDF-")) || !bytes.Contains(pdf, []byte("/CreationDate (D:20261021120000)")) {
+		t.Errorf("the PDF is not one dated by the clock it was handed (%d bytes, %v)", len(pdf), err)
 	}
 	data, err := os.ReadFile(specPath)
 	if err != nil {
@@ -297,7 +302,7 @@ func TestDescribe_TheCardUnderAsk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `Write a weekly digest "Office this week" (6 widgets) as weekly-digest.deliverable.json and .html in Dana's folder`
+	want := `Write a weekly digest "Office this week" (6 widgets) as weekly-digest.deliverable.json, .html and .pdf in Dana's folder`
 	if c.Verdict != tools.Gated || c.Describe() != want {
 		t.Errorf("verdict %v, card %q; want %q", c.Verdict, c.Describe(), want)
 	}
@@ -322,7 +327,7 @@ func TestWrite_StaysInsideTheFolder(t *testing.T) {
 	if res.Files[0].Path != filepath.Join(r.folder, "drafts", "d.deliverable.json") {
 		t.Errorf("written at %s", res.Files[0].Path)
 	}
-	if !strings.HasPrefix(res.Text, "Wrote drafts/d.deliverable.json and drafts/d.html ") {
+	if !strings.HasPrefix(res.Text, "Wrote drafts/d.deliverable.json, drafts/d.html and drafts/d.pdf ") {
 		t.Errorf("text %q", res.Text)
 	}
 	if _, err := r.call(t, map[string]any{"path": "../elsewhere/d", "spec": spec}); err == nil || !strings.Contains(err.Error(), "outside the folders") {
@@ -358,6 +363,31 @@ func TestWrite_RefusesALinkAtAnOutput(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(r.folder, "e.html")); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the page was written after the spec failed: %v", err)
+	}
+}
+
+// TestWrite_RefusesTooManyPages: forty long tables are refused in the PDF's
+// words, and nothing is written.
+func TestWrite_RefusesTooManyPages(t *testing.T) {
+	rows := make([]any, 100)
+	for i := range rows {
+		rows[i] = []any{"an errand", i}
+	}
+	widgets := make([]any, 10)
+	for i := range widgets {
+		widgets[i] = map[string]any{"kind": "table", "columns": []any{map[string]any{"header": "Errand"}, map[string]any{"header": "Order"}}, "rows": rows}
+	}
+	sections := make([]any, 4)
+	for i := range sections {
+		sections[i] = map[string]any{"widgets": widgets}
+	}
+	r := newRig(t, org.ModeAllowed, "")
+	_, err := r.call(t, map[string]any{"path": "long", "spec": map[string]any{"version": 1, "kind": "report", "title": "Long", "sections": sections}})
+	if err == nil || err.Error() != "deliverables.write: the deliverable renders to more than 60 pages; shorten the tables; nothing was written" {
+		t.Errorf("err = %v", err)
+	}
+	if got := r.entries(t); len(got) != 0 {
+		t.Errorf("the folder holds %v", got)
 	}
 }
 

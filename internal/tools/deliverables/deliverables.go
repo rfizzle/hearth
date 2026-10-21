@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/rfizzle/hearth/internal/measure"
 	"github.com/rfizzle/hearth/internal/org"
 	"github.com/rfizzle/hearth/internal/render/html"
-	"github.com/rfizzle/hearth/internal/render/paper"
+	"github.com/rfizzle/hearth/internal/render/paper/grid"
 	"github.com/rfizzle/hearth/internal/tools"
 	"github.com/rfizzle/hearth/internal/tools/files"
 	"github.com/rfizzle/hearth/internal/workspace"
@@ -49,12 +50,14 @@ type Loader func() []template.Template
 // when the definition is built. BotID and ProjectID are what the aliases me
 // and this mean for the run; ProjectID is empty outside a project. Reserved
 // are folders no output may land in, whatever is granted. With no Measures, a
-// bound widget is refused.
+// bound widget is refused. Now is the clock the files are written by; nil is
+// the system's.
 type Options struct {
 	Templates        Loader
 	Measures         Measures
 	BotID, ProjectID string
 	Reserved         workspace.Reserved
+	Now              func() time.Time
 }
 
 // tool is one run's deliverables.write.
@@ -63,6 +66,7 @@ type tool struct {
 	measures  Measures
 	scope     measure.Scope
 	reserved  workspace.Reserved
+	now       func() time.Time
 }
 
 // Definition is deliverables.write for one run. It is checked against the
@@ -70,7 +74,10 @@ type tool struct {
 // writes in a granted folder, and one approval covers all of them.
 // See docs/decisions.md for D44.
 func Definition(o Options) tools.Definition {
-	t := tool{measures: o.Measures, scope: measure.Scope{BotID: o.BotID, ProjectID: o.ProjectID}, reserved: o.Reserved}
+	t := tool{measures: o.Measures, scope: measure.Scope{BotID: o.BotID, ProjectID: o.ProjectID}, reserved: o.Reserved, now: o.Now}
+	if t.now == nil {
+		t.now = time.Now
+	}
 	if o.Templates != nil {
 		t.templates = o.Templates()
 	}
@@ -272,7 +279,7 @@ func (t tool) execute(ctx context.Context, call tools.Call) (tools.Result, error
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("%s: %w; nothing was written", name, err)
 	}
-	outs, notYet, err := t.draw(call, p.spec)
+	outs, err := t.draw(ctx, call, p.spec)
 	if err != nil {
 		return tools.Result{}, fmt.Errorf("%s: %w; nothing was written", name, err)
 	}
@@ -288,11 +295,7 @@ func (t tool) execute(ctx context.Context, call tools.Call) (tools.Result, error
 		refs = append(refs, org.FileRef{Path: o.path, Name: filepath.Base(o.path)})
 		written = append(written, o.name)
 	}
-	text := fmt.Sprintf("Wrote %s (%s).", joinAnd(written), t.summary(p))
-	if notYet {
-		text += " The PDF is not made yet: this version of Hearth writes the spec and the web page."
-	}
-	return tools.Result{Text: text, Files: refs}, nil
+	return tools.Result{Text: fmt.Sprintf("Wrote %s (%s).", joinAnd(written), t.summary(p)), Files: refs}, nil
 }
 
 // fill reads the bound measures and writes each value, and the time it was
@@ -359,11 +362,13 @@ func setValue(w *deliverable.Widget, v measure.Value) {
 
 // draw makes every file before any is written: the canonical spec, the web
 // page and the PDF, named from the call's resolved path and never from the
-// spec. notYet reports that the PDF could not be made yet and is left out.
-func (t tool) draw(call tools.Call, spec deliverable.Spec) (outs []output, notYet bool, err error) {
+// spec. The PDF's dates are the time the spec is written, its modification
+// time, read once here so a renderer never reads the clock.
+// See docs/decisions.md for D47.
+func (t tool) draw(ctx context.Context, call tools.Call, spec deliverable.Spec) ([]output, error) {
 	stem := trimSpecExt(call.Path)
 	if call.Folder == "" || stem == call.Folder || filepath.Dir(stem) == stem {
-		return nil, false, errors.New("the path names the folder itself; give the files a name, such as weekly-digest")
+		return nil, errors.New("the path names the folder itself; give the files a name, such as weekly-digest")
 	}
 	shown := filepath.Base(stem)
 	if rel, err := filepath.Rel(call.Folder, stem); err == nil {
@@ -372,27 +377,26 @@ func (t tool) draw(call tools.Call, spec deliverable.Spec) (outs []output, notYe
 	for _, ext := range []string{specExt, pageExt, pdfExt} {
 		for _, r := range t.reserved.Folders() {
 			if workspace.Inside(r, stem+ext) {
-				return nil, false, fmt.Errorf("%s is in a folder Hearth keeps for itself", shown+ext)
+				return nil, fmt.Errorf("%s is in a folder Hearth keeps for itself", shown+ext)
 			}
 		}
 	}
 	data, err := deliverable.Canonical(spec)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	page, err := html.Render(spec)
 	if err != nil {
-		return nil, false, fmt.Errorf("the web page could not be made: %w", err)
+		return nil, fmt.Errorf("the web page could not be made: %w", err)
 	}
-	outs = []output{{stem + specExt, shown + specExt, data}, {stem + pageExt, shown + pageExt, page}}
-	pdf, _, err := paper.Render(spec, paper.Options{Name: shown + pdfExt})
-	switch {
-	case errors.Is(err, paper.ErrNotYet):
-		return outs, true, nil
-	case err != nil:
-		return nil, false, fmt.Errorf("the PDF could not be made: %w", err)
+	pdf, _, err := grid.Render(ctx, spec, grid.Options{ModTime: t.now()})
+	if errors.Is(err, grid.ErrTooLong) {
+		return nil, err
 	}
-	return append(outs, output{stem + pdfExt, shown + pdfExt, pdf}), false, nil
+	if err != nil {
+		return nil, fmt.Errorf("the PDF could not be made: %w", err)
+	}
+	return []output{{stem + specExt, shown + specExt, data}, {stem + pageExt, shown + pageExt, page}, {stem + pdfExt, shown + pdfExt, pdf}}, nil
 }
 
 // put writes o through files.OpenForWrite, inside folder: a regular file
@@ -465,7 +469,7 @@ func joinAnd(names []string) string {
 
 // describe is the card: what is written, its title and size, and the files,
 // "Write a weekly digest "Office this week" (6 widgets) as
-// weekly-digest.deliverable.json and .html in Dana's folder". Through the
+// weekly-digest.deliverable.json, .html and .pdf in Dana's folder". Through the
 // dispatcher the path starts with the granted folder's name and the folder
 // argument repeats it.
 func (t tool) describe(raw json.RawMessage) string {
@@ -495,7 +499,7 @@ func (t tool) describe(raw json.RawMessage) string {
 		s += what(tpl, "")
 	}
 	stem := trimSpecExt(file)
-	s += fmt.Sprintf(" as %s%s and %s", stem, specExt, pageExt)
+	s += fmt.Sprintf(" as %s%s, %s and %s", stem, specExt, pageExt, pdfExt)
 	if a.Folder != "" && ok {
 		s += " in " + a.Folder + "'s folder"
 	}

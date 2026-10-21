@@ -79,7 +79,7 @@ func Markdown(ctx context.Context, src []byte, o Options) (out []byte, rep Repor
 			out, rep, err = nil, Report{}, ErrRender
 		}
 	}()
-	d, err := New(o.Paper, Print())
+	d, err := New(o.Paper, false, Print())
 	if err != nil {
 		return nil, Report{}, err
 	}
@@ -103,6 +103,26 @@ func Markdown(ctx context.Context, src []byte, o Options) (out []byte, rep Repor
 		return nil, Report{}, err
 	}
 	return out, Report{Pages: pages, Bytes: len(out), Notices: w.notices}, nil
+}
+
+// Markdown draws src, the prose of a shaped deliverable's text or callout,
+// in the column between the current margins from the current height. It is
+// checked and parsed as a Markdown file is, under ctx; a # reads as ##, since
+// the deliverable's title is the only one, and an image is never opened.
+func (d *Document) Markdown(ctx context.Context, src []byte) error {
+	if len(src) > MaxSource {
+		return ErrTooLarge
+	}
+	if err := deliverable.CheckMarkdown(src); err != nil {
+		return err
+	}
+	tree, err := parse(ctx, src)
+	if err != nil {
+		return err
+	}
+	w := &walker{d: d, src: src, ctx: ctx, shaped: true}
+	w.blocks(tree, 0)
+	return ctx.Err()
 }
 
 // parse runs the parser on its own goroutine and waits for it or for ctx,
@@ -141,6 +161,7 @@ type walker struct {
 	widths     map[int]bool // the widths of the images placed
 	imageBytes int          // the image data placed so far
 	tight      bool
+	shaped     bool    // prose inside a deliverable: headings demoted, no title
 	size       float64 // the size and leading inline text is set at
 	lead       float64
 }
@@ -202,8 +223,12 @@ func (w *walker) html() {
 
 func (w *walker) heading(n *ast.Heading) {
 	s := w.d.Style
-	size := s.Headings[min(max(n.Level, 1), 6)-1]
-	if n.Level == 1 && w.title == "" {
+	level := n.Level
+	if w.shaped {
+		level = deliverable.DemoteHeading(level)
+	}
+	size := s.Headings[min(max(level, 1), 6)-1]
+	if level == 1 && w.title == "" {
 		w.title = plain(n, w.src)
 	}
 	w.d.Space(2 * s.Gap)
